@@ -62,7 +62,7 @@ namespace Ozikol.Central.Pages
 
         /// <summary>
 
-        /// Organization workspace address identifier (subdomain slug, e.g. "acme").
+        /// Organization workspace address identifier (subdomain slug, e.g. "workspace").
 
         /// </summary>
 

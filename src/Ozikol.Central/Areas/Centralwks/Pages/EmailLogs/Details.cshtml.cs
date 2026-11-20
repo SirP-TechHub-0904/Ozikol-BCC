@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -15,22 +16,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.EmailLogs
     public class DetailsModel : PageModel
     {
         private readonly MasterCatalogDbContext _context;
-        private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService _postmarkEmailService;
+        private readonly ICentralEmailService _emailService;
         private readonly ILogger<DetailsModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
         /// </summary>
         /// <param name="context">Master catalog database context.</param>
-        /// <param name="postmarkEmailService">Postmark delivery provider service.</param>
+        /// <param name="emailService">Central email delivery service.</param>
         /// <param name="logger">Structured logging service.</param>
         public DetailsModel(
             MasterCatalogDbContext context,
-            Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService postmarkEmailService,
+            ICentralEmailService emailService,
             ILogger<DetailsModel> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
-            _postmarkEmailService = postmarkEmailService ?? throw new ArgumentNullException(nameof(postmarkEmailService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -81,29 +82,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.EmailLogs
                 RecipientEmail = log.RecipientEmail,
                 Subject = log.Subject,
                 BodyHtml = log.BodyHtml,
-                Provider = "Postmark",
+                Provider = "Mailcow",
                 SentAtUtc = DateTime.UtcNow,
                 Status = "NotSent"
             };
 
             try
             {
-                var response = await _postmarkEmailService.SendHtmlEmailAsync(
-                    to: log.RecipientEmail,
+                var success = await _emailService.SendEmailAsync(
+                    toEmail: log.RecipientEmail,
                     subject: log.Subject,
-                    htmlBody: log.BodyHtml,
-                    tag: "central-resend");
+                    htmlBody: log.BodyHtml);
 
-                if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+                if (success)
                 {
                     retryLog.Status = "Sent";
                     retryLog.ErrorMessage = null;
-                    StatusMessage = $"Successfully re-transmitted email to '{log.RecipientEmail}' via Postmark.";
+                    StatusMessage = $"Successfully re-transmitted email to '{log.RecipientEmail}'.";
                 }
                 else
                 {
                     retryLog.Status = "Failed";
-                    retryLog.ErrorMessage = response.Message ?? "Postmark rejected re-transmission attempt.";
+                    retryLog.ErrorMessage = "Central email service failed to dispatch re-transmission.";
                     StatusMessage = $"Error: Re-transmission failed: {retryLog.ErrorMessage}";
                 }
             }

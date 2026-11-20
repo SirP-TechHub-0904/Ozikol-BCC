@@ -14,7 +14,7 @@ namespace Ozikol.Central.Services.Notifications
 {
     /// <summary>
     /// Core notification engine implementation providing persistent multi-channel alerts,
-    /// OneSignal push dispatching, Postmark email delivery, and full lifecycle management.
+    /// OneSignal push dispatching, Mailcow SMTP email delivery, and full lifecycle management.
     /// </summary>
     public class CentralNotificationService : ICentralNotificationService
     {
@@ -29,7 +29,7 @@ namespace Ozikol.Central.Services.Notifications
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
         /// <param name="pushService">OneSignal push notification service.</param>
-        /// <param name="emailService">Central Postmark email service.</param>
+        /// <param name="emailService">Central email service.</param>
         /// <param name="userManager">Identity user manager for operator lookup.</param>
         /// <param name="logger">Structured logger instance.</param>
         public CentralNotificationService(

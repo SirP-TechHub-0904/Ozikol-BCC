@@ -7,69 +7,9 @@ using Ozikol.MasterDomain.Models;
 using Ozikol.MasterDomain.Security;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application.Configuration;
-using Ozikol_BCC.EmailServices.Postmark.Configuration;
 
 namespace Ozikol.Central.Services
 {
-    /// <summary>
-    /// Dynamically enriches platform Postmark email configuration with credentials stored
-    /// centrally in the Master Catalog Database (<see cref="MasterPlatformSetting"/>) when configured.
-    /// </summary>
-    public sealed class MasterPlatformPostmarkPostConfigure : IPostConfigureOptions<PostmarkOptions>
-    {
-        private readonly IServiceProvider _serviceProvider;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MasterPlatformPostmarkPostConfigure"/> class.
-        /// </summary>
-        /// <param name="serviceProvider">Application service provider for resolving scoped DbContext on demand.</param>
-        public MasterPlatformPostmarkPostConfigure(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        }
-
-        /// <summary>
-        /// Applies central Master database credentials to the resolved Postmark options.
-        /// </summary>
-        /// <param name="name">Options instance name.</param>
-        /// <param name="options">Options instance to configure.</param>
-        public void PostConfigure(string? name, PostmarkOptions options)
-        {
-            try
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
-                if (db != null)
-                {
-                    var settings = db.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1);
-                    if (settings != null)
-                    {
-                        if (!string.IsNullOrWhiteSpace(settings.PostmarkServerToken))
-                        {
-                            var val = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkServerToken)?.Trim();
-                            if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
-                            {
-                                options.ServerToken = val;
-                            }
-                        }
-                        if (!string.IsNullOrWhiteSpace(settings.PostmarkDefaultFrom))
-                        {
-                            var val = OzikolDataCipher.DecryptIfNeeded(settings.PostmarkDefaultFrom)?.Trim();
-                            if (!string.IsNullOrWhiteSpace(val) && !val.StartsWith(OzikolDataCipher.CipherPrefix, StringComparison.Ordinal))
-                            {
-                                options.SenderEmail = val;
-                            }
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Graceful fallback during DB initialization, startup healthchecks, or migrations
-            }
-        }
-    }
-
     /// <summary>
     /// Dynamically enriches Cloudinary configuration with credentials stored in <see cref="MasterPlatformSetting"/>.
     /// </summary>
@@ -132,6 +72,46 @@ namespace Ozikol.Central.Services
             catch
             {
                 // Graceful fallback during DB initialization or migrations
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dynamically resolves Sentry DSN stored in <see cref="MasterPlatformSetting"/> if not present in environment variables.
+    /// </summary>
+    public sealed class MasterPlatformSentryPostConfigure : IPostConfigureOptions<Sentry.AspNetCore.SentryAspNetCoreOptions>
+    {
+        private readonly IServiceProvider _serviceProvider;
+
+        public MasterPlatformSentryPostConfigure(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        }
+
+        public void PostConfigure(string? name, Sentry.AspNetCore.SentryAspNetCoreOptions options)
+        {
+            if (!string.IsNullOrWhiteSpace(options.Dsn))
+            {
+                return;
+            }
+
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                var settings = db?.MasterPlatformSettings.AsNoTracking().FirstOrDefault(s => s.Id == 1);
+                if (settings != null && !string.IsNullOrWhiteSpace(settings.SentryDsn))
+                {
+                    var dsn = settings.SentryDsn.Trim();
+                    if (dsn.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        options.Dsn = dsn;
+                    }
+                }
+            }
+            catch
+            {
+                // Graceful fallback during DB initialization
             }
         }
     }

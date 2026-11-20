@@ -851,7 +851,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     private metaService: Meta,
     private elementRef: ElementRef,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   /**
    * Aggregates live database code injections for HtmlAssemblerService zones.
@@ -969,7 +969,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
-   * Helper extracting the tenant identifier from the browser hostname when on a subdomain (e.g. rozzy-touchxz.localhost:4200).
+   * Helper extracting the tenant identifier from the browser hostname when on a subdomain (e.g. tenant.localhost:4200).
    */
   private extractSubdomainTenant(): string {
     if (typeof window === 'undefined') return '';
@@ -1068,77 +1068,77 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       this.fetchPublishedPages(),
       this.fetchCodeInjections()
     ])
-    .then(async () => {
-      if (this.tenantState.isTenantNotFound()) {
-        this.loading = false;
-        this.cdr.detectChanges();
-        return;
-      }
-
-      // Concurrently fetch active ticker items if breaking news ribbon is enabled
-      await this.fetchTickerItems();
-
-      // Embedded Shell Mode: Wraps projected content (<ng-content>) inside live Website Header/Breadcrumb and Footer
-      if (this.embeddedShellMode) {
-        await this.composeEmbeddedShell();
-        return;
-      }
-
-      // Route dispatch based on active slug
-      if (this.currentSlug === 'auth-login' || this.currentSlug === 'login' || this.currentSlug === 'auth/login' || this.currentSlug === 'signin' || this.currentSlug === 'sign-in') {
-        this.router.navigate(['/auth/login']);
-        return;
-      } else if (this.currentSlug === 'auth-register' || this.currentSlug === 'register' || this.currentSlug === 'auth/register' || this.currentSlug === 'signup' || this.currentSlug === 'sign-up') {
-        this.router.navigate(['/register']);
-        return;
-      } else if (!this.currentSlug || this.currentSlug === 'home') {
-        // 1. Homepage Rendering
-        await Promise.all([
-          this.fetchHomeSections(),
-          this.fetchRecentBlogs()
-        ]);
-        if (this.activeTemplates.length === 0 && this.sections.length === 0) {
-          this.composeBlankCanvasWelcome();
-        } else {
-          this.composeHomepage();
+      .then(async () => {
+        if (this.tenantState.isTenantNotFound()) {
+          this.loading = false;
+          this.cdr.detectChanges();
+          return;
         }
-      } else if (this.currentSlug === 'blog') {
-        // 2. Blog Archive or Single Article
-        if (this.activeBlogId) {
-          await this.fetchSingleBlog(this.activeBlogId);
-          this.composeBlogDetail();
-        } else {
-          await this.fetchAllBlogs();
-          this.composeBlogArchive();
+
+        // Concurrently fetch active ticker items if breaking news ribbon is enabled
+        await this.fetchTickerItems();
+
+        // Embedded Shell Mode: Wraps projected content (<ng-content>) inside live Website Header/Breadcrumb and Footer
+        if (this.embeddedShellMode) {
+          await this.composeEmbeddedShell();
+          return;
         }
-      } else if (this.currentSlug === 'join-committee') {
-        // 3. Public Committee & Sub-Group Registration Portal (Wrapped directly in official Landing Page shell)
-        await this.fetchAndComposePublicCommittee();
-      } else {
-        // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
-        await this.fetchPageBySlug(this.currentSlug);
-        if (this.currentPage?.isHomePage || this.currentPage?.IsHomePage) {
-          // Safeguard: root landing pages stored under legacy slugs still render full homepage composition
+
+        // Route dispatch based on active slug
+        if (this.currentSlug === 'auth-login' || this.currentSlug === 'login' || this.currentSlug === 'auth/login' || this.currentSlug === 'signin' || this.currentSlug === 'sign-in') {
+          this.router.navigate(['/auth/login']);
+          return;
+        } else if (this.currentSlug === 'auth-register' || this.currentSlug === 'register' || this.currentSlug === 'auth/register' || this.currentSlug === 'signup' || this.currentSlug === 'sign-up') {
+          this.router.navigate(['/register']);
+          return;
+        } else if (!this.currentSlug || this.currentSlug === 'home') {
+          // 1. Homepage Rendering
           await Promise.all([
             this.fetchHomeSections(),
             this.fetchRecentBlogs()
           ]);
-          this.composeHomepage();
+          if (this.activeTemplates.length === 0 && this.sections.length === 0) {
+            this.composeBlankCanvasWelcome();
+          } else {
+            this.composeHomepage();
+          }
+        } else if (this.currentSlug === 'blog') {
+          // 2. Blog Archive or Single Article
+          if (this.activeBlogId) {
+            await this.fetchSingleBlog(this.activeBlogId);
+            this.composeBlogDetail();
+          } else {
+            await this.fetchAllBlogs();
+            this.composeBlogArchive();
+          }
+        } else if (this.currentSlug === 'join-committee') {
+          // 3. Public Committee & Sub-Group Registration Portal (Wrapped directly in official Landing Page shell)
+          await this.fetchAndComposePublicCommittee();
         } else {
-          this.composeContentPage();
+          // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
+          await this.fetchPageBySlug(this.currentSlug);
+          if (this.currentPage?.isHomePage || this.currentPage?.IsHomePage) {
+            // Safeguard: root landing pages stored under legacy slugs still render full homepage composition
+            await Promise.all([
+              this.fetchHomeSections(),
+              this.fetchRecentBlogs()
+            ]);
+            this.composeHomepage();
+          } else {
+            this.composeContentPage();
+          }
         }
-      }
 
-      this.loading = false;
-      this.cdr.detectChanges();
-      this.recordTelemetry();
-    })
-    .catch((err) => {
-      console.error('Failed to load website runtime:', err);
-      this.loading = false;
-      this.error = true;
-      this.errorMessage = err?.message || 'Could not connect to website delivery services.';
-    });
+        this.loading = false;
+        this.cdr.detectChanges();
+        this.recordTelemetry();
+      })
+      .catch((err) => {
+        console.error('Failed to load website runtime:', err);
+        this.loading = false;
+        this.error = true;
+        this.errorMessage = err?.message || 'Could not connect to website delivery services.';
+      });
   }
 
   // ========================================================
@@ -1196,7 +1196,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
                 this.brandInfo = { ...this.brandInfo, ...bData };
                 if (bData.companyName) {
                   this.brandName = bData.companyName;
-                  try { localStorage.setItem('tenant_name', bData.companyName); } catch {}
+                  try { localStorage.setItem('tenant_name', bData.companyName); } catch { }
                 }
                 if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
                 if (bData.enableBreakingNewsRibon !== undefined) {
@@ -1300,7 +1300,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   private applyFavicon(rawIcon?: string): void {
     const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
     if (activeIcon && typeof window !== 'undefined' && window.localStorage) {
-      try { localStorage.setItem('tenant_favicon', activeIcon); } catch {}
+      try { localStorage.setItem('tenant_favicon', activeIcon); } catch { }
     }
     const favicons = document.querySelectorAll("link[rel*='icon']");
     if (favicons.length > 0) {
@@ -1727,7 +1727,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
             next: (allRes: any) => {
               const allBlogs: any[] = allRes?.data || [];
               this.blogs = allBlogs;
-              const found = allBlogs.find(b => 
+              const found = allBlogs.find(b =>
                 (b.id && b.id.toLowerCase() === cleanId.toLowerCase()) ||
                 (b.title && b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === cleanId.toLowerCase()) ||
                 (b.slug && b.slug.toLowerCase() === cleanId.toLowerCase())
@@ -1760,8 +1760,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
             this.currentPage = this.publishedPages.find(p =>
               p.publish !== false && p.Publish !== false &&
               ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
-              (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
+                (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+                (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
             ) || null;
           }
           resolve();
@@ -1771,8 +1771,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           this.currentPage = this.publishedPages.find(p =>
             p.publish !== false && p.Publish !== false &&
             ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
-            (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
+              (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
           ) || null;
           resolve();
         }
@@ -1813,10 +1813,10 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
     // 2. Hero Section Unit
     const heroTemplate = this.findActiveTemplate('hero');
-    const dbHeroSection = this.sections.find(s => 
-      s.directUrl === 'home-hero' || 
-      (s.templateKey || '').toUpperCase().includes('HERO') || 
-      s.homePageSortOrder === 1 || 
+    const dbHeroSection = this.sections.find(s =>
+      s.directUrl === 'home-hero' ||
+      (s.templateKey || '').toUpperCase().includes('HERO') ||
+      s.homePageSortOrder === 1 ||
       s.pageSortOrder === 1
     );
     const heroSection: SectionTemplateUnit | undefined = heroTemplate ? {
@@ -1830,9 +1830,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
     // 3. Modular Body Section Units from database
     const bodySectionsList: SectionTemplateUnit[] = [];
-    const bodySections = this.sections.filter(s => 
-      s !== dbHeroSection && 
-      s.directUrl !== 'home-hero' && 
+    const bodySections = this.sections.filter(s =>
+      s !== dbHeroSection &&
+      s.directUrl !== 'home-hero' &&
       !(s.templateKey || '').toUpperCase().includes('HERO')
     );
 
@@ -1909,15 +1909,15 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const rawSections: any[] = this.currentPage.pageSections || [];
     const heroSection = rawSections.find(
       (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' ||
-                    (sec.templateKey || '').toLowerCase() === 'breadcrumb_banner'
+        (sec.templateKey || '').toLowerCase() === 'breadcrumb_banner'
     );
 
     // Row 6 custom background image uploaded for this page takes highest priority;
     // when omitted, prefer the active breadcrumb template's configured sample background image.
-    const pageCustomBg = this.currentPage.imageUrl || 
-                         this.currentPage.ImageUrl || 
-                         this.currentPage.headerImageUrl || 
-                         this.currentPage.backgroundImageUrl;
+    const pageCustomBg = this.currentPage.imageUrl ||
+      this.currentPage.ImageUrl ||
+      this.currentPage.headerImageUrl ||
+      this.currentPage.backgroundImageUrl;
 
     const pageTitle = this.currentPage.title || heroSection?.title || '';
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
@@ -1959,9 +1959,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const bodySectionsList: SectionTemplateUnit[] = [];
     const pageSections = rawSections.filter(
       (sec: any) => sec !== heroSection &&
-                    (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit' &&
-                    (sec.templateKey || '').toLowerCase() !== 'breadcrumb_banner' &&
-                    !(sec.templateKey || '').toLowerCase().includes('breadcrumb')
+        (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit' &&
+        (sec.templateKey || '').toLowerCase() !== 'breadcrumb_banner' &&
+        !(sec.templateKey || '').toLowerCase().includes('breadcrumb')
     );
 
     if (pageSections.length > 0) {
@@ -2251,8 +2251,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     // 3. Article Reader Body Section Units (Checking installed blog-detail blueprint)
     const bodySectionsList: SectionTemplateUnit[] = [];
     const blogDetailTemplate = this.findActiveTemplate('blog-detail') ||
-                               this.findActiveTemplate('blog_detail') ||
-                               this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'blog_detail');
+      this.findActiveTemplate('blog_detail') ||
+      this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'blog_detail');
 
     const blogDetailContext: any = {
       title: this.currentArticle.title || 'Untitled Article',
@@ -2347,7 +2347,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
 
     // 4. Newsletter Section (matching Demo Preview sequence)
     const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
-                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
+      this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
     if (newsletterTemplate) {
       const newsContext = {
         title: 'Subscribe to Executive Insights',
@@ -3905,11 +3905,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const isAdmin = authed && this.isUserAdmin();
     const isMember = authed && !isAdmin;
 
-    const loginText = !authed 
-      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+    const loginText = !authed
+      ? (this.brandInfo?.loginButtonText || 'Sign In')
       : (isAdmin ? 'Console' : 'My Workspace');
-    const loginUrl = !authed 
-      ? '/auth/login' 
+    const loginUrl = !authed
+      ? '/auth/login'
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
 
     // Helper to normalize zone ('first' | 'middle' | 'last' | 'top')
@@ -3933,9 +3933,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const rawWebPages = c.webPages || c.WebPages || [];
         const childPages = (rawWebPages && rawWebPages.length > 0)
           ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false && p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false)
-          : (this.publishedPages || []).filter(p => (p.publish !== false && p.Publish !== false) && 
-              (p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false) && 
-              (p.pageCategoryId === c.id || p.pageCategoryId === c.Id));
+          : (this.publishedPages || []).filter(p => (p.publish !== false && p.Publish !== false) &&
+            (p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false) &&
+            (p.pageCategoryId === c.id || p.pageCategoryId === c.Id));
 
         if (!childPages || childPages.length === 0) return;
 
@@ -3983,9 +3983,9 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     // 2. Build standalone menu items (excluding URLs already contained in dropdowns)
     const standaloneItems: any[] = [];
     (this.publishedPages || [])
-      .filter(p => (p.publish !== false && p.Publish !== false) && 
-                   (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
-                   !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
+      .filter(p => (p.publish !== false && p.Publish !== false) &&
+        (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) &&
+        !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
       .forEach(p => {
         const isHome = p.isHomePage === true || p.IsHomePage === true;
         const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').trim();
@@ -4160,7 +4160,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const payload = JSON.parse(atob(parts[1]));
         return !!payload.exp && Date.now() < payload.exp * 1000;
       }
-    } catch {}
+    } catch { }
     return false;
   }
 
@@ -4178,7 +4178,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         const adminRoles = ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'];
         return roles.some((r: any) => typeof r === 'string' && adminRoles.includes(r.toLowerCase()));
       }
-    } catch {}
+    } catch { }
     return false;
   }
 
@@ -4193,11 +4193,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     const isAdmin = authed && this.isUserAdmin();
     const isMember = authed && !isAdmin;
 
-    const loginText = !authed 
-      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+    const loginText = !authed
+      ? (this.brandInfo?.loginButtonText || 'Sign In')
       : (isAdmin ? 'Console' : 'My Workspace');
-    const loginUrl = !authed 
-      ? '/auth/login' 
+    const loginUrl = !authed
+      ? '/auth/login'
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
 
     // Prepare categorized links for footer columns
@@ -4619,7 +4619,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     if (rawKey) {
       const normalizedKey = rawKey.toLowerCase();
       // 1. Exact match in activeTemplates
-      const exactMatch = this.activeTemplates.find(t => 
+      const exactMatch = this.activeTemplates.find(t =>
         (t.templateKey || '').toLowerCase() === normalizedKey ||
         (t.variantCode || '').toLowerCase() === normalizedKey
       );
@@ -4659,7 +4659,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
       const aliases = keyAliases[normalizedKey];
       if (aliases) {
         for (const alias of aliases) {
-          const aliasMatch = this.activeTemplates.find(t => 
+          const aliasMatch = this.activeTemplates.find(t =>
             (t.templateKey || '').toLowerCase() === alias ||
             (t.variantCode || '').toLowerCase() === alias
           );
@@ -4800,13 +4800,13 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           if (!href) return;
           const lowerHref = href.toLowerCase();
           const isFontOrIcon = lowerHref.includes('fonts.googleapis.com') ||
-                               lowerHref.includes('font-awesome') ||
-                               lowerHref.includes('fontawesome') ||
-                               lowerHref.includes('bootstrap-icons') ||
-                               lowerHref.includes('remixicon') ||
-                               lowerHref.includes('line-awesome') ||
-                               lowerHref.includes('boxicons') ||
-                               lowerHref.includes('material');
+            lowerHref.includes('font-awesome') ||
+            lowerHref.includes('fontawesome') ||
+            lowerHref.includes('bootstrap-icons') ||
+            lowerHref.includes('remixicon') ||
+            lowerHref.includes('line-awesome') ||
+            lowerHref.includes('boxicons') ||
+            lowerHref.includes('material');
 
           if (isFontOrIcon) {
             const link = document.createElement('link');
@@ -5065,8 +5065,8 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         pageUrl: window.location.pathname || '/',
         pageTitle: this.titleService.getTitle() || this.brandName
       }).subscribe({
-        next: () => {},
-        error: () => {}
+        next: () => { },
+        error: () => { }
       });
     } catch {
       // Telemetry failures are non-blocking
@@ -5101,11 +5101,11 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     if (anchor && !anchor.classList.contains('dropdown-toggle') && !anchor.classList.contains('oz-dropdown-toggle')) {
       // Check if this anchor is a toggle button or modal/drawer trigger
       const isThemeToggle = anchor.getAttribute('data-bs-toggle') !== null ||
-                            anchor.getAttribute('data-toggle') !== null ||
-                            anchor.hasAttribute('data-bs-target') ||
-                            anchor.hasAttribute('data-target') ||
-                            anchor.classList.contains('toggle-btn') ||
-                            anchor.classList.contains('menu-toggle');
+        anchor.getAttribute('data-toggle') !== null ||
+        anchor.hasAttribute('data-bs-target') ||
+        anchor.hasAttribute('data-target') ||
+        anchor.classList.contains('toggle-btn') ||
+        anchor.classList.contains('menu-toggle');
 
       const href = (anchor.getAttribute('href') || '').trim();
 
@@ -5218,7 +5218,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
               this.initRecaptchas(0);
             }
           },
-          error: () => {}
+          error: () => { }
         });
       }
       return;
@@ -5290,7 +5290,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
           grecaptcha.reset();
         }
       }
-    } catch {}
+    } catch { }
   }
 
   /**
@@ -5324,7 +5324,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     if (widgetId !== null && grecaptcha && typeof grecaptcha.getResponse === 'function') {
       try {
         recaptchaToken = grecaptcha.getResponse(widgetId) || '';
-      } catch {}
+      } catch { }
     }
 
     if (!recaptchaToken) {
@@ -5335,7 +5335,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
     if (!recaptchaToken && grecaptcha && typeof grecaptcha.getResponse === 'function' && widgetId === null) {
       try {
         recaptchaToken = grecaptcha.getResponse() || '';
-      } catch {}
+      } catch { }
     }
 
     if (this.recaptchaSiteKey && !recaptchaToken) {
@@ -5370,7 +5370,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
         };
         try {
           sessionStorage.setItem('oz_cms_form_success', JSON.stringify(successState));
-        } catch {}
+        } catch { }
         this.router.navigate(['/form-success'], { state: successState });
       },
       error: (err: any) => {

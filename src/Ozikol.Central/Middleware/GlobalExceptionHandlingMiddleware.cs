@@ -8,14 +8,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Ozikol.Central.Configuration;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
-using Ozikol_BCC.EmailServices.Postmark.Models;
+using Ozikol_BCC.Infrastructure.Services.Email;
 
 namespace Ozikol.Central.Middleware;
 
 /// <summary>
 /// Global exception-intercepting middleware that captures unhandled server crashes in production,
-/// formats rich HTML diagnostic reports, and dispatches automated email alerts to system administrators via Postmark.
+/// formats rich HTML diagnostic reports, and dispatches automated email alerts to system administrators via Mailcow SMTP.
 /// </summary>
 public class GlobalExceptionHandlingMiddleware
 {
@@ -66,7 +65,7 @@ public class GlobalExceptionHandlingMiddleware
     }
 
     /// <summary>
-    /// Formats and dispatches a rich HTML diagnostic email report via Postmark.
+    /// Formats and dispatches a rich HTML diagnostic email report via Mailcow SMTP.
     /// </summary>
     private async Task DispatchCrashAlertEmailAsync(HttpContext context, Exception ex)
     {
@@ -78,9 +77,8 @@ public class GlobalExceptionHandlingMiddleware
                 return;
             }
 
-            var postmarkService = context.RequestServices.GetService<IPostmarkEmailService>();
-            var smtpDispatcher = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher>();
-            if (smtpDispatcher == null && postmarkService == null)
+            var smtpDispatcher = context.RequestServices.GetService<ISmtpEmailDispatcher>();
+            if (smtpDispatcher == null)
             {
                 return;
             }
@@ -110,25 +108,13 @@ public class GlobalExceptionHandlingMiddleware
             var recipients = options.RecipientEmails.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var recipient in recipients)
             {
-                if (smtpDispatcher != null)
-                {
-                    await smtpDispatcher.SendEmailAsync(
-                        toEmail: recipient,
-                        subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
-                        htmlBody: htmlBody,
-                        fromEmail: "security@ozikol.cloud",
-                        fromName: "Ozikol Central Telemetry Monitor",
-                        isCentralPlatformEmail: true);
-                }
-                else if (postmarkService != null)
-                {
-                    await postmarkService.SendHtmlEmailAsync(
-                        to: recipient,
-                        subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
-                        htmlBody: htmlBody,
-                        from: "Ozikol System Check <systemcheck@ozikol.cloud>",
-                        tag: "server-crash-alert");
-                }
+                await smtpDispatcher.SendEmailAsync(
+                    toEmail: recipient,
+                    subject: $"🚨 [CRITICAL ALERT] {ex.GetType().Name} on {context.Request.Host}",
+                    htmlBody: htmlBody,
+                    fromEmail: "security@ozikol.cloud",
+                    fromName: "Ozikol Central Telemetry Monitor",
+                    isCentralPlatformEmail: true);
             }
         }
         catch (Exception alertEx)

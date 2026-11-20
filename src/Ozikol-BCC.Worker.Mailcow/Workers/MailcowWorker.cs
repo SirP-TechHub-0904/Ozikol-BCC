@@ -9,39 +9,36 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterPersistence.EF.MasterSQL;
-using Ozikol_BCC.Application.Interfaces.Services;
-using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
-using PostmarkDotNet;
-using PostmarkDotNet.Model;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Worker.Workers;
 
 /// <summary>
-/// Autonomous background worker that polls <c>BcpMessagePools</c> across all active tenant databases
-/// and delivers queued Email, SMS, Push, and WhatsApp notifications asynchronously.
+/// Dedicated background worker that continuously monitors <c>BcpMessagePools</c> across all active tenant databases
+/// and securely transmits queued transactional and marketing emails exclusively through Mailcow SMTP (<c>mail.ozikol.cloud</c>).
+/// Automatically recovers stale leases and retries failed attempts up to 5 times before marking permanent failure.
 /// </summary>
-public sealed class MessagePoolDispatchWorker : BackgroundService
+public sealed class MailcowWorker : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
     private const int BatchSizePerTenant = 25;
+    private const int MaxAllowedRetries = 5;
 
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<MessagePoolDispatchWorker> _logger;
+    private readonly ILogger<MailcowWorker> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MessagePoolDispatchWorker"/> class.
+    /// Initializes a new instance of the <see cref="MailcowWorker"/> class.
     /// </summary>
     /// <param name="scopeFactory">Scope factory used to resolve master and tenant-scoped services.</param>
     /// <param name="logger">Structured logger instance.</param>
-    public MessagePoolDispatchWorker(
+    public MailcowWorker(
         IServiceScopeFactory scopeFactory,
-        ILogger<MessagePoolDispatchWorker> logger)
+        ILogger<MailcowWorker> logger)
     {
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -50,7 +47,7 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("📬 [MessagePoolDispatchWorker] Started with {Interval}s polling interval.", PollInterval.TotalSeconds);
+        _logger.LogInformation("📬 [MailcowWorker] Started Mailcow Email Dispatcher with {Interval}s polling interval.", PollInterval.TotalSeconds);
 
         using var timer = new PeriodicTimer(PollInterval);
         do
@@ -65,7 +62,7 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [MessagePoolDispatchWorker] Cycle error: {Message}", ex.Message);
+                _logger.LogError(ex, "❌ [MailcowWorker] Cycle error: {Message}", ex.Message);
             }
         }
         while (await WaitForNextTickAsync(timer, stoppingToken));
@@ -105,7 +102,7 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "⚠️ [MessagePoolDispatchWorker] Failed processing tenant '{TenantKey}': {Message}", tenantKey, ex.Message);
+                _logger.LogWarning(ex, "⚠️ [MailcowWorker] Failed processing tenant '{TenantKey}': {Message}", tenantKey, ex.Message);
             }
         }
     }
@@ -119,28 +116,39 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
         var db = tenantScopeRoot.ServiceProvider.GetRequiredService<DashboardDbContext>();
         var now = DateTime.UtcNow;
 
-        // 1. Stale Lease Auto-Recovery: Recover any messages stuck in Processing > 2 minutes back to Queued
+        // 1. Stale Lease Recovery: Recover any Mailcow emails stuck in Processing > 2 minutes back to Queued (if under retry cap)
         var staleCutoff = now.AddMinutes(-2);
         var staleItems = await db.BcpMessagePools
-            .Where(m => m.Status == BcpQueueStatus.Processing && m.CreatedAt <= staleCutoff)
+            .Where(m => m.Channel == BcpMessageChannel.Email
+                     && m.Provider == BcpMessageProvider.Mailcow
+                     && m.Status == BcpQueueStatus.Processing
+                     && m.CreatedAt <= staleCutoff)
             .Take(BatchSizePerTenant)
             .ToListAsync(ct);
 
         if (staleItems.Count > 0)
         {
-            _logger.LogWarning("⚠️ [MessagePoolDispatchWorker] Recovering {Count} stale Processing message(s) for tenant '{TenantKey}' back to Queued.",
+            _logger.LogWarning("⚠️ [MailcowWorker] Recovering {Count} stale Processing Mailcow email(s) for tenant '{TenantKey}' back to Queued.",
                 staleItems.Count, tenantKey);
             foreach (var stale in staleItems)
             {
-                stale.Status = BcpQueueStatus.Queued;
+                stale.Retries++;
+                stale.Status = (stale.Retries >= MaxAllowedRetries || stale.Retries >= stale.MaxRetries) ? BcpQueueStatus.Failed : BcpQueueStatus.Queued;
+                if (stale.Status == BcpQueueStatus.Failed && string.IsNullOrWhiteSpace(stale.LastError))
+                {
+                    stale.LastError = "Exceeded delivery retry limit while in Processing state (stale worker lease).";
+                }
             }
             await db.SaveChangesAsync(ct);
         }
 
-        // 2. Fetch pending items
+        // 2. Fetch pending Mailcow emails strictly matching Provider == Mailcow and Status == Queued
         var pendingItems = await db.BcpMessagePools
-            .Where(m => m.Channel != BcpMessageChannel.Sms && (m.Status == BcpQueueStatus.Queued || (m.Status == BcpQueueStatus.Failed && m.Retries < m.MaxRetries)) &&
-                (m.ScheduledAt == null || m.ScheduledAt <= now))
+            .Where(m => m.Channel == BcpMessageChannel.Email
+                     && m.Provider == BcpMessageProvider.Mailcow
+                     && m.Status == BcpQueueStatus.Queued
+                     && m.Retries < MaxAllowedRetries
+                     && (m.ScheduledAt == null || m.ScheduledAt <= now))
             .OrderByDescending(m => m.Priority)
             .ThenBy(m => m.CreatedAt)
             .Take(BatchSizePerTenant)
@@ -151,9 +159,9 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
             return;
         }
 
-        _logger.LogInformation("📨 [MessagePoolDispatchWorker] Processing {Count} queued message(s) for tenant '{TenantKey}'.", pendingItems.Count, tenantKey);
+        _logger.LogInformation("📨 [MailcowWorker] Processing {Count} queued Mailcow email(s) for tenant '{TenantKey}'.", pendingItems.Count, tenantKey);
 
-        // Claim batch as Processing before outbound calls so overlapping ticks do not double-send
+        // Claim batch as Processing before outbound SMTP calls so overlapping ticks do not double-send
         foreach (var item in pendingItems)
         {
             item.Status = BcpQueueStatus.Processing;
@@ -166,18 +174,10 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
             ? siteSettings.BrandName.Trim()
             : (!string.IsNullOrWhiteSpace(siteSettings?.CompanyName) ? siteSettings.CompanyName.Trim() : orgName);
 
-        // Safely resolve delivery providers without allowing single-service DI faults to crash the tenant loop
+        // Safely resolve Mailcow SMTP dispatcher
         ISmtpEmailDispatcher? smtpDispatcher = null;
         try { smtpDispatcher = tenantScopeRoot.ServiceProvider.GetService<ISmtpEmailDispatcher>(); }
-        catch (Exception ex) { _logger.LogWarning(ex, "⚠️ [MessagePoolDispatchWorker] Could not resolve ISmtpEmailDispatcher: {Msg}", ex.Message); }
-
-        IPostmarkEmailService? postmarkService = null;
-        try { postmarkService = tenantScopeRoot.ServiceProvider.GetService<IPostmarkEmailService>(); }
-        catch (Exception ex) { _logger.LogWarning(ex, "⚠️ [MessagePoolDispatchWorker] Could not resolve IPostmarkEmailService: {Msg}", ex.Message); }
-
-        ISmsSendService? smsService = null;
-        try { smsService = tenantScopeRoot.ServiceProvider.GetService<ISmsSendService>(); }
-        catch (Exception ex) { _logger.LogWarning(ex, "⚠️ [MessagePoolDispatchWorker] Could not resolve ISmsSendService: {Msg}", ex.Message); }
+        catch (Exception ex) { _logger.LogWarning(ex, "⚠️ [MailcowWorker] Could not resolve ISmtpEmailDispatcher: {Msg}", ex.Message); }
 
         foreach (var item in pendingItems)
         {
@@ -185,15 +185,7 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
 
             try
             {
-                bool delivered = item.Channel switch
-                {
-                    BcpMessageChannel.Email => await DeliverEmailAsync(item, tenantKey, tenantBrand, siteConfig, smtpDispatcher, postmarkService, ct),
-                    BcpMessageChannel.Sms => await DeliverSmsAsync(item, smsService),
-                    BcpMessageChannel.Push => true, // Push token relay hook point
-                    BcpMessageChannel.WhatsApp => true, // Meta Cloud API relay hook point
-                    BcpMessageChannel.InAppNotification => true,
-                    _ => false
-                };
+                bool delivered = await DeliverEmailAsync(item, tenantKey, tenantBrand, siteConfig, smtpDispatcher, ct);
 
                 if (delivered)
                 {
@@ -203,13 +195,13 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
                 }
                 else
                 {
-                    MarkFailedAttempt(item, $"Channel '{item.Channel}' delivery returned failure.");
+                    MarkFailedAttempt(item, "Mailcow SMTP transmission returned unconfirmed delivery.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "❌ [MessagePoolDispatchWorker] Delivery failed for {Channel} #{Id} ({Recipient}): {Msg}",
-                    item.Channel, item.Id, item.RecipientAddress, ex.Message);
+                _logger.LogWarning(ex, "❌ [MailcowWorker] Delivery failed for Mailcow email #{Id} ({Recipient}): {Msg}",
+                    item.Id, item.RecipientAddress, ex.Message);
                 MarkFailedAttempt(item, ex.Message);
             }
 
@@ -223,9 +215,13 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
         string tenantBrand,
         MisConfigurationSetting? siteConfig,
         ISmtpEmailDispatcher? smtpDispatcher,
-        IPostmarkEmailService? postmarkService,
         CancellationToken ct)
     {
+        if (smtpDispatcher == null)
+        {
+            throw new InvalidOperationException("ISmtpEmailDispatcher is not registered or configured in the worker.");
+        }
+
         var (metaFromEmail, metaFromName) = ExtractEmailMetadata(item.MetadataJson);
 
         var fromEmail = !string.IsNullOrWhiteSpace(item.SenderOrTemplateName)
@@ -240,82 +236,35 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
             ? metaFromName
             : (!string.IsNullOrWhiteSpace(siteConfig?.SenderName) ? siteConfig.SenderName.Trim() : tenantBrand);
 
-        // 1. Attempt high-speed Postmark transactional delivery if available
-        if (postmarkService != null)
-        {
-            try
-            {
-                var postmarkResponse = await postmarkService.SendHtmlEmailAsync(
-                    to: item.RecipientAddress,
-                    subject: item.Subject ?? "Notification",
-                    htmlBody: item.Content,
-                    from: fromEmail,
-                    textBody: item.PlainTextFallback,
-                    tag: item.Category.ToString());
-
-                if (postmarkResponse.Status == PostmarkStatus.Success)
-                {
-                    item.ProviderMessageId = postmarkResponse.MessageID.ToString();
-                    return true;
-                }
-
-                // If rejected (e.g. sender signature unverified for custom domain), retry with default verified platform sender
-                var fallbackResponse = await postmarkService.SendHtmlEmailAsync(
-                    to: item.RecipientAddress,
-                    subject: item.Subject ?? "Notification",
-                    htmlBody: item.Content,
-                    from: null, // Resolves to Postmark default verified sender
-                    textBody: item.PlainTextFallback,
-                    tag: item.Category.ToString());
-
-                if (fallbackResponse.Status == PostmarkStatus.Success)
-                {
-                    item.ProviderMessageId = fallbackResponse.MessageID.ToString();
-                    return true;
-                }
-            }
-            catch
-            {
-                // Fall through to SMTP dispatcher
-            }
-        }
-
-        // 2. Fall back to Mailcow SMTP dispatcher
-        if (smtpDispatcher != null)
-        {
-            return await smtpDispatcher.SendEmailAsync(
-                toEmail: item.RecipientAddress,
-                subject: item.Subject ?? "Notification",
-                htmlBody: item.Content,
-                fromEmail: fromEmail,
-                fromName: fromName,
-                replyTo: null,
-                isCentralPlatformEmail: false,
-                tenantName: tenantBrand,
-                tenantAdminEmail: null,
-                cancellationToken: ct,
-                smtpUsernameOverride: siteConfig?.SmtpUsername,
-                smtpPasswordOverride: siteConfig?.SmtpPassword);
-        }
-
-        throw new InvalidOperationException("Neither Postmark nor SMTP email dispatcher is configured or functional in the worker.");
-    }
-
-    private static async Task<bool> DeliverSmsAsync(BcpMessagePool item, ISmsSendService? smsService)
-    {
-        if (smsService == null)
-        {
-            throw new InvalidOperationException("ISmsSendService is not registered in the worker container.");
-        }
-
-        return await smsService.SendSmsWithResult(item.RecipientAddress, item.Content);
+        return await smtpDispatcher.SendEmailAsync(
+            toEmail: item.RecipientAddress,
+            subject: item.Subject ?? "Notification",
+            htmlBody: item.Content,
+            fromEmail: fromEmail,
+            fromName: fromName,
+            replyTo: null,
+            isCentralPlatformEmail: false,
+            tenantName: tenantBrand,
+            tenantAdminEmail: null,
+            cancellationToken: ct,
+            smtpUsernameOverride: siteConfig?.SmtpUsername,
+            smtpPasswordOverride: siteConfig?.SmtpPassword);
     }
 
     private static void MarkFailedAttempt(BcpMessagePool item, string error)
     {
         item.Retries++;
         item.LastError = error.Length > 3800 ? error.Substring(0, 3800) : error;
-        item.Status = BcpQueueStatus.Failed;
+
+        // When max retries (5) reached, mark as permanently Failed so worker never calls it again
+        if (item.Retries >= MaxAllowedRetries || item.Retries >= item.MaxRetries)
+        {
+            item.Status = BcpQueueStatus.Failed;
+        }
+        else
+        {
+            item.Status = BcpQueueStatus.Queued;
+        }
     }
 
     private static (string? FromEmail, string? FromName) ExtractEmailMetadata(string? metadataJson)
@@ -339,4 +288,3 @@ public sealed class MessagePoolDispatchWorker : BackgroundService
         }
     }
 }
-

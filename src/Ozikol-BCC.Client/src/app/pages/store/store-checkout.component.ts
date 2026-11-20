@@ -73,7 +73,7 @@ import { ToastService } from '../../core/services/toast.service';
                   [(ngModel)]="form.customerEmail"
                   name="customerEmail"
                   required
-                  placeholder="e.g. jane@example.com"
+                  placeholder="name@company.com"
                   class="form-control"
                 />
               </div>
@@ -281,7 +281,7 @@ export class StoreCheckoutComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.items = this.cartService.getItems();

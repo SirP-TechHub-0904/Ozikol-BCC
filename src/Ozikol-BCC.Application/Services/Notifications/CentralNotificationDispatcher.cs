@@ -12,7 +12,6 @@ using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
@@ -22,7 +21,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
     /// <summary>
     /// Central multi-channel notification and messaging dispatcher implementation.
     /// Dispatches alerts across In-App feeds, live SignalR sockets, native push payloads,
-    /// Postmark transactional emails, carrier SMS, and WhatsApp messages using the
+    /// Mailcow SMTP transactional emails, carrier SMS, and WhatsApp messages using the
     /// canonical 6-tier severity standards (#F06548, #F7B84B, #0AB39C, #38BDF8, #1F6BFF, #9333EA).
     /// </summary>
     public class CentralNotificationDispatcher : ICentralNotificationDispatcher
@@ -30,12 +29,12 @@ namespace Ozikol_BCC.Application.Services.Notifications
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ISmtpEmailDispatcher? _smtpEmailDispatcher;
-        private readonly IPostmarkEmailService? _emailService;
         private readonly ISmsSendService? _smsService;
         private readonly IMessageTemplateService? _templateService;
         private readonly ITenantEmailShellService? _emailShellService;
         private readonly ILogger<CentralNotificationDispatcher> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IOneSignalPushDispatcher? _oneSignalDispatcher;
 
         private static readonly string[] SpamBlacklistWords = new[]
         {
@@ -57,30 +56,30 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="logger">Logger service.</param>
         /// <param name="configuration">Application configuration.</param>
         /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP email dispatcher.</param>
-        /// <param name="emailService">Optional Postmark email service.</param>
         /// <param name="smsService">Optional carrier SMS gateway service.</param>
         /// <param name="templateService">Optional multi-channel message template service.</param>
         /// <param name="emailShellService">Optional tenant email shell wrapping service.</param>
+        /// <param name="oneSignalDispatcher">Optional OneSignal REST API push notification dispatcher.</param>
         public CentralNotificationDispatcher(
             DashboardDbContext dbContext,
             IHubContext<NotificationHub> hubContext,
             ILogger<CentralNotificationDispatcher> logger,
             IConfiguration configuration,
             ISmtpEmailDispatcher? smtpEmailDispatcher = null,
-            IPostmarkEmailService? emailService = null,
             ISmsSendService? smsService = null,
             IMessageTemplateService? templateService = null,
-            ITenantEmailShellService? emailShellService = null)
+            ITenantEmailShellService? emailShellService = null,
+            IOneSignalPushDispatcher? oneSignalDispatcher = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _smtpEmailDispatcher = smtpEmailDispatcher;
-            _emailService = emailService;
             _smsService = smsService;
             _templateService = templateService;
             _emailShellService = emailShellService;
+            _oneSignalDispatcher = oneSignalDispatcher;
         }
 
         /// <inheritdoc />
@@ -158,7 +157,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     await DispatchPushChannelAsync(payload, targetProfiles, result, cancellationToken);
                 }
 
-                // 5. Channel 3: Transactional Email via Postmark Suite (Rich HTML with anti-spam scrubbing)
+                // 5. Channel 3: Transactional Email via Mailcow SMTP (Rich HTML with anti-spam scrubbing)
                 if (payload.Channels.HasFlag(NotificationChannels.Email) || payload.SendEmailCopy)
                 {
                     await DispatchEmailChannelAsync(payload, targetProfiles, result, cancellationToken);
@@ -300,6 +299,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.InAppNotification,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = null,
                     RecipientAddress = "All Users (Broadcast)",
                     RecipientName = "Broadcast",
@@ -354,6 +354,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.InAppNotification,
+                        Provider = BcpMessageProvider.Unconfigured,
                         RelatedUserId = profile.Id,
                         RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
                         RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
@@ -434,14 +435,48 @@ namespace Ozikol_BCC.Application.Services.Notifications
             pushData["module"] = payload.Module ?? "General";
 
             _logger.LogInformation(
-                "[CentralNotificationDispatcher] Push notification queued for target {Target} (Recipients: {Count}). Title='{Title}', Body='{Body}', Severity={Severity}, TenantKey={TenantKey}",
+                "[CentralNotificationDispatcher] Dispatching push notification for target {Target} (Recipients: {Count}). Title='{Title}', Body='{Body}', Severity={Severity}, TenantKey={TenantKey}",
                 payload.TargetType, recipientCount, cleanPushTitle, cleanPushBody, payload.Severity, payload.TenantKey);
+
+            // Execute instant delivery via OneSignal REST API
+            bool pushDelivered = false;
+            string? pushError = null;
+            string? oneSignalExternalId = null;
+
+            if (_oneSignalDispatcher != null)
+            {
+                var targetUserIds = payload.TargetType == NotificationDispatchTarget.BroadcastAll
+                    ? null
+                    : targetProfiles.Select(p => p.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+
+                var dispatchResult = await _oneSignalDispatcher.SendPushNotificationAsync(
+                    cleanPushTitle,
+                    cleanPushBody,
+                    payload.ActionUrl,
+                    targetUserIds,
+                    payload.TenantKey,
+                    pushData,
+                    cancellationToken);
+
+                pushDelivered = dispatchResult.Success;
+                pushError = dispatchResult.ErrorMessage;
+                oneSignalExternalId = dispatchResult.OneSignalNotificationId;
+            }
+            else
+            {
+                pushError = "OneSignal push dispatcher is not configured in service collection.";
+            }
+
+            var provider = _oneSignalDispatcher != null ? BcpMessageProvider.OneSignal : BcpMessageProvider.Unconfigured;
+            var queueStatus = pushDelivered ? BcpQueueStatus.Sent : BcpQueueStatus.Failed;
+            var sentTimestamp = pushDelivered ? DateTime.UtcNow : (DateTime?)null;
 
             if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
             {
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.Push,
+                    Provider = provider,
                     RelatedUserId = null,
                     RecipientAddress = "All Devices (Push Broadcast)",
                     RecipientName = "Push Broadcast",
@@ -452,8 +487,10 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     Severity = payload.Severity,
                     Priority = payload.Priority,
                     EventType = payload.EventType,
-                    Status = BcpQueueStatus.Queued,
-                    SentAt = null,
+                    Status = queueStatus,
+                    SentAt = sentTimestamp,
+                    ErrorMessage = pushError,
+                    ExternalMessageId = oneSignalExternalId,
                     MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                     CreatedAt = DateTime.UtcNow
                 });
@@ -465,6 +502,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Push,
+                        Provider = provider,
                         RelatedUserId = profile.Id,
                         RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
                         RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
@@ -475,8 +513,10 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         Severity = payload.Severity,
                         Priority = payload.Priority,
                         EventType = payload.EventType,
-                        Status = BcpQueueStatus.Queued,
-                        SentAt = null,
+                        Status = queueStatus,
+                        SentAt = sentTimestamp,
+                        ErrorMessage = pushError,
+                        ExternalMessageId = oneSignalExternalId,
                         MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                         CreatedAt = DateTime.UtcNow
                     });
@@ -492,7 +532,14 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save push BcpMessagePool records: {Msg}", ex.Message);
             }
 
-            result.DispatchedPushCount += recipientCount;
+            if (pushDelivered)
+            {
+                result.DispatchedPushCount += recipientCount;
+            }
+            else if (!string.IsNullOrWhiteSpace(pushError))
+            {
+                result.Errors.Add($"Push delivery: {pushError}");
+            }
         }
 
         /// <summary>
@@ -613,6 +660,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
+                        Provider = BcpMessageProvider.Mailcow,
                         RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
                         RecipientAddress = email,
                         RecipientName = payload.RecipientName,
@@ -648,6 +696,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
+                        Provider = BcpMessageProvider.Mailcow,
                         RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
                         RecipientAddress = email,
                         RecipientName = payload.RecipientName,
@@ -720,6 +769,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.Sms,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = targetProfile?.Id,
                     RecipientAddress = phone,
                     RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
@@ -797,6 +847,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.WhatsApp,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = targetProfile?.Id,
                     RecipientAddress = phone,
                     RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,

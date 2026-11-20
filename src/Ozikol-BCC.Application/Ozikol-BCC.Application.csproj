@@ -20,7 +20,6 @@
     <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Persistence.EF.SQL\Ozikol-BCC.Persistence.EF.SQL.csproj" />
-    <ProjectReference Include="..\Ozikol-BCC.EmailServices.Postmark\Ozikol-BCC.EmailServices.Postmark.csproj" />
 
   </ItemGroup>
 

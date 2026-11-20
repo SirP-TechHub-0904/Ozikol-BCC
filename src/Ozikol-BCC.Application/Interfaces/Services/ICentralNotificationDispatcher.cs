@@ -217,7 +217,7 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         public int DispatchedPushCount { get; set; }
 
         /// <summary>
-        /// Number of transactional emails successfully sent via Postmark.
+        /// Number of transactional emails successfully sent via SMTP.
         /// </summary>
         public int DispatchedEmailCount { get; set; }
 
@@ -240,7 +240,7 @@ namespace Ozikol_BCC.Application.Interfaces.Services
     /// <summary>
     /// Centralized multi-channel notification and messaging dispatcher.
     /// Orchestrates delivery across In-App feeds, SignalR live sockets, push notifications,
-    /// Postmark transactional emails, carrier SMS, and WhatsApp messages with 6-tier severities.
+    /// SMTP transactional emails, carrier SMS, and WhatsApp messages with 6-tier severities.
     /// </summary>
     public interface ICentralNotificationDispatcher
     {

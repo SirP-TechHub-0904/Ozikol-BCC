@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from './core/components/toast-container.component';
 import { TenantStateService } from './core/services/tenant-state.service';
+import { SettingsService } from './core/services/settings.service';
+import { OneSignalService } from './core/services/onesignal.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -17,8 +19,14 @@ export class AppComponent {
   isTenantNotFound$: Observable<boolean>;
   isCheckingTenant$: Observable<boolean>;
 
-  constructor(private tenantState: TenantStateService) {
+  constructor(
+    private tenantState: TenantStateService,
+    private settingsService: SettingsService,
+    private oneSignal: OneSignalService
+  ) {
     this.isTenantNotFound$ = this.tenantState.isTenantNotFound$;
     this.isCheckingTenant$ = this.tenantState.isCheckingTenant$;
+    this.settingsService.loadSettings();
+    this.oneSignal.init();
   }
 }

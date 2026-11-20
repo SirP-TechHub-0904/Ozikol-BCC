@@ -4606,7 +4606,7 @@
     <value>Saisir le domaine de l'espace</value>
   </data>
   <data name="Mobile_Step2_Desc" xml:space="preserve">
-    <value>Sur l'écran d'accueil, saisissez le domaine de votre organisation (ex. acme.ozikol.cloud ou domaine personnalisé) pour vous connecter.</value>
+    <value>Sur l'écran d'accueil, saisissez le domaine de votre organisation (ex. workspace.ozikol.cloud ou domaine personnalisé) pour vous connecter.</value>
   </data>
   <data name="Mobile_Step3_Title" xml:space="preserve">
     <value>S'authentifier et commencer</value>

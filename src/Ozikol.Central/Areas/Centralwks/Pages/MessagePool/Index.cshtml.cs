@@ -50,6 +50,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         public string? ChannelFilter { get; set; }
 
         [BindProperty(SupportsGet = true)]
+        public string? ProviderFilter { get; set; }
+
+        [BindProperty(SupportsGet = true)]
         public string? StatusFilter { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -59,14 +62,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         public int PageIndex { get; set; } = 1;
 
         [BindProperty(SupportsGet = true)]
-        public int PageSize { get; set; } = 25;
+        public string PageSizeOption { get; set; } = "15";
+
+        public int PageSize { get; set; } = 15;
 
         public int QueuedCount { get; set; }
         public int ProcessingCount { get; set; }
         public int SentCount { get; set; }
         public int FailedCount { get; set; }
         public int TotalFilteredItems { get; set; }
-        public int TotalPages => Math.Max(1, (int)Math.Ceiling((double)TotalFilteredItems / Math.Max(1, PageSize)));
+        public int TotalPages => (PageSize == int.MaxValue || TotalFilteredItems == 0)
+            ? 1
+            : Math.Max(1, (int)Math.Ceiling((double)TotalFilteredItems / PageSize));
+
+        public int FirstItemIndex => TotalFilteredItems == 0 ? 0 : (PageSize == int.MaxValue ? 1 : (PageIndex - 1) * PageSize + 1);
+        public int LastItemIndex => TotalFilteredItems == 0 ? 0 : (PageSize == int.MaxValue ? TotalFilteredItems : Math.Min(PageIndex * PageSize, TotalFilteredItems));
 
         [TempData]
         public string? StatusMessage { get; set; }
@@ -94,11 +104,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 parsedChannel = ch;
             }
 
+            BcpMessageProvider? parsedProvider = null;
+            if (!string.IsNullOrWhiteSpace(ProviderFilter) && Enum.TryParse<BcpMessageProvider>(ProviderFilter, true, out var prov))
+            {
+                parsedProvider = prov;
+            }
+
             BcpQueueStatus? parsedStatus = null;
             if (!string.IsNullOrWhiteSpace(StatusFilter) && Enum.TryParse<BcpQueueStatus>(StatusFilter, true, out var st))
             {
                 parsedStatus = st;
             }
+
+            PageSize = PageSizeOption?.ToLowerInvariant() switch
+            {
+                "10" => 10,
+                "15" => 15,
+                "50" => 50,
+                "all" => int.MaxValue,
+                _ => int.TryParse(PageSizeOption, out var parsedSize) ? Math.Max(1, parsedSize) : 15
+            };
 
             var searchTerm = Search?.Trim();
 
@@ -107,6 +132,29 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 try
                 {
                     using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
+
+                    // Auto-heal stale or errored "Processing" messages to "Failed" so they are accurately counted and retriable
+                    var staleCutoff = DateTime.UtcNow.AddMinutes(-2);
+                    var staleOrErroredProcessing = await db.BcpMessagePools
+                        .Where(m => m.Status == BcpQueueStatus.Processing && (m.LastError != null || m.CreatedAt <= staleCutoff))
+                        .ToListAsync();
+
+                    if (staleOrErroredProcessing.Count > 0)
+                    {
+                        foreach (var stuck in staleOrErroredProcessing)
+                        {
+                            stuck.Status = BcpQueueStatus.Failed;
+                            if (string.IsNullOrWhiteSpace(stuck.LastError))
+                            {
+                                stuck.LastError = "Message delivery timed out in Processing state (stale worker lease).";
+                            }
+                            if (stuck.Channel == BcpMessageChannel.Email && stuck.Provider == BcpMessageProvider.Unconfigured)
+                            {
+                                stuck.Provider = BcpMessageProvider.Mailcow;
+                            }
+                        }
+                        await db.SaveChangesAsync();
+                    }
 
                     // Aggregate status counts per tenant
                     var counts = await db.BcpMessagePools
@@ -131,6 +179,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                     if (parsedChannel.HasValue)
                     {
                         query = query.Where(m => m.Channel == parsedChannel.Value);
+                    }
+
+                    if (parsedProvider.HasValue)
+                    {
+                        query = query.Where(m => m.Provider == parsedProvider.Value);
                     }
 
                     if (parsedStatus.HasValue)
@@ -158,6 +211,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                             TenantKey = tenant.TenantKey,
                             OrganizationName = tenant.OrganizationName,
                             Channel = m.Channel,
+                            Provider = m.Provider,
                             RecipientAddress = m.RecipientAddress,
                             RecipientName = m.RecipientName,
                             Subject = m.Subject,
@@ -197,10 +251,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
             if (PageIndex < 1) PageIndex = 1;
             if (PageIndex > TotalPages) PageIndex = TotalPages;
 
-            Messages = ordered
-                .Skip((PageIndex - 1) * PageSize)
-                .Take(PageSize)
-                .ToList();
+            Messages = PageSize == int.MaxValue
+                ? ordered.ToList()
+                : ordered.Skip((PageIndex - 1) * PageSize).Take(PageSize).ToList();
         }
 
         /// <summary>
@@ -234,6 +287,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 msg.Status = BcpQueueStatus.Queued;
                 msg.Retries = 0;
                 msg.LastError = null;
+                if (msg.Channel == BcpMessageChannel.Email && msg.Provider == BcpMessageProvider.Unconfigured)
+                {
+                    msg.Provider = BcpMessageProvider.Mailcow;
+                }
                 await db.SaveChangesAsync();
 
                 StatusMessage = $"Message '{msg.Subject ?? msg.Id.ToString()}' for {tenant.Value.OrganizationName} re-queued for delivery.";
@@ -274,6 +331,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                         item.Status = BcpQueueStatus.Queued;
                         item.Retries = 0;
                         item.LastError = null;
+                        if (item.Channel == BcpMessageChannel.Email && item.Provider == BcpMessageProvider.Unconfigured)
+                        {
+                            item.Provider = BcpMessageProvider.Mailcow;
+                        }
                     }
 
                     await db.SaveChangesAsync();
@@ -288,6 +349,81 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
             StatusMessage = totalRequeued > 0
                 ? $"Re-queued {totalRequeued} message(s) for Worker delivery."
                 : "No failed or stuck processing messages found to re-queue.";
+
+            return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
+        }
+
+        /// <summary>
+        /// Clears outbox records from <c>BcpMessagePools</c> based on selected scope and target tenant.
+        /// Optionally deletes user in-app notifications if explicitly requested.
+        /// </summary>
+        /// <param name="targetTenant">Target tenant key or "All" for all tenants.</param>
+        /// <param name="clearScope">Scope: "sent", "failed", "sent_failed", or "all".</param>
+        /// <param name="includeInAppNotifications">Whether to also delete user-facing BcpNotifications.</param>
+        public async Task<IActionResult> OnPostClearPoolAsync(string? targetTenant, string clearScope, bool includeInAppNotifications)
+        {
+            var activeTenants = await LoadActiveTenantsAsync();
+            var targets = string.IsNullOrWhiteSpace(targetTenant) || targetTenant.Equals("All", StringComparison.OrdinalIgnoreCase)
+                ? activeTenants
+                : activeTenants.Where(t => t.TenantKey.Equals(targetTenant, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            int totalDeletedPool = 0;
+            int totalDeletedInApp = 0;
+
+            foreach (var tenant in targets)
+            {
+                try
+                {
+                    using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
+
+                    var query = db.BcpMessagePools.AsQueryable();
+
+                    switch (clearScope?.ToLowerInvariant())
+                    {
+                        case "sent":
+                            query = query.Where(m => m.Status == BcpQueueStatus.Sent);
+                            break;
+                        case "failed":
+                            query = query.Where(m => m.Status == BcpQueueStatus.Failed);
+                            break;
+                        case "sent_failed":
+                            query = query.Where(m => m.Status == BcpQueueStatus.Sent || m.Status == BcpQueueStatus.Failed);
+                            break;
+                        case "all":
+                            // Clears all records
+                            break;
+                        default:
+                            query = query.Where(m => m.Status == BcpQueueStatus.Sent);
+                            break;
+                    }
+
+                    var itemsToDelete = await query.ToListAsync();
+                    if (itemsToDelete.Count > 0)
+                    {
+                        db.BcpMessagePools.RemoveRange(itemsToDelete);
+                        totalDeletedPool += itemsToDelete.Count;
+                    }
+
+                    if (includeInAppNotifications)
+                    {
+                        var inAppList = await db.BcpNotifications.ToListAsync();
+                        if (inAppList.Count > 0)
+                        {
+                            db.BcpNotifications.RemoveRange(inAppList);
+                            totalDeletedInApp += inAppList.Count;
+                        }
+                    }
+
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to clear pool for tenant '{TenantKey}': {Msg}", tenant.TenantKey, ex.Message);
+                }
+            }
+
+            var inAppMsg = includeInAppNotifications ? $" and {totalDeletedInApp} user in-app notification(s)" : "";
+            StatusMessage = $"Cleared {totalDeletedPool} outbox message(s){inAppMsg} from the pool.";
 
             return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
         }
@@ -343,6 +479,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
             public string TenantKey { get; set; } = string.Empty;
             public string OrganizationName { get; set; } = string.Empty;
             public BcpMessageChannel Channel { get; set; }
+            public BcpMessageProvider Provider { get; set; }
             public string RecipientAddress { get; set; } = string.Empty;
             public string? RecipientName { get; set; }
             public string? Subject { get; set; }

@@ -163,7 +163,7 @@ namespace Ozikol_BCC.Api.Controllers
             /// <summary>Dispatch native push notification to mobile and desktop apps.</summary>
             public bool SendPush { get; set; } = false;
 
-            /// <summary>Dispatch transactional email via Postmark.</summary>
+            /// <summary>Dispatch transactional email via SMTP.</summary>
             public bool SendEmailCopy { get; set; } = false;
 
             /// <summary>Dispatch direct SMS text alert via carrier gateway.</summary>

@@ -77,7 +77,6 @@ public class CentralEmailService : ICentralEmailService
     private readonly IConfiguration _configuration;
     private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
     private readonly ISmtpEmailDispatcher _smtpEmailDispatcher;
-    private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? _postmarkEmailService;
     private readonly IMailcowProvisioningService? _mailcowProvisioning;
 
     public CentralEmailService(
@@ -86,7 +85,6 @@ public class CentralEmailService : ICentralEmailService
         IConfiguration configuration,
         Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
         ISmtpEmailDispatcher smtpEmailDispatcher,
-        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService? postmarkEmailService = null,
         IMailcowProvisioningService? mailcowProvisioning = null)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
@@ -94,7 +92,6 @@ public class CentralEmailService : ICentralEmailService
         _configuration = configuration;
         _emailValidationService = emailValidationService;
         _smtpEmailDispatcher = smtpEmailDispatcher;
-        _postmarkEmailService = postmarkEmailService;
         _mailcowProvisioning = mailcowProvisioning;
     }
 
@@ -244,126 +241,54 @@ public class CentralEmailService : ICentralEmailService
 
         try
         {
-            if (string.Equals(effectiveProvider, "Postmark", StringComparison.OrdinalIgnoreCase) && _postmarkEmailService != null)
+            _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Mailcow SMTP...", subject, toEmail);
+
+            var (smtpUser, smtpPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: false, cancellationToken);
+
+            var delivered = await _smtpEmailDispatcher.SendEmailAsync(
+                toEmail: toEmail,
+                subject: subject,
+                htmlBody: htmlBody,
+                fromEmail: smtpUser ?? "noreply@ozikol.cloud",
+                fromName: "Ozikol Business Command Center",
+                isCentralPlatformEmail: true,
+                cancellationToken: cancellationToken,
+                smtpUsernameOverride: smtpUser,
+                smtpPasswordOverride: smtpPass,
+                strictDeliveryCheck: true);
+
+            if (!delivered && _mailcowProvisioning != null)
             {
-                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
-
-                var response = await _postmarkEmailService.SendHtmlEmailAsync(
-                    to: toEmail,
-                    subject: subject,
-                    htmlBody: htmlBody,
-                    tag: "central-transactional");
-
-                if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+                _logger.LogInformation("🔄 [CentralEmailService] Retrying Central Mailcow SMTP delivery after mailbox credential sync for [{Recipient}]...", toEmail);
+                var (resyncedUser, resyncedPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: true, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(resyncedPass))
                 {
-                    log.Status = "Sent";
-                    log.ErrorMessage = null;
-                    _logger.LogInformation("✅ [CentralEmailService] Postmark successfully delivered email to [{Recipient}] (MessageID: {MessageId})", toEmail, response.MessageID);
-                }
-                else
-                {
-                    _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}. Engaging automated Mailcow SMTP failover...", toEmail, response.Message);
-
-                    var (smtpUser, smtpPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: false, cancellationToken);
-
-                    // Automated Failover: Fall back to Mailcow SMTP when Postmark returns non-success
-                    var failoverDelivered = await _smtpEmailDispatcher.SendEmailAsync(
+                    delivered = await _smtpEmailDispatcher.SendEmailAsync(
                         toEmail: toEmail,
                         subject: subject,
                         htmlBody: htmlBody,
-                        fromEmail: smtpUser ?? "noreply@ozikol.cloud",
+                        fromEmail: resyncedUser ?? "noreply@ozikol.cloud",
                         fromName: "Ozikol Business Command Center",
                         isCentralPlatformEmail: true,
                         cancellationToken: cancellationToken,
-                        smtpUsernameOverride: smtpUser,
-                        smtpPasswordOverride: smtpPass,
+                        smtpUsernameOverride: resyncedUser,
+                        smtpPasswordOverride: resyncedPass,
                         strictDeliveryCheck: true);
-
-                    if (!failoverDelivered && _mailcowProvisioning != null)
-                    {
-                        var (resyncedUser, resyncedPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: true, cancellationToken);
-                        if (!string.IsNullOrWhiteSpace(resyncedPass))
-                        {
-                            failoverDelivered = await _smtpEmailDispatcher.SendEmailAsync(
-                                toEmail: toEmail,
-                                subject: subject,
-                                htmlBody: htmlBody,
-                                fromEmail: resyncedUser ?? "noreply@ozikol.cloud",
-                                fromName: "Ozikol Business Command Center",
-                                isCentralPlatformEmail: true,
-                                cancellationToken: cancellationToken,
-                                smtpUsernameOverride: resyncedUser,
-                                smtpPasswordOverride: resyncedPass,
-                                strictDeliveryCheck: true);
-                        }
-                    }
-
-                    if (failoverDelivered)
-                    {
-                        log.Provider = "Mailcow (Failover)";
-                        log.Status = "Sent";
-                        log.ErrorMessage = null;
-                        _logger.LogInformation("✅ [CentralEmailService] Mailcow failover successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
-                    }
-                    else
-                    {
-                        log.Status = "Failed";
-                        log.ErrorMessage = $"Postmark failed ({response.Message}) and Mailcow SMTP failover also returned failure. Verify Mailcow credentials.";
-                        _logger.LogWarning("⚠️ [CentralEmailService] Mailcow failover also failed for [{Recipient}].", toEmail);
-                    }
                 }
+            }
+
+            if (delivered)
+            {
+                log.Status = "Sent";
+                log.ErrorMessage = null;
+                log.Provider = "Mailcow";
+                _logger.LogInformation("✅ [CentralEmailService] Mailcow successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
             }
             else
             {
-                _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Mailcow SMTP...", subject, toEmail);
-
-                var (smtpUser, smtpPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: false, cancellationToken);
-
-                var delivered = await _smtpEmailDispatcher.SendEmailAsync(
-                    toEmail: toEmail,
-                    subject: subject,
-                    htmlBody: htmlBody,
-                    fromEmail: smtpUser ?? "noreply@ozikol.cloud",
-                    fromName: "Ozikol Business Command Center",
-                    isCentralPlatformEmail: true,
-                    cancellationToken: cancellationToken,
-                    smtpUsernameOverride: smtpUser,
-                    smtpPasswordOverride: smtpPass,
-                    strictDeliveryCheck: true);
-
-                if (!delivered && _mailcowProvisioning != null)
-                {
-                    _logger.LogInformation("🔄 [CentralEmailService] Retrying Central Mailcow SMTP delivery after mailbox credential sync for [{Recipient}]...", toEmail);
-                    var (resyncedUser, resyncedPass) = await EnsureCentralMailcowSmtpCredentialsAsync(platformSetting, forceResync: true, cancellationToken);
-                    if (!string.IsNullOrWhiteSpace(resyncedPass))
-                    {
-                        delivered = await _smtpEmailDispatcher.SendEmailAsync(
-                            toEmail: toEmail,
-                            subject: subject,
-                            htmlBody: htmlBody,
-                            fromEmail: resyncedUser ?? "noreply@ozikol.cloud",
-                            fromName: "Ozikol Business Command Center",
-                            isCentralPlatformEmail: true,
-                            cancellationToken: cancellationToken,
-                            smtpUsernameOverride: resyncedUser,
-                            smtpPasswordOverride: resyncedPass,
-                            strictDeliveryCheck: true);
-                    }
-                }
-
-                if (delivered)
-                {
-                    log.Status = "Sent";
-                    log.ErrorMessage = null;
-                    log.Provider = "Mailcow";
-                    _logger.LogInformation("✅ [CentralEmailService] Mailcow successfully delivered '{Subject}' to [{Recipient}].", subject, toEmail);
-                }
-                else
-                {
-                    log.Status = "Failed";
-                    log.ErrorMessage = "Mailcow SMTP delivery returned failure. Check Mailcow and network telemetry.";
-                    _logger.LogWarning("⚠️ [CentralEmailService] Mailcow delivery failed for [{Recipient}].", toEmail);
-                }
+                log.Status = "Failed";
+                log.ErrorMessage = "Mailcow SMTP delivery returned failure. Check Mailcow and network telemetry.";
+                _logger.LogWarning("⚠️ [CentralEmailService] Mailcow delivery failed for [{Recipient}].", toEmail);
             }
         }
         catch (Exception ex)

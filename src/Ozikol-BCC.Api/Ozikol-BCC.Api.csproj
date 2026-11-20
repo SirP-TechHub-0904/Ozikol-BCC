@@ -38,7 +38,6 @@
     <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.CloudinaryServices\Ozikol-BCC.CloudinaryServices.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
-    <ProjectReference Include="..\Ozikol-BCC.EmailServices.Postmark\Ozikol-BCC.EmailServices.Postmark.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.PaymentServices.Paystack\Ozikol-BCC.PaymentServices.Paystack.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Persistence.EF.SQL\Ozikol-BCC.Persistence.EF.SQL.csproj" />

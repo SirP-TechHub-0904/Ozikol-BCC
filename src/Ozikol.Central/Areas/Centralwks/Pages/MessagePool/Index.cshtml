@@ -24,6 +24,9 @@
                 </button>
             </form>
         }
+        <a href="/centralwks/message-pool/cleanup" class="btn btn-sm" style="background: #ffffff; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.15s ease;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">delete_sweep</span> Cleanup &amp; Purge
+        </a>
     </div>
 </div>
 
@@ -44,60 +47,158 @@
     </div>
 }
 
-@* ── KPI Summary Cards ── *@
+@* ── Clickable KPI Summary Cards ── *@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #0050e5; display: flex; align-items: center; justify-content: center;">
+    @{
+        var isQueuedActive = string.Equals(Model.StatusFilter, "Queued", StringComparison.OrdinalIgnoreCase);
+        var isProcessingActive = string.Equals(Model.StatusFilter, "Processing", StringComparison.OrdinalIgnoreCase);
+        var isSentActive = string.Equals(Model.StatusFilter, "Sent", StringComparison.OrdinalIgnoreCase);
+        var isFailedActive = string.Equals(Model.StatusFilter, "Failed", StringComparison.OrdinalIgnoreCase);
+
+        var queuedUrl = Url.Page("./Index", new { TenantFilter = Model.TenantFilter, ChannelFilter = Model.ChannelFilter, ProviderFilter = Model.ProviderFilter, Search = Model.Search, PageSizeOption = Model.PageSizeOption, StatusFilter = isQueuedActive ? null : "Queued", PageIndex = 1 });
+        var processingUrl = Url.Page("./Index", new { TenantFilter = Model.TenantFilter, ChannelFilter = Model.ChannelFilter, ProviderFilter = Model.ProviderFilter, Search = Model.Search, PageSizeOption = Model.PageSizeOption, StatusFilter = isProcessingActive ? null : "Processing", PageIndex = 1 });
+        var sentUrl = Url.Page("./Index", new { TenantFilter = Model.TenantFilter, ChannelFilter = Model.ChannelFilter, ProviderFilter = Model.ProviderFilter, Search = Model.Search, PageSizeOption = Model.PageSizeOption, StatusFilter = isSentActive ? null : "Sent", PageIndex = 1 });
+        var failedUrl = Url.Page("./Index", new { TenantFilter = Model.TenantFilter, ChannelFilter = Model.ChannelFilter, ProviderFilter = Model.ProviderFilter, Search = Model.Search, PageSizeOption = Model.PageSizeOption, StatusFilter = isFailedActive ? null : "Failed", PageIndex = 1 });
+    }
+
+    @* Queued Card *@
+    <a href="@queuedUrl" title="@(isQueuedActive ? "Clear Queued filter" : "Filter by Queued")" style="text-decoration: none; display: flex; align-items: center; gap: 16px; background: #ffffff; border: @(isQueuedActive ? "2px solid #0050e5" : "1px solid #e2e8f0"); border-radius: 12px; padding: 18px 20px; transition: all 0.2s ease; box-shadow: @(isQueuedActive ? "0 4px 14px rgba(0,80,229,0.15)" : "0 1px 3px rgba(0,0,0,0.02)");">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #0050e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <span class="material-symbols-outlined" style="font-size: 22px;">schedule_send</span>
         </div>
-        <div>
-            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Queued</div>
+        <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+                <span>Queued</span>
+                @if (isQueuedActive) { <span style="font-size: 10px; color: #0050e5; background: #eff6ff; padding: 1px 6px; border-radius: 4px;">ACTIVE</span> }
+            </div>
             <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 2px;">@Model.QueuedCount</div>
         </div>
-    </div>
+    </a>
 
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fefce8; color: #b45309; display: flex; align-items: center; justify-content: center;">
+    @* Processing Card *@
+    <a href="@processingUrl" title="@(isProcessingActive ? "Clear Processing filter" : "Filter by Processing")" style="text-decoration: none; display: flex; align-items: center; gap: 16px; background: #ffffff; border: @(isProcessingActive ? "2px solid #b45309" : "1px solid #e2e8f0"); border-radius: 12px; padding: 18px 20px; transition: all 0.2s ease; box-shadow: @(isProcessingActive ? "0 4px 14px rgba(180,83,9,0.15)" : "0 1px 3px rgba(0,0,0,0.02)");">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fefce8; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <span class="material-symbols-outlined" style="font-size: 22px;">sync</span>
         </div>
-        <div>
-            <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase;">Processing</div>
+        <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+                <span>Processing</span>
+                @if (isProcessingActive) { <span style="font-size: 10px; color: #b45309; background: #fefce8; padding: 1px 6px; border-radius: 4px;">ACTIVE</span> }
+            </div>
             <div style="font-size: 24px; font-weight: 800; color: #b45309; margin-top: 2px;">@Model.ProcessingCount</div>
         </div>
-    </div>
+    </a>
 
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center;">
+    @* Sent Card *@
+    <a href="@sentUrl" title="@(isSentActive ? "Clear Sent filter" : "Filter by Sent")" style="text-decoration: none; display: flex; align-items: center; gap: 16px; background: #ffffff; border: @(isSentActive ? "2px solid #047857" : "1px solid #e2e8f0"); border-radius: 12px; padding: 18px 20px; transition: all 0.2s ease; box-shadow: @(isSentActive ? "0 4px 14px rgba(4,120,87,0.15)" : "0 1px 3px rgba(0,0,0,0.02)");">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <span class="material-symbols-outlined" style="font-size: 22px;">mark_email_read</span>
         </div>
-        <div>
-            <div style="font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase;">Sent</div>
+        <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+                <span>Sent</span>
+                @if (isSentActive) { <span style="font-size: 10px; color: #047857; background: #ecfdf5; padding: 1px 6px; border-radius: 4px;">ACTIVE</span> }
+            </div>
             <div style="font-size: 24px; font-weight: 800; color: #047857; margin-top: 2px;">@Model.SentCount</div>
         </div>
-    </div>
+    </a>
 
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center;">
+    @* Failed Card *@
+    <a href="@failedUrl" title="@(isFailedActive ? "Clear Failed filter" : "Filter by Failed")" style="text-decoration: none; display: flex; align-items: center; gap: 16px; background: #ffffff; border: @(isFailedActive ? "2px solid #dc2626" : "1px solid #e2e8f0"); border-radius: 12px; padding: 18px 20px; transition: all 0.2s ease; box-shadow: @(isFailedActive ? "0 4px 14px rgba(220,38,38,0.15)" : "0 1px 3px rgba(0,0,0,0.02)");">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <span class="material-symbols-outlined" style="font-size: 22px;">error_outline</span>
         </div>
-        <div>
-            <div style="font-size: 12px; font-weight: 700; color: #dc2626; text-transform: uppercase;">Failed</div>
+        <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 700; color: #dc2626; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+                <span>Failed</span>
+                @if (isFailedActive) { <span style="font-size: 10px; color: #dc2626; background: #fef2f2; padding: 1px 6px; border-radius: 4px;">ACTIVE</span> }
+            </div>
             <div style="font-size: 24px; font-weight: 800; color: #dc2626; margin-top: 2px;">@Model.FailedCount</div>
         </div>
-    </div>
+    </a>
 </div>
 
+<style>
+    .tenant-option:hover {
+        background-color: #f1f5f9;
+    }
+    .tenant-option.selected {
+        background-color: #eff6ff;
+        color: #0050e5 !important;
+    }
+</style>
+
 @* ── Filter Bar ── *@
-<form method="get" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end;">
-    <div>
+<form method="get" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end;">
+    <div style="position: relative;" id="tenantDropdownContainer">
         <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Tenant</label>
-        <select name="TenantFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
-            <option value="All">All Tenants</option>
-            @foreach (var t in Model.Tenants)
-            {
-                <option value="@t.TenantKey" selected="@(string.Equals(Model.TenantFilter, t.TenantKey, StringComparison.OrdinalIgnoreCase))">@t.OrganizationName (@t.TenantKey)</option>
-            }
-        </select>
+        <input type="hidden" name="TenantFilter" id="tenantFilterInput" value="@(string.IsNullOrWhiteSpace(Model.TenantFilter) ? "All" : Model.TenantFilter)" />
+        
+        @* Searchable Dropdown Trigger *@
+        <button type="button" id="tenantDropdownTrigger" onclick="toggleTenantDropdown(event)"
+                aria-haspopup="listbox" aria-expanded="false"
+                style="width: 100%; height: 38px; box-sizing: border-box; padding: 8px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; color: #0f172a; display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer; text-align: left;">
+            <span id="tenantDropdownLabel" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">
+                @{
+                    var activeTenant = Model.Tenants.FirstOrDefault(t => string.Equals(t.TenantKey, Model.TenantFilter, StringComparison.OrdinalIgnoreCase));
+                    var activeLabel = activeTenant != null ? $"{activeTenant.OrganizationName} ({activeTenant.TenantKey})" : (string.IsNullOrWhiteSpace(Model.TenantFilter) || Model.TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase) ? "All Tenants" : Model.TenantFilter);
+                }
+                @activeLabel
+            </span>
+            <span class="material-symbols-outlined" id="tenantDropdownChevron" style="font-size: 18px; color: #64748b; transition: transform 0.2s ease; flex-shrink: 0;">expand_more</span>
+        </button>
+
+        @* Searchable Dropdown Menu Popover *@
+        <div id="tenantDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 280px; width: 100%; max-width: 360px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12), 0 8px 10px -6px rgba(0,0,0,0.08); z-index: 1000; overflow: hidden;">
+            @* Search Box Header *@
+            <div style="padding: 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 8px; font-size: 16px; color: #94a3b8; pointer-events: none;">search</span>
+                    <input type="text" id="tenantSearchInput" placeholder="Search tenant..." oninput="filterTenantOptions(this.value)" autocomplete="off"
+                           style="width: 100%; box-sizing: border-box; padding: 6px 8px 6px 30px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; background: #ffffff; color: #0f172a;" />
+                </div>
+            </div>
+
+            @* Scrollable Options (shows top few, smooth scroll) *@
+            <div id="tenantOptionsList" style="max-height: 220px; overflow-y: auto; padding: 4px;">
+                @{
+                    var isAllSelected = string.IsNullOrWhiteSpace(Model.TenantFilter) || Model.TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase);
+                }
+                <div class="tenant-option @(isAllSelected ? "selected" : "")" data-key="All" data-search="all tenants" onclick="selectTenantOption('All', 'All Tenants')"
+                     style="padding: 7px 10px; font-size: 12.5px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #0f172a; transition: background 0.12s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #64748b;">apps</span>
+                        <span style="font-weight: 600;">All Tenants</span>
+                    </div>
+                    @if (isAllSelected)
+                    {
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #0050e5;">check</span>
+                    }
+                </div>
+
+                @foreach (var t in Model.Tenants)
+                {
+                    var isSel = string.Equals(Model.TenantFilter, t.TenantKey, StringComparison.OrdinalIgnoreCase);
+                    var searchData = $"{t.OrganizationName} {t.TenantKey}".ToLowerInvariant();
+                    var escapedOrgName = t.OrganizationName.Replace("'", "\\'");
+                    <div class="tenant-option @(isSel ? "selected" : "")" data-key="@t.TenantKey" data-search="@searchData" onclick="selectTenantOption('@t.TenantKey', '@escapedOrgName (@t.TenantKey)')"
+                         style="padding: 7px 10px; font-size: 12.5px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #0f172a; transition: background 0.12s ease;">
+                        <div style="min-width: 0;">
+                            <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@t.OrganizationName</div>
+                            <div style="font-size: 11px; color: #64748b; font-family: monospace;">@t.TenantKey</div>
+                        </div>
+                        @if (isSel)
+                        {
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: #0050e5; flex-shrink: 0; margin-left: 6px;">check</span>
+                        }
+                    </div>
+                }
+
+                <div id="noTenantFound" style="display: none; padding: 14px 10px; font-size: 12px; color: #94a3b8; text-align: center;">
+                    No matching tenants found
+                </div>
+            </div>
+        </div>
     </div>
 
     <div>
@@ -112,6 +213,17 @@
     </div>
 
     <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Provider</label>
+        <select name="ProviderFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="">All Providers</option>
+            @foreach (var p in Enum.GetNames<BcpMessageProvider>())
+            {
+                <option value="@p" selected="@(string.Equals(Model.ProviderFilter, p, StringComparison.OrdinalIgnoreCase))">@p</option>
+            }
+        </select>
+    </div>
+
+    <div>
         <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Status</label>
         <select name="StatusFilter" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
             <option value="">All Statuses</option>
@@ -119,6 +231,16 @@
             {
                 <option value="@st" selected="@(string.Equals(Model.StatusFilter, st, StringComparison.OrdinalIgnoreCase))">@st</option>
             }
+        </select>
+    </div>
+
+    <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 5px;">Per Page</label>
+        <select name="PageSizeOption" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="10" selected="@(Model.PageSizeOption == "10")">10 per page</option>
+            <option value="15" selected="@(Model.PageSizeOption == "15")">15 per page</option>
+            <option value="50" selected="@(Model.PageSizeOption == "50")">50 per page</option>
+            <option value="all" selected="@(string.Equals(Model.PageSizeOption, "all", StringComparison.OrdinalIgnoreCase))">All records</option>
         </select>
     </div>
 
@@ -139,8 +261,10 @@
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
                 <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; text-align: left; color: #475569; font-size: 11.5px; text-transform: uppercase;">
+                    <th style="padding: 12px 14px; width: 44px; text-align: center;">#</th>
                     <th style="padding: 12px 14px;">Tenant</th>
                     <th style="padding: 12px 14px;">Channel</th>
+                    <th style="padding: 12px 14px;">Provider</th>
                     <th style="padding: 12px 14px;">Recipient</th>
                     <th style="padding: 12px 14px;">Subject / Error</th>
                     <th style="padding: 12px 14px;">Status</th>
@@ -153,15 +277,20 @@
                 @if (!Model.Messages.Any())
                 {
                     <tr>
-                        <td colspan="8" style="padding: 40px 16px; text-align: center; color: #64748b;">
+                        <td colspan="10" style="padding: 40px 16px; text-align: center; color: #64748b;">
                             No message pool records match your current filters.
                         </td>
                     </tr>
                 }
                 else
                 {
-                    @foreach (var item in Model.Messages)
+                    for (int idx = 0; idx < Model.Messages.Count; idx++)
                     {
+                        var item = Model.Messages[idx];
+                        var serialNumber = Model.PageSize == int.MaxValue
+                            ? (idx + 1)
+                            : ((Model.PageIndex - 1) * Model.PageSize) + (idx + 1);
+
                         var (bg, fg) = item.Status switch
                         {
                             BcpQueueStatus.Queued => ("#eff6ff", "#0050e5"),
@@ -171,12 +300,19 @@
                             _ => ("#f1f5f9", "#475569")
                         };
 
+                        var (provBg, provFg) = item.Provider switch
+                        {
+                            BcpMessageProvider.Mailcow => ("#eff6ff", "#0050e5"),
+                            _ => ("#f1f5f9", "#64748b")
+                        };
+
                         var modalPayload = JsonSerializer.Serialize(new
                         {
                             item.Id,
                             item.TenantKey,
                             item.OrganizationName,
                             Channel = item.Channel.ToString(),
+                            Provider = item.Provider.ToString(),
                             Status = item.Status.ToString(),
                             item.RecipientAddress,
                             item.RecipientName,
@@ -193,12 +329,18 @@
                         });
 
                         <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #64748b; font-size: 12px;">
+                                @serialNumber
+                            </td>
                             <td style="padding: 12px 14px; white-space: nowrap;">
                                 <div style="font-weight: 700; color: #0f172a;">@item.OrganizationName</div>
                                 <div style="font-size: 11.5px; color: #64748b;">@item.TenantKey</div>
                             </td>
                             <td style="padding: 12px 14px; white-space: nowrap;">
                                 <span style="padding: 3px 9px; border-radius: 999px; background: #f1f5f9; color: #334155; font-size: 11.5px; font-weight: 700;">@item.Channel</span>
+                            </td>
+                            <td style="padding: 12px 14px; white-space: nowrap;">
+                                <span style="padding: 3px 9px; border-radius: 999px; background: @provBg; color: @provFg; font-size: 11.5px; font-weight: 700;">@item.Provider</span>
                             </td>
                             <td style="padding: 12px 14px;">
                                 <div style="font-weight: 600; color: #0f172a;">@item.RecipientAddress</div>
@@ -249,33 +391,59 @@
         </table>
     </div>
 
-    @if (Model.TotalPages > 1)
-    {
-        <div style="padding: 12px 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569;">
-            <span>Page @Model.PageIndex of @Model.TotalPages (@Model.TotalFilteredItems items)</span>
-            <div style="display: flex; gap: 6px;">
-                @if (Model.PageIndex > 1)
-                {
-                    <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageIndex="@(Model.PageIndex - 1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600;">Previous</a>
-                }
-                @if (Model.PageIndex < Model.TotalPages)
-                {
-                    <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageIndex="@(Model.PageIndex + 1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600;">Next</a>
-                }
-            </div>
+    @* ── Pagination & Per Page Toolbar ── *@
+    <div style="padding: 14px 18px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #475569; background: #fafafa;">
+        <div>
+            Showing <strong>@Model.FirstItemIndex</strong> to <strong>@Model.LastItemIndex</strong> of <strong>@Model.TotalFilteredItems</strong> message records
         </div>
-    }
+
+        <div style="display: flex; align-items: center; gap: 14px;">
+            @if (Model.TotalPages > 1)
+            {
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    @if (Model.PageIndex > 1)
+                    {
+                        <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-ProviderFilter="@Model.ProviderFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageSizeOption="@Model.PageSizeOption" asp-route-PageIndex="1" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600; font-size: 12px; background: #ffffff;">First</a>
+                        <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-ProviderFilter="@Model.ProviderFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageSizeOption="@Model.PageSizeOption" asp-route-PageIndex="@(Model.PageIndex - 1)" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600; font-size: 12px; background: #ffffff;">Previous</a>
+                    }
+
+                    @{
+                        int startPage = Math.Max(1, Model.PageIndex - 2);
+                        int endPage = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                    }
+
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        if (p == Model.PageIndex)
+                        {
+                            <span style="padding: 5px 10px; background: #0050e5; color: #ffffff; border-radius: 6px; font-weight: 700; font-size: 12px;">@p</span>
+                        }
+                        else
+                        {
+                            <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-ProviderFilter="@Model.ProviderFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageSizeOption="@Model.PageSizeOption" asp-route-PageIndex="@p" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600; font-size: 12px; background: #ffffff;">@p</a>
+                        }
+                    }
+
+                    @if (Model.PageIndex < Model.TotalPages)
+                    {
+                        <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-ProviderFilter="@Model.ProviderFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageSizeOption="@Model.PageSizeOption" asp-route-PageIndex="@(Model.PageIndex + 1)" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600; font-size: 12px; background: #ffffff;">Next</a>
+                        <a asp-page="./Index" asp-route-TenantFilter="@Model.TenantFilter" asp-route-ChannelFilter="@Model.ChannelFilter" asp-route-ProviderFilter="@Model.ProviderFilter" asp-route-StatusFilter="@Model.StatusFilter" asp-route-Search="@Model.Search" asp-route-PageSizeOption="@Model.PageSizeOption" asp-route-PageIndex="@Model.TotalPages" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #0f172a; font-weight: 600; font-size: 12px; background: #ffffff;">Last</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
 @* ── Message Inspector Modal ── *@
 <div id="poolInspectorModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 760px; max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(15,23,42,0.2);">
+    <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 840px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(15,23,42,0.2);">
         <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h3 id="inspSubject" style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Message Details</h3>
                 <div id="inspMeta" style="font-size: 12px; color: #64748b; margin-top: 2px;"></div>
             </div>
-            <button type="button" onclick="closePoolInspector()" style="background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer;">Close</button>
+            <button type="button" onclick="closePoolInspector()" style="background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; color: #334155; font-size: 12.5px;">Close</button>
         </div>
         <div style="padding: 20px; overflow-y: auto; font-size: 13px;">
             <div id="inspErrorWrap" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
@@ -284,16 +452,41 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; background: #f8fafc; padding: 12px; border-radius: 8px;">
                 <div><strong>Recipient:</strong> <span id="inspRecipient"></span></div>
+                <div><strong>Provider:</strong> <span id="inspProvider" style="font-weight: 700; color: #0050e5;"></span></div>
                 <div><strong>Sender / Template:</strong> <span id="inspSender"></span></div>
                 <div><strong>Retries:</strong> <span id="inspRetries"></span></div>
                 <div><strong>Provider ID:</strong> <span id="inspProviderId"></span></div>
                 <div><strong>Created (UTC):</strong> <span id="inspCreated"></span></div>
                 <div><strong>Sent (UTC):</strong> <span id="inspSent"></span></div>
             </div>
+
+            @* ── Content Preview with UI & Raw Code Tabs ── *@
             <div style="margin-bottom: 14px;">
-                <strong>Content Preview:</strong>
-                <pre id="inspContent" style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; max-height: 240px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-top: 6px;"></pre>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: #0f172a;">Content Preview:</strong>
+                    <div style="display: inline-flex; background: #f1f5f9; padding: 3px; border-radius: 8px; font-size: 12px; gap: 2px;">
+                        <button type="button" id="tabBtnUi" onclick="switchInspectorContentTab('ui')"
+                                style="border: none; background: #ffffff; color: #0050e5; font-weight: 700; padding: 5px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.15s ease;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span> UI Preview
+                        </button>
+                        <button type="button" id="tabBtnRaw" onclick="switchInspectorContentTab('raw')"
+                                style="border: none; background: transparent; color: #64748b; font-weight: 600; padding: 5px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s ease;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">code</span> HTML / Raw
+                        </button>
+                    </div>
+                </div>
+
+                @* UI Rendered View (Sandboxed iframe) *@
+                <div id="inspUiPane" style="display: block;">
+                    <iframe id="inspContentIframe" sandbox="allow-same-origin" style="width: 100%; height: 340px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; display: block; box-sizing: border-box;"></iframe>
+                </div>
+
+                @* Raw / Code View *@
+                <div id="inspRawPane" style="display: none;">
+                    <pre id="inspContent" style="background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;"></pre>
+                </div>
             </div>
+
             <div id="inspJsonWrap" style="display: none;">
                 <strong>Metadata JSON:</strong>
                 <pre id="inspJson" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; padding: 10px; border-radius: 8px; max-height: 140px; overflow: auto; font-size: 12px; margin-top: 6px;"></pre>
@@ -302,18 +495,173 @@
     </div>
 </div>
 
+@* ── Clear Pool Modal ── *@
+<div id="clearPoolModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(15,23,42,0.2);">
+        <form method="post" asp-page-handler="ClearPool">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #dc2626; font-size: 22px;">delete_sweep</span>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Clear Message Pool</h3>
+                </div>
+                <button type="button" onclick="closeClearPoolModal()" style="background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; color: #334155; font-size: 12.5px;">Close</button>
+            </div>
+
+            <div style="padding: 20px; font-size: 13px;">
+                @* Explanation Alert *@
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 12.5px; line-height: 1.5;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #166534; flex-shrink: 0; margin-top: 2px;">info</span>
+                        <div>
+                            <strong>Does this delete user In-App notifications?</strong><br />
+                            <strong>No.</strong> By default, this only cleans outbox delivery records and audit logs (<code style="background: #dcfce7; padding: 1px 4px; border-radius: 4px;">BcpMessagePools</code>). The user's in-app notification bell drawer (<code style="background: #dcfce7; padding: 1px 4px; border-radius: 4px;">BcpNotifications</code>) remains completely intact.
+                        </div>
+                    </div>
+                </div>
+
+                @* Target Tenant Scope *@
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-weight: 700; color: #334155; margin-bottom: 6px;">Target Tenant Organization</label>
+                    <select name="targetTenant" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                        <option value="All" selected="@(string.IsNullOrWhiteSpace(Model.TenantFilter) || Model.TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase))">All Tenants (Platform-Wide)</option>
+                        @foreach (var t in Model.Tenants)
+                        {
+                            <option value="@t.TenantKey" selected="@(string.Equals(Model.TenantFilter, t.TenantKey, StringComparison.OrdinalIgnoreCase))">@t.OrganizationName (@t.TenantKey)</option>
+                        }
+                    </select>
+                </div>
+
+                @* What to clear *@
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-weight: 700; color: #334155; margin-bottom: 8px;">What would you like to clear?</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc;">
+                            <input type="radio" name="clearScope" value="sent_failed" checked />
+                            <div>
+                                <strong style="color: #0f172a;">Sent &amp; Failed Messages</strong> (Recommended)
+                                <div style="font-size: 11.5px; color: #64748b;">Cleans historical delivered items and permanent failures. Keeps pending <code style="color: #0050e5;">Queued</code> messages safe.</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="clearScope" value="sent" />
+                            <div>
+                                <strong style="color: #0f172a;">Sent Messages Only</strong>
+                                <div style="font-size: 11.5px; color: #64748b;">Deletes only successfully delivered messages. Leaves failures and queued messages intact.</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="clearScope" value="failed" />
+                            <div>
+                                <strong style="color: #0f172a;">Failed Messages Only</strong>
+                                <div style="font-size: 11.5px; color: #64748b;">Purges error/failed messages without touching delivered items.</div>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #fecaca; border-radius: 8px; cursor: pointer; background: #fff5f5;">
+                            <input type="radio" name="clearScope" value="all" />
+                            <div>
+                                <strong style="color: #dc2626;">Purge Entire Pool (Everything)</strong>
+                                <div style="font-size: 11.5px; color: #991b1b;">Wipes all pool records including currently Queued items.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                @* Optional in-app checkbox *@
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="includeInAppNotifications" value="true" style="margin-top: 3px;" />
+                        <div>
+                            <strong style="color: #0f172a;">Also delete user In-App notifications (<code style="font-size: 11px;">BcpNotifications</code>)</strong>
+                            <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Leave this unchecked to keep the user dashboard notification bell intact. Only check this if you specifically want to wipe user notification bells too.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="closeClearPoolModal()" style="padding: 8px 16px; background: #f1f5f9; color: #334155; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button type="submit" onclick="return confirm('Are you sure you want to clear the selected pool messages?');" style="padding: 8px 18px; background: #dc2626; color: #ffffff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span> Confirm &amp; Clear
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        function switchInspectorContentTab(tab) {
+            const uiPane = document.getElementById('inspUiPane');
+            const rawPane = document.getElementById('inspRawPane');
+            const btnUi = document.getElementById('tabBtnUi');
+            const btnRaw = document.getElementById('tabBtnRaw');
+
+            if (tab === 'ui') {
+                if (uiPane) uiPane.style.display = 'block';
+                if (rawPane) rawPane.style.display = 'none';
+
+                if (btnUi) {
+                    btnUi.style.background = '#ffffff';
+                    btnUi.style.color = '#0050e5';
+                    btnUi.style.fontWeight = '700';
+                    btnUi.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                }
+                if (btnRaw) {
+                    btnRaw.style.background = 'transparent';
+                    btnRaw.style.color = '#64748b';
+                    btnRaw.style.fontWeight = '600';
+                    btnRaw.style.boxShadow = 'none';
+                }
+            } else {
+                if (uiPane) uiPane.style.display = 'none';
+                if (rawPane) rawPane.style.display = 'block';
+
+                if (btnRaw) {
+                    btnRaw.style.background = '#ffffff';
+                    btnRaw.style.color = '#0050e5';
+                    btnRaw.style.fontWeight = '700';
+                    btnRaw.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                }
+                if (btnUi) {
+                    btnUi.style.background = 'transparent';
+                    btnUi.style.color = '#64748b';
+                    btnUi.style.fontWeight = '600';
+                    btnUi.style.boxShadow = 'none';
+                }
+            }
+        }
+
         function openPoolInspector(data) {
             document.getElementById('inspSubject').textContent = data.Subject || '(No Subject)';
-            document.getElementById('inspMeta').textContent = `${data.OrganizationName} (${data.TenantKey}) • ${data.Channel} • ${data.Status}`;
+            document.getElementById('inspMeta').textContent = `${data.OrganizationName} (${data.TenantKey}) • ${data.Channel} • ${data.Provider} • ${data.Status}`;
             document.getElementById('inspRecipient').textContent = data.RecipientAddress + (data.RecipientName ? ` (${data.RecipientName})` : '');
+            document.getElementById('inspProvider').textContent = data.Provider || '—';
             document.getElementById('inspSender').textContent = data.SenderOrTemplateName || '—';
             document.getElementById('inspRetries').textContent = data.Retries;
             document.getElementById('inspProviderId').textContent = data.ProviderMessageId || '—';
             document.getElementById('inspCreated').textContent = data.CreatedAt;
             document.getElementById('inspSent').textContent = data.SentAt;
             document.getElementById('inspContent').textContent = data.Content || '';
+
+            // Render content inside sandboxed iframe for UI Preview
+            const iframe = document.getElementById('inspContentIframe');
+            if (iframe) {
+                const content = data.Content || '';
+                if (content && (content.includes('<html') || content.includes('<body') || content.includes('<table') || content.includes('<p') || content.includes('<div') || content.includes('<!DOCTYPE'))) {
+                    iframe.srcdoc = content;
+                } else if (content) {
+                    const safe = content
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    iframe.srcdoc = `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #1e293b; padding: 18px; margin: 0; line-height: 1.6; white-space: pre-wrap;">${safe}</body></html>`;
+                } else {
+                    iframe.srcdoc = `<!DOCTYPE html><html><body style="font-family: sans-serif; color: #94a3b8; padding: 24px; text-align: center; font-size: 13px;">(No message content)</body></html>`;
+                }
+            }
+
+            // Default to UI Preview whenever inspector opens
+            switchInspectorContentTab('ui');
 
             const errWrap = document.getElementById('inspErrorWrap');
             if (data.LastError) {
@@ -337,5 +685,92 @@
         function closePoolInspector() {
             document.getElementById('poolInspectorModal').style.display = 'none';
         }
+
+        function openClearPoolModal() {
+            document.getElementById('clearPoolModal').style.display = 'flex';
+        }
+
+        function closeClearPoolModal() {
+            document.getElementById('clearPoolModal').style.display = 'none';
+        }
+
+        // ── Searchable Tenant Dropdown Handlers ──
+        function toggleTenantDropdown(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const menu = document.getElementById('tenantDropdownMenu');
+            const chevron = document.getElementById('tenantDropdownChevron');
+            const trigger = document.getElementById('tenantDropdownTrigger');
+            if (!menu) return;
+
+            const isOpen = menu.style.display === 'block';
+            if (isOpen) {
+                closeTenantDropdown();
+            } else {
+                menu.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                if (trigger) trigger.setAttribute('aria-expanded', 'true');
+                const searchInput = document.getElementById('tenantSearchInput');
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterTenantOptions('');
+                    setTimeout(function() { searchInput.focus(); }, 60);
+                }
+            }
+        }
+
+        function closeTenantDropdown() {
+            const menu = document.getElementById('tenantDropdownMenu');
+            const chevron = document.getElementById('tenantDropdownChevron');
+            const trigger = document.getElementById('tenantDropdownTrigger');
+            if (menu) menu.style.display = 'none';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function filterTenantOptions(query) {
+            const q = (query || '').trim().toLowerCase();
+            const options = document.querySelectorAll('#tenantOptionsList .tenant-option');
+            let visibleCount = 0;
+            options.forEach(function(opt) {
+                const text = opt.getAttribute('data-search') || '';
+                if (!q || text.includes(q)) {
+                    opt.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+            const noMatch = document.getElementById('noTenantFound');
+            if (noMatch) {
+                noMatch.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function selectTenantOption(key, label) {
+            const input = document.getElementById('tenantFilterInput');
+            const labelEl = document.getElementById('tenantDropdownLabel');
+            if (input) input.value = key;
+            if (labelEl) labelEl.textContent = label;
+            closeTenantDropdown();
+            if (input && input.form) {
+                input.form.submit();
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('tenantDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                closeTenantDropdown();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTenantDropdown();
+            }
+        });
     </script>
 }

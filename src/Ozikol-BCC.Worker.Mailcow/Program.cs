@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Ozikol.MasterDomain.Security;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application;
-using Ozikol_BCC.EmailServices.Postmark;
 using Ozikol_BCC.Infrastructure;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.Services.Email;
@@ -21,7 +20,7 @@ namespace Ozikol_BCC.Worker;
 
 /// <summary>
 /// Entry point for the standalone Ozikol-BCC background Worker Service.
-/// Hosts multi-channel outbox dispatching (<see cref="MessagePoolDispatchWorker"/>)
+/// Hosts dedicated Mailcow email dispatching (<see cref="MailcowWorker"/>)
 /// and autonomous custom domain DNS health checks (<see cref="DomainDnsHealthMonitorWorker"/>).
 /// </summary>
 public static class Program
@@ -40,7 +39,7 @@ public static class Program
 
         builder.Services.AddWindowsService(options =>
         {
-            options.ServiceName = "Ozikol-BCC Worker";
+            options.ServiceName = "Ozikol-BCC Mailcow Worker";
         });
         builder.Services.AddSystemd();
 
@@ -52,7 +51,6 @@ public static class Program
             .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
         builder.Services.AddSingleton<IMailInfrastructureCredentialProvider, WorkerMailInfrastructureCredentialProvider>();
-        builder.Services.AddPostmarkEmailServices(builder.Configuration);
 
         var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"]
             ?? builder.Configuration.GetConnectionString("DefaultConnection")
@@ -70,8 +68,7 @@ public static class Program
         builder.Services.AddHttpClient();
         builder.Services.AddMemoryCache();
 
-        builder.Services.AddHostedService<MessagePoolDispatchWorker>();
-        builder.Services.AddHostedService<ShiftDepartureReminderWorker>();
+        builder.Services.AddHostedService<MailcowWorker>();
         builder.Services.AddHostedService<DomainDnsHealthMonitorWorker>();
 
         var host = builder.Build();

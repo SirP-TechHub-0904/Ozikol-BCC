@@ -375,7 +375,7 @@ import { TemplateSecurityScannerService } from '../../services/template-security
                   type="text"
                   [(ngModel)]="sampleContent.brandName"
                   class="form-control inspector-input"
-                  placeholder="e.g. Acme Global"
+                  placeholder="e.g. Your Organization Name"
                 />
               </div>
 
@@ -414,7 +414,7 @@ import { TemplateSecurityScannerService } from '../../services/template-security
                   type="text"
                   [(ngModel)]="sampleContent.copyright"
                   class="form-control inspector-input"
-                  placeholder="e.g. Acme Global Inc."
+                  placeholder="e.g. Your Organization Name"
                 />
               </div>
 

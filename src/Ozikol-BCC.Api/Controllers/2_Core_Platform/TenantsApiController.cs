@@ -134,7 +134,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Bind or update a custom domain for a tenant (e.g. "www.acmecorp.com").
+        /// Bind or update a custom domain for a tenant (e.g. "www.customdomain.com").
         /// Primary platform domain remains active as failover backup.
         /// </summary>
         [HttpPatch("{tenantKey}/custom-domain")]

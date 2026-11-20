@@ -168,7 +168,7 @@
                                 <div>
                                     <strong>Preview Simulation:</strong> <span id="previewSubjectText" style="color: #0f172a; font-weight: 600;"></span>
                                 </div>
-                                <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Sample: Acme Corporation</span>
+                                <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Sample: Your Organization Name</span>
                             </div>
                             <iframe id="previewIframe" style="width: 100%; min-height: 480px; border: none; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"></iframe>
                         </div>
@@ -223,7 +223,7 @@
             btnPreview.style.background = '#0050e5';
             btnPreview.style.color = '#ffffff';
 
-            var sampleName = 'Acme Corporation';
+            var sampleName = 'Your Organization Name';
             var rawSubject = (subjectInput ? subjectInput.value : '') || '';
             var simulatedSubject = rawSubject
                 .replace(/\{\{businessname\}\}/gi, sampleName)

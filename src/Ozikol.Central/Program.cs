@@ -15,7 +15,6 @@ using Ozikol.Central.Services.Legal;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.EmailServices.Postmark;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
@@ -63,14 +62,10 @@ builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>(
 builder.Services.AddMailcowSupport();
 builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Email.IMailInfrastructureCredentialProvider, Ozikol.Central.Services.MasterPlatformEmailInfrastructureCredentialProvider>();
 
-// Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
-builder.Services.AddPostmarkEmailServices(builder.Configuration);
-builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));
-
 // Register Dedicated Cloudinary Media Services
 Ozikol_BCC.CloudinaryServices.DependencyInjection.AddCloudinaryServices(builder.Services, builder.Configuration);
-builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol.Central.Services.MasterPlatformPostmarkPostConfigure>();
 builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudinarySettings>, Ozikol.Central.Services.MasterPlatformCloudinaryPostConfigure>();
+builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Sentry.AspNetCore.SentryAspNetCoreOptions>, Ozikol.Central.Services.MasterPlatformSentryPostConfigure>();
 
 // Configure Antiforgery Header to allow seamless AJAX submissions across Razor Pages
 builder.Services.AddAntiforgery(options =>
