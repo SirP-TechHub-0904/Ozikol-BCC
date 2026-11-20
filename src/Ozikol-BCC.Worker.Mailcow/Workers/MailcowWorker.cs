@@ -147,7 +147,7 @@ public sealed class MailcowWorker : BackgroundService
                 }
                 else
                 {
-                    MarkFailedAttempt(item, "Mailcow SMTP transmission returned unconfirmed delivery.");
+                    MarkFailedAttempt(item, "Mailcow SMTP transmission returned unconfirmed delivery. Please verify SMTP credentials in MasterPlatformSettings (/centralwks/platformsettings) or environment.");
                 }
             }
             catch (Exception ex)

@@ -291,6 +291,10 @@ import {
                   </a>
                 </div>
                 <div class="generated-link-actions">
+                  <button type="button" class="btn btn-primary" (click)="closeSuccessModal()">
+                    <span class="material-symbols-outlined">group</span>
+                    <span>View Staff Directory</span>
+                  </button>
                   <button type="button" class="btn btn-outline-primary" (click)="addAnotherStaff()">
                     <span class="material-symbols-outlined">person_add</span>
                     <span>Add Another Staff</span>
@@ -1036,10 +1040,11 @@ import {
           </div>
 
           <div class="enroll-modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeSuccessModal()">
-              <span>Done</span>
+            <button type="button" class="btn btn-primary" (click)="closeSuccessModal()">
+              <span class="material-symbols-outlined">group</span>
+              <span>Done &amp; View Staff Directory</span>
             </button>
-            <button type="button" class="btn btn-primary" (click)="addAnotherStaff()">
+            <button type="button" class="btn btn-outline" (click)="addAnotherStaff()">
               <span class="material-symbols-outlined">person_add</span>
               <span>Add Another Staff</span>
             </button>

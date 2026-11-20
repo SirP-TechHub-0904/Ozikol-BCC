@@ -250,6 +250,10 @@ public sealed class SmtpEmailDispatcher : ISmtpEmailDispatcher
             }
 
             _logger.LogError("❌ [SmtpEmailDispatcher] Outbound delivery aborted: No SMTP credentials configured for {Host}:{Port}.", smtpHost, smtpPort);
+            if (strictDeliveryCheck)
+            {
+                throw new InvalidOperationException($"Outbound delivery aborted: No SMTP credentials configured for {smtpHost}:{smtpPort} in MasterPlatformSettings or environment.");
+            }
             return false;
         }
         catch (Exception ex)
