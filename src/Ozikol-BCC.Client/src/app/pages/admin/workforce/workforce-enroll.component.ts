@@ -67,6 +67,16 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                   <p class="card-subtitle">Enter basic contact details to send a single-use onboarding link.</p>
                 </div>
               </div>
+              <button
+                *ngIf="inviteModel.fullName || inviteModel.email || inviteModel.phoneNumber || generatedOnboardingUrl"
+                type="button"
+                class="btn-clear-form"
+                (click)="clearInviteForm()"
+                title="Clear all fields to enroll another staff member"
+              >
+                <span class="material-symbols-outlined">refresh</span>
+                <span>Clear Form</span>
+              </button>
             </div>
 
             <div class="card-body">
@@ -266,13 +276,19 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                 <div class="generated-link-row">
                   <input type="text" class="form-control" [value]="generatedOnboardingUrl" readonly />
                   <button type="button" class="btn btn-outline" (click)="copyGeneratedLink()">
-                    <span class="material-symbols-outlined">content_copy</span>
-                    <span>Copy</span>
+                    <span class="material-symbols-outlined">{{ copiedLink ? 'done' : 'content_copy' }}</span>
+                    <span>{{ copiedLink ? 'Copied' : 'Copy' }}</span>
                   </button>
                   <a [href]="generatedOnboardingUrl" target="_blank" class="btn btn-primary">
                     <span class="material-symbols-outlined">open_in_new</span>
                     <span>Open</span>
                   </a>
+                </div>
+                <div class="generated-link-actions">
+                  <button type="button" class="btn btn-outline-primary" (click)="addAnotherStaff()">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Add Another Staff</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -932,6 +948,84 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                            [embeddedMode]="true">
             <ng-container *ngTemplateOutlet="enrollPreviewForm"></ng-container>
           </app-auth-layout>
+        </div>
+      </div>
+
+      <!-- ============================================================= -->
+      <!-- SUCCESS MODAL POPUP: INVITATION DISPATCHED                    -->
+      <!-- ============================================================= -->
+      <div class="enroll-modal-backdrop" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+        <div class="enroll-modal-card" (click)="$event.stopPropagation()">
+          <div class="enroll-modal-header">
+            <div class="modal-icon-badge">
+              <span class="material-symbols-outlined text-green">check_circle</span>
+            </div>
+            <div class="modal-title-group">
+              <h3>One-Time Invitation Link Generated</h3>
+              <p>Onboarding link has been created for {{ lastInvitedStaff?.fullName || 'the member' }}.</p>
+            </div>
+            <button type="button" class="btn-modal-close" (click)="closeSuccessModal()" aria-label="Close modal">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="enroll-modal-body">
+            <!-- Staff Summary Card -->
+            <div class="staff-summary-card" *ngIf="lastInvitedStaff">
+              <div class="staff-avatar">
+                <span class="material-symbols-outlined">badge</span>
+              </div>
+              <div class="staff-summary-details">
+                <div class="staff-name">{{ lastInvitedStaff.fullName }}</div>
+                <div class="staff-meta-row">
+                  <span class="staff-meta-item">
+                    <span class="material-symbols-outlined">mail</span>
+                    <span>{{ lastInvitedStaff.email }}</span>
+                  </span>
+                  <span class="staff-meta-item" *ngIf="lastInvitedStaff.phoneNumber">
+                    <span class="material-symbols-outlined">call</span>
+                    <span>{{ lastInvitedStaff.phoneNumber }}</span>
+                  </span>
+                  <span class="staff-meta-badge" *ngIf="lastInvitedStaff.jobTitle">
+                    {{ lastInvitedStaff.jobTitle }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Single-Use Onboarding Link Box -->
+            <div class="modal-link-box">
+              <div class="link-box-header">
+                <span class="material-symbols-outlined text-blue">link</span>
+                <strong>Single-Use Registration Link</strong>
+              </div>
+              <div class="link-input-row">
+                <input type="text" class="form-control" [value]="generatedOnboardingUrl" readonly />
+                <button type="button" class="btn btn-outline" (click)="copyGeneratedLink()">
+                  <span class="material-symbols-outlined">{{ copiedLink ? 'done' : 'content_copy' }}</span>
+                  <span>{{ copiedLink ? 'Copied' : 'Copy' }}</span>
+                </button>
+                <a [href]="generatedOnboardingUrl" target="_blank" class="btn btn-primary">
+                  <span class="material-symbols-outlined">open_in_new</span>
+                  <span>Open</span>
+                </a>
+              </div>
+              <p class="link-expiry-hint">
+                <span class="material-symbols-outlined">info</span>
+                <span>This link works once. As soon as the invited member submits the registration form, it automatically invalidates.</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="enroll-modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeSuccessModal()">
+              <span>Done</span>
+            </button>
+            <button type="button" class="btn btn-primary" (click)="addAnotherStaff()">
+              <span class="material-symbols-outlined">person_add</span>
+              <span>Add Another Staff</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1738,6 +1832,277 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
         grid-template-columns: 1fr;
       }
     }
+
+    /* Clear Form Button */
+    .btn-clear-form {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-clear-form:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-clear-form .material-symbols-outlined {
+      font-size: 15px;
+    }
+
+    .btn-outline-primary {
+      background: #ffffff;
+      color: #0050e5;
+      border: 1px solid #0050e5;
+    }
+    .btn-outline-primary:hover {
+      background: #eff6ff;
+    }
+    .generated-link-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    /* Success Modal Styles */
+    .enroll-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 16px;
+      box-sizing: border-box;
+      animation: fadeIn 0.15s ease-out;
+    }
+    .enroll-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 32px -8px rgba(15, 23, 42, 0.18), 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: scaleIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .enroll-modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: #fafbfc;
+      position: relative;
+    }
+    .modal-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-icon-badge .material-symbols-outlined {
+      font-size: 26px;
+      color: #16a34a;
+    }
+    .modal-title-group {
+      flex: 1;
+      min-width: 0;
+      padding-right: 28px;
+    }
+    .modal-title-group h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 3px;
+    }
+    .modal-title-group p {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+    .btn-modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .btn-modal-close:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    .enroll-modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .staff-summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .staff-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .staff-summary-details {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .staff-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .staff-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .staff-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .staff-meta-item .material-symbols-outlined {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .staff-meta-badge {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .modal-link-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .link-box-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: #166534;
+    }
+    .link-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .link-input-row .form-control {
+      flex: 1;
+      min-width: 180px;
+      font-family: monospace;
+      font-size: 12.5px;
+      background: #ffffff;
+      padding: 8px 12px;
+    }
+    .link-expiry-hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #15803d;
+    }
+    .link-expiry-hint .material-symbols-outlined {
+      font-size: 15px;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .enroll-modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #f1f5f9;
+      background: #fafbfc;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .enroll-modal-header, .enroll-modal-body, .enroll-modal-footer {
+        padding: 16px;
+      }
+      .link-input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .link-input-row .form-control {
+        min-width: 100%;
+      }
+      .enroll-modal-footer {
+        flex-direction: column-reverse;
+      }
+      .enroll-modal-footer .btn {
+        width: 100%;
+      }
+    }
   `]
 })
 export class WorkforceEnrollComponent implements OnInit, OnDestroy {
@@ -1748,6 +2113,9 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   staffTypes: any[] = [];
   jobRoles: any[] = [];
   generatedOnboardingUrl = '';
+  showSuccessModal = false;
+  copiedLink = false;
+  lastInvitedStaff: any = null;
 
   showJobTitleInfo = false;
   showStaffTypeInfo = false;
@@ -2046,6 +2414,21 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
         this.generatedOnboardingUrl = relUrl && typeof window !== 'undefined'
           ? `${window.location.origin}${relUrl}`
           : relUrl;
+
+        // Snapshot invited member details for the confirmation modal
+        this.lastInvitedStaff = {
+          fullName: this.inviteModel.fullName,
+          email: this.inviteModel.email,
+          phoneNumber: this.inviteModel.phoneNumber,
+          jobTitle: this.inviteModel.jobTitle,
+          staffTypeName: this.inviteModel.staffTypeName || this.staffTypes.find(t => t.id === this.inviteModel.staffTypeId)?.name || '',
+          emailSent: !!res?.data?.emailSent
+        };
+
+        // Automatically trigger success modal and reset copy status
+        this.showSuccessModal = true;
+        this.copiedLink = false;
+
         if (res?.data?.emailSent) {
           this.toast.success(`Invitation email sent to ${this.inviteModel.email} and single-use link generated.`);
         } else {
@@ -2062,6 +2445,39 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   copyGeneratedLink(): void {
     if (!this.generatedOnboardingUrl) return;
     navigator.clipboard.writeText(this.generatedOnboardingUrl);
+    this.copiedLink = true;
+    setTimeout(() => {
+      this.copiedLink = false;
+    }, 2500);
     this.toast.success('One-time invitation link copied to clipboard.');
+  }
+
+  closeSuccessModal(): void {
+    this.showSuccessModal = false;
+  }
+
+  addAnotherStaff(): void {
+    this.showSuccessModal = false;
+    this.clearInviteForm();
+    this.toast.info('Form cleared. Ready to enter new staff member details.');
+  }
+
+  clearInviteForm(): void {
+    this.inviteModel = {
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      jobTitle: '',
+      staffTypeId: this.staffTypes.length > 0 ? this.staffTypes[0].id : '',
+      staffTypeName: this.staffTypes.length > 0 ? this.staffTypes[0].name : '',
+      defaultHourlyRate: 0,
+      contractedWeeklyHours: 0,
+      preferredWorkingTime: 'Any',
+      workingAvailability: 'Available',
+      welcomeNote: ''
+    };
+    this.generatedOnboardingUrl = '';
+    this.copiedLink = false;
+    this.syncInviteToPreview();
   }
 }
