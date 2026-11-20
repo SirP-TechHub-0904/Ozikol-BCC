@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.3.11527.330
@@ -40,6 +40,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozikol-BCC.Telemetry.Sentry", "src\Ozikol-BCC.Telemetry.Sentry\Ozikol-BCC.Telemetry.Sentry.csproj", "{E87C8978-428C-43EB-9F24-8DC5E0D39A4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozikol-BCC.Worker.Mailcow", "src\Ozikol-BCC.Worker.Mailcow\Ozikol-BCC.Worker.Mailcow.csproj", "{0C0A2EA3-7B23-4F33-B73F-6A963E585A9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ozikol-BCC.Worker.General", "src\Ozikol-BCC.Worker.General\Ozikol-BCC.Worker.General.csproj", "{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -267,6 +269,18 @@ Global
 		{0C0A2EA3-7B23-4F33-B73F-6A963E585A9C}.Release|x64.Build.0 = Release|Any CPU
 		{0C0A2EA3-7B23-4F33-B73F-6A963E585A9C}.Release|x86.ActiveCfg = Release|Any CPU
 		{0C0A2EA3-7B23-4F33-B73F-6A963E585A9C}.Release|x86.Build.0 = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|x64.Build.0 = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Debug|x86.Build.0 = Debug|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|x64.ActiveCfg = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|x64.Build.0 = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|x86.ActiveCfg = Release|Any CPU
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -290,6 +304,7 @@ Global
 		{99F4E250-4098-4D09-A255-9D03B8B53288} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 		{E87C8978-428C-43EB-9F24-8DC5E0D39A4F} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 		{0C0A2EA3-7B23-4F33-B73F-6A963E585A9C} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
+		{592D6BAF-F67A-48CF-A373-995DEDCE9FAE} = {6FFE1EE5-8C4D-4C1F-BE37-50134A97E8A2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A392E8F-3C35-419D-B17B-94DC9921BB90}

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Infrastructure.Services.Email;
 
-namespace Ozikol_BCC.Worker.Workers;
+namespace Ozikol_BCC.Worker.General.Workers;
 
 /// <summary>
 /// Autonomous 24/7 background worker that periodically inspects live public DNS health for all active

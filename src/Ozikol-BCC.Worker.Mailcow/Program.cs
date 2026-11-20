@@ -19,9 +19,8 @@ using Ozikol_BCC.Worker.Workers;
 namespace Ozikol_BCC.Worker;
 
 /// <summary>
-/// Entry point for the standalone Ozikol-BCC background Worker Service.
-/// Hosts dedicated Mailcow email dispatching (<see cref="MailcowWorker"/>)
-/// and autonomous custom domain DNS health checks (<see cref="DomainDnsHealthMonitorWorker"/>).
+/// Entry point for the standalone Ozikol-BCC Mailcow Email Worker Service.
+/// Exclusively dedicated to autonomous Mailcow SMTP transactional and marketing outbox dispatching (<see cref="MailcowWorker"/>).
 /// </summary>
 public static class Program
 {
@@ -68,8 +67,8 @@ public static class Program
         builder.Services.AddHttpClient();
         builder.Services.AddMemoryCache();
 
+        // 100% Dedicated Mailcow SMTP Outbox Email Dispatcher
         builder.Services.AddHostedService<MailcowWorker>();
-        builder.Services.AddHostedService<DomainDnsHealthMonitorWorker>();
 
         var host = builder.Build();
         await host.RunAsync();
