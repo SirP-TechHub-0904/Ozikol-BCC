@@ -1758,21 +1758,41 @@ export interface SuiteInfoDetail {
         </div>
       </header>
 
-      <!-- Push Notification Opt-In Slide-Down Popup -->
-      <div class="push-optin-popup animate-fade" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'">
-        <div class="push-popup-body">
-          <div class="push-popup-icon-wrap">
-            <span class="material-symbols-outlined">notifications_active</span>
+      <!-- Push Notification Opt-In Modal Popup (Triggers after 12s of login if permission is default) -->
+      <div class="push-optin-backdrop" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'" (click)="dismissPushBanner()">
+        <div class="push-optin-card" (click)="$event.stopPropagation()">
+          <div class="poc-header">
+            <div class="poc-icon-wrap">
+              <span class="material-symbols-outlined">notifications_active</span>
+            </div>
+            <button type="button" class="poc-close-btn" (click)="dismissPushBanner()" aria-label="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
           </div>
-          <div class="push-popup-info">
-            <div class="push-popup-title">Enable Web Push Notifications</div>
-            <div class="push-popup-desc">Stay instantly updated with open shift offers, mandatory rota alerts, and schedule approvals.</div>
+          <div class="poc-body">
+            <div class="poc-badge">Real-Time Platform Alerts</div>
+            <h3>Enable Web Push Notifications</h3>
+            <p>
+              Stay instantly updated with open shift offers, mandatory rota alerts, schedule approvals, and urgent duty broadcasts on this device &mdash; even when your browser is in the background.
+            </p>
+            <div class="poc-features">
+              <div class="poc-feat-item">
+                <span class="material-symbols-outlined text-primary">calendar_clock</span>
+                <span>Immediate shift offers &amp; rota schedule updates</span>
+              </div>
+              <div class="poc-feat-item">
+                <span class="material-symbols-outlined text-primary">verified_user</span>
+                <span>Shift claim decisions &amp; compliance alerts</span>
+              </div>
+            </div>
           </div>
-          <div class="push-popup-btns">
-            <button type="button" class="push-btn-dismiss" (click)="dismissPushBanner()">Later</button>
-            <button type="button" class="push-btn-allow" (click)="acceptPushBanner()">
-              <span class="material-symbols-outlined" style="font-size: 15px;">notifications</span>
-              <span>Turn On</span>
+          <div class="poc-footer">
+            <button type="button" class="poc-btn-later" (click)="dismissPushBanner()">
+              Maybe Later
+            </button>
+            <button type="button" class="poc-btn-enable" (click)="acceptPushBanner()">
+              <span class="material-symbols-outlined">notifications_active</span>
+              <span>Enable Notifications</span>
             </button>
           </div>
         </div>
@@ -2726,86 +2746,136 @@ export interface SuiteInfoDetail {
       font-size: 15px;
     }
 
-    /* Push Notification Opt-In Slide-Down Popup */
-    .push-optin-popup {
+    /* Push Notification Opt-In Modal Popup (12s Trigger) */
+    .push-optin-backdrop {
       position: fixed;
-      top: 68px;
-      right: 20px;
-      z-index: 10000;
-      background: var(--md-sys-color-surface, #ffffff);
-      border: 1px solid #bfdbfe;
-      box-shadow: 0 12px 32px rgba(0, 80, 229, 0.15), 0 4px 12px rgba(0,0,0,0.06);
-      border-radius: 14px;
-      padding: 14px 18px;
-      max-width: 440px;
-      width: calc(100vw - 40px);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .push-popup-body {
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(3px);
+      z-index: 10500;
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.25s ease-out;
     }
-    .push-popup-icon-wrap {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .push-optin-card {
+      background: #ffffff;
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      box-shadow: 0 20px 45px -10px rgba(0, 80, 229, 0.25), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+      max-width: 460px;
+      width: 100%;
+      overflow: hidden;
+      animation: slideUpScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .poc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 22px 0 22px;
+    }
+    .poc-icon-wrap {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
       background: #eff6ff;
+      border: 1px solid #bfdbfe;
       color: #0050e5;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.12);
     }
-    .push-popup-icon-wrap span { font-size: 22px; }
-    .push-popup-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .push-popup-title {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: var(--md-sys-color-on-surface, #0f172a);
-    }
-    .push-popup-desc {
-      font-size: 11.5px;
-      color: #64748b;
-      line-height: 1.4;
-    }
-    .push-popup-btns {
+    .poc-icon-wrap .material-symbols-outlined { font-size: 26px; }
+    .poc-close-btn {
+      background: none;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
+      justify-content: center;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
-    .push-btn-dismiss {
-      background: none;
-      border: 1px solid var(--md-sys-color-outline, #cbd5e1);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 11.5px;
+    .poc-close-btn:hover { background: #f1f5f9; color: #334155; }
+    .poc-close-btn .material-symbols-outlined { font-size: 20px; }
+    .poc-body { padding: 16px 22px; display: flex; flex-direction: column; gap: 8px; }
+    .poc-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 999px;
+      width: fit-content;
+      letter-spacing: 0.03em;
+    }
+    .poc-body h3 { margin: 4px 0 0 0; font-size: 18px; font-weight: 800; color: #0f172a; }
+    .poc-body p { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }
+    .poc-features {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .poc-feat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #334155;
       font-weight: 600;
-      color: #64748b;
+    }
+    .poc-feat-item .material-symbols-outlined { font-size: 18px; color: #0050e5; }
+    .poc-footer {
+      padding: 14px 22px 20px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .poc-btn-later {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
       cursor: pointer;
     }
-    .push-btn-dismiss:hover { background: #f1f5f9; color: #334155; }
-    .push-btn-allow {
-      background: #0050e5;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 11.5px;
+    .poc-btn-later:hover { background: #f8fafc; border-color: #94a3b8; }
+    .poc-btn-enable {
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 10px;
+      font-size: 13px;
       font-weight: 700;
+      background: #0050e5;
       color: #ffffff;
+      border: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+      transition: background 0.15s ease;
     }
-    .push-btn-allow:hover { background: #003db3; }
+    .poc-btn-enable:hover { background: #003bb5; }
+    .poc-btn-enable .material-symbols-outlined { font-size: 18px; }
 
     /* Central Feature Expiration Banner (Strictly Admin Console) */
     .central-feature-expiration-banner {
@@ -4456,19 +4526,22 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   /// <summary>
-  /// Displays the interactive push notification opt-in popup banner if push notifications are in default state.
+  /// Displays the interactive push notification opt-in popup modal after 12 seconds of session load.
+  /// Direct user click on "Enable Notifications" provides the trusted user gesture required by modern browsers.
   /// </summary>
   private schedulePushNotificationSoftPrompt(): void {
     if (typeof window === 'undefined') return;
-    const dismissedSession = sessionStorage.getItem('push_prompt_dismissed');
-    if (dismissedSession) return;
 
+    // If notifications are already active or granted, no prompt is needed
+    if (this.pushNotificationStatus === 'granted') return;
+
+    // Trigger the opt-in popup exactly 12 seconds after login as requested
     setTimeout(() => {
       if (this.pushNotificationStatus === 'default') {
         this.showPushBannerPrompt = true;
         this.cdr.markForCheck();
       }
-    }, 3000);
+    }, 12000);
   }
 
   public toggleHelpDrawer(): void {
