@@ -256,24 +256,6 @@ export class UserCreateComponent implements OnInit {
   };
   titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
 
-  // International Phone Cleaner State
-  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
-  phoneCountryCode: string = '+234';
-  phoneNationalNumber: string = '';
-
-  onPhoneInputChanged(): void {
-    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
-    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
-      this.phoneNationalNumber = cleaned.nationalNumber;
-    }
-    this.model.phoneNumber = cleaned.canonicalE164;
-  }
-
-  get selectedCountryPlaceholder(): string {
-    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
-    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
-  }
-
   model: any = {
     title: '',
     firstName: '',

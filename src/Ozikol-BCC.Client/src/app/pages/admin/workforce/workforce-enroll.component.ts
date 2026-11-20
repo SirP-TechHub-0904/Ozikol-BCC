@@ -2195,6 +2195,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   private syncTimer?: any;
   isSubmitting = false;
   currencySymbol = '₦';
+  currencyCode = 'NGN';
   staffTypes: any[] = [];
   jobRoles: any[] = [];
   generatedOnboardingUrl = '';
@@ -2289,6 +2290,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
           this.currencySymbol = res.data.currencySymbol;
         }
         if (res?.data?.currencyCode) {
+          this.currencyCode = res.data.currencyCode;
           this.phoneCountryCode = resolveDefaultCountryCode(res.data.currencyCode);
         }
       },
