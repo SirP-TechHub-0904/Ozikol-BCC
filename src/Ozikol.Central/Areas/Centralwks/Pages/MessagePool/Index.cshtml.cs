@@ -248,7 +248,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         }
 
         /// <summary>
-        /// Re-queues all Failed messages across the selected tenant (or all active tenants).
+        /// Re-queues all Failed and stuck Processing messages across the selected tenant (or all active tenants).
         /// </summary>
         public async Task<IActionResult> OnPostRetryAllFailedAsync(string? tenantKey)
         {
@@ -263,13 +263,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 try
                 {
                     using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
-                    var failed = await db.BcpMessagePools
-                        .Where(m => m.Status == BcpQueueStatus.Failed)
+                    var failedOrStuck = await db.BcpMessagePools
+                        .Where(m => m.Status == BcpQueueStatus.Failed || m.Status == BcpQueueStatus.Processing)
                         .ToListAsync();
 
-                    if (failed.Count == 0) continue;
+                    if (failedOrStuck.Count == 0) continue;
 
-                    foreach (var item in failed)
+                    foreach (var item in failedOrStuck)
                     {
                         item.Status = BcpQueueStatus.Queued;
                         item.Retries = 0;
@@ -277,17 +277,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                     }
 
                     await db.SaveChangesAsync();
-                    totalRequeued += failed.Count;
+                    totalRequeued += failedOrStuck.Count;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to re-queue failed messages for tenant '{TenantKey}'.", tenant.TenantKey);
+                    _logger.LogWarning(ex, "Failed to re-queue failed or stuck messages for tenant '{TenantKey}'.", tenant.TenantKey);
                 }
             }
 
             StatusMessage = totalRequeued > 0
-                ? $"Re-queued {totalRequeued} failed message(s) for Worker delivery."
-                : "No failed messages found to re-queue.";
+                ? $"Re-queued {totalRequeued} message(s) for Worker delivery."
+                : "No failed or stuck processing messages found to re-queue.";
 
             return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
         }

@@ -32,8 +32,10 @@ public static class DependencyInjection
                               ?? configuration["EmailSettings:ApiKey"];
 
             var envSenderEmail = configuration["POSTMARK_SENDER_EMAIL"]
+                              ?? configuration["POSTMARK_DEFAULT_FROM"]
                               ?? configuration["Postmark:SenderEmail"]
-                              ?? configuration["EmailSettings:FromEmail"];
+                              ?? configuration["EmailSettings:FromEmail"]
+                              ?? "notifications@ozikol.cloud";
 
             var envAdminEmail = configuration["POSTMARK_ADMIN_EMAIL"]
                              ?? configuration["Postmark:AdminEmail"]

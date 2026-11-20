@@ -1,4 +1,4 @@
-﻿using Ozikol_BCC.Application.Dtos;
+using Ozikol_BCC.Application.Dtos;
 using Ozikol_BCC.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,14 +13,13 @@ namespace Ozikol_BCC.Application.Repository.NotifyRegister
 {
     public class SmsSendService : ISmsSendService
     {
-
-        private readonly UserManager<Profile> _userManager;
+        private readonly UserManager<Profile>? _userManager;
         private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
-        public SmsSendService(UserManager<Profile> userManager, Microsoft.Extensions.Configuration.IConfiguration config)
+        public SmsSendService(Microsoft.Extensions.Configuration.IConfiguration config, UserManager<Profile>? userManager = null)
         {
-            _userManager = userManager;
             _config = config;
+            _userManager = userManager;
         }
         public async Task<bool> SendSmsWithResult(string contact, string message)
         {
