@@ -454,6 +454,12 @@ export const routes: Routes = [
       { path: 'workspace/security', redirectTo: 'users/workspace/security', pathMatch: 'full' },
       { path: 'workspace/profile', redirectTo: 'users/workspace/profile', pathMatch: 'full' },
       { path: 'workspace/account', redirectTo: 'users/workspace/account', pathMatch: 'full' },
+      // Legacy Notification & Deep Link aliases
+      { path: 'dashboard/cms/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
+      { path: 'dashboard/cms', redirectTo: 'content/console/forms', pathMatch: 'full' },
+      { path: 'workforce/my-shifts', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'dashboard/commerce/orders', redirectTo: 'products/console/orders', pathMatch: 'full' },
+      { path: 'dashboard/committees', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
       { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
       { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
 

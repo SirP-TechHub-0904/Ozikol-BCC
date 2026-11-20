@@ -793,7 +793,7 @@ namespace Ozikol_BCC.Api.Controllers
                 TargetType = NotificationDispatchTarget.BroadcastAll,
                 Title = $"New Form Submission: {formTitle}",
                 Message = $"A visitor submitted '{formTitle}' ({fieldCount} field(s)).",
-                ActionUrl = "/dashboard/cms/forms",
+                ActionUrl = "/content/console/forms",
                 Module = "WebsiteCMS",
                 Icon = "dynamic_form",
                 Category = BcpMessageCategory.Communication,
