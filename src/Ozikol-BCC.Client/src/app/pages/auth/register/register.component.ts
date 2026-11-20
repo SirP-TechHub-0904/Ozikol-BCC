@@ -9,6 +9,13 @@ import { environment } from '../../../../environments/environment';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber,
+  splitPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 /**
  * Interface representing dynamic registration form field schema from backend.
@@ -453,17 +460,31 @@ interface WizardStep {
 
                     <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                       <label for="s_phoneNumber" class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                      <div class="input-wrapper">
-                        <span class="material-symbols-outlined input-icon">phone</span>
+                      <div class="phone-input-combo">
+                        <select
+                          class="phone-country-select"
+                          [(ngModel)]="phoneCountryCode"
+                          (ngModelChange)="onPhoneInputChanged()"
+                          name="s_phone_cc"
+                          aria-label="Country Calling Code"
+                        >
+                          <option *ngFor="let c of supportedCountries" [value]="c.code">
+                            {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                          </option>
+                        </select>
                         <input
                           id="s_phoneNumber"
-                          type="text"
-                          [(ngModel)]="model.phoneNumber"
+                          type="tel"
+                          [(ngModel)]="phoneNationalNumber"
+                          (ngModelChange)="onPhoneInputChanged()"
                           name="phoneNumber"
-                          placeholder="e.g. +0 (000) 000-0000"
-                          class="form-input"
+                          [placeholder]="selectedCountryPlaceholder"
+                          class="form-input phone-national-control"
                         />
                       </div>
+                      <span class="field-hint">
+                        Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                      </span>
                     </div>
                   </div>
 
@@ -795,10 +816,30 @@ interface WizardStep {
 
                       <div *ngIf="coreKey === 'phone'" class="form-group">
                         <label class="form-label">{{ getCoreLabel('phone', 'Phone Number') }}</label>
-                        <div class="input-wrapper">
-                          <span class="material-symbols-outlined input-icon">phone</span>
-                          <input type="text" [(ngModel)]="model.phoneNumber" name="sec_phone" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
+                        <div class="phone-input-combo">
+                          <select
+                            class="phone-country-select"
+                            [(ngModel)]="phoneCountryCode"
+                            (ngModelChange)="onPhoneInputChanged()"
+                            name="sec_phone_cc"
+                            aria-label="Country Calling Code"
+                          >
+                            <option *ngFor="let c of supportedCountries" [value]="c.code">
+                              {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                            </option>
+                          </select>
+                          <input
+                            type="tel"
+                            [(ngModel)]="phoneNationalNumber"
+                            (ngModelChange)="onPhoneInputChanged()"
+                            name="sec_phone"
+                            [placeholder]="selectedCountryPlaceholder"
+                            class="form-input phone-national-control"
+                          />
                         </div>
+                        <span class="field-hint">
+                          Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                        </span>
                       </div>
 
                       <div *ngIf="coreKey === 'organizationType'" class="form-group">
@@ -1015,7 +1056,30 @@ interface WizardStep {
                       </div>
                       <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                         <label class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                        <input type="text" [(ngModel)]="model.phoneNumber" name="st_ph" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
+                        <div class="phone-input-combo">
+                          <select
+                            class="phone-country-select"
+                            [(ngModel)]="phoneCountryCode"
+                            (ngModelChange)="onPhoneInputChanged()"
+                            name="st_ph_cc"
+                            aria-label="Country Calling Code"
+                          >
+                            <option *ngFor="let c of supportedCountries" [value]="c.code">
+                              {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                            </option>
+                          </select>
+                          <input
+                            type="tel"
+                            [(ngModel)]="phoneNationalNumber"
+                            (ngModelChange)="onPhoneInputChanged()"
+                            name="st_ph"
+                            [placeholder]="selectedCountryPlaceholder"
+                            class="form-input phone-national-control"
+                          />
+                        </div>
+                        <span class="field-hint">
+                          Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                        </span>
                       </div>
                     </div>
                     <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
@@ -1273,7 +1337,30 @@ interface WizardStep {
                     </div>
                     <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                       <label class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                      <input type="text" [(ngModel)]="model.phoneNumber" name="pg_ph" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
+                      <div class="phone-input-combo">
+                        <select
+                          class="phone-country-select"
+                          [(ngModel)]="phoneCountryCode"
+                          (ngModelChange)="onPhoneInputChanged()"
+                          name="pg_ph_cc"
+                          aria-label="Country Calling Code"
+                        >
+                          <option *ngFor="let c of supportedCountries" [value]="c.code">
+                            {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                          </option>
+                        </select>
+                        <input
+                          type="tel"
+                          [(ngModel)]="phoneNationalNumber"
+                          (ngModelChange)="onPhoneInputChanged()"
+                          name="pg_ph"
+                          [placeholder]="selectedCountryPlaceholder"
+                          class="form-input phone-national-control"
+                        />
+                      </div>
+                      <span class="field-hint">
+                        Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                      </span>
                     </div>
                     <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                       <label class="form-label">Member Category / Tier</label>
@@ -1821,6 +1908,44 @@ interface WizardStep {
     .form-input:focus, .form-select:focus, .custom-textarea:focus {
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-input-combo {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .phone-country-select {
+      flex: 0 0 120px;
+      max-width: 130px;
+      height: 44px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-right: none;
+      border-radius: 10px 0 0 10px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+    .phone-country-select:focus {
+      border-color: #0050e5;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-national-control {
+      flex: 1 1 auto;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+    .field-hint {
+      display: block;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
     }
     .help-text {
       display: block;
@@ -2593,6 +2718,24 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   currentStep: number = 1;
 
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
+
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.model.phoneNumber = cleaned.canonicalE164;
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
+
   /**
    * Dynamic custom attributes dictionary (fieldKey -> value).
    */
@@ -2771,7 +2914,11 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
         this.invitationPrefilled = true;
       }
       if (params['phone'] || params['phoneNumber']) {
-        this.model.phoneNumber = decodeParam(params['phone'] || params['phoneNumber']);
+        const rawPhone = decodeParam(params['phone'] || params['phoneNumber']);
+        this.model.phoneNumber = rawPhone;
+        const split = splitPhoneNumber(rawPhone);
+        this.phoneCountryCode = split.countryCode;
+        this.phoneNationalNumber = split.nationalNumber;
         this.invitationPrefilled = true;
       }
       if (params['categoryId']) {
@@ -2803,7 +2950,12 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
         if (data.email && !this.model.email) this.model.email = data.email;
         if (data.firstName && !this.model.firstName) this.model.firstName = data.firstName;
         if (data.lastName && !this.model.lastName) this.model.lastName = data.lastName;
-        if (data.phoneNumber && !this.model.phoneNumber) this.model.phoneNumber = data.phoneNumber;
+        if (data.phoneNumber && !this.model.phoneNumber) {
+          this.model.phoneNumber = data.phoneNumber;
+          const split = splitPhoneNumber(data.phoneNumber);
+          this.phoneCountryCode = split.countryCode;
+          this.phoneNationalNumber = split.nationalNumber;
+        }
         if (data.bcpUserCategoryId && !this.model.bcpUserCategoryId) {
           this.model.bcpUserCategoryId = data.bcpUserCategoryId;
           this.filterVisibleDynamicFields();
@@ -3552,6 +3704,11 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
           this.model.lastName = draft.model.lastName || this.model.lastName;
           this.model.email = draft.model.email || this.model.email;
           this.model.phoneNumber = draft.model.phoneNumber || this.model.phoneNumber;
+          if (this.model.phoneNumber) {
+            const split = splitPhoneNumber(this.model.phoneNumber);
+            this.phoneCountryCode = split.countryCode;
+            this.phoneNationalNumber = split.nationalNumber;
+          }
           this.model.organizationType = draft.model.organizationType || this.model.organizationType;
           if (draft.model.bcpUserCategoryId !== undefined) {
             this.model.bcpUserCategoryId = draft.model.bcpUserCategoryId;

@@ -7,6 +7,12 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 @Component({
   selector: 'app-user-create',
@@ -76,7 +82,30 @@ import { TranslationService } from '../../../core/services/translation.service';
 
               <div class="form-group">
                 <label>{{ 'user_create.field_phone' | translate:'Phone Number' }}</label>
-                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" [placeholder]="'user_create.field_phone_ph' | translate:'e.g. +0 (000) 000-0000'" />
+                <div class="phone-input-combo">
+                  <select
+                    class="phone-country-select"
+                    [(ngModel)]="phoneCountryCode"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    name="phoneCountryCode"
+                    aria-label="Country Calling Code"
+                  >
+                    <option *ngFor="let c of supportedCountries" [value]="c.code">
+                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                    </option>
+                  </select>
+                  <input
+                    type="tel"
+                    [(ngModel)]="phoneNationalNumber"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    name="phoneNationalNumber"
+                    [placeholder]="selectedCountryPlaceholder"
+                    class="phone-national-control"
+                  />
+                </div>
+                <span class="field-hint">
+                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                </span>
               </div>
             </div>
           </div>
@@ -215,6 +244,10 @@ import { TranslationService } from '../../../core/services/translation.service';
     .form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; }
     .form-group input, .form-group select { height: 42px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; transition: all 0.15s ease; }
     .form-group input:focus, .form-group select:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
+    .phone-input-combo { display: flex; align-items: stretch; width: 100%; }
+    .phone-country-select { flex: 0 0 115px; max-width: 125px; height: 42px; padding: 0 8px; border: 1px solid #cbd5e1; border-right: none; border-radius: 8px 0 0 8px; background: #f8fafc; font-size: 13px; font-weight: 600; color: #1e293b; cursor: pointer; outline: none; transition: all 0.15s ease; box-sizing: border-box; }
+    .phone-country-select:focus { border-color: #0050e5; background: #ffffff; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
+    .phone-national-control { flex: 1 1 auto; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
     .field-hint { font-size: 11px; color: #64748b; margin-top: 2px; }
 
     .btn-generate-link { background: none; border: none; color: #0050e5; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0; }
@@ -248,6 +281,24 @@ export class UserCreateComponent implements OnInit {
     enableSuffix: false
   };
   titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
+
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
+
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.model.phoneNumber = cleaned.canonicalE164;
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
 
   model: any = {
     title: '',

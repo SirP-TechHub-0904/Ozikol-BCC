@@ -7,6 +7,13 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber,
+  splitPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 /**
  * Public/Worker Self-Activation Landing Page Component.
@@ -97,7 +104,28 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
             <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
               <label class="rf-sim-label">Phone Number</label>
-              <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+              <div class="phone-input-combo">
+                <select
+                  class="phone-country-select"
+                  [(ngModel)]="phoneCountryCode"
+                  (ngModelChange)="onPhoneInputChanged()"
+                  aria-label="Country Calling Code"
+                >
+                  <option *ngFor="let c of supportedCountries" [value]="c.code">
+                    {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                  </option>
+                </select>
+                <input
+                  type="tel"
+                  class="rf-sim-input phone-national-control"
+                  [(ngModel)]="phoneNationalNumber"
+                  (ngModelChange)="onPhoneInputChanged()"
+                  [placeholder]="selectedCountryPlaceholder"
+                />
+              </div>
+              <div class="rf-field-hint">
+                Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+              </div>
             </div>
 
             <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
@@ -190,7 +218,28 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <div class="phone-input-combo">
+                  <select
+                    class="phone-country-select"
+                    [(ngModel)]="phoneCountryCode"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    aria-label="Country Calling Code"
+                  >
+                    <option *ngFor="let c of supportedCountries" [value]="c.code">
+                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                    </option>
+                  </select>
+                  <input
+                    type="tel"
+                    class="rf-sim-input phone-national-control"
+                    [(ngModel)]="phoneNationalNumber"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    [placeholder]="selectedCountryPlaceholder"
+                  />
+                </div>
+                <div class="rf-field-hint">
+                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                </div>
               </div>
 
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
@@ -305,7 +354,28 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
               <div class="rf-sim-stage-badge">STAGE 2: CATEGORY &amp; SECTOR</div>
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <div class="phone-input-combo">
+                  <select
+                    class="phone-country-select"
+                    [(ngModel)]="phoneCountryCode"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    aria-label="Country Calling Code"
+                  >
+                    <option *ngFor="let c of supportedCountries" [value]="c.code">
+                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                    </option>
+                  </select>
+                  <input
+                    type="tel"
+                    class="rf-sim-input phone-national-control"
+                    [(ngModel)]="phoneNationalNumber"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    [placeholder]="selectedCountryPlaceholder"
+                  />
+                </div>
+                <div class="rf-field-hint">
+                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                </div>
               </div>
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category Tier</label>
@@ -427,7 +497,28 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
             <div *ngIf="simStep === 2" class="rf-sim-stage">
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <div class="phone-input-combo">
+                  <select
+                    class="phone-country-select"
+                    [(ngModel)]="phoneCountryCode"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    aria-label="Country Calling Code"
+                  >
+                    <option *ngFor="let c of supportedCountries" [value]="c.code">
+                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                    </option>
+                  </select>
+                  <input
+                    type="tel"
+                    class="rf-sim-input phone-national-control"
+                    [(ngModel)]="phoneNationalNumber"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    [placeholder]="selectedCountryPlaceholder"
+                  />
+                </div>
+                <div class="rf-field-hint">
+                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                </div>
               </div>
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category</label>
@@ -593,6 +684,43 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       background: #f1f5f9;
       color: #64748b;
       cursor: not-allowed;
+    }
+    .phone-input-combo {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .phone-country-select {
+      flex: 0 0 115px;
+      max-width: 125px;
+      height: 40px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+    .phone-country-select:focus {
+      border-color: #0050e5;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-national-control {
+      flex: 1 1 auto;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+    .rf-field-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
     }
     .rf-sim-textarea { height: auto; padding: 8px 12px; resize: none; }
     .rf-sim-checkbox-label {
@@ -822,6 +950,11 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   categories: any[] = [];
   customAttributes: { [key: string]: any } = {};
 
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
+
   onboardingModel = {
     token: '',
     email: '',
@@ -942,6 +1075,19 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     });
   }
 
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.onboardingModel.phoneNumber = cleaned.canonicalE164;
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
+
   isCoreFieldPublished(key: string): boolean {
     if (!this.policy.unpublishedCoreFields) return true;
     return !this.policy.unpublishedCoreFields.includes(key);
@@ -958,6 +1104,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
             this.onboardingModel.email = res.data.email;
           }
           if (res.data.phoneNumber) {
+            const split = splitPhoneNumber(res.data.phoneNumber);
+            this.phoneCountryCode = split.countryCode;
+            this.phoneNationalNumber = split.nationalNumber;
             this.onboardingModel.phoneNumber = res.data.phoneNumber;
           }
           if (res.data.fullName) {

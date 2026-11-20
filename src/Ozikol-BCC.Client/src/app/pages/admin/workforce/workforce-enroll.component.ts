@@ -7,6 +7,13 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber,
+  splitPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 /**
  * Dedicated Page Component for Enrolling Workforce Staff Members.
@@ -106,14 +113,29 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
               <div class="form-group">
                 <label class="form-label">Phone Number <span class="required">*</span></label>
-                <input
-                  type="tel"
-                  class="form-control"
-                  [(ngModel)]="inviteModel.phoneNumber"
-                  (ngModelChange)="syncInviteToPreview()"
-                  placeholder="e.g. +0 (000) 000-0000"
-                  required
-                />
+                <div class="phone-input-combo">
+                  <select
+                    class="phone-country-select"
+                    [(ngModel)]="phoneCountryCode"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    aria-label="Country Calling Code"
+                  >
+                    <option *ngFor="let c of supportedCountries" [value]="c.code">
+                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
+                    </option>
+                  </select>
+                  <input
+                    type="tel"
+                    class="form-control phone-national-control"
+                    [(ngModel)]="phoneNationalNumber"
+                    (ngModelChange)="onPhoneInputChanged()"
+                    [placeholder]="selectedCountryPlaceholder"
+                    required
+                  />
+                </div>
+                <div class="field-hint">
+                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
+                </div>
               </div>
 
               <div class="form-row-dual">
@@ -1278,6 +1300,36 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
     }
+    .phone-input-combo {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .phone-country-select {
+      flex: 0 0 120px;
+      max-width: 130px;
+      padding: 10px 8px;
+      border: 1px solid #cbd5e1;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .phone-country-select:focus {
+      border-color: #0050e5;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-national-control {
+      flex: 1 1 auto;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
 
     /* =========================================================================
        EXACT 1-TO-1 STYLES FROM REGISTRATION FORM BUILDER (.rf-column-preview)
@@ -2165,6 +2217,11 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   showStaffTypeInfo = false;
   showFullScreenPreview = false;
 
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
+
   // Exact Registration Form Builder State (`policy`, `fields`, `categories`, `simModel`, `simStep`)
   policy = {
     allowPublicRegistration: true,
@@ -2241,6 +2298,9 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         if (res?.data?.currencySymbol) {
           this.currencySymbol = res.data.currencySymbol;
+        }
+        if (res?.data?.currencyCode) {
+          this.phoneCountryCode = resolveDefaultCountryCode(res.data.currencyCode);
         }
       },
       error: () => {}
@@ -2507,6 +2567,20 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     this.toast.info('Form cleared. Ready to enter new staff member details.');
   }
 
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.inviteModel.phoneNumber = cleaned.canonicalE164;
+    this.syncInviteToPreview();
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
+
   clearInviteForm(): void {
     this.inviteModel = {
       fullName: '',
@@ -2521,6 +2595,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       workingAvailability: 'Available',
       welcomeNote: ''
     };
+    this.phoneNationalNumber = '';
     this.generatedOnboardingUrl = '';
     this.copiedLink = false;
     this.syncInviteToPreview();
