@@ -489,8 +489,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     EventType = payload.EventType,
                     Status = queueStatus,
                     SentAt = sentTimestamp,
-                    ErrorMessage = pushError,
-                    ExternalMessageId = oneSignalExternalId,
+                    LastError = pushError,
+                    ProviderMessageId = oneSignalExternalId,
                     MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                     CreatedAt = DateTime.UtcNow
                 });
@@ -515,8 +515,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         EventType = payload.EventType,
                         Status = queueStatus,
                         SentAt = sentTimestamp,
-                        ErrorMessage = pushError,
-                        ExternalMessageId = oneSignalExternalId,
+                        LastError = pushError,
+                        ProviderMessageId = oneSignalExternalId,
                         MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                         CreatedAt = DateTime.UtcNow
                     });
