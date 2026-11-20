@@ -1756,6 +1756,26 @@ export interface SuiteInfoDetail {
         </div>
       </header>
 
+      <!-- Push Notification Opt-In Slide-Down Popup -->
+      <div class="push-optin-popup animate-fade" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'">
+        <div class="push-popup-body">
+          <div class="push-popup-icon-wrap">
+            <span class="material-symbols-outlined">notifications_active</span>
+          </div>
+          <div class="push-popup-info">
+            <div class="push-popup-title">Enable Web Push Notifications</div>
+            <div class="push-popup-desc">Stay instantly updated with open shift offers, mandatory rota alerts, and schedule approvals.</div>
+          </div>
+          <div class="push-popup-btns">
+            <button type="button" class="push-btn-dismiss" (click)="dismissPushBanner()">Later</button>
+            <button type="button" class="push-btn-allow" (click)="acceptPushBanner()">
+              <span class="material-symbols-outlined" style="font-size: 15px;">notifications</span>
+              <span>Turn On</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console, re-shows every 24h after dismissal) -->
       <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0 && !isExpirationBannerDismissed" style="align-items: flex-start;">
         <div class="banner-content" style="flex: 1; min-width: 0; align-items: flex-start;">
@@ -2703,6 +2723,87 @@ export interface SuiteInfoDetail {
     .mode-switch-icon {
       font-size: 15px;
     }
+
+    /* Push Notification Opt-In Slide-Down Popup */
+    .push-optin-popup {
+      position: fixed;
+      top: 68px;
+      right: 20px;
+      z-index: 10000;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid #bfdbfe;
+      box-shadow: 0 12px 32px rgba(0, 80, 229, 0.15), 0 4px 12px rgba(0,0,0,0.06);
+      border-radius: 14px;
+      padding: 14px 18px;
+      max-width: 440px;
+      width: calc(100vw - 40px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .push-popup-body {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .push-popup-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .push-popup-icon-wrap span { font-size: 22px; }
+    .push-popup-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .push-popup-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--md-sys-color-on-surface, #0f172a);
+    }
+    .push-popup-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .push-popup-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .push-btn-dismiss {
+      background: none;
+      border: 1px solid var(--md-sys-color-outline, #cbd5e1);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .push-btn-dismiss:hover { background: #f1f5f9; color: #334155; }
+    .push-btn-allow {
+      background: #0050e5;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .push-btn-allow:hover { background: #003db3; }
 
     /* Central Feature Expiration Banner (Strictly Admin Console) */
     .central-feature-expiration-banner {
@@ -4331,7 +4432,29 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   /// <summary>
-  /// Displays a soft, non-intrusive reminder toast after 12 seconds if web push notifications are not yet enabled.
+  /// Controls the visibility of the interactive slide-down push notification permission banner.
+  /// </summary>
+  public showPushBannerPrompt = false;
+
+  /// <summary>
+  /// Dismisses the push notification opt-in prompt for the current session.
+  /// </summary>
+  public dismissPushBanner(): void {
+    this.showPushBannerPrompt = false;
+    sessionStorage.setItem('push_prompt_dismissed', 'true');
+  }
+
+  /// <summary>
+  /// Accepts the push notification opt-in prompt and initiates browser permission request.
+  /// </summary>
+  public async acceptPushBanner(): Promise<void> {
+    this.showPushBannerPrompt = false;
+    sessionStorage.setItem('push_prompt_dismissed', 'true');
+    await this.triggerEnablePushNotifications();
+  }
+
+  /// <summary>
+  /// Displays the interactive push notification opt-in popup banner if push notifications are in default state.
   /// </summary>
   private schedulePushNotificationSoftPrompt(): void {
     if (typeof window === 'undefined') return;
@@ -4340,10 +4463,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       if (this.pushNotificationStatus === 'default') {
-        sessionStorage.setItem('push_prompt_dismissed', 'true');
-        this.toast.info('Enable shift & duty push alerts in your Profile menu to receive real-time updates.');
+        this.showPushBannerPrompt = true;
+        this.cdr.markForCheck();
       }
-    }, 12000);
+    }, 3000);
   }
 
   public toggleHelpDrawer(): void {
