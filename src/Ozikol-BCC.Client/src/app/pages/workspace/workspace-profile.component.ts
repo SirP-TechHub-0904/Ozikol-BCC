@@ -128,7 +128,7 @@ import { ApiService } from '../../core/services/api.service';
               <span>My CV & Biography</span>
               <span class="material-symbols-outlined arrow">chevron_right</span>
             </a>
-            <a routerLink="/identity/console/account" class="dossier-nav-btn">
+            <a routerLink="/users/workspace/security" class="dossier-nav-btn">
               <span class="material-symbols-outlined">security</span>
               <span>Manage Security & 2FA</span>
               <span class="material-symbols-outlined arrow">chevron_right</span>

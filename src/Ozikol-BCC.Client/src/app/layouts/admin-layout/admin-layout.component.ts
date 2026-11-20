@@ -1680,7 +1680,7 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">account_circle</span>
                 <span>{{ 'nav.my_profile' | translate }}</span>
               </a>
-              <a routerLink="/identity/console/account" (click)="closeDropdowns()" class="dropdown-item">
+              <a [routerLink]="isAdmin ? '/identity/console/account' : '/users/workspace/account'" (click)="closeDropdowns()" class="dropdown-item">
                 <span class="material-symbols-outlined">manage_accounts</span>
                 <span>{{ 'nav.manage_account' | translate }}</span>
               </a>
@@ -5771,7 +5771,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.closeDropdowns();
 
     if (notif.actionUrl) {
-      this.router.navigateByUrl(notif.actionUrl);
+      let targetUrl = notif.actionUrl;
+      // Rewrite console account routes to workspace account routes for members
+      if (!this.isAdmin && targetUrl.startsWith('/identity/console/account')) {
+        targetUrl = targetUrl.replace('/identity/console/account', '/users/workspace/account');
+      }
+      this.router.navigateByUrl(targetUrl);
     }
   }
 
