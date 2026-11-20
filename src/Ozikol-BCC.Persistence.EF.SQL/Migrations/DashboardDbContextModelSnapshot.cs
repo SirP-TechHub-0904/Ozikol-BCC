@@ -3037,6 +3037,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("int");
 
+                    b.Property<int>("Provider")
+                        .HasColumnType("int");
+
                     b.Property<string>("ProviderMessageId")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -3082,6 +3085,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("Provider");
+
                     b.HasIndex("RecipientAddress");
 
                     b.HasIndex("RelatedUserId");
@@ -3091,6 +3096,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("Channel", "Status");
+
+                    b.HasIndex("Channel", "Provider", "Status");
 
                     b.ToTable("BcpMessagePools");
                 });
