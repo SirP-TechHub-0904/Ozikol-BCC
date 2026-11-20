@@ -176,6 +176,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <table class="bcp-table">
             <thead>
               <tr>
+                <th style="width: 56px;">S/N</th>
                 <th>Staff Member</th>
                 <th>Job Title &amp; Type</th>
                 <th>Pay Rate &amp; Contract</th>
@@ -186,7 +187,12 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let m of filteredMembers">
+              <tr *ngFor="let m of paginatedMembers; let i = index">
+                <!-- 0. S/N -->
+                <td>
+                  <span class="sn-badge">{{ getSerialNumber(i) }}</span>
+                </td>
+
                 <!-- 1. Staff Member -->
                 <td>
                   <div class="member-cell">
@@ -259,6 +265,49 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Bottom Pagination & Page List Count Bar -->
+        <div class="pagination-footer" *ngIf="!isLoading && filteredMembers.length > 0">
+          <div class="page-summary">
+            Showing <strong>{{ startEntryIndex }}</strong> to <strong>{{ endEntryIndex }}</strong> of
+            <strong>{{ filteredMembers.length }}</strong> staff
+          </div>
+
+          <div class="page-size-controls">
+            <span class="size-label">Rows per page:</span>
+            <div class="size-pills">
+              <button
+                *ngFor="let opt of pageSizeOptions"
+                type="button"
+                class="size-pill"
+                [class.active]="pageSize === opt.value"
+                (click)="setPageSize(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="page-nav-controls" *ngIf="totalPages > 1">
+            <button type="button" class="nav-btn" [disabled]="currentPage <= 1" (click)="goToPage(currentPage - 1)">
+              <span class="material-symbols-outlined">chevron_left</span>
+              <span>Prev</span>
+            </button>
+            <button
+              *ngFor="let p of pageNumbers"
+              type="button"
+              class="page-num-btn"
+              [class.active]="p === currentPage"
+              (click)="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+            <button type="button" class="nav-btn" [disabled]="currentPage >= totalPages" (click)="goToPage(currentPage + 1)">
+              <span>Next</span>
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -386,11 +435,31 @@ import { ToastService } from '../../../core/services/toast.service';
     .modal-body { padding: 20px 22px; font-size: 13.5px; color: #334155; line-height: 1.55; }
     .modal-footer { padding: 14px 22px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
 
+    .sn-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; font-family: monospace; }
+
+    .pagination-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 1px solid #f1f5f9; background: #fafbfc; flex-wrap: wrap; }
+    .page-summary { font-size: 12.5px; color: #64748b; }
+    .page-summary strong { color: #0f172a; }
+    .page-size-controls { display: flex; align-items: center; gap: 10px; }
+    .size-label { font-size: 12px; font-weight: 600; color: #64748b; }
+    .size-pills { display: inline-flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 2px; gap: 2px; }
+    .size-pill { border: none; background: transparent; color: #475569; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+    .size-pill:hover { background: #f1f5f9; color: #0f172a; }
+    .size-pill.active { background: #0050e5; color: #ffffff; }
+    .page-nav-controls { display: flex; align-items: center; gap: 6px; }
+    .nav-btn, .page-num-btn { display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 32px; padding: 0 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+    .page-num-btn { min-width: 32px; padding: 0 6px; }
+    .nav-btn:hover:not(:disabled), .page-num-btn:hover { background: #eff6ff; color: #0050e5; border-color: #bfdbfe; }
+    .page-num-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; }
+    .nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .nav-btn .material-symbols-outlined { font-size: 16px; }
+
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
   `]
 })
 export class WorkforceStaffManagerComponent implements OnInit {
+  private readonly PAGE_SIZE_STORAGE_KEY = 'ozikol_staff_manager_page_size';
   members: any[] = [];
   isLoading = false;
   currencySymbol = '£';
@@ -401,14 +470,100 @@ export class WorkforceStaffManagerComponent implements OnInit {
   availabilityFilter = '';
   showInfoModal = false;
 
+  pageSizeOptions: { label: string; value: number | 'all' }[] = [
+    { label: '15', value: 15 },
+    { label: '25', value: 25 },
+    { label: '100', value: 100 },
+    { label: 'All', value: 'all' }
+  ];
+  pageSize: number | 'all' = 15;
+  currentPage = 1;
+
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
+    this.restoreSavedPageSize();
     this.loadCurrency();
     this.loadAll();
+  }
+
+  private restoreSavedPageSize(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem(this.PAGE_SIZE_STORAGE_KEY);
+        if (saved === 'all') {
+          this.pageSize = 'all';
+        } else if (saved) {
+          const parsed = parseInt(saved, 10);
+          if ([15, 25, 100].includes(parsed)) {
+            this.pageSize = parsed;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  setPageSize(size: number | 'all'): void {
+    this.pageSize = size;
+    this.currentPage = 1;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.PAGE_SIZE_STORAGE_KEY, String(size));
+      }
+    } catch {}
+  }
+
+  get effectivePageSize(): number {
+    const total = this.filteredMembers.length;
+    if (this.pageSize === 'all') return Math.max(1, total);
+    return this.pageSize;
+  }
+
+  get totalPages(): number {
+    if (this.pageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(this.filteredMembers.length / this.effectivePageSize));
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  get paginatedMembers(): any[] {
+    const list = this.filteredMembers;
+    if (this.pageSize === 'all') return list;
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.effectivePageSize;
+    return list.slice(start, start + this.effectivePageSize);
+  }
+
+  get startEntryIndex(): number {
+    if (this.filteredMembers.length === 0) return 0;
+    if (this.pageSize === 'all') return 1;
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    return (safePage - 1) * this.effectivePageSize + 1;
+  }
+
+  get endEntryIndex(): number {
+    if (this.filteredMembers.length === 0) return 0;
+    if (this.pageSize === 'all') return this.filteredMembers.length;
+    return Math.min(this.filteredMembers.length, this.startEntryIndex + this.effectivePageSize - 1);
+  }
+
+  getSerialNumber(indexOnPage: number): number {
+    return this.startEntryIndex + indexOnPage;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
   }
 
   loadCurrency(): void {
