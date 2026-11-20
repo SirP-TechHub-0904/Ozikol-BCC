@@ -628,12 +628,14 @@ import { ToastService } from '../../../core/services/toast.service';
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
       background: var(--md-sys-color-surface, #ffffff);
-      padding: 24px 28px;
-      border-radius: 16px;
+      padding: 18px 22px;
+      border-radius: 14px;
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
     .breadcrumb {
       display: flex;
@@ -700,21 +702,30 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .header-actions {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 13px;
+      justify-content: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+    }
+    .btn .material-symbols-outlined {
+      font-size: 16px;
     }
     .btn-primary {
       background: #0050e5;
