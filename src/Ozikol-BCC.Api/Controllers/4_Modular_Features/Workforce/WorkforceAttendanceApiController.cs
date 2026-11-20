@@ -76,15 +76,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (pref == null)
             {
-                return NotificationChannels.InApp | NotificationChannels.Email;
+                return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
             var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
             if (pref.EnableEmail) channels |= NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
         }
 
         // =========================================================================

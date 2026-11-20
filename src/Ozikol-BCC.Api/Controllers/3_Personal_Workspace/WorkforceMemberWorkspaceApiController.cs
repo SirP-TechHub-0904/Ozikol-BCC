@@ -80,15 +80,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (pref == null)
             {
-                return NotificationChannels.InApp | NotificationChannels.Email;
+                return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
             var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
             if (pref.EnableEmail) channels |= NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "person_check",
                         ActionUrl = "/workforce/console/schedule"
@@ -345,7 +345,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "verified",
                         ActionUrl = "/workforce/console/schedule"
@@ -555,7 +555,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officers {swap.RequestingUserName} and {CurrentUserName} have agreed on a shift swap for {swap.Shift?.ShiftCode ?? "duty"} and are awaiting administrative approval.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "supervisor_account",
                         ActionUrl = "/workforce/console/schedule"
@@ -669,7 +669,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} requested {leave.LeaveType} leave ({leave.StartDate:dd MMM yyyy} - {leave.EndDate:dd MMM yyyy}). Reason: {leave.Reason ?? "Not specified"}",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "event_busy",
                         ActionUrl = "/workforce/console/schedule"
@@ -1011,7 +1011,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with alert: {flagReason}",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Error,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
                         Module = "Workforce",
                         Icon = "warning",
                         ActionUrl = "/workforce/console/live"

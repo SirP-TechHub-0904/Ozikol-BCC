@@ -155,15 +155,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (pref == null)
             {
-                return NotificationChannels.InApp | NotificationChannels.Email;
+                return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
             var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
             if (pref.EnableEmail) channels |= NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
         }
 
         // =========================================================================
@@ -1274,6 +1274,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    var channels = await ResolveStaffNotificationChannelsAsync(request.AssignedUserId, ct);
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
@@ -1283,7 +1284,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"You have been assigned {generatedShifts.Count} scheduled working shifts between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.NewFeature,
-                        Channels = NotificationChannels.InApp,
+                        Channels = channels,
                         Module = "Workforce",
                         Icon = "calendar_month",
                         ActionUrl = "/workforce/my-shifts"
