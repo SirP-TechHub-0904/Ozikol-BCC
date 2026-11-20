@@ -1660,6 +1660,33 @@ namespace Ozikol_BCC.Api.Controllers
             var email = request.Email.Trim().ToLowerInvariant();
             var fullName = string.IsNullOrWhiteSpace(request.FullName) ? "Team Member" : request.FullName.Trim();
             var phoneNumber = request.PhoneNumber?.Trim();
+
+            // Validate that the email is not already enrolled
+            var existingUserByEmail = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
+            if (existingUserByEmail != null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"A staff member is already registered with this email address ({email})."));
+            }
+
+            // Validate that the phone number is not already registered to another staff member
+            if (!string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                var existingUserByPhone = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber, ct);
+                if (existingUserByPhone != null)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse($"A staff member is already registered with this phone number ({phoneNumber})."));
+                }
+            }
+
+            // Invalidate any previous unredeemed invitations for this email so there are no dangling duplicate links
+            var existingPendingInvites = await _db.Invitations
+                .Where(i => i.Email == email && !i.IsUsed)
+                .ToListAsync(ct);
+            foreach (var oldInvite in existingPendingInvites)
+            {
+                oldInvite.IsUsed = true;
+            }
+
             var expiresUtc = DateTime.UtcNow.AddDays(7);
             var token = Guid.NewGuid().ToString("N")[..14].ToLowerInvariant();
             var tokenKey = ComputeTokenStorageKey(token);
@@ -1786,6 +1813,16 @@ namespace Ozikol_BCC.Api.Controllers
             var lastName = request.LastName?.Trim() ?? string.Empty;
             var fullName = $"{firstName} {lastName}".Trim();
             if (string.IsNullOrWhiteSpace(fullName)) fullName = "Staff Member";
+
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                var phone = request.PhoneNumber.Trim();
+                var userWithPhone = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.PhoneNumber == phone, ct);
+                if (userWithPhone != null && !string.Equals(userWithPhone.Email, email, StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(ApiResponse<Guid>.FailureResponse($"A staff member is already registered with this phone number ({phone})."));
+                }
+            }
 
             Profile? user = null;
             if (_userManager != null)

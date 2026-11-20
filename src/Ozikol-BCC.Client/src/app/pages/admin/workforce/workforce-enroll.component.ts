@@ -970,25 +970,37 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
           </div>
 
           <div class="enroll-modal-body">
-            <!-- Staff Summary Card -->
+            <!-- Staff Summary Card: Distinct Identity Details -->
             <div class="staff-summary-card" *ngIf="lastInvitedStaff">
-              <div class="staff-avatar">
-                <span class="material-symbols-outlined">badge</span>
-              </div>
-              <div class="staff-summary-details">
-                <div class="staff-name">{{ lastInvitedStaff.fullName }}</div>
-                <div class="staff-meta-row">
-                  <span class="staff-meta-item">
-                    <span class="material-symbols-outlined">mail</span>
-                    <span>{{ lastInvitedStaff.email }}</span>
-                  </span>
-                  <span class="staff-meta-item" *ngIf="lastInvitedStaff.phoneNumber">
-                    <span class="material-symbols-outlined">call</span>
-                    <span>{{ lastInvitedStaff.phoneNumber }}</span>
-                  </span>
+              <div class="staff-summary-top">
+                <div class="staff-avatar">
+                  <span class="material-symbols-outlined">person</span>
+                </div>
+                <div class="staff-summary-headline">
+                  <div class="staff-name">{{ lastInvitedStaff.fullName }}</div>
                   <span class="staff-meta-badge" *ngIf="lastInvitedStaff.jobTitle">
+                    <span class="material-symbols-outlined">badge</span>
                     {{ lastInvitedStaff.jobTitle }}
                   </span>
+                </div>
+              </div>
+
+              <!-- Distinct Email & Phone Number Channels -->
+              <div class="staff-contact-details">
+                <div class="contact-pill email-pill">
+                  <div class="pill-label">
+                    <span class="material-symbols-outlined">mail</span>
+                    <span>Email Address</span>
+                  </div>
+                  <div class="pill-value" [title]="lastInvitedStaff.email">{{ lastInvitedStaff.email }}</div>
+                </div>
+
+                <div class="contact-pill phone-pill" *ngIf="lastInvitedStaff.phoneNumber">
+                  <div class="pill-label">
+                    <span class="material-symbols-outlined">call</span>
+                    <span>Phone Number</span>
+                  </div>
+                  <div class="pill-value">{{ lastInvitedStaff.phoneNumber }}</div>
                 </div>
               </div>
             </div>
@@ -1976,14 +1988,19 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .staff-summary-top {
       display: flex;
       align-items: center;
       gap: 12px;
     }
     .staff-avatar {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: #eff6ff;
       color: #0050e5;
@@ -1992,45 +2009,72 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       justify-content: center;
       flex-shrink: 0;
     }
-    .staff-summary-details {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .staff-name {
-      font-size: 14px;
-      font-weight: 700;
-      color: #0f172a;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .staff-meta-row {
+    .staff-summary-headline {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
-      font-size: 12px;
-      color: #64748b;
     }
-    .staff-meta-item {
+    .staff-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .staff-meta-badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-    }
-    .staff-meta-item .material-symbols-outlined {
-      font-size: 14px;
-      color: #94a3b8;
-    }
-    .staff-meta-badge {
       background: #eff6ff;
-      color: #1d4ed8;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
       font-size: 11px;
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 6px;
+    }
+    .staff-meta-badge .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .staff-contact-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .contact-pill {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .contact-pill .pill-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #64748b;
+    }
+    .contact-pill.email-pill .pill-label .material-symbols-outlined {
+      font-size: 14px;
+      color: #0050e5;
+    }
+    .contact-pill.phone-pill .pill-label .material-symbols-outlined {
+      font-size: 14px;
+      color: #059669;
+    }
+    .contact-pill .pill-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .modal-link-box {
       background: #f0fdf4;
@@ -2454,6 +2498,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
 
   closeSuccessModal(): void {
     this.showSuccessModal = false;
+    this.router.navigate(['/workforce/console/staff']);
   }
 
   addAnotherStaff(): void {
