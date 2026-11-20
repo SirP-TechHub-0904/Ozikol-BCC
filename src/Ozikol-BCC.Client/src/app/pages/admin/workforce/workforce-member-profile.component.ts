@@ -460,9 +460,28 @@ interface StaffMemberDetail {
                       </select>
                     </div>
                     <div class="time-col" *ngIf="item.mode === 'Specific'">
-                      <input type="time" class="form-control" [(ngModel)]="item.startTime" placeholder="08:00" />
+                      <input
+                        type="time"
+                        class="form-control"
+                        [style.border-color]="isDayTimingInvalid(item) ? '#dc2626' : ''"
+                        [(ngModel)]="item.startTime"
+                        placeholder="08:00"
+                      />
                       <span class="time-sep">to</span>
-                      <input type="time" class="form-control" [(ngModel)]="item.endTime" placeholder="17:00" />
+                      <input
+                        type="time"
+                        class="form-control"
+                        [style.border-color]="isDayTimingInvalid(item) ? '#dc2626' : ''"
+                        [(ngModel)]="item.endTime"
+                        placeholder="17:00"
+                      />
+                      <span
+                        *ngIf="isDayTimingInvalid(item)"
+                        style="color: #dc2626; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"
+                      >
+                        <span class="material-symbols-outlined" style="font-size: 14px;">error</span>
+                        End time must be after start time
+                      </span>
                     </div>
                     <div class="hint-col" *ngIf="item.mode !== 'Specific'">
                       <span class="badge-tag green" *ngIf="item.mode === 'Any'">Full availability</span>
@@ -2209,8 +2228,21 @@ export class WorkforceMemberProfileComponent implements OnInit {
     this.weeklySchedule = defaults;
   }
 
+  isDayTimingInvalid(item: { mode: string; startTime?: string; endTime?: string }): boolean {
+    if (item.mode !== 'Specific') return false;
+    if (!item.startTime || !item.endTime) return true;
+    return item.endTime <= item.startTime;
+  }
+
   saveMemberDetail(): void {
     if (!this.member) return;
+
+    const invalidDay = this.weeklySchedule.find(d => this.isDayTimingInvalid(d));
+    if (invalidDay) {
+      this.toast.error(`Invalid working hours on ${invalidDay.dayLabel}: End time must be later than Start time.`);
+      return;
+    }
+
     this.isSaving = true;
 
     const availMap: { [key: string]: any } = {};

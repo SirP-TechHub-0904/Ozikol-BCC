@@ -182,9 +182,10 @@ interface StaffMember {
                     <input
                       type="datetime-local"
                       class="form-control"
+                      [class.input-invalid]="!!shiftTimingError"
                       [(ngModel)]="singleStartDateTime"
                       name="singleStartDateTime"
-                      (change)="onDateTimeChange()"
+                      (ngModelChange)="onDateTimeChange()"
                       required
                     />
                     <span class="field-hint">e.g. 10/11/2026, 08:00 AM</span>
@@ -195,15 +196,25 @@ interface StaffMember {
                     <input
                       type="datetime-local"
                       class="form-control"
+                      [class.input-invalid]="!!shiftTimingError"
                       [(ngModel)]="singleEndDateTime"
                       name="singleEndDateTime"
-                      (change)="onDateTimeChange()"
+                      (ngModelChange)="onDateTimeChange()"
                       required
                     />
                     <span class="field-hint">e.g. 10/11/2026, 05:00 PM</span>
                   </div>
                 </div>
               </ng-container>
+
+              <!-- Real-Time Shift Timing Error Banner -->
+              <div class="timing-error-alert" *ngIf="shiftTimingError">
+                <span class="material-symbols-outlined">error</span>
+                <div>
+                  <strong>Invalid Duty Timing</strong>
+                  <p>{{ shiftTimingError }}</p>
+                </div>
+              </div>
 
               <!-- Recurring Schedule Mode -->
               <ng-container *ngIf="!isEditMode && schedulePattern === 'Recurring'">
@@ -354,9 +365,10 @@ interface StaffMember {
                     <input
                       type="time"
                       class="form-control"
+                      [class.input-invalid]="!!breakTimingError"
                       [(ngModel)]="breakStartTime"
                       name="breakStartTime"
-                      (change)="onBreakTimeChange()"
+                      (ngModelChange)="onBreakTimeChange()"
                     />
                   </div>
 
@@ -365,14 +377,24 @@ interface StaffMember {
                     <input
                       type="time"
                       class="form-control"
+                      [class.input-invalid]="!!breakTimingError"
                       [(ngModel)]="breakEndTime"
                       name="breakEndTime"
-                      (change)="onBreakTimeChange()"
+                      (ngModelChange)="onBreakTimeChange()"
                     />
                   </div>
                 </div>
 
-                <div class="break-summary-badge" *ngIf="hasBreak">
+                <!-- Real-Time Break Timing Error Banner -->
+                <div class="timing-error-alert" *ngIf="hasBreak && breakTimingError">
+                  <span class="material-symbols-outlined">error</span>
+                  <div>
+                    <strong>Invalid Break Time Frame</strong>
+                    <p>{{ breakTimingError }}</p>
+                  </div>
+                </div>
+
+                <div class="break-summary-badge" *ngIf="hasBreak && !breakTimingError">
                   <span class="material-symbols-outlined text-blue">coffee</span>
                   <div>
                     <strong>Break Time Frame: {{ formatTime12(breakStartTime) }} to {{ formatTime12(breakEndTime) }}</strong>
@@ -1836,6 +1858,44 @@ interface StaffMember {
       color: #b91c1c;
     }
 
+    .timing-error-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      background: #fef2f2;
+      border: 1px solid #ef4444;
+      border-radius: 0.5rem;
+      color: #991b1b;
+      font-size: 0.8125rem;
+    }
+
+    .timing-error-alert .material-symbols-outlined {
+      color: #dc2626;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .timing-error-alert strong {
+      display: block;
+      font-weight: 700;
+      color: #991b1b;
+    }
+
+    .timing-error-alert p {
+      margin: 0.2rem 0 0 0;
+      font-size: 0.78rem;
+      color: #b91c1c;
+      line-height: 1.4;
+    }
+
+    .form-control.input-invalid {
+      border-color: #dc2626 !important;
+      background-color: #fffafa !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+    }
+
     .text-warning {
       color: #ea580c;
     }
@@ -1924,6 +1984,10 @@ export class WorkforceShiftEditComponent implements OnInit {
   showSkippedList = false;
   overrideAvailabilityFilter = false;
   selectedStaffConflict = '';
+
+  // Real-Time Timing Validation Errors
+  shiftTimingError = '';
+  breakTimingError = '';
 
   // Live Calculated Metrics
   calculatedTotalDays = 1;
@@ -2083,19 +2147,134 @@ export class WorkforceShiftEditComponent implements OnInit {
       this.onBreakTimeChange();
     } else {
       this.breakMinutes = 0;
+      this.breakTimingError = '';
       this.recalculateScheduleMetrics();
     }
   }
 
   onBreakTimeChange(): void {
-    if (this.breakStartTime && this.breakEndTime) {
-      const startMins = this.toMinutes(this.breakStartTime);
-      const endMins = this.toMinutes(this.breakEndTime);
-      let diff = endMins - startMins;
-      if (diff < 0) diff += 24 * 60; // Crosses midnight
-      this.breakMinutes = Math.max(0, diff);
-    }
     this.recalculateScheduleMetrics();
+  }
+
+  /**
+   * Validates shift start/end times and break start/end times in real time.
+   * Populates `shiftTimingError` and `breakTimingError` whenever start time is behind/after close time
+   * or when the break window is backwards or outside the shift hours.
+   */
+  private validateTimings(): void {
+    this.shiftTimingError = '';
+    this.breakTimingError = '';
+
+    let shiftStartMins = 0;
+    let shiftEndMins = 0;
+    let grossShiftMinutes = 0;
+    let crossesMidnight = false;
+
+    if (this.isEditMode || this.schedulePattern === 'Single') {
+      if (!this.singleStartDateTime || !this.singleEndDateTime) {
+        this.shiftTimingError = 'Both Duty Start Date & Time and Duty End Date & Time are required.';
+        return;
+      }
+      const start = new Date(this.singleStartDateTime);
+      const end = new Date(this.singleEndDateTime);
+      const diffMs = end.getTime() - start.getTime();
+      grossShiftMinutes = Math.round(diffMs / (1000 * 60));
+
+      if (diffMs <= 0) {
+        this.shiftTimingError = 'Duty End Date & Time cannot be earlier than or equal to Duty Start Date & Time.';
+      } else if (grossShiftMinutes > 24 * 60) {
+        this.shiftTimingError = 'A single shift cannot exceed 24 hours. Use Recurring Schedule for multi-day assignments.';
+      }
+
+      shiftStartMins = start.getHours() * 60 + start.getMinutes();
+      shiftEndMins = end.getHours() * 60 + end.getMinutes();
+      crossesMidnight = diffMs > 0 && (end.getDate() !== start.getDate() || shiftEndMins <= shiftStartMins);
+    } else {
+      if (this.startDate && this.endDate && new Date(this.endDate) < new Date(this.startDate)) {
+        this.shiftTimingError = 'Effective End Date cannot be earlier than Effective Start Date.';
+      }
+      if (!this.dailyStartTime || !this.dailyEndTime) {
+        this.shiftTimingError = 'Both Daily Shift Start Time and End Time are required.';
+        return;
+      }
+      shiftStartMins = this.toMinutes(this.dailyStartTime);
+      shiftEndMins = this.toMinutes(this.dailyEndTime);
+      if (shiftStartMins === shiftEndMins) {
+        this.shiftTimingError = 'Daily Shift End Time cannot be identical to Daily Shift Start Time.';
+      }
+      crossesMidnight = shiftEndMins < shiftStartMins;
+      grossShiftMinutes = crossesMidnight
+        ? (24 * 60 - shiftStartMins) + shiftEndMins
+        : (shiftEndMins - shiftStartMins);
+    }
+
+    // Validate Break Time Frame
+    if (!this.hasBreak) {
+      this.breakMinutes = 0;
+      return;
+    }
+
+    if (!this.breakStartTime || !this.breakEndTime) {
+      this.breakMinutes = 0;
+      this.breakTimingError = 'Please specify both Break Start Time and Break End Time.';
+      return;
+    }
+
+    const bStart = this.toMinutes(this.breakStartTime);
+    const bEnd = this.toMinutes(this.breakEndTime);
+
+    if (bStart === bEnd) {
+      this.breakMinutes = 0;
+      this.breakTimingError = 'Break End Time cannot be the same as Break Start Time.';
+      return;
+    }
+
+    if (!crossesMidnight) {
+      // Standard same-day shift: break end MUST be strictly after break start
+      if (bEnd < bStart) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break End Time (${this.formatTime12(this.breakEndTime)}) cannot be earlier than Break Start Time (${this.formatTime12(this.breakStartTime)}).`;
+        return;
+      }
+
+      // Break must fall within [shiftStartMins, shiftEndMins]
+      if (!this.shiftTimingError && (bStart < shiftStartMins || bEnd > shiftEndMins)) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break time (${this.formatTime12(this.breakStartTime)} – ${this.formatTime12(this.breakEndTime)}) must fall within the scheduled duty hours (${this.formatTime12(this.minutesToHHMM(shiftStartMins))} – ${this.formatTime12(this.minutesToHHMM(shiftEndMins))}).`;
+        return;
+      }
+
+      this.breakMinutes = bEnd - bStart;
+    } else {
+      // Overnight shift crossing midnight: normalize times relative to shiftStartMins
+      const normBStart = bStart >= shiftStartMins ? (bStart - shiftStartMins) : (24 * 60 - shiftStartMins + bStart);
+      const normBEnd = bEnd >= shiftStartMins ? (bEnd - shiftStartMins) : (24 * 60 - shiftStartMins + bEnd);
+
+      if (normBEnd <= normBStart) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break End Time (${this.formatTime12(this.breakEndTime)}) cannot be earlier than Break Start Time (${this.formatTime12(this.breakStartTime)}).`;
+        return;
+      }
+
+      if (!this.shiftTimingError && (normBStart < 0 || normBEnd > grossShiftMinutes)) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break time (${this.formatTime12(this.breakStartTime)} – ${this.formatTime12(this.breakEndTime)}) must fall within the overnight shift window.`;
+        return;
+      }
+
+      this.breakMinutes = normBEnd - normBStart;
+    }
+
+    if (!this.shiftTimingError && grossShiftMinutes > 0 && this.breakMinutes >= grossShiftMinutes) {
+      this.breakTimingError = `Break duration (${this.breakMinutes} mins) cannot equal or exceed total shift duration (${grossShiftMinutes} mins).`;
+      this.breakMinutes = 0;
+    }
+  }
+
+  private minutesToHHMM(totalMins: number): string {
+    const h = Math.floor(totalMins / 60) % 24;
+    const m = totalMins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   formatTime12(timeStr: string): string {
@@ -2348,6 +2527,8 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   recalculateScheduleMetrics(): void {
+    this.validateTimings();
+
     if (this.isEditMode || this.schedulePattern === 'Single') {
       if (this.singleStartDateTime && this.singleEndDateTime) {
         const start = new Date(this.singleStartDateTime);
@@ -2359,7 +2540,7 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.calculatedTotalDays = 1;
         this.calculatedDailyHours = Math.round(netHours * 10) / 10;
         this.calculatedTotalHours = this.calculatedDailyHours;
-        this.isOvernightShift = end.getDate() !== start.getDate();
+        this.isOvernightShift = diffMs > 0 && end.getDate() !== start.getDate();
       }
       return;
     }
@@ -2401,6 +2582,18 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   saveSchedule(): void {
+    this.validateTimings();
+
+    if (this.shiftTimingError) {
+      this.toast.error(this.shiftTimingError);
+      return;
+    }
+
+    if (this.hasBreak && this.breakTimingError) {
+      this.toast.error(this.breakTimingError);
+      return;
+    }
+
     if (!this.selectedSiteId) {
       this.toast.error('Please select a Work Location.');
       return;
