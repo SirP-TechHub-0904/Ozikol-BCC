@@ -1527,8 +1527,8 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="topbar-right">
-          <!-- Multi-Workspace Switcher Dropdown Trigger -->
-          <div class="workspace-switcher-wrapper" *ngIf="enrolledWorkspaces.length > 0">
+          <!-- Multi-Workspace Switcher Dropdown Trigger (Admin Console only) -->
+          <div class="workspace-switcher-wrapper" *ngIf="isAdmin && enrolledWorkspaces.length > 0">
             <button type="button" class="topbar-action-btn workspace-badge-btn" (click)="toggleDropdown('workspaces', $event)" [title]="'Current: ' + (brandName || tenantKey) + ' (Switch Organization)'">
               <span class="material-symbols-outlined">domain</span>
               <span class="workspace-short-pill" *ngIf="enrolledWorkspaces.length > 1">{{ enrolledWorkspaces.length }}</span>
@@ -1722,8 +1722,8 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">sync_alt</span>
                 <span>{{ 'adm.queue_monitor' | translate:'Queue Monitor' }}</span>
               </a>
-              <!-- Multi-Workspace Quick Switch in Profile Dropdown -->
-              <ng-container *ngIf="otherActiveWorkspaces.length > 0">
+              <!-- Multi-Workspace Quick Switch in Profile Dropdown (Admin Console only) -->
+              <ng-container *ngIf="isAdmin && otherActiveWorkspaces.length > 0">
                 <div class="dropdown-divider"></div>
                 <div class="profile-dropdown-section-title" style="padding: 6px 16px 4px; font-size: 10px; font-weight: 700; color: var(--sidebar-header-color); letter-spacing: 0.5px; text-transform: uppercase;">
                   Switch Workspace
