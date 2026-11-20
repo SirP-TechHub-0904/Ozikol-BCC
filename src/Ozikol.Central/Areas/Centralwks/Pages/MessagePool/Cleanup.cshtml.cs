@@ -6,18 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Ozikol.Central.Services;
-using Ozikol.MasterDomain.Security;
+using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
-using Ozikol_BCC.Infrastructure.TenantSupport;
-using Ozikol_BCC.Persistence.EF.SQL;
-using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
 {
     /// <summary>
-    /// Administrative tool for inspecting message pool queue ages and safely purging
-    /// outbox delivery records across all tenants or individual tenants by date range or all-time.
+    /// Administrative tool for inspecting message pool queue volume and safely purging
+    /// outbox delivery records across all tenants or individual tenants in the central Master Catalog DB.
+    /// Operates entirely against MasterCatalogDbContext with ZERO tenant database connection dependencies.
     /// </summary>
     public class CleanupModel : PageModel
     {
@@ -70,102 +67,85 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         public string? StatusMessage { get; set; }
 
         /// <summary>
-        /// Queries and aggregates message pool volume and timestamps across tenants.
+        /// Queries and aggregates message pool volume and timestamps from MasterMessagePools.
         /// </summary>
         public async Task OnGetAsync()
         {
-            var activeTenants = await LoadActiveTenantsAsync();
-            Tenants = activeTenants
+            var rawTenants = await _masterDb.MasterTenantCatalogs
+                .AsNoTracking()
+                .Where(t => t.IsActive && !t.IsDeleted)
                 .Select(t => new TenantOption(t.TenantKey, t.OrganizationName))
                 .OrderBy(t => t.OrganizationName)
-                .ToList();
+                .ToListAsync();
 
-            var targets = string.IsNullOrWhiteSpace(TenantFilter) || TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase)
-                ? activeTenants
-                : activeTenants.Where(t => t.TenantKey.Equals(TenantFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            Tenants = rawTenants;
 
-            foreach (var tenant in targets)
+            try
             {
-                try
+                var query = _masterDb.MasterMessagePools.AsNoTracking().AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(TenantFilter) && !TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
                 {
-                    using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
+                    query = query.Where(m => m.TenantKey == TenantFilter);
+                }
 
-                    var count = await db.BcpMessagePools.CountAsync();
-                    if (count == 0)
+                var grouped = await query
+                    .GroupBy(m => new { m.TenantKey, m.OrganizationName })
+                    .Select(g => new
                     {
-                        TenantStats.Add(new TenantQueueStat
-                        {
-                            TenantKey = tenant.TenantKey,
-                            OrganizationName = tenant.OrganizationName,
-                            TotalCount = 0,
-                            QueuedCount = 0,
-                            SentCount = 0,
-                            FailedCount = 0,
-                            ProcessingCount = 0,
-                            OldestMessageDate = null,
-                            NewestMessageDate = null
-                        });
-                        continue;
-                    }
+                        g.Key.TenantKey,
+                        OrganizationName = g.Key.OrganizationName ?? g.Key.TenantKey,
+                        TotalCount = g.Count(),
+                        QueuedCount = g.Count(m => m.Status == "Queued"),
+                        ProcessingCount = g.Count(m => m.Status == "Processing"),
+                        SentCount = g.Count(m => m.Status == "Sent"),
+                        FailedCount = g.Count(m => m.Status == "Failed"),
+                        OldestDate = g.Min(m => (DateTime?)m.CreatedAt),
+                        NewestDate = g.Max(m => (DateTime?)m.CreatedAt)
+                    })
+                    .ToListAsync();
 
-                    var counts = await db.BcpMessagePools
-                        .AsNoTracking()
-                        .GroupBy(m => m.Status)
-                        .Select(g => new { Status = g.Key, Count = g.Count() })
-                        .ToListAsync();
-
-                    int queued = counts.FirstOrDefault(c => c.Status == BcpQueueStatus.Queued)?.Count ?? 0;
-                    int processing = counts.FirstOrDefault(c => c.Status == BcpQueueStatus.Processing)?.Count ?? 0;
-                    int sent = counts.FirstOrDefault(c => c.Status == BcpQueueStatus.Sent)?.Count ?? 0;
-                    int failed = counts.FirstOrDefault(c => c.Status == BcpQueueStatus.Failed)?.Count ?? 0;
-
-                    var oldest = await db.BcpMessagePools.AsNoTracking().MinAsync(m => (DateTime?)m.CreatedAt);
-                    var newest = await db.BcpMessagePools.AsNoTracking().MaxAsync(m => (DateTime?)m.CreatedAt);
-
+                foreach (var g in grouped)
+                {
                     TenantStats.Add(new TenantQueueStat
                     {
-                        TenantKey = tenant.TenantKey,
-                        OrganizationName = tenant.OrganizationName,
-                        TotalCount = count,
-                        QueuedCount = queued,
-                        ProcessingCount = processing,
-                        SentCount = sent,
-                        FailedCount = failed,
-                        OldestMessageDate = oldest,
-                        NewestMessageDate = newest
+                        TenantKey = g.TenantKey,
+                        OrganizationName = g.OrganizationName,
+                        TotalCount = g.TotalCount,
+                        QueuedCount = g.QueuedCount,
+                        ProcessingCount = g.ProcessingCount,
+                        SentCount = g.SentCount,
+                        FailedCount = g.FailedCount,
+                        OldestMessageDate = g.OldestDate,
+                        NewestMessageDate = g.NewestDate
                     });
 
-                    TotalMessageCount += count;
-                    TotalQueuedCount += queued;
-                    TotalProcessingCount += processing;
-                    TotalSentCount += sent;
-                    TotalFailedCount += failed;
+                    TotalMessageCount += g.TotalCount;
+                    TotalQueuedCount += g.QueuedCount;
+                    TotalProcessingCount += g.ProcessingCount;
+                    TotalSentCount += g.SentCount;
+                    TotalFailedCount += g.FailedCount;
 
-                    if (oldest.HasValue && (!PlatformEarliestDate.HasValue || oldest.Value < PlatformEarliestDate.Value))
+                    if (g.OldestDate.HasValue && (!PlatformEarliestDate.HasValue || g.OldestDate.Value < PlatformEarliestDate.Value))
                     {
-                        PlatformEarliestDate = oldest.Value;
+                        PlatformEarliestDate = g.OldestDate.Value;
                     }
 
-                    if (newest.HasValue && (!PlatformLatestDate.HasValue || newest.Value > PlatformLatestDate.Value))
+                    if (g.NewestDate.HasValue && (!PlatformLatestDate.HasValue || g.NewestDate.Value > PlatformLatestDate.Value))
                     {
-                        PlatformLatestDate = newest.Value;
+                        PlatformLatestDate = g.NewestDate.Value;
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to query queue metrics for tenant '{TenantKey}': {Msg}", tenant.TenantKey, ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Cleanup] Error querying MasterMessagePools: {Msg}", ex.Message);
             }
         }
 
         /// <summary>
-        /// Executes a safe deletion against <c>BcpMessagePools</c> either for All Time or across a specific Date Range.
+        /// Executes a safe deletion against <c>MasterMessagePools</c> either for All Time or across a specific Date Range.
         /// </summary>
-        /// <param name="targetTenantKey">Target tenant key or "All" for all active tenants.</param>
-        /// <param name="purgeMode">"all" for all-time purge or "range" for date range.</param>
-        /// <param name="fromDate">Start date for date range purge.</param>
-        /// <param name="toDate">End date for date range purge.</param>
-        /// <param name="clearScope">"sent_failed", "sent", "failed", or "all".</param>
         public async Task<IActionResult> OnPostClearAsync(
             string targetTenantKey,
             string purgeMode,
@@ -173,116 +153,69 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
             DateTime? toDate,
             string clearScope)
         {
-            var activeTenants = await LoadActiveTenantsAsync();
-            var targets = string.IsNullOrWhiteSpace(targetTenantKey) || targetTenantKey.Equals("All", StringComparison.OrdinalIgnoreCase)
-                ? activeTenants
-                : activeTenants.Where(t => t.TenantKey.Equals(targetTenantKey, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            int totalDeleted = 0;
-
-            foreach (var tenant in targets)
+            try
             {
-                try
+                var query = _masterDb.MasterMessagePools.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(targetTenantKey) && !targetTenantKey.Equals("All", StringComparison.OrdinalIgnoreCase))
                 {
-                    using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
-                    var query = db.BcpMessagePools.AsQueryable();
+                    query = query.Where(m => m.TenantKey == targetTenantKey);
+                }
 
-                    // Apply status scope
-                    switch (clearScope?.ToLowerInvariant())
+                switch (clearScope?.ToLowerInvariant())
+                {
+                    case "sent":
+                        query = query.Where(m => m.Status == "Sent");
+                        break;
+                    case "failed":
+                        query = query.Where(m => m.Status == "Failed");
+                        break;
+                    case "sent_failed":
+                        query = query.Where(m => m.Status == "Sent" || m.Status == "Failed");
+                        break;
+                    case "all":
+                        break;
+                    default:
+                        query = query.Where(m => m.Status == "Sent");
+                        break;
+                }
+
+                if (purgeMode == "range")
+                {
+                    if (fromDate.HasValue)
                     {
-                        case "sent":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent);
-                            break;
-                        case "failed":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Failed);
-                            break;
-                        case "sent_failed":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent || m.Status == BcpQueueStatus.Failed);
-                            break;
-                        case "all":
-                            // No status filter
-                            break;
-                        default:
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent || m.Status == BcpQueueStatus.Failed);
-                            break;
+                        var fromUtc = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
+                        query = query.Where(m => m.CreatedAt >= fromUtc);
                     }
-
-                    // Apply date range filter if in range mode
-                    if (string.Equals(purgeMode, "range", StringComparison.OrdinalIgnoreCase))
+                    if (toDate.HasValue)
                     {
-                        if (fromDate.HasValue)
-                        {
-                            var utcFrom = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
-                            query = query.Where(m => m.CreatedAt >= utcFrom);
-                        }
-
-                        if (toDate.HasValue)
-                        {
-                            var utcTo = DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-                            query = query.Where(m => m.CreatedAt <= utcTo);
-                        }
-                    }
-
-                    var recordsToDelete = await query.ToListAsync();
-                    if (recordsToDelete.Count > 0)
-                    {
-                        db.BcpMessagePools.RemoveRange(recordsToDelete);
-                        await db.SaveChangesAsync();
-                        totalDeleted += recordsToDelete.Count;
+                        var toUtc = DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+                        query = query.Where(m => m.CreatedAt <= toUtc);
                     }
                 }
-                catch (Exception ex)
+
+                var itemsToDelete = await query.ToListAsync();
+                if (itemsToDelete.Count > 0)
                 {
-                    _logger.LogError(ex, "Failed to purge message pool for tenant '{TenantKey}': {Msg}", tenant.TenantKey, ex.Message);
+                    _masterDb.MasterMessagePools.RemoveRange(itemsToDelete);
+                    await _masterDb.SaveChangesAsync();
                 }
+
+                StatusMessage = $"Successfully purged {itemsToDelete.Count} message(s) from the Central Master Pool.";
             }
-
-            var rangeText = string.Equals(purgeMode, "range", StringComparison.OrdinalIgnoreCase)
-                ? $" within range ({fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd})"
-                : " across all-time history";
-
-            StatusMessage = totalDeleted > 0
-                ? $"Successfully deleted {totalDeleted} message pool record(s){rangeText}."
-                : $"No matching messages found to delete{rangeText}.";
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to purge messages: {Msg}", ex.Message);
+                StatusMessage = $"Error purging messages: {ex.Message}";
+            }
 
             return RedirectToPage(new { TenantFilter });
         }
 
-        private async Task<List<(string TenantKey, string OrganizationName, string ConnectionString)>> LoadActiveTenantsAsync()
-        {
-            var masterConnStr = _masterDb.Database.GetConnectionString() ?? string.Empty;
-
-            var raw = await _masterDb.MasterTenantCatalogs
-                .AsNoTracking()
-                .Where(t => t.IsActive && !t.IsDeleted)
-                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString, t.DatabaseName })
-                .ToListAsync();
-
-            var list = new List<(string, string, string)>();
-            foreach (var item in raw)
-            {
-                var decrypted = OzikolDataCipher.DecryptIfNeeded(item.ConnectionString)?.Trim();
-                var harmonized = TenantConnectionHarmonizer.Harmonize(masterConnStr, decrypted, item.DatabaseName);
-                if (!string.IsNullOrWhiteSpace(harmonized))
-                {
-                    list.Add((item.TenantKey, item.OrganizationName, harmonized));
-                }
-            }
-
-            return list;
-        }
-
-        private static DashboardDbContext CreateTenantDbContext(string tenantKey, string decryptedConnectionString)
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-            optionsBuilder.UseSqlServer(decryptedConnectionString, sql => sql.CommandTimeout(20));
-            return new DashboardDbContext(optionsBuilder.Options, new StaticTenantProvider(tenantKey, decryptedConnectionString));
-        }
-
-        /// <summary>Tenant option representation.</summary>
+        /// <summary>Tenant dropdown option.</summary>
         public sealed record TenantOption(string TenantKey, string OrganizationName);
 
-        /// <summary>Tenant queue metrics and age summary.</summary>
+        /// <summary>Per-tenant queue statistics.</summary>
         public sealed class TenantQueueStat
         {
             public string TenantKey { get; set; } = string.Empty;
@@ -294,25 +227,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
             public int FailedCount { get; set; }
             public DateTime? OldestMessageDate { get; set; }
             public DateTime? NewestMessageDate { get; set; }
-        }
-
-        private sealed class StaticTenantProvider : ITenantProvider
-        {
-            public StaticTenantProvider(string tenantKey, string connectionString)
-            {
-                CurrentTenant = tenantKey;
-                ConnectionString = connectionString;
-            }
-
-            public string? CurrentTenant { get; }
-            public string ConnectionString { get; }
-            public IDisposable BeginScope(string tenant) => NoopDisposable.Instance;
-
-            private sealed class NoopDisposable : IDisposable
-            {
-                public static readonly NoopDisposable Instance = new();
-                public void Dispose() { }
-            }
         }
     }
 }

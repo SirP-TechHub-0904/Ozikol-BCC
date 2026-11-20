@@ -35,6 +35,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         private readonly ILogger<CentralNotificationDispatcher> _logger;
         private readonly IConfiguration _configuration;
         private readonly IOneSignalPushDispatcher? _oneSignalDispatcher;
+        private readonly ICentralMessageOutboxService? _outboxService;
 
         private static readonly string[] SpamBlacklistWords = new[]
         {
@@ -60,6 +61,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="templateService">Optional multi-channel message template service.</param>
         /// <param name="emailShellService">Optional tenant email shell wrapping service.</param>
         /// <param name="oneSignalDispatcher">Optional OneSignal REST API push notification dispatcher.</param>
+        /// <param name="outboxService">Optional central message outbox bridge service.</param>
         public CentralNotificationDispatcher(
             DashboardDbContext dbContext,
             IHubContext<NotificationHub> hubContext,
@@ -69,7 +71,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
             ISmsSendService? smsService = null,
             IMessageTemplateService? templateService = null,
             ITenantEmailShellService? emailShellService = null,
-            IOneSignalPushDispatcher? oneSignalDispatcher = null)
+            IOneSignalPushDispatcher? oneSignalDispatcher = null,
+            ICentralMessageOutboxService? outboxService = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
@@ -80,6 +83,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             _templateService = templateService;
             _emailShellService = emailShellService;
             _oneSignalDispatcher = oneSignalDispatcher;
+            _outboxService = outboxService;
         }
 
         /// <inheritdoc />
@@ -657,6 +661,14 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         ? siteConfig.SenderName.Trim()
                         : tenantBrand;
 
+                    var emailMetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        fromName,
+                        fromEmail = fromAddress,
+                        tenantKey = payload.TenantKey,
+                        module = payload.Module
+                    });
+
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
@@ -670,13 +682,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         ActionUrl = payload.ActionUrl,
                         Icon = payload.Icon,
                         SenderOrTemplateName = string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
-                        MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
-                        {
-                            fromName,
-                            fromEmail = fromAddress,
-                            tenantKey = payload.TenantKey,
-                            module = payload.Module
-                        }),
+                        MetadataJson = emailMetadataJson,
                         Category = payload.Category,
                         Severity = payload.Severity,
                         Priority = payload.Priority,
@@ -685,6 +691,29 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         SentAt = null,
                         CreatedAt = DateTime.UtcNow
                     });
+
+                    // Route to central Master Message Pool so autonomous workers dispatch with zero tenant DB dependency
+                    if (_outboxService != null)
+                    {
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: tenantBrand,
+                            channel: "Email",
+                            provider: "Mailcow",
+                            recipientAddress: email,
+                            recipientName: payload.RecipientName,
+                            subject: safeSubject,
+                            content: htmlBody,
+                            plainTextFallback: StripHtmlTags(!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message).Trim(),
+                            actionUrl: payload.ActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            senderOrTemplateName: string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
+                            metadataJson: emailMetadataJson,
+                            scheduledAt: null,
+                            cancellationToken: cancellationToken);
+                    }
 
                     result.DispatchedEmailCount++;
                 }

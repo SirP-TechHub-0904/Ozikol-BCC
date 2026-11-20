@@ -44,10 +44,8 @@ public static class Program
 
         builder.Services
             .AddApplicationExtensions(builder.Configuration)
-            .AddTenantSupport(builder.Configuration)
             .AddMailcowSupport()
-            .AddCustomDomainSupport()
-            .AddEntityFrameworkSqlServer<DashboardDbContext>();
+            .AddCustomDomainSupport();
 
         builder.Services.AddSingleton<IMailInfrastructureCredentialProvider, WorkerMailInfrastructureCredentialProvider>();
 

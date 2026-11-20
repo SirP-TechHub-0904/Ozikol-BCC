@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
+using Ozikol.MasterDomain.Models;
 using Ozikol.MasterDomain.Security;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -17,7 +18,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
 {
     /// <summary>
     /// Central Works cross-tenant monitor for inspecting, auditing, and retrying
-    /// <c>BcpMessagePools</c> outbox messages across all active tenant organizations.
+    /// central <c>MasterMessagePools</c> outbox messages across all active tenant organizations.
+    /// Operates entirely against the Master Catalog Database with ZERO tenant database connection dependencies.
     /// </summary>
     public class IndexModel : PageModel
     {
@@ -41,7 +43,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         /// <summary>Aggregated message pool items matching filters for the current page.</summary>
         public List<CrossTenantMessageRow> Messages { get; set; } = new();
 
-        /// <summary>Any tenant keys whose database could not be queried.</summary>
+        /// <summary>Any tenant keys whose database could not be queried during legacy sync.</summary>
         public List<string> UnreachableTenants { get; set; } = new();
 
         [BindProperty(SupportsGet = true)]
@@ -83,7 +85,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         public string? StatusMessage { get; set; }
 
         /// <summary>
-        /// Loads cross-tenant outbox metrics and paginated message pool records.
+        /// Loads cross-tenant outbox metrics and paginated message pool records from Central Master DB.
         /// </summary>
         public async Task OnGetAsync()
         {
@@ -93,28 +95,30 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 .OrderBy(t => t.OrganizationName)
                 .ToList();
 
-            var targetTenants = string.IsNullOrWhiteSpace(TenantFilter) || TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase)
-                ? activeTenants
-                : activeTenants.Where(t => t.TenantKey.Equals(TenantFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            var allRows = new List<CrossTenantMessageRow>();
-
-            BcpMessageChannel? parsedChannel = null;
-            if (!string.IsNullOrWhiteSpace(ChannelFilter) && Enum.TryParse<BcpMessageChannel>(ChannelFilter, true, out var ch))
+            // 1. One-time legacy outbox sync: If MasterMessagePools is empty, import historical records from tenant DBs
+            try
             {
-                parsedChannel = ch;
+                if (!await _masterDb.MasterMessagePools.AnyAsync())
+                {
+                    await SyncLegacyTenantMessagesAsync(activeTenants);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[MessagePool] MasterMessagePool table check or sync skipped: {Msg}", ex.Message);
             }
 
-            BcpMessageProvider? parsedProvider = null;
-            if (!string.IsNullOrWhiteSpace(ProviderFilter) && Enum.TryParse<BcpMessageProvider>(ProviderFilter, true, out var prov))
+            // 2. Aggregate KPI counts from central MasterMessagePools table
+            try
             {
-                parsedProvider = prov;
+                QueuedCount = await _masterDb.MasterMessagePools.CountAsync(m => m.Status == "Queued");
+                ProcessingCount = await _masterDb.MasterMessagePools.CountAsync(m => m.Status == "Processing");
+                SentCount = await _masterDb.MasterMessagePools.CountAsync(m => m.Status == "Sent");
+                FailedCount = await _masterDb.MasterMessagePools.CountAsync(m => m.Status == "Failed");
             }
-
-            BcpQueueStatus? parsedStatus = null;
-            if (!string.IsNullOrWhiteSpace(StatusFilter) && Enum.TryParse<BcpQueueStatus>(StatusFilter, true, out var st))
+            catch
             {
-                parsedStatus = st;
+                // Graceful fallback if migration not yet applied
             }
 
             PageSize = PageSizeOption?.ToLowerInvariant() switch
@@ -128,177 +132,158 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
 
             var searchTerm = Search?.Trim();
 
-            foreach (var tenant in targetTenants)
+            try
+            {
+                var query = _masterDb.MasterMessagePools.AsNoTracking().AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(TenantFilter) && !TenantFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(m => m.TenantKey == TenantFilter);
+                }
+
+                if (!string.IsNullOrWhiteSpace(ChannelFilter) && !ChannelFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(m => m.Channel == ChannelFilter);
+                }
+
+                if (!string.IsNullOrWhiteSpace(ProviderFilter) && !ProviderFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(m => m.Provider == ProviderFilter);
+                }
+
+                if (!string.IsNullOrWhiteSpace(StatusFilter) && !StatusFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(m => m.Status == StatusFilter);
+                }
+
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    query = query.Where(m =>
+                        m.RecipientAddress.Contains(searchTerm) ||
+                        (m.RecipientName != null && m.RecipientName.Contains(searchTerm)) ||
+                        (m.Subject != null && m.Subject.Contains(searchTerm)) ||
+                        (m.LastError != null && m.LastError.Contains(searchTerm)));
+                }
+
+                TotalFilteredItems = await query.CountAsync();
+                if (PageIndex < 1) PageIndex = 1;
+                if (PageIndex > TotalPages) PageIndex = TotalPages;
+
+                var items = await query
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Skip(PageSize == int.MaxValue ? 0 : (PageIndex - 1) * PageSize)
+                    .Take(PageSize == int.MaxValue ? 500 : PageSize)
+                    .ToListAsync();
+
+                Messages = items.Select(m => new CrossTenantMessageRow
+                {
+                    Id = m.Id,
+                    TenantKey = m.TenantKey,
+                    OrganizationName = m.OrganizationName ?? m.TenantKey,
+                    Channel = Enum.TryParse<BcpMessageChannel>(m.Channel, true, out var ch) ? ch : BcpMessageChannel.Email,
+                    Provider = Enum.TryParse<BcpMessageProvider>(m.Provider, true, out var prov) ? prov : BcpMessageProvider.Mailcow,
+                    RecipientAddress = m.RecipientAddress,
+                    RecipientName = m.RecipientName,
+                    Subject = m.Subject,
+                    Content = m.Content,
+                    PlainTextFallback = m.PlainTextFallback,
+                    ActionUrl = m.ActionUrl,
+                    SenderOrTemplateName = m.SenderOrTemplateName,
+                    MetadataJson = m.MetadataJson,
+                    Category = Enum.TryParse<BcpMessageCategory>(m.Category, true, out var cat) ? cat : BcpMessageCategory.General,
+                    Severity = Enum.TryParse<NotificationSeverity>(m.Severity, true, out var sev) ? sev : NotificationSeverity.Update,
+                    Priority = Enum.TryParse<BcpMessagePriority>(m.Priority, true, out var prio) ? prio : BcpMessagePriority.Normal,
+                    Status = Enum.TryParse<BcpQueueStatus>(m.Status, true, out var st) ? st : BcpQueueStatus.Queued,
+                    Retries = m.Retries,
+                    MaxRetries = m.MaxRetries,
+                    LastError = m.LastError,
+                    ProviderMessageId = m.ProviderMessageId,
+                    ScheduledAt = m.ScheduledAt,
+                    SentAt = m.SentAt,
+                    CreatedAt = m.CreatedAt
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[MessagePool] Querying MasterMessagePools encountered exception: {Msg}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// One-time legacy migration that imports historical outbox records from accessible tenant databases into MasterMessagePools.
+        /// </summary>
+        private async Task SyncLegacyTenantMessagesAsync(List<(string TenantKey, string OrganizationName, string ConnectionString)> tenants)
+        {
+            foreach (var tenant in tenants)
             {
                 try
                 {
                     using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
+                    var legacyItems = await db.BcpMessagePools.AsNoTracking().Take(100).ToListAsync();
+                    if (legacyItems.Count == 0) continue;
 
-                    // Auto-heal stale or errored "Processing" messages to "Failed" so they are accurately counted and retriable
-                    var staleCutoff = DateTime.UtcNow.AddMinutes(-2);
-                    var staleOrErroredProcessing = await db.BcpMessagePools
-                        .Where(m => m.Status == BcpQueueStatus.Processing && (m.LastError != null || m.CreatedAt <= staleCutoff))
-                        .ToListAsync();
-
-                    if (staleOrErroredProcessing.Count > 0)
+                    foreach (var leg in legacyItems)
                     {
-                        foreach (var stuck in staleOrErroredProcessing)
+                        _masterDb.MasterMessagePools.Add(new MasterMessagePool
                         {
-                            stuck.Status = BcpQueueStatus.Failed;
-                            if (string.IsNullOrWhiteSpace(stuck.LastError))
-                            {
-                                stuck.LastError = "Message delivery timed out in Processing state (stale worker lease).";
-                            }
-                            if (stuck.Channel == BcpMessageChannel.Email && stuck.Provider == BcpMessageProvider.Unconfigured)
-                            {
-                                stuck.Provider = BcpMessageProvider.Mailcow;
-                            }
-                        }
-                        await db.SaveChangesAsync();
-                    }
-
-                    // Aggregate status counts per tenant
-                    var counts = await db.BcpMessagePools
-                        .AsNoTracking()
-                        .GroupBy(m => m.Status)
-                        .Select(g => new { Status = g.Key, Count = g.Count() })
-                        .ToListAsync();
-
-                    foreach (var c in counts)
-                    {
-                        switch (c.Status)
-                        {
-                            case BcpQueueStatus.Queued: QueuedCount += c.Count; break;
-                            case BcpQueueStatus.Processing: ProcessingCount += c.Count; break;
-                            case BcpQueueStatus.Sent: SentCount += c.Count; break;
-                            case BcpQueueStatus.Failed: FailedCount += c.Count; break;
-                        }
-                    }
-
-                    var query = db.BcpMessagePools.AsNoTracking().AsQueryable();
-
-                    if (parsedChannel.HasValue)
-                    {
-                        query = query.Where(m => m.Channel == parsedChannel.Value);
-                    }
-
-                    if (parsedProvider.HasValue)
-                    {
-                        query = query.Where(m => m.Provider == parsedProvider.Value);
-                    }
-
-                    if (parsedStatus.HasValue)
-                    {
-                        query = query.Where(m => m.Status == parsedStatus.Value);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(searchTerm))
-                    {
-                        query = query.Where(m =>
-                            m.RecipientAddress.Contains(searchTerm) ||
-                            (m.RecipientName != null && m.RecipientName.Contains(searchTerm)) ||
-                            (m.Subject != null && m.Subject.Contains(searchTerm)) ||
-                            (m.LastError != null && m.LastError.Contains(searchTerm)));
-                    }
-
-                    // Cap per-tenant read so cross-tenant aggregation remains responsive
-                    var perTenantLimit = targetTenants.Count == 1 ? 300 : 80;
-                    var rows = await query
-                        .OrderByDescending(m => m.CreatedAt)
-                        .Take(perTenantLimit)
-                        .Select(m => new CrossTenantMessageRow
-                        {
-                            Id = m.Id,
+                            Id = leg.Id,
                             TenantKey = tenant.TenantKey,
                             OrganizationName = tenant.OrganizationName,
-                            Channel = m.Channel,
-                            Provider = m.Provider,
-                            RecipientAddress = m.RecipientAddress,
-                            RecipientName = m.RecipientName,
-                            Subject = m.Subject,
-                            Content = m.Content,
-                            PlainTextFallback = m.PlainTextFallback,
-                            ActionUrl = m.ActionUrl,
-                            SenderOrTemplateName = m.SenderOrTemplateName,
-                            MetadataJson = m.MetadataJson,
-                            Category = m.Category,
-                            Severity = m.Severity,
-                            Priority = m.Priority,
-                            Status = m.Status,
-                            Retries = m.Retries,
-                            MaxRetries = m.MaxRetries,
-                            LastError = m.LastError,
-                            ProviderMessageId = m.ProviderMessageId,
-                            ScheduledAt = m.ScheduledAt,
-                            SentAt = m.SentAt,
-                            CreatedAt = m.CreatedAt
-                        })
-                        .ToListAsync();
+                            Channel = leg.Channel.ToString(),
+                            Provider = leg.Provider.ToString(),
+                            RecipientAddress = leg.RecipientAddress,
+                            RecipientName = leg.RecipientName,
+                            Subject = leg.Subject,
+                            Content = leg.Content,
+                            PlainTextFallback = leg.PlainTextFallback,
+                            ActionUrl = leg.ActionUrl,
+                            Category = leg.Category.ToString(),
+                            Severity = leg.Severity.ToString(),
+                            Priority = leg.Priority.ToString(),
+                            Status = leg.Status.ToString(),
+                            Retries = leg.Retries,
+                            MaxRetries = leg.MaxRetries,
+                            LastError = leg.LastError,
+                            ProviderMessageId = leg.ProviderMessageId,
+                            SenderOrTemplateName = leg.SenderOrTemplateName,
+                            MetadataJson = leg.MetadataJson,
+                            ScheduledAt = leg.ScheduledAt,
+                            SentAt = leg.SentAt,
+                            CreatedAt = leg.CreatedAt
+                        });
+                    }
 
-                    allRows.AddRange(rows);
+                    await _masterDb.SaveChangesAsync();
+                    _logger.LogInformation("✅ [MessagePool] Imported {Count} legacy outbox messages from tenant '{TenantKey}' into MasterMessagePools.",
+                        legacyItems.Count, tenant.TenantKey);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Unable to query BcpMessagePools for tenant '{TenantKey}'.", tenant.TenantKey);
-                    UnreachableTenants.Add(tenant.TenantKey);
+                    _logger.LogWarning(ex, "[MessagePool] Could not sync legacy messages from tenant '{TenantKey}': {Msg}", tenant.TenantKey, ex.Message);
                 }
             }
-
-            var ordered = allRows
-                .OrderByDescending(r => r.CreatedAt)
-                .ToList();
-
-            TotalFilteredItems = ordered.Count;
-            if (PageIndex < 1) PageIndex = 1;
-            if (PageIndex > TotalPages) PageIndex = TotalPages;
-
-            Messages = PageSize == int.MaxValue
-                ? ordered.ToList()
-                : ordered.Skip((PageIndex - 1) * PageSize).Take(PageSize).ToList();
         }
 
         /// <summary>
-        /// Resets a single failed or stuck message back to Queued so the Worker Service re-attempts delivery.
+        /// Re-queues a failed or stuck message in the central Master Message Pool.
         /// </summary>
-        public async Task<IActionResult> OnPostRetryAsync(string tenantKey, Guid messageId)
+        public async Task<IActionResult> OnPostRetryAsync(Guid messageId)
         {
-            if (string.IsNullOrWhiteSpace(tenantKey))
-            {
-                StatusMessage = "Error: Tenant key is required.";
-                return RedirectToPage();
-            }
-
-            var tenant = await ResolveTenantAsync(tenantKey);
-            if (tenant == null)
-            {
-                StatusMessage = $"Error: Tenant '{tenantKey}' was not found.";
-                return RedirectToPage();
-            }
-
             try
             {
-                using var db = CreateTenantDbContext(tenant.Value.TenantKey, tenant.Value.ConnectionString);
-                var msg = await db.BcpMessagePools.FirstOrDefaultAsync(m => m.Id == messageId);
-                if (msg == null)
+                var item = await _masterDb.MasterMessagePools.FindAsync(messageId);
+                if (item != null)
                 {
-                    StatusMessage = "Error: Message record not found.";
-                    return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
+                    item.Status = "Queued";
+                    item.Retries = 0;
+                    item.LastError = null;
+                    await _masterDb.SaveChangesAsync();
+                    StatusMessage = $"Message successfully re-queued for delivery.";
                 }
-
-                msg.Status = BcpQueueStatus.Queued;
-                msg.Retries = 0;
-                msg.LastError = null;
-                if (msg.Channel == BcpMessageChannel.Email && msg.Provider == BcpMessageProvider.Unconfigured)
-                {
-                    msg.Provider = BcpMessageProvider.Mailcow;
-                }
-                await db.SaveChangesAsync();
-
-                StatusMessage = $"Message '{msg.Subject ?? msg.Id.ToString()}' for {tenant.Value.OrganizationName} re-queued for delivery.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to re-queue message {MessageId} for tenant {TenantKey}.", messageId, tenantKey);
+                _logger.LogError(ex, "Failed to re-queue message {MessageId}.", messageId);
                 StatusMessage = $"Error: Unable to re-queue message ({ex.Message}).";
             }
 
@@ -306,125 +291,86 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
         }
 
         /// <summary>
-        /// Re-queues all Failed and stuck Processing messages across the selected tenant (or all active tenants).
+        /// Re-queues all Failed and stuck Processing messages across the selected tenant (or platform-wide).
         /// </summary>
         public async Task<IActionResult> OnPostRetryAllFailedAsync(string? tenantKey)
         {
-            var activeTenants = await LoadActiveTenantsAsync();
-            var targets = string.IsNullOrWhiteSpace(tenantKey) || tenantKey.Equals("All", StringComparison.OrdinalIgnoreCase)
-                ? activeTenants
-                : activeTenants.Where(t => t.TenantKey.Equals(tenantKey, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            int totalRequeued = 0;
-            foreach (var tenant in targets)
+            try
             {
-                try
+                var query = _masterDb.MasterMessagePools.Where(m => m.Status == "Failed" || m.Status == "Processing");
+                if (!string.IsNullOrWhiteSpace(tenantKey) && !tenantKey.Equals("All", StringComparison.OrdinalIgnoreCase))
                 {
-                    using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
-                    var failedOrStuck = await db.BcpMessagePools
-                        .Where(m => m.Status == BcpQueueStatus.Failed || m.Status == BcpQueueStatus.Processing)
-                        .ToListAsync();
-
-                    if (failedOrStuck.Count == 0) continue;
-
-                    foreach (var item in failedOrStuck)
-                    {
-                        item.Status = BcpQueueStatus.Queued;
-                        item.Retries = 0;
-                        item.LastError = null;
-                        if (item.Channel == BcpMessageChannel.Email && item.Provider == BcpMessageProvider.Unconfigured)
-                        {
-                            item.Provider = BcpMessageProvider.Mailcow;
-                        }
-                    }
-
-                    await db.SaveChangesAsync();
-                    totalRequeued += failedOrStuck.Count;
+                    query = query.Where(m => m.TenantKey == tenantKey);
                 }
-                catch (Exception ex)
+
+                var failedOrStuck = await query.ToListAsync();
+                foreach (var item in failedOrStuck)
                 {
-                    _logger.LogWarning(ex, "Failed to re-queue failed or stuck messages for tenant '{TenantKey}'.", tenant.TenantKey);
+                    item.Status = "Queued";
+                    item.Retries = 0;
+                    item.LastError = null;
                 }
+
+                await _masterDb.SaveChangesAsync();
+                StatusMessage = failedOrStuck.Count > 0
+                    ? $"Re-queued {failedOrStuck.Count} message(s) for Worker delivery."
+                    : "No failed or stuck processing messages found to re-queue.";
             }
-
-            StatusMessage = totalRequeued > 0
-                ? $"Re-queued {totalRequeued} message(s) for Worker delivery."
-                : "No failed or stuck processing messages found to re-queue.";
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to re-queue messages: {Msg}", ex.Message);
+                StatusMessage = $"Error re-queuing messages: {ex.Message}";
+            }
 
             return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
         }
 
         /// <summary>
-        /// Clears outbox records from <c>BcpMessagePools</c> based on selected scope and target tenant.
-        /// Optionally deletes user in-app notifications if explicitly requested.
+        /// Clears outbox records from <c>MasterMessagePools</c> based on selected scope and target tenant.
         /// </summary>
-        /// <param name="targetTenant">Target tenant key or "All" for all tenants.</param>
-        /// <param name="clearScope">Scope: "sent", "failed", "sent_failed", or "all".</param>
-        /// <param name="includeInAppNotifications">Whether to also delete user-facing BcpNotifications.</param>
         public async Task<IActionResult> OnPostClearPoolAsync(string? targetTenant, string clearScope, bool includeInAppNotifications)
         {
-            var activeTenants = await LoadActiveTenantsAsync();
-            var targets = string.IsNullOrWhiteSpace(targetTenant) || targetTenant.Equals("All", StringComparison.OrdinalIgnoreCase)
-                ? activeTenants
-                : activeTenants.Where(t => t.TenantKey.Equals(targetTenant, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            int totalDeletedPool = 0;
-            int totalDeletedInApp = 0;
-
-            foreach (var tenant in targets)
+            try
             {
-                try
+                var query = _masterDb.MasterMessagePools.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(targetTenant) && !targetTenant.Equals("All", StringComparison.OrdinalIgnoreCase))
                 {
-                    using var db = CreateTenantDbContext(tenant.TenantKey, tenant.ConnectionString);
-
-                    var query = db.BcpMessagePools.AsQueryable();
-
-                    switch (clearScope?.ToLowerInvariant())
-                    {
-                        case "sent":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent);
-                            break;
-                        case "failed":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Failed);
-                            break;
-                        case "sent_failed":
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent || m.Status == BcpQueueStatus.Failed);
-                            break;
-                        case "all":
-                            // Clears all records
-                            break;
-                        default:
-                            query = query.Where(m => m.Status == BcpQueueStatus.Sent);
-                            break;
-                    }
-
-                    var itemsToDelete = await query.ToListAsync();
-                    if (itemsToDelete.Count > 0)
-                    {
-                        db.BcpMessagePools.RemoveRange(itemsToDelete);
-                        totalDeletedPool += itemsToDelete.Count;
-                    }
-
-                    if (includeInAppNotifications)
-                    {
-                        var inAppList = await db.BcpNotifications.ToListAsync();
-                        if (inAppList.Count > 0)
-                        {
-                            db.BcpNotifications.RemoveRange(inAppList);
-                            totalDeletedInApp += inAppList.Count;
-                        }
-                    }
-
-                    await db.SaveChangesAsync();
+                    query = query.Where(m => m.TenantKey == targetTenant);
                 }
-                catch (Exception ex)
+
+                switch (clearScope?.ToLowerInvariant())
                 {
-                    _logger.LogWarning(ex, "Failed to clear pool for tenant '{TenantKey}': {Msg}", tenant.TenantKey, ex.Message);
+                    case "sent":
+                        query = query.Where(m => m.Status == "Sent");
+                        break;
+                    case "failed":
+                        query = query.Where(m => m.Status == "Failed");
+                        break;
+                    case "sent_failed":
+                        query = query.Where(m => m.Status == "Sent" || m.Status == "Failed");
+                        break;
+                    case "all":
+                        break;
+                    default:
+                        query = query.Where(m => m.Status == "Sent");
+                        break;
                 }
+
+                var itemsToDelete = await query.ToListAsync();
+                if (itemsToDelete.Count > 0)
+                {
+                    _masterDb.MasterMessagePools.RemoveRange(itemsToDelete);
+                    await _masterDb.SaveChangesAsync();
+                }
+
+                StatusMessage = $"Cleared {itemsToDelete.Count} outbox message(s) from the Central Master Pool.";
             }
-
-            var inAppMsg = includeInAppNotifications ? $" and {totalDeletedInApp} user in-app notification(s)" : "";
-            StatusMessage = $"Cleared {totalDeletedPool} outbox message(s){inAppMsg} from the pool.";
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to clear pool: {Msg}", ex.Message);
+                StatusMessage = $"Error clearing pool: {ex.Message}";
+            }
 
             return RedirectToPage(new { TenantFilter, ChannelFilter, StatusFilter, Search, PageIndex });
         }
@@ -450,23 +396,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                 }
             }
             return list;
-        }
-
-        private async Task<(string TenantKey, string OrganizationName, string ConnectionString)?> ResolveTenantAsync(string tenantKey)
-        {
-            var masterConnStr = _masterDb.Database.GetConnectionString() ?? string.Empty;
-
-            var item = await _masterDb.MasterTenantCatalogs
-                .AsNoTracking()
-                .Where(t => t.TenantKey == tenantKey && !t.IsDeleted)
-                .Select(t => new { t.TenantKey, t.OrganizationName, t.ConnectionString, t.DatabaseName })
-                .FirstOrDefaultAsync();
-
-            if (item == null) return null;
-            var decrypted = OzikolDataCipher.DecryptIfNeeded(item.ConnectionString)?.Trim();
-            var harmonized = TenantConnectionHarmonizer.Harmonize(masterConnStr, decrypted, item.DatabaseName);
-            if (string.IsNullOrWhiteSpace(harmonized)) return null;
-            return (item.TenantKey, item.OrganizationName, harmonized);
         }
 
         private static DashboardDbContext CreateTenantDbContext(string tenantKey, string decryptedConnectionString)
