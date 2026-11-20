@@ -7,17 +7,12 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
-import {
-  SUPPORTED_COUNTRY_PHONES,
-  CountryPhoneOption,
-  resolveDefaultCountryCode,
-  cleanPhoneNumber
-} from '../../../core/utils/phone-cleaner.util';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
 
 @Component({
   selector: 'app-user-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe, PhoneInputComponent],
   template: `
     <div class="user-form-page">
       <!-- Standardized Page Header -->
@@ -82,30 +77,9 @@ import {
 
               <div class="form-group">
                 <label>{{ 'user_create.field_phone' | translate:'Phone Number' }}</label>
-                <div class="phone-input-combo">
-                  <select
-                    class="phone-country-select"
-                    [(ngModel)]="phoneCountryCode"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    name="phoneCountryCode"
-                    aria-label="Country Calling Code"
-                  >
-                    <option *ngFor="let c of supportedCountries" [value]="c.code">
-                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                    </option>
-                  </select>
-                  <input
-                    type="tel"
-                    [(ngModel)]="phoneNationalNumber"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    name="phoneNationalNumber"
-                    [placeholder]="selectedCountryPlaceholder"
-                    class="phone-national-control"
-                  />
-                </div>
-                <span class="field-hint">
-                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                </span>
+                <app-phone-input
+                  [(phoneNumber)]="model.phoneNumber"
+                ></app-phone-input>
               </div>
             </div>
           </div>

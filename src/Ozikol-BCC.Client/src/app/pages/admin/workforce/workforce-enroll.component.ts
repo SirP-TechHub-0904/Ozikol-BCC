@@ -7,6 +7,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
 import {
   SUPPORTED_COUNTRY_PHONES,
   CountryPhoneOption,
@@ -26,7 +27,7 @@ import {
 @Component({
   selector: 'app-workforce-enroll',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent, PhoneInputComponent],
   template: `
     <div class="bcp-page-container">
       <!-- 1. Breadcrumbs & Header -->
@@ -113,29 +114,12 @@ import {
 
               <div class="form-group">
                 <label class="form-label">Phone Number <span class="required">*</span></label>
-                <div class="phone-input-combo">
-                  <select
-                    class="phone-country-select"
-                    [(ngModel)]="phoneCountryCode"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    aria-label="Country Calling Code"
-                  >
-                    <option *ngFor="let c of supportedCountries" [value]="c.code">
-                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                    </option>
-                  </select>
-                  <input
-                    type="tel"
-                    class="form-control phone-national-control"
-                    [(ngModel)]="phoneNationalNumber"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    [placeholder]="selectedCountryPlaceholder"
-                    required
-                  />
-                </div>
-                <div class="field-hint">
-                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                </div>
+                <app-phone-input
+                  [(phoneNumber)]="inviteModel.phoneNumber"
+                  [defaultCurrency]="currencyCode || 'NGN'"
+                  (phoneNumberChange)="syncInviteToPreview()"
+                  [required]="true"
+                ></app-phone-input>
               </div>
 
               <div class="form-row-dual">

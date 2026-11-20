@@ -9,6 +9,7 @@ import { environment } from '../../../../environments/environment';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
 import {
   SUPPORTED_COUNTRY_PHONES,
   CountryPhoneOption,
@@ -60,7 +61,7 @@ interface WizardStep {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe, LandingComponent, AuthLayoutComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe, LandingComponent, AuthLayoutComponent, PhoneInputComponent],
   template: `
     <!-- Live Single-Source-of-Truth Outer Shell: Website Layout vs. Auth Layout -->
     <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
@@ -460,31 +461,9 @@ interface WizardStep {
 
                     <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                       <label for="s_phoneNumber" class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                      <div class="phone-input-combo">
-                        <select
-                          class="phone-country-select"
-                          [(ngModel)]="phoneCountryCode"
-                          (ngModelChange)="onPhoneInputChanged()"
-                          name="s_phone_cc"
-                          aria-label="Country Calling Code"
-                        >
-                          <option *ngFor="let c of supportedCountries" [value]="c.code">
-                            {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                          </option>
-                        </select>
-                        <input
-                          id="s_phoneNumber"
-                          type="tel"
-                          [(ngModel)]="phoneNationalNumber"
-                          (ngModelChange)="onPhoneInputChanged()"
-                          name="phoneNumber"
-                          [placeholder]="selectedCountryPlaceholder"
-                          class="form-input phone-national-control"
-                        />
-                      </div>
-                      <span class="field-hint">
-                        Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                      </span>
+                      <app-phone-input
+                        [(phoneNumber)]="model.phoneNumber"
+                      ></app-phone-input>
                     </div>
                   </div>
 
@@ -816,30 +795,9 @@ interface WizardStep {
 
                       <div *ngIf="coreKey === 'phone'" class="form-group">
                         <label class="form-label">{{ getCoreLabel('phone', 'Phone Number') }}</label>
-                        <div class="phone-input-combo">
-                          <select
-                            class="phone-country-select"
-                            [(ngModel)]="phoneCountryCode"
-                            (ngModelChange)="onPhoneInputChanged()"
-                            name="sec_phone_cc"
-                            aria-label="Country Calling Code"
-                          >
-                            <option *ngFor="let c of supportedCountries" [value]="c.code">
-                              {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                            </option>
-                          </select>
-                          <input
-                            type="tel"
-                            [(ngModel)]="phoneNationalNumber"
-                            (ngModelChange)="onPhoneInputChanged()"
-                            name="sec_phone"
-                            [placeholder]="selectedCountryPlaceholder"
-                            class="form-input phone-national-control"
-                          />
-                        </div>
-                        <span class="field-hint">
-                          Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                        </span>
+                        <app-phone-input
+                          [(phoneNumber)]="model.phoneNumber"
+                        ></app-phone-input>
                       </div>
 
                       <div *ngIf="coreKey === 'organizationType'" class="form-group">
@@ -1056,30 +1014,9 @@ interface WizardStep {
                       </div>
                       <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                         <label class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                        <div class="phone-input-combo">
-                          <select
-                            class="phone-country-select"
-                            [(ngModel)]="phoneCountryCode"
-                            (ngModelChange)="onPhoneInputChanged()"
-                            name="st_ph_cc"
-                            aria-label="Country Calling Code"
-                          >
-                            <option *ngFor="let c of supportedCountries" [value]="c.code">
-                              {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                            </option>
-                          </select>
-                          <input
-                            type="tel"
-                            [(ngModel)]="phoneNationalNumber"
-                            (ngModelChange)="onPhoneInputChanged()"
-                            name="st_ph"
-                            [placeholder]="selectedCountryPlaceholder"
-                            class="form-input phone-national-control"
-                          />
-                        </div>
-                        <span class="field-hint">
-                          Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                        </span>
+                        <app-phone-input
+                          [(phoneNumber)]="model.phoneNumber"
+                        ></app-phone-input>
                       </div>
                     </div>
                     <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
@@ -1337,30 +1274,9 @@ interface WizardStep {
                     </div>
                     <div class="form-group" *ngIf="!isCoreFieldUnpublished('phoneNumber')">
                       <label class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
-                      <div class="phone-input-combo">
-                        <select
-                          class="phone-country-select"
-                          [(ngModel)]="phoneCountryCode"
-                          (ngModelChange)="onPhoneInputChanged()"
-                          name="pg_ph_cc"
-                          aria-label="Country Calling Code"
-                        >
-                          <option *ngFor="let c of supportedCountries" [value]="c.code">
-                            {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                          </option>
-                        </select>
-                        <input
-                          type="tel"
-                          [(ngModel)]="phoneNationalNumber"
-                          (ngModelChange)="onPhoneInputChanged()"
-                          name="pg_ph"
-                          [placeholder]="selectedCountryPlaceholder"
-                          class="form-input phone-national-control"
-                        />
-                      </div>
-                      <span class="field-hint">
-                        Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                      </span>
+                      <app-phone-input
+                        [(phoneNumber)]="model.phoneNumber"
+                      ></app-phone-input>
                     </div>
                     <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                       <label class="form-label">Member Category / Tier</label>

@@ -7,6 +7,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
 import {
   SUPPORTED_COUNTRY_PHONES,
   CountryPhoneOption,
@@ -27,7 +28,7 @@ import {
 @Component({
   selector: 'app-workforce-onboarding',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent, PhoneInputComponent],
   template: `
     <!-- Live Single-Source-of-Truth Outer Shell: Website Layout vs. Auth Layout -->
     <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
@@ -104,28 +105,9 @@ import {
 
             <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
               <label class="rf-sim-label">Phone Number</label>
-              <div class="phone-input-combo">
-                <select
-                  class="phone-country-select"
-                  [(ngModel)]="phoneCountryCode"
-                  (ngModelChange)="onPhoneInputChanged()"
-                  aria-label="Country Calling Code"
-                >
-                  <option *ngFor="let c of supportedCountries" [value]="c.code">
-                    {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                  </option>
-                </select>
-                <input
-                  type="tel"
-                  class="rf-sim-input phone-national-control"
-                  [(ngModel)]="phoneNationalNumber"
-                  (ngModelChange)="onPhoneInputChanged()"
-                  [placeholder]="selectedCountryPlaceholder"
-                />
-              </div>
-              <div class="rf-field-hint">
-                Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-              </div>
+              <app-phone-input
+                [(phoneNumber)]="onboardingModel.phoneNumber"
+              ></app-phone-input>
             </div>
 
             <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
@@ -218,28 +200,9 @@ import {
 
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <div class="phone-input-combo">
-                  <select
-                    class="phone-country-select"
-                    [(ngModel)]="phoneCountryCode"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    aria-label="Country Calling Code"
-                  >
-                    <option *ngFor="let c of supportedCountries" [value]="c.code">
-                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                    </option>
-                  </select>
-                  <input
-                    type="tel"
-                    class="rf-sim-input phone-national-control"
-                    [(ngModel)]="phoneNationalNumber"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    [placeholder]="selectedCountryPlaceholder"
-                  />
-                </div>
-                <div class="rf-field-hint">
-                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                </div>
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
 
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
@@ -354,28 +317,9 @@ import {
               <div class="rf-sim-stage-badge">STAGE 2: CATEGORY &amp; SECTOR</div>
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <div class="phone-input-combo">
-                  <select
-                    class="phone-country-select"
-                    [(ngModel)]="phoneCountryCode"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    aria-label="Country Calling Code"
-                  >
-                    <option *ngFor="let c of supportedCountries" [value]="c.code">
-                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                    </option>
-                  </select>
-                  <input
-                    type="tel"
-                    class="rf-sim-input phone-national-control"
-                    [(ngModel)]="phoneNationalNumber"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    [placeholder]="selectedCountryPlaceholder"
-                  />
-                </div>
-                <div class="rf-field-hint">
-                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                </div>
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category Tier</label>
@@ -497,28 +441,9 @@ import {
             <div *ngIf="simStep === 2" class="rf-sim-stage">
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <div class="phone-input-combo">
-                  <select
-                    class="phone-country-select"
-                    [(ngModel)]="phoneCountryCode"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    aria-label="Country Calling Code"
-                  >
-                    <option *ngFor="let c of supportedCountries" [value]="c.code">
-                      {{ c.flag }} {{ c.code }} ({{ c.iso }})
-                    </option>
-                  </select>
-                  <input
-                    type="tel"
-                    class="rf-sim-input phone-national-control"
-                    [(ngModel)]="phoneNationalNumber"
-                    (ngModelChange)="onPhoneInputChanged()"
-                    [placeholder]="selectedCountryPlaceholder"
-                  />
-                </div>
-                <div class="rf-field-hint">
-                  Enter local number (with or without 0). Do not re-enter {{ phoneCountryCode }}.
-                </div>
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
               <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category</label>
