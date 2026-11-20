@@ -52,6 +52,9 @@ public static class Program
         builder.Services.AddSingleton<IMailInfrastructureCredentialProvider, WorkerMailInfrastructureCredentialProvider>();
 
         var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"]
+            ?? builder.Configuration["TenantConfiguration__ConnectionString"]
+            ?? Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+            ?? Environment.GetEnvironmentVariable("TenantConfiguration:ConnectionString")
             ?? builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +

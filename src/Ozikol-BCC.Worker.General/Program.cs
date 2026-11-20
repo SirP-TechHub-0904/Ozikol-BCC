@@ -48,6 +48,9 @@ public static class Program
             .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
         var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"]
+            ?? builder.Configuration["TenantConfiguration__ConnectionString"]
+            ?? Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+            ?? Environment.GetEnvironmentVariable("TenantConfiguration:ConnectionString")
             ?? builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +
