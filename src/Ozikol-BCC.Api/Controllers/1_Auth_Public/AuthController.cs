@@ -2154,8 +2154,11 @@ namespace Ozikol_BCC.Api.Controllers
                 featureInvitation.IsUsed = true;
             }
 
-            // Ensure Workforce staff roster profile is provisioned for seamless directory visibility
-            if (_dbContext != null)
+            // Ensure Workforce staff roster profile is provisioned ONLY for non-administrator staff members
+            bool isAdministrator = string.Equals(assignedRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(assignedRole, "Admin", StringComparison.OrdinalIgnoreCase);
+
+            if (_dbContext != null && !isAdministrator)
             {
                 try
                 {

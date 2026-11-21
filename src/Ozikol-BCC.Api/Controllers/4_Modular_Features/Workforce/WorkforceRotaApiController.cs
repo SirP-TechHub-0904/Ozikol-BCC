@@ -2970,159 +2970,70 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // 2. Discover any registered active or pending users in the tenant database who lack a BcpShiftStaffProfile
-            var existingUserIds = profiles.Select(p => p.UserId).ToHashSet();
-            var unprofiledUsers = await _db.Users
-                .Where(u => !existingUserIds.Contains(u.Id) && (u.UserStatus == UserStatus.Active || u.UserStatus == UserStatus.Pending))
+            // 2. Discover Admin & SuperAdmin user IDs to strictly exclude administrators from shift rosters
+            var adminRoleIds = await _db.Roles
+                .AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                .Select(r => r.Id)
                 .ToListAsync(ct);
 
-            if (unprofiledUsers.Count > 0)
-            {
-                foreach (var u in unprofiledUsers)
-                {
-                    var cleanJobTitle = !string.IsNullOrWhiteSpace(u.Designation) && u.Designation.ToLowerInvariant() != "undefined"
-                        ? u.Designation.Trim()
-                        : defaultJobTitle;
+            var adminUserIds = await _db.UserRoles
+                .AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+            var adminUserIdSet = adminUserIds.ToHashSet();
 
-                    var initialAvailability = u.UserStatus == UserStatus.Pending ? "Pending Onboarding" : "Available";
-
-                    var newProfile = new BcpShiftStaffProfile
-                    {
-                        Id = Guid.CreateVersion7(),
-                        TenantKey = CurrentTenantKey,
-                        UserId = u.Id,
-                        JobTitle = cleanJobTitle,
-                        StaffTypeId = defaultStaffTypeId,
-                        StaffTypeName = defaultStaffTypeName,
-                        WorkingAvailability = initialAvailability,
-                        PreferredWorkingTime = "Any",
-                        IsActive = true,
-                        CreatedUtc = u.JoinDate ?? DateTime.UtcNow,
-                        AverageRating = 0m,
-                        TotalRatingsCount = 0,
-                        PunctualityScorePercent = 100
-                    };
-                    _db.BcpShiftStaffProfiles.Add(newProfile);
-                    profiles.Add(newProfile);
-                    existingUserIds.Add(u.Id);
-                    dbFixNeeded = true;
-                }
-            }
-
-            // 3. Auto-discover unredeemed invitations (such as pending invited staff) and ensure they show in the roster
-            try
-            {
-                var pendingInvites = await _db.Invitations
-                    .Where(i => !i.IsUsed && i.Email != null && i.Email != "")
-                    .ToListAsync(ct);
-
-                if (pendingInvites.Count > 0)
-                {
-                    var existingUserEmails = await _db.Users
-                        .AsNoTracking()
-                        .Where(u => existingUserIds.Contains(u.Id) && u.Email != null)
-                        .Select(u => u.Email!.ToLower())
-                        .ToListAsync(ct);
-                    var existingEmailSet = existingUserEmails.ToHashSet();
-
-                    foreach (var inv in pendingInvites)
-                    {
-                        var cleanEmail = (inv.Email ?? "").Trim().ToLowerInvariant();
-                        if (string.IsNullOrWhiteSpace(cleanEmail) || existingEmailSet.Contains(cleanEmail)) continue;
-
-                        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail, ct);
-                        if (user == null)
-                        {
-                            var nameParts = (inv.FullName ?? "Team Member").Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-                            var fName = nameParts.Length > 0 ? nameParts[0] : "Team";
-                            var lName = nameParts.Length > 1 ? nameParts[1] : "Member";
-                            var memberId = await GenerateTenantMemberIdAsync(fName, lName, defaultJobTitle);
-                            user = new Profile
-                            {
-                                Id = Guid.CreateVersion7().ToString(),
-                                UserName = cleanEmail,
-                                Email = cleanEmail,
-                                FirstName = fName,
-                                LastName = lName,
-                                PhoneNumber = inv.PhoneNumber,
-                                MemberId = memberId,
-                                Designation = defaultJobTitle,
-                                UserStatus = UserStatus.Pending,
-                                EmailConfirmed = false,
-                                MustChangePassword = true,
-                                JoinDate = inv.CreatedUtc
-                            };
-                            _db.Users.Add(user);
-                            await _db.SaveChangesAsync(ct);
-                        }
-
-                        var autoProf = new BcpShiftStaffProfile
-                        {
-                            Id = Guid.CreateVersion7(),
-                            TenantKey = CurrentTenantKey,
-                            UserId = user.Id,
-                            JobTitle = !string.IsNullOrWhiteSpace(user.Designation) && user.Designation.ToLowerInvariant() != "undefined" ? user.Designation.Trim() : defaultJobTitle,
-                            StaffTypeId = defaultStaffTypeId,
-                            StaffTypeName = defaultStaffTypeName,
-                            WorkingAvailability = "Pending Onboarding",
-                            PreferredWorkingTime = "Any",
-                            IsActive = true,
-                            CreatedUtc = inv.CreatedUtc,
-                            AverageRating = 0m,
-                            TotalRatingsCount = 0,
-                            PunctualityScorePercent = 100
-                        };
-                        _db.BcpShiftStaffProfiles.Add(autoProf);
-                        profiles.Add(autoProf);
-                        existingUserIds.Add(user.Id);
-                        existingEmailSet.Add(cleanEmail);
-                        dbFixNeeded = true;
-                    }
-                }
-            }
-            catch
-            {
-                // Non-blocking fallback
-            }
-
-            if (dbFixNeeded)
-            {
-                try
-                {
-                    await _db.SaveChangesAsync(ct);
-                }
-                catch
-                {
-                    // Non-blocking fallback if transient sync conflict occurs
-                }
-            }
-
-            // 4. Cross-reference with central users table for identity details
+            // 3. Cross-reference with central users table for identity details (Active & non-deleted users strictly from User Manager)
             var userIds = profiles.Select(p => p.UserId).Distinct().ToList();
             var users = await _db.Users
                 .AsNoTracking()
-                .Where(u => userIds.Contains(u.Id))
+                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.UserStatus != UserStatus.Deleted)
                 .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber, u.AvatarUrl, u.Designation }, ct);
 
-            var result = profiles.Select(p =>
+            var result = new List<StaffMemberDto>();
+            foreach (var p in profiles)
             {
-                users.TryGetValue(p.UserId, out var u);
+                // Strict Identity Isolation: If user does not exist or was soft-deleted from User Manager, deactivate orphan profile and exclude from directory
+                if (!users.TryGetValue(p.UserId, out var u) || u == null)
+                {
+                    if (p.IsActive)
+                    {
+                        p.IsActive = false;
+                        p.UpdatedUtc = DateTime.UtcNow;
+                        dbFixNeeded = true;
+                    }
+                    continue;
+                }
+
+                // Administrator Exclusion: Admins & SuperAdmins manage the workspace and NEVER participate in shift rosters
+                if (adminUserIdSet.Contains(p.UserId))
+                {
+                    if (p.IsActive)
+                    {
+                        p.IsActive = false;
+                        p.UpdatedUtc = DateTime.UtcNow;
+                        dbFixNeeded = true;
+                    }
+                    continue;
+                }
+
                 var resolvedJobTitle = (!string.IsNullOrWhiteSpace(p.JobTitle) && p.JobTitle.ToLowerInvariant() != "undefined")
                     ? p.JobTitle
-                    : (!string.IsNullOrWhiteSpace(u?.Designation) && u.Designation.ToLowerInvariant() != "undefined" ? u.Designation : defaultJobTitle);
+                    : (!string.IsNullOrWhiteSpace(u.Designation) && u.Designation.ToLowerInvariant() != "undefined" ? u.Designation : defaultJobTitle);
 
                 var resolvedStaffType = (!string.IsNullOrWhiteSpace(p.StaffTypeName) && p.StaffTypeName.ToLowerInvariant() != "undefined")
                     ? p.StaffTypeName
                     : defaultStaffTypeName;
 
-                return new StaffMemberDto
+                result.Add(new StaffMemberDto
                 {
                     ProfileId = p.Id,
                     UserId = p.UserId,
-                    FullName = u?.FullName ?? "Staff Member",
-                    Email = u?.Email ?? string.Empty,
-                    PhoneNumber = u?.PhoneNumber,
-                    AvatarUrl = u?.AvatarUrl,
+                    FullName = u.FullName ?? "Staff Member",
+                    Email = u.Email ?? string.Empty,
+                    PhoneNumber = u.PhoneNumber,
+                    AvatarUrl = u.AvatarUrl,
                     JobTitle = resolvedJobTitle,
                     StaffTypeId = p.StaffTypeId ?? defaultStaffTypeId,
                     StaffTypeName = resolvedStaffType,
@@ -3138,8 +3049,20 @@ namespace Ozikol_BCC.Api.Controllers
                     NoShowCount = p.NoShowCount,
                     IsActive = p.IsActive,
                     EnrolledUtc = p.CreatedUtc
-                };
-            }).ToList();
+                });
+            }
+
+            if (dbFixNeeded)
+            {
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+                catch
+                {
+                    // Non-blocking fallback if transient sync conflict occurs
+                }
+            }
 
             return Ok(ApiResponse<List<StaffMemberDto>>.SuccessResponse(result, "Workforce staff members retrieved."));
         }

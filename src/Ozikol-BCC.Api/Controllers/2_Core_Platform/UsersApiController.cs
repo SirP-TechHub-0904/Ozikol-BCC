@@ -543,12 +543,25 @@ namespace Ozikol_BCC.Api.Controllers
                 r.IsActive = false;
             }
 
-            // 3. Deactivate associated Workforce Staff Profile if exists (preserves shift/roster transactions)
-            var staffProfile = await _dbContext.BcpShiftStaffProfiles.FirstOrDefaultAsync(s => s.UserId == id);
-            if (staffProfile != null)
+            // 3. Deactivate all associated Workforce Staff Profiles (preserves shift/roster transactions)
+            var staffProfiles = await _dbContext.BcpShiftStaffProfiles.Where(s => s.UserId == id).ToListAsync();
+            foreach (var sp in staffProfiles)
             {
-                staffProfile.IsActive = false;
-                staffProfile.UpdatedUtc = DateTime.UtcNow;
+                sp.IsActive = false;
+                sp.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            // Invalidate any unredeemed invitations matching this user's email so they are never auto-resurrected
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var userEmailLower = user.Email.Trim().ToLowerInvariant();
+                var pendingInvites = await _dbContext.Invitations
+                    .Where(i => i.Email != null && i.Email.ToLower() == userEmailLower && !i.IsUsed)
+                    .ToListAsync();
+                foreach (var inv in pendingInvites)
+                {
+                    inv.IsUsed = true;
+                }
             }
 
             // 4. Apply Fintech Soft Delete and permanent lockout
