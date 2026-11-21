@@ -238,6 +238,41 @@ namespace Ozikol_BCC.Api.Controllers
             return "default";
         }
 
+        /// <summary>
+        /// Dynamically hydrates AssignedUserName directly from the central AspNetUsers identity table,
+        /// resolving active member names or 'Archived Staff' for soft-deleted accounts (Single Source of Truth).
+        /// </summary>
+        private async Task HydrateShiftUserNamesAsync(IEnumerable<ShiftDto> shiftDtos, CancellationToken ct = default)
+        {
+            var userIds = shiftDtos
+                .Where(s => !string.IsNullOrWhiteSpace(s.AssignedUserId))
+                .Select(s => s.AssignedUserId!)
+                .Distinct()
+                .ToList();
+
+            if (userIds.Count == 0) return;
+
+            var userMap = await _db.Users.IgnoreQueryFilters()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.IsDeleted }, ct);
+
+            foreach (var s in shiftDtos)
+            {
+                if (string.IsNullOrWhiteSpace(s.AssignedUserId))
+                {
+                    s.AssignedUserName = null;
+                }
+                else if (userMap.TryGetValue(s.AssignedUserId, out var u))
+                {
+                    s.AssignedUserName = u.IsDeleted ? "Archived Staff" : (u.FullName ?? "Staff Member");
+                }
+                else
+                {
+                    s.AssignedUserName = "Archived Staff";
+                }
+            }
+        }
+
         private async Task<string> ResolveTenantCompanyNameAsync(CancellationToken ct)
         {
             try
@@ -587,6 +622,8 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync(ct);
 
+            await HydrateShiftUserNamesAsync(shifts, ct);
+
             var roster = shifts
                 .Where(s => !string.IsNullOrWhiteSpace(s.AssignedUserId))
                 .GroupBy(s => s.AssignedUserId!)
@@ -929,6 +966,8 @@ namespace Ozikol_BCC.Api.Controllers
                     SupervisorApproved = s.AttendanceRecord != null && s.AttendanceRecord.SupervisorApproved
                 })
                 .ToListAsync(ct);
+
+            await HydrateShiftUserNamesAsync(shifts, ct);
 
             return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(shifts, "Shifts retrieved successfully."));
         }
@@ -1319,6 +1358,8 @@ namespace Ozikol_BCC.Api.Controllers
                 SupervisorNotes = s.AttendanceRecord?.SupervisorNotes,
                 SupervisorApproved = s.AttendanceRecord?.SupervisorApproved ?? false
             };
+
+            await HydrateShiftUserNamesAsync(new[] { dto }, ct);
 
             return Ok(ApiResponse<ShiftDto>.SuccessResponse(dto, "Shift details retrieved successfully."));
         }

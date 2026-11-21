@@ -610,6 +610,23 @@ namespace Ozikol_BCC.Api.Controllers
                 sp.UpdatedUtc = DateTime.UtcNow;
             }
 
+            // 4. Automatically revert any upcoming or uncompleted shifts assigned to the deleted user to Open Shifts
+            // Operational continuity: departures immediately free upcoming roster slots for active staff to claim or for managers to reassign.
+            // Past completed shifts remain assigned to preserve historical labor and tax compliance audit records.
+            var uncompletedShifts = await _dbContext.BcpShifts
+                .Where(s => targetUserIds.Contains(s.AssignedUserId) && s.Status != "Completed")
+                .ToListAsync();
+
+            foreach (var sh in uncompletedShifts)
+            {
+                sh.AssignedUserId = null;
+                sh.AssignedUserName = null;
+                sh.Status = "Open";
+                sh.IsConfirmedByGuard = false;
+                sh.ConfirmedAtUtc = null;
+                sh.UpdatedUtc = DateTime.UtcNow;
+            }
+
             try
             {
                 await _dbContext.SaveChangesAsync();

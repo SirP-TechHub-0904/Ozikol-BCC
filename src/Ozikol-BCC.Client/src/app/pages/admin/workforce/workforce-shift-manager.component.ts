@@ -286,10 +286,14 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
                 </td>
                 <td>
                   <div *ngIf="!isOpenShift(shift)" class="staff-cell">
-                    <div class="staff-avatar">{{ getInitials(shift.assignedUserName || shift.assignedUserEmail || 'S') }}</div>
+                    <div class="staff-avatar" [class.archived-avatar]="shift.assignedUserName === 'Archived Staff'">
+                      <span *ngIf="shift.assignedUserName === 'Archived Staff'" class="material-symbols-outlined" style="font-size: 16px;">person_off</span>
+                      <span *ngIf="shift.assignedUserName !== 'Archived Staff'">{{ getInitials(shift.assignedUserName || shift.assignedUserEmail || 'S') }}</span>
+                    </div>
                     <div class="staff-details">
-                      <strong class="staff-name">{{ shift.assignedUserName || shift.assignedUserEmail || 'Assigned Staff' }}</strong>
-                      <span class="staff-sub" *ngIf="shift.assignedUserEmail && shift.assignedUserName">{{ shift.assignedUserEmail }}</span>
+                      <strong class="staff-name" [class.archived-name]="shift.assignedUserName === 'Archived Staff'">{{ shift.assignedUserName || shift.assignedUserEmail || 'Assigned Staff' }}</strong>
+                      <span class="staff-sub" *ngIf="shift.assignedUserName === 'Archived Staff'">Former Staff &bull; Archived</span>
+                      <span class="staff-sub" *ngIf="shift.assignedUserEmail && shift.assignedUserName !== 'Archived Staff'">{{ shift.assignedUserEmail }}</span>
                     </div>
                   </div>
 
@@ -899,8 +903,10 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
 
     .staff-cell { display: flex; align-items: center; gap: 10px; }
     .staff-avatar { width: 34px; height: 34px; border-radius: 50%; background: #eff6ff; color: #0050e5; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #bfdbfe; flex-shrink: 0; }
+    .staff-avatar.archived-avatar { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
     .staff-details { display: flex; flex-direction: column; }
     .staff-name { font-weight: 700; color: #0f172a; }
+    .staff-name.archived-name { color: #64748b; font-style: italic; }
     .staff-sub { font-size: 11.5px; color: #64748b; }
 
     .open-shift-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
