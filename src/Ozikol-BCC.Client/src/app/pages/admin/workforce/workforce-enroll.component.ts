@@ -88,15 +88,45 @@ import {
           </a>
         </div>
 
-        <div class="invite-form-grid" [class.enroll-blurred]="policy.isFormDisabled">
-          <!-- Left Column: Simple One-Time Invitation Inputs -->
+        <!-- Enrollment Workflow Selector (Invite vs Full In-House Registration) -->
+        <div class="enroll-mode-selector">
+          <button
+            type="button"
+            class="mode-selector-btn"
+            [class.active]="enrollMode === 'invite'"
+            (click)="enrollMode = 'invite'"
+          >
+            <span class="material-symbols-outlined">mail</span>
+            <div class="mode-info">
+              <span class="mode-title">Invite to Self-Register</span>
+              <span class="mode-sub">Sends single-use link for staff to complete registration</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            class="mode-selector-btn"
+            [class.active]="enrollMode === 'direct'"
+            (click)="enrollMode = 'direct'"
+          >
+            <span class="material-symbols-outlined">person_add</span>
+            <div class="mode-info">
+              <span class="mode-title">Full Staff Registration (In-House)</span>
+              <span class="mode-sub">Provisions active account &amp; sends password setup email</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="invite-form-grid" [class.enroll-blurred]="enrollMode === 'invite' && policy.isFormDisabled">
+          <!-- Left Column: Registration / Invitation Inputs -->
           <div class="cms-card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="material-symbols-outlined text-blue">mail</span>
+                <span class="material-symbols-outlined text-blue">{{ enrollMode === 'direct' ? 'person_add' : 'mail' }}</span>
                 <div>
-                  <h3>One-Time Invitation Details</h3>
-                  <p class="card-subtitle">Enter basic contact details to send a single-use onboarding link.</p>
+                  <h3>{{ enrollMode === 'direct' ? 'Full Staff Registration (In-House)' : 'One-Time Invitation Details' }}</h3>
+                  <p class="card-subtitle">
+                    {{ enrollMode === 'direct' ? 'Create an active staff account directly in-house. A password setup guide is dispatched to their email.' : 'Enter basic contact details to send a single-use onboarding link.' }}
+                  </p>
                 </div>
               </div>
               <button
@@ -112,6 +142,10 @@ import {
             </div>
 
             <div class="card-body">
+              <div class="direct-enroll-callout" *ngIf="enrollMode === 'direct'">
+                <span class="material-symbols-outlined">badge</span>
+                <span>Direct registration creates an active staff account immediately with your chosen role, contract, and availability. The member receives an automated email to set their password.</span>
+              </div>
               <div class="form-group">
                 <label class="form-label">Full Name <span class="required">*</span></label>
                 <input
@@ -286,6 +320,7 @@ import {
 
               <div class="card-actions-row">
                 <button
+                  *ngIf="enrollMode === 'invite'"
                   type="button"
                   class="btn btn-primary full-width"
                   (click)="sendInvite()"
@@ -296,6 +331,19 @@ import {
                   <span class="material-symbols-outlined" *ngIf="!isSubmitting && (policy.isFormDisabled || policy.isFormPublished === false)">lock</span>
                   <span class="material-symbols-outlined spin" *ngIf="isSubmitting">sync</span>
                   <span>{{ isSubmitting ? 'Sending...' : (policy.isFormDisabled ? 'Form Disabled — Cannot Invite' : (policy.isFormPublished === false ? 'Form Unpublished — Cannot Invite' : 'Send Invitation Link')) }}</span>
+                </button>
+
+                <button
+                  *ngIf="enrollMode === 'direct'"
+                  type="button"
+                  class="btn btn-primary full-width"
+                  (click)="submitDirectEnroll()"
+                  [disabled]="isSubmitting"
+                  title="Register staff member directly and dispatch password setup email"
+                >
+                  <span class="material-symbols-outlined" *ngIf="!isSubmitting">person_add</span>
+                  <span class="material-symbols-outlined spin" *ngIf="isSubmitting">sync</span>
+                  <span>{{ isSubmitting ? 'Registering Staff...' : 'Complete Registration & Send Password Setup' }}</span>
                 </button>
               </div>
 
@@ -2283,11 +2331,120 @@ import {
         width: 100%;
       }
     }
+
+    .enroll-mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .mode-selector-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+    .mode-selector-btn:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .mode-selector-btn.active {
+      border-color: #0050e5;
+      background: #eff6ff;
+      box-shadow: 0 0 0 1px #0050e5;
+    }
+    .mode-selector-btn .material-symbols-outlined {
+      font-size: 24px;
+      color: #64748b;
+    }
+    .mode-selector-btn.active .material-symbols-outlined {
+      color: #0050e5;
+    }
+    .mode-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .mode-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .mode-selector-btn.active .mode-title {
+      color: #0050e5;
+    }
+    .mode-sub {
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .direct-enroll-callout {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #eff6ff;
+      border-left: 3px solid #0050e5;
+      border-radius: 0 8px 8px 0;
+      font-size: 12.5px;
+      color: #1e40af;
+      margin-bottom: 16px;
+    }
+    .direct-enroll-callout .material-symbols-outlined {
+      font-size: 18px;
+      color: #0050e5;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    :host-context(.dark-mode) .mode-selector-btn,
+    body.dark-mode .mode-selector-btn {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .mode-selector-btn:hover,
+    body.dark-mode .mode-selector-btn:hover {
+      background: #243248;
+    }
+    :host-context(.dark-mode) .mode-selector-btn.active,
+    body.dark-mode .mode-selector-btn.active {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.15);
+      box-shadow: 0 0 0 1px #3b82f6;
+    }
+    :host-context(.dark-mode) .mode-title,
+    body.dark-mode .mode-title {
+      color: #f1f5f9;
+    }
+    :host-context(.dark-mode) .mode-selector-btn.active .mode-title,
+    body.dark-mode .mode-selector-btn.active .mode-title {
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .mode-sub,
+    body.dark-mode .mode-sub {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .direct-enroll-callout,
+    body.dark-mode .direct-enroll-callout {
+      background: rgba(59, 130, 246, 0.12);
+      border-left-color: #3b82f6;
+      color: #93c5fd;
+    }
+    @media (max-width: 640px) {
+      .enroll-mode-selector {
+        grid-template-columns: 1fr;
+      }
+    }
   `]
 })
 export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   private syncChannel?: BroadcastChannel;
   private syncTimer?: any;
+  enrollMode: 'invite' | 'direct' = 'invite';
   isSubmitting = false;
   currencySymbol = '₦';
   currencyCode = 'NGN';
@@ -2647,6 +2804,53 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         this.isSubmitting = false;
         this.toast.error(err?.error?.message || 'Failed to dispatch invitation.');
+      }
+    });
+  }
+
+  submitDirectEnroll(): void {
+    if (!this.inviteModel.fullName?.trim() || !this.inviteModel.email?.trim() || !this.inviteModel.phoneNumber?.trim()) {
+      this.toast.warning('Full Name, Email Address, and Phone Number are mandatory.');
+      return;
+    }
+
+    const nameParts = this.inviteModel.fullName.trim().split(' ').filter(Boolean);
+    const firstName = nameParts[0] || 'Staff';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Member';
+
+    this.isSubmitting = true;
+    const cleanJobTitle = (this.inviteModel.jobTitle && this.inviteModel.jobTitle.trim() !== '' && this.inviteModel.jobTitle !== 'undefined')
+      ? this.inviteModel.jobTitle.trim()
+      : null;
+    const cleanStaffType = (this.inviteModel.staffTypeName && this.inviteModel.staffTypeName.trim() !== '' && this.inviteModel.staffTypeName !== 'undefined')
+      ? this.inviteModel.staffTypeName.trim()
+      : null;
+
+    const payload = {
+      firstName,
+      lastName,
+      email: this.inviteModel.email.trim(),
+      phoneNumber: this.inviteModel.phoneNumber.trim(),
+      jobTitle: cleanJobTitle,
+      staffTypeId: this.inviteModel.staffTypeId || null,
+      staffTypeName: cleanStaffType,
+      defaultHourlyRate: this.inviteModel.defaultHourlyRate || 0,
+      contractedWeeklyHours: this.inviteModel.contractedWeeklyHours || 0,
+      preferredWorkingTime: this.inviteModel.preferredWorkingTime || 'Any',
+      workingAvailability: this.inviteModel.workingAvailability || 'Available',
+      mustChangePassword: true,
+      customAttributes: {}
+    };
+
+    this.workforceService.directEnrollMember(payload).subscribe({
+      next: (res: any) => {
+        this.isSubmitting = false;
+        this.toast.success(res?.message || `Staff account created for ${firstName} ${lastName}. Password setup email dispatched.`);
+        this.router.navigate(['/workforce/console/staff']);
+      },
+      error: (err: any) => {
+        this.isSubmitting = false;
+        this.toast.error(err?.error?.message || 'Failed to complete full staff registration.');
       }
     });
   }

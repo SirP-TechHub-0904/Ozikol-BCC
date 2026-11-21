@@ -506,7 +506,7 @@ export class WorkforceStaffCreateComponent implements OnInit {
     private readonly api: ApiService,
     private readonly toast: ToastService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadLookups();
@@ -520,7 +520,7 @@ export class WorkforceStaffCreateComponent implements OnInit {
           this.currencySymbol = res.data.currencySymbol;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getJobRoles().subscribe({
@@ -558,7 +558,7 @@ export class WorkforceStaffCreateComponent implements OnInit {
           this.fields = rawFields.filter(f => f.isActive !== false);
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 

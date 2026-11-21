@@ -2089,7 +2089,8 @@ namespace Ozikol_BCC.Api.Controllers
                             PreferredWorkingTime = "Any",
                             IsActive = true,
                             CreatedUtc = DateTime.UtcNow,
-                            AverageRating = 5.0m,
+                            AverageRating = 0m,
+                            TotalRatingsCount = 0,
                             PunctualityScorePercent = 100
                         });
                     }

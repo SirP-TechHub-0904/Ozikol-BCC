@@ -241,10 +241,21 @@ import { ToastService } from '../../../core/services/toast.service';
 
                 <!-- 6. Rating -->
                 <td>
-                  <div class="rating-badge">
+                  <div
+                    class="rating-badge"
+                    *ngIf="(m.totalRatingsCount > 0 || m.totalShiftsCompleted > 0) && m.averageRating > 0"
+                    [title]="(m.averageRating | number:'1.1-1') + ' based on ' + (m.totalRatingsCount || 0) + ' shift review(s)'"
+                  >
                     <span class="material-symbols-outlined star-icon">star</span>
-                    <span>{{ (m.averageRating || 5.0) | number:'1.1-1' }}</span>
+                    <span>{{ m.averageRating | number:'1.1-1' }}</span>
                   </div>
+                  <span
+                    class="unrated-chip"
+                    *ngIf="(!m.totalRatingsCount && !m.totalShiftsCompleted) || !m.averageRating || m.averageRating <= 0"
+                    title="No shift performance reviews submitted yet"
+                  >
+                    Unrated
+                  </span>
                 </td>
 
                 <!-- 7. Actions -->
@@ -435,6 +446,9 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .rating-badge { display: inline-flex; align-items: center; gap: 4px; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 9px; border-radius: 8px; font-weight: 700; font-size: 12.5px; }
     .star-icon { font-size: 15px; color: #f59e0b; }
+    .unrated-chip { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; }
+    :host-context(.dark-mode) .unrated-chip,
+    body.dark-mode .unrated-chip { color: #94a3b8; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); }
 
     .actions-cell { display: inline-flex; align-items: center; gap: 6px; }
     .action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid #cbd5e1; background: #ffffff; color: #1e293b; transition: all 0.15s ease; }

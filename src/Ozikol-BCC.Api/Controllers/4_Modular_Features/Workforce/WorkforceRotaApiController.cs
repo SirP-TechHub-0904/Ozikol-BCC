@@ -1876,7 +1876,16 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.BcpShiftStaffProfiles.Add(profile);
             }
 
-            profile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
+            var resolvedJobTitle = !string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined"
+                ? request.JobTitle.Trim()
+                : await ResolveTenantJobRoleAsync(null, ct);
+            var (resolvedStaffTypeId, resolvedStaffTypeName) = await ResolveTenantStaffTypeAsync(null, null, ct);
+
+            profile.JobTitle = resolvedJobTitle;
+            profile.StaffTypeId ??= resolvedStaffTypeId;
+            profile.StaffTypeName = !string.IsNullOrWhiteSpace(profile.StaffTypeName) && profile.StaffTypeName.ToLowerInvariant() != "undefined"
+                ? profile.StaffTypeName
+                : resolvedStaffTypeName;
             profile.DefaultHourlyRate = request.DefaultHourlyRate;
             profile.ContractedWeeklyHours = request.ContractedWeeklyHours;
             if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) profile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
@@ -2169,7 +2178,8 @@ namespace Ozikol_BCC.Api.Controllers
                     PreferredWorkingTime = "Any",
                     IsActive = true,
                     CreatedUtc = DateTime.UtcNow,
-                    AverageRating = 5.0m,
+                    AverageRating = 0m,
+                    TotalRatingsCount = 0,
                     PunctualityScorePercent = 100
                 };
                 _db.BcpShiftStaffProfiles.Add(invitedStaffProfile);
@@ -2746,8 +2756,17 @@ namespace Ozikol_BCC.Api.Controllers
                 request.PhoneNumber = normalizedPhone;
             }
 
+            var resolvedOnboardingJobTitle = !string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined"
+                ? request.JobTitle.Trim()
+                : await ResolveTenantJobRoleAsync(tenantKey, ct);
+            var (defaultStaffTypeId, defaultStaffTypeName) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
+            var resolvedOnboardingStaffType = !string.IsNullOrWhiteSpace(request.StaffTypeName) && request.StaffTypeName.Trim().ToLowerInvariant() != "undefined"
+                ? request.StaffTypeName.Trim()
+                : defaultStaffTypeName;
+
             if (user == null)
             {
+                var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, resolvedOnboardingJobTitle);
                 user = new Profile
                 {
                     Id = Guid.CreateVersion7().ToString(),
@@ -2756,8 +2775,8 @@ namespace Ozikol_BCC.Api.Controllers
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = request.PhoneNumber?.Trim(),
-                    MemberId = $"WRK-{new Random().Next(1000, 9999)}",
-                    Designation = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim(),
+                    MemberId = memberId,
+                    Designation = resolvedOnboardingJobTitle,
                     UserStatus = UserStatus.Active,
                     EmailConfirmed = true,
                     MustChangePassword = false,
@@ -2818,24 +2837,9 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.BcpShiftStaffProfiles.Add(staffProfile);
             }
 
-            if (!string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined")
-            {
-                staffProfile.JobTitle = request.JobTitle.Trim();
-            }
-            else if (string.IsNullOrWhiteSpace(staffProfile.JobTitle) || staffProfile.JobTitle.ToLowerInvariant() == "undefined")
-            {
-                staffProfile.JobTitle = !string.IsNullOrWhiteSpace(user.Designation) && user.Designation.ToLowerInvariant() != "undefined"
-                    ? user.Designation.Trim()
-                    : "Staff Member";
-            }
-            if (request.StaffTypeId.HasValue)
-            {
-                staffProfile.StaffTypeId = request.StaffTypeId.Value;
-            }
-            if (!string.IsNullOrWhiteSpace(request.StaffTypeName) && request.StaffTypeName.Trim().ToLowerInvariant() != "undefined")
-            {
-                staffProfile.StaffTypeName = request.StaffTypeName.Trim();
-            }
+            staffProfile.JobTitle = resolvedOnboardingJobTitle;
+            staffProfile.StaffTypeId = request.StaffTypeId ?? defaultStaffTypeId;
+            staffProfile.StaffTypeName = resolvedOnboardingStaffType;
             staffProfile.WorkingAvailability = !string.IsNullOrWhiteSpace(request.WorkingAvailability) && !request.WorkingAvailability.ToLower().Contains("pending")
                 ? request.WorkingAvailability.Trim()
                 : "Available";
@@ -2958,6 +2962,12 @@ namespace Ozikol_BCC.Api.Controllers
                     p.StaffTypeId ??= defaultStaffTypeId;
                     dbFixNeeded = true;
                 }
+                // Ratings are earned dynamically over time — clear any legacy hardcoded 5.0 on unrated profiles
+                if (p.TotalRatingsCount == 0 && p.AverageRating > 0)
+                {
+                    p.AverageRating = 0m;
+                    dbFixNeeded = true;
+                }
             }
 
             // 2. Discover any registered active or pending users in the tenant database who lack a BcpShiftStaffProfile
@@ -2988,7 +2998,8 @@ namespace Ozikol_BCC.Api.Controllers
                         PreferredWorkingTime = "Any",
                         IsActive = true,
                         CreatedUtc = u.JoinDate ?? DateTime.UtcNow,
-                        AverageRating = 5.0m,
+                        AverageRating = 0m,
+                        TotalRatingsCount = 0,
                         PunctualityScorePercent = 100
                     };
                     _db.BcpShiftStaffProfiles.Add(newProfile);
@@ -3057,7 +3068,8 @@ namespace Ozikol_BCC.Api.Controllers
                             PreferredWorkingTime = "Any",
                             IsActive = true,
                             CreatedUtc = inv.CreatedUtc,
-                            AverageRating = 5.0m,
+                            AverageRating = 0m,
+                            TotalRatingsCount = 0,
                             PunctualityScorePercent = 100
                         };
                         _db.BcpShiftStaffProfiles.Add(autoProf);
@@ -3085,7 +3097,7 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // 3. Cross-reference with central users table for identity details
+            // 4. Cross-reference with central users table for identity details
             var userIds = profiles.Select(p => p.UserId).Distinct().ToList();
             var users = await _db.Users
                 .AsNoTracking()
@@ -3097,7 +3109,11 @@ namespace Ozikol_BCC.Api.Controllers
                 users.TryGetValue(p.UserId, out var u);
                 var resolvedJobTitle = (!string.IsNullOrWhiteSpace(p.JobTitle) && p.JobTitle.ToLowerInvariant() != "undefined")
                     ? p.JobTitle
-                    : (!string.IsNullOrWhiteSpace(u?.Designation) && u.Designation.ToLowerInvariant() != "undefined" ? u.Designation : "Staff Member");
+                    : (!string.IsNullOrWhiteSpace(u?.Designation) && u.Designation.ToLowerInvariant() != "undefined" ? u.Designation : defaultJobTitle);
+
+                var resolvedStaffType = (!string.IsNullOrWhiteSpace(p.StaffTypeName) && p.StaffTypeName.ToLowerInvariant() != "undefined")
+                    ? p.StaffTypeName
+                    : defaultStaffTypeName;
 
                 return new StaffMemberDto
                 {
@@ -3108,14 +3124,14 @@ namespace Ozikol_BCC.Api.Controllers
                     PhoneNumber = u?.PhoneNumber,
                     AvatarUrl = u?.AvatarUrl,
                     JobTitle = resolvedJobTitle,
-                    StaffTypeId = p.StaffTypeId,
-                    StaffTypeName = !string.IsNullOrWhiteSpace(p.StaffTypeName) && p.StaffTypeName.ToLowerInvariant() != "undefined" ? p.StaffTypeName : "Permanent",
+                    StaffTypeId = p.StaffTypeId ?? defaultStaffTypeId,
+                    StaffTypeName = resolvedStaffType,
                     DefaultHourlyRate = p.DefaultHourlyRate,
                     ContractedWeeklyHours = p.ContractedWeeklyHours,
                     PreferredWorkingTime = p.PreferredWorkingTime ?? "Any",
                     WorkingAvailability = p.WorkingAvailability ?? "Available",
                     WeeklyAvailabilityJson = p.WeeklyAvailabilityJson,
-                    AverageRating = p.AverageRating > 0 ? p.AverageRating : 5.0m,
+                    AverageRating = (p.TotalRatingsCount > 0 && p.AverageRating > 0) ? p.AverageRating : 0m,
                     TotalRatingsCount = p.TotalRatingsCount,
                     TotalShiftsCompleted = p.TotalShiftsCompleted,
                     PunctualityScorePercent = p.PunctualityScorePercent > 0 ? p.PunctualityScorePercent : 100,
@@ -4549,6 +4565,16 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+            var defaultDetailJobRole = await ResolveTenantJobRoleAsync(null, ct);
+            var (defaultDetailTypeId, defaultDetailTypeName) = await ResolveTenantStaffTypeAsync(profile?.StaffTypeId, profile?.StaffTypeName, ct);
+
+            var resolvedDetailJobTitle = !string.IsNullOrWhiteSpace(profile?.JobTitle) && profile.JobTitle.ToLowerInvariant() != "undefined"
+                ? profile.JobTitle
+                : (!string.IsNullOrWhiteSpace(user?.Designation) && user.Designation.ToLowerInvariant() != "undefined" ? user.Designation : defaultDetailJobRole);
+
+            var resolvedDetailStaffType = !string.IsNullOrWhiteSpace(profile?.StaffTypeName) && profile.StaffTypeName.ToLowerInvariant() != "undefined"
+                ? profile.StaffTypeName
+                : defaultDetailTypeName;
 
             var dto = new StaffMemberDetailDto
             {
@@ -4560,15 +4586,15 @@ namespace Ozikol_BCC.Api.Controllers
                 Email = user?.Email ?? "",
                 PhoneNumber = user?.PhoneNumber,
                 MemberId = user?.MemberId ?? "WRK-0000",
-                JobTitle = profile?.JobTitle ?? user?.Designation ?? "Staff Member",
-                StaffTypeId = profile?.StaffTypeId,
-                StaffTypeName = profile?.StaffTypeName ?? "Permanent",
+                JobTitle = resolvedDetailJobTitle,
+                StaffTypeId = profile?.StaffTypeId ?? defaultDetailTypeId,
+                StaffTypeName = resolvedDetailStaffType,
                 DefaultHourlyRate = profile?.DefaultHourlyRate,
                 ContractedWeeklyHours = profile?.ContractedWeeklyHours ?? 40.0m,
                 PreferredWorkingTime = profile?.PreferredWorkingTime ?? "Any",
                 WorkingAvailability = profile?.WorkingAvailability ?? "Available",
                 WeeklyAvailabilityJson = profile?.WeeklyAvailabilityJson,
-                AverageRating = profile?.AverageRating ?? 5.0m,
+                AverageRating = (profile != null && profile.TotalRatingsCount > 0 && profile.AverageRating > 0) ? profile.AverageRating : 0m,
                 TotalRatingsCount = profile?.TotalRatingsCount ?? 0,
                 TotalShiftsCompleted = profile?.TotalShiftsCompleted ?? 0,
                 PunctualityScorePercent = profile?.PunctualityScorePercent ?? 100.0m,
@@ -5365,7 +5391,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Email { get; set; }
         public string? FullName { get; set; }
         public string? PhoneNumber { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
@@ -5380,9 +5406,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string? AvatarUrl { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";
@@ -5593,9 +5619,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? WelcomeNote { get; set; }
@@ -5616,9 +5642,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Password { get; set; }
         public bool MustChangePassword { get; set; } = true;
 
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
@@ -5844,9 +5870,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string MemberId { get; set; } = string.Empty;
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";
