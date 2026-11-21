@@ -64,14 +64,6 @@ interface StaffMember {
           </div>
           <div class="title-row">
             <h1>{{ isEditMode ? ('Edit Shift: ' + shiftCode) : 'Create Work Schedule &amp; Assignment' }}</h1>
-            <button
-              type="button"
-              class="info-badge-btn"
-              (click)="showInfoModal = true"
-              title="Click to view work schedule patterns and guide"
-            >
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">
@@ -79,6 +71,10 @@ interface StaffMember {
           </p>
         </div>
         <div class="header-actions">
+          <a routerLink="/workforce/console/shifts" class="btn btn-outline" title="Return to Shift Manager List">
+            <span class="material-symbols-outlined">event_note</span>
+            <span>Shift Manager</span>
+          </a>
           <a routerLink="/workforce/console/schedule" class="btn btn-outline" title="Return to master rota grid">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Back to Rota</span>
@@ -178,9 +174,10 @@ interface StaffMember {
                     <input
                       type="datetime-local"
                       class="form-control"
+                      [class.input-invalid]="!!shiftTimingError"
                       [(ngModel)]="singleStartDateTime"
                       name="singleStartDateTime"
-                      (change)="onDateTimeChange()"
+                      (ngModelChange)="onDateTimeChange()"
                       required
                     />
                     <span class="field-hint">e.g. 10/11/2026, 08:00 AM</span>
@@ -191,15 +188,25 @@ interface StaffMember {
                     <input
                       type="datetime-local"
                       class="form-control"
+                      [class.input-invalid]="!!shiftTimingError"
                       [(ngModel)]="singleEndDateTime"
                       name="singleEndDateTime"
-                      (change)="onDateTimeChange()"
+                      (ngModelChange)="onDateTimeChange()"
                       required
                     />
                     <span class="field-hint">e.g. 10/11/2026, 05:00 PM</span>
                   </div>
                 </div>
               </ng-container>
+
+              <!-- Real-Time Shift Timing Error Banner -->
+              <div class="timing-error-alert" *ngIf="shiftTimingError">
+                <span class="material-symbols-outlined">error</span>
+                <div>
+                  <strong>Invalid Duty Timing</strong>
+                  <p>{{ shiftTimingError }}</p>
+                </div>
+              </div>
 
               <!-- Recurring Schedule Mode -->
               <ng-container *ngIf="!isEditMode && schedulePattern === 'Recurring'">
@@ -211,7 +218,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="startDate"
                       name="startDate"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">First date of recurring schedule.</span>
@@ -224,7 +231,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="endDate"
                       name="endDate"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">Concludes the recurring batch.</span>
@@ -295,7 +302,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="dailyStartTime"
                       name="dailyStartTime"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">e.g. 08:00 AM</span>
@@ -308,7 +315,7 @@ interface StaffMember {
                       class="form-control"
                       [(ngModel)]="dailyEndTime"
                       name="dailyEndTime"
-                      (change)="recalculateScheduleMetrics()"
+                      (ngModelChange)="recalculateScheduleMetrics()"
                       required
                     />
                     <span class="field-hint">e.g. 17:00 (5:00 PM)</span>
@@ -333,7 +340,7 @@ interface StaffMember {
                         type="checkbox"
                         [(ngModel)]="hasBreak"
                         name="hasBreak"
-                        (change)="onBreakToggle()"
+                        (ngModelChange)="onBreakToggle()"
                       />
                       <span class="slider round"></span>
                     </label>
@@ -350,9 +357,10 @@ interface StaffMember {
                     <input
                       type="time"
                       class="form-control"
+                      [class.input-invalid]="!!breakTimingError"
                       [(ngModel)]="breakStartTime"
                       name="breakStartTime"
-                      (change)="onBreakTimeChange()"
+                      (ngModelChange)="onBreakTimeChange()"
                     />
                   </div>
 
@@ -361,14 +369,24 @@ interface StaffMember {
                     <input
                       type="time"
                       class="form-control"
+                      [class.input-invalid]="!!breakTimingError"
                       [(ngModel)]="breakEndTime"
                       name="breakEndTime"
-                      (change)="onBreakTimeChange()"
+                      (ngModelChange)="onBreakTimeChange()"
                     />
                   </div>
                 </div>
 
-                <div class="break-summary-badge" *ngIf="hasBreak">
+                <!-- Real-Time Break Timing Error Banner -->
+                <div class="timing-error-alert" *ngIf="hasBreak && breakTimingError">
+                  <span class="material-symbols-outlined">error</span>
+                  <div>
+                    <strong>Invalid Break Time Frame</strong>
+                    <p>{{ breakTimingError }}</p>
+                  </div>
+                </div>
+
+                <div class="break-summary-badge" *ngIf="hasBreak && !breakTimingError">
                   <span class="material-symbols-outlined text-blue">coffee</span>
                   <div>
                     <strong>Break Time Frame: {{ formatTime12(breakStartTime) }} to {{ formatTime12(breakEndTime) }}</strong>
@@ -542,6 +560,7 @@ interface StaffMember {
                   step="0.25"
                   class="form-control"
                   [(ngModel)]="hourlyPayRate"
+                  (ngModelChange)="recalculateScheduleMetrics()"
                   name="hourlyPayRate"
                   placeholder="e.g. 15.00"
                 />
@@ -637,6 +656,77 @@ interface StaffMember {
                 <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>
               </div>
 
+              <!-- Condition A: Personnel Assigned -> Offer vs Mandatory -->
+              <div class="assignment-condition-panel" *ngIf="assignedUserId">
+                <label class="form-label d-block mb-2">Assignment Mode &amp; Attendance Condition</label>
+                <div class="assignment-mode-options">
+                  <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Offer'">
+                    <input type="radio" [(ngModel)]="assignmentMode" name="assignmentMode" value="Offer" class="sr-only" />
+                    <div class="mode-header">
+                      <span class="material-symbols-outlined mode-icon offer-icon">how_to_reg</span>
+                      <div>
+                        <strong>Offer to Staff (Can Accept or Decline)</strong>
+                        <span class="mode-tag offer-tag">Default Policy</span>
+                      </div>
+                    </div>
+                    <p class="mode-desc">
+                      Dispatched as a shift offer. The officer can review and <em>Accept</em> or <em>Decline</em>.
+                      While pending acceptance, management can <em>Revoke</em> the assignment.
+                    </p>
+                  </label>
+
+                  <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Mandatory'">
+                    <input type="radio" [(ngModel)]="assignmentMode" name="assignmentMode" value="Mandatory" class="sr-only" />
+                    <div class="mode-header">
+                      <span class="material-symbols-outlined mode-icon mandatory-icon">notification_important</span>
+                      <div>
+                        <strong>Mandatory Duty (Staff Must Attend)</strong>
+                        <span class="mode-tag mandatory-tag">Compulsory</span>
+                      </div>
+                    </div>
+                    <p class="mode-desc">
+                      Designated as required operational attendance. The officer can only <em>Acknowledge Duty</em>
+                      and cannot decline without submitting a formal shift swap or excuse request.
+                    </p>
+                  </label>
+                </div>
+
+                <!-- Acceptance Deadline for Offers -->
+                <div class="acceptance-deadline-group" *ngIf="assignmentMode === 'Offer'">
+                  <label class="form-label">
+                    Acceptance Response Deadline (Optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    [(ngModel)]="acceptanceDeadlineLocal"
+                    name="acceptanceDeadlineLocal"
+                  />
+                  <span class="field-hint">
+                    If unaccepted after this deadline, the shift offer automatically expires and returns to Open Shifts.
+                  </span>
+                </div>
+              </div>
+
+              <!-- Condition B: Open Shift (Unassigned) -> Claim Approval Policy -->
+              <div class="open-shift-condition-panel" *ngIf="!assignedUserId">
+                <label class="form-label d-block mb-2">Open Shift Claiming Policy</label>
+                <label class="claim-policy-checkbox-card">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="requireClaimApproval"
+                    name="requireClaimApproval"
+                  />
+                  <div class="checkbox-body">
+                    <strong>Require Management Approval to Claim</strong>
+                    <p class="mb-0 text-muted small">
+                      When enabled: Officer applies to claim this shift, creating a pending claim that awaits your review (<em>Claim Pending Approval</em>).
+                      When disabled: The first eligible officer to claim is immediately assigned and confirmed on the roster.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <!-- Warning if selected staff member is incompatible -->
               <div class="staff-conflict-alert" *ngIf="selectedStaffConflict">
                 <span class="material-symbols-outlined text-danger">warning</span>
@@ -723,6 +813,21 @@ interface StaffMember {
                 <span class="badge-overnight">
                   <span class="material-symbols-outlined">bedtime</span> Overnight Window (Crosses Midnight)
                 </span>
+              </div>
+
+              <div class="detail-row">
+                <span class="detail-label">Time Frame:</span>
+                <span class="detail-value">{{ summaryTimeFrame }}</span>
+              </div>
+
+              <div class="detail-row" *ngIf="hasBreak && breakMinutes > 0">
+                <span class="detail-label">Unpaid Break:</span>
+                <span class="detail-value">{{ breakMinutes }} mins ({{ formatTime12(breakStartTime) }} – {{ formatTime12(breakEndTime) }})</span>
+              </div>
+
+              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly'">
+                <span class="detail-label">Hourly Rate:</span>
+                <span class="detail-value">{{ currencySymbol }}{{ (hourlyPayRate || 0) | number:'1.2-2' }}/hr</span>
               </div>
 
               <div class="detail-row">
@@ -848,7 +953,13 @@ interface StaffMember {
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
       margin-bottom: 1.5rem;
       gap: 1.5rem;
     }
@@ -1826,10 +1937,153 @@ interface StaffMember {
       font-size: 0.8125rem;
     }
 
+    .assignment-condition-panel, .open-shift-condition-panel {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.65rem;
+    }
+    .assignment-mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .assignment-mode-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.85rem;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .assignment-mode-card:hover {
+      border-color: #94a3b8;
+    }
+    .assignment-mode-card.selected {
+      border-color: #0050e5;
+      background: #eff6ff;
+      box-shadow: 0 0 0 1px #0050e5;
+    }
+    .mode-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mode-header strong {
+      font-size: 0.875rem;
+      color: #0f172a;
+    }
+    .mode-icon {
+      font-size: 1.25rem;
+      padding: 6px;
+      border-radius: 6px;
+    }
+    .offer-icon {
+      background: #eff6ff;
+      color: #0050e5;
+    }
+    .mandatory-icon {
+      background: #f5f3ff;
+      color: #7c3aed;
+    }
+    .mode-tag {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .offer-tag {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .mandatory-tag {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+    .mode-desc {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #475569;
+      line-height: 1.35;
+    }
+    .acceptance-deadline-group {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .claim-policy-checkbox-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .claim-policy-checkbox-card input[type="checkbox"] {
+      margin-top: 0.2rem;
+      accent-color: #0050e5;
+      width: 1rem;
+      height: 1rem;
+    }
+    .claim-policy-checkbox-card strong {
+      display: block;
+      font-size: 0.875rem;
+      color: #0f172a;
+      margin-bottom: 0.2rem;
+    }
+
     .staff-conflict-alert p {
       margin: 0.2rem 0 0 0;
       font-size: 0.75rem;
       color: #b91c1c;
+    }
+
+    .timing-error-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      background: #fef2f2;
+      border: 1px solid #ef4444;
+      border-radius: 0.5rem;
+      color: #991b1b;
+      font-size: 0.8125rem;
+    }
+
+    .timing-error-alert .material-symbols-outlined {
+      color: #dc2626;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .timing-error-alert strong {
+      display: block;
+      font-weight: 700;
+      color: #991b1b;
+    }
+
+    .timing-error-alert p {
+      margin: 0.2rem 0 0 0;
+      font-size: 0.78rem;
+      color: #b91c1c;
+      line-height: 1.4;
+    }
+
+    .form-control.input-invalid {
+      border-color: #dc2626 !important;
+      background-color: #fffafa !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
     }
 
     .text-warning {
@@ -1912,6 +2166,8 @@ export class WorkforceShiftEditComponent implements OnInit {
   assignedUserId = '';
   assignedStaffName = '';
   shiftStatus = 'Scheduled';
+  assignmentMode: 'Offer' | 'Mandatory' = 'Offer';
+  requireClaimApproval = false;
   acceptanceDeadlineLocal = '';
   requiredWorkspaceStationName = '';
   dutyNotes = '';
@@ -1920,6 +2176,10 @@ export class WorkforceShiftEditComponent implements OnInit {
   showSkippedList = false;
   overrideAvailabilityFilter = false;
   selectedStaffConflict = '';
+
+  // Real-Time Timing Validation Errors
+  shiftTimingError = '';
+  breakTimingError = '';
 
   // Live Calculated Metrics
   calculatedTotalDays = 1;
@@ -1954,6 +2214,21 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.loadShiftDetails(this.shiftId!);
       }
     });
+  }
+
+  /**
+   * Human-readable duty window shown in the Schedule Impact summary, derived live from the
+   * currently entered start/end values (single shift or recurring daily window).
+   */
+  get summaryTimeFrame(): string {
+    if (this.isEditMode || this.schedulePattern === 'Single') {
+      if (!this.singleStartDateTime || !this.singleEndDateTime) return '—';
+      const s = new Date(this.singleStartDateTime);
+      const e = new Date(this.singleEndDateTime);
+      const fmt: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
+      return `${s.toLocaleString('en-GB', fmt)} → ${e.toLocaleString('en-GB', fmt)}`;
+    }
+    return `${this.formatTime12(this.dailyStartTime)} → ${this.formatTime12(this.dailyEndTime)} daily`;
   }
 
   // --- Availability Checker & Skipping Logic ---
@@ -2079,19 +2354,134 @@ export class WorkforceShiftEditComponent implements OnInit {
       this.onBreakTimeChange();
     } else {
       this.breakMinutes = 0;
+      this.breakTimingError = '';
       this.recalculateScheduleMetrics();
     }
   }
 
   onBreakTimeChange(): void {
-    if (this.breakStartTime && this.breakEndTime) {
-      const startMins = this.toMinutes(this.breakStartTime);
-      const endMins = this.toMinutes(this.breakEndTime);
-      let diff = endMins - startMins;
-      if (diff < 0) diff += 24 * 60; // Crosses midnight
-      this.breakMinutes = Math.max(0, diff);
-    }
     this.recalculateScheduleMetrics();
+  }
+
+  /**
+   * Validates shift start/end times and break start/end times in real time.
+   * Populates `shiftTimingError` and `breakTimingError` whenever start time is behind/after close time
+   * or when the break window is backwards or outside the shift hours.
+   */
+  private validateTimings(): void {
+    this.shiftTimingError = '';
+    this.breakTimingError = '';
+
+    let shiftStartMins = 0;
+    let shiftEndMins = 0;
+    let grossShiftMinutes = 0;
+    let crossesMidnight = false;
+
+    if (this.isEditMode || this.schedulePattern === 'Single') {
+      if (!this.singleStartDateTime || !this.singleEndDateTime) {
+        this.shiftTimingError = 'Both Duty Start Date & Time and Duty End Date & Time are required.';
+        return;
+      }
+      const start = new Date(this.singleStartDateTime);
+      const end = new Date(this.singleEndDateTime);
+      const diffMs = end.getTime() - start.getTime();
+      grossShiftMinutes = Math.round(diffMs / (1000 * 60));
+
+      if (diffMs <= 0) {
+        this.shiftTimingError = 'Duty End Date & Time cannot be earlier than or equal to Duty Start Date & Time.';
+      } else if (grossShiftMinutes > 24 * 60) {
+        this.shiftTimingError = 'A single shift cannot exceed 24 hours. Use Recurring Schedule for multi-day assignments.';
+      }
+
+      shiftStartMins = start.getHours() * 60 + start.getMinutes();
+      shiftEndMins = end.getHours() * 60 + end.getMinutes();
+      crossesMidnight = diffMs > 0 && (end.getDate() !== start.getDate() || shiftEndMins <= shiftStartMins);
+    } else {
+      if (this.startDate && this.endDate && new Date(this.endDate) < new Date(this.startDate)) {
+        this.shiftTimingError = 'Effective End Date cannot be earlier than Effective Start Date.';
+      }
+      if (!this.dailyStartTime || !this.dailyEndTime) {
+        this.shiftTimingError = 'Both Daily Shift Start Time and End Time are required.';
+        return;
+      }
+      shiftStartMins = this.toMinutes(this.dailyStartTime);
+      shiftEndMins = this.toMinutes(this.dailyEndTime);
+      if (shiftStartMins === shiftEndMins) {
+        this.shiftTimingError = 'Daily Shift End Time cannot be identical to Daily Shift Start Time.';
+      }
+      crossesMidnight = shiftEndMins < shiftStartMins;
+      grossShiftMinutes = crossesMidnight
+        ? (24 * 60 - shiftStartMins) + shiftEndMins
+        : (shiftEndMins - shiftStartMins);
+    }
+
+    // Validate Break Time Frame
+    if (!this.hasBreak) {
+      this.breakMinutes = 0;
+      return;
+    }
+
+    if (!this.breakStartTime || !this.breakEndTime) {
+      this.breakMinutes = 0;
+      this.breakTimingError = 'Please specify both Break Start Time and Break End Time.';
+      return;
+    }
+
+    const bStart = this.toMinutes(this.breakStartTime);
+    const bEnd = this.toMinutes(this.breakEndTime);
+
+    if (bStart === bEnd) {
+      this.breakMinutes = 0;
+      this.breakTimingError = 'Break End Time cannot be the same as Break Start Time.';
+      return;
+    }
+
+    if (!crossesMidnight) {
+      // Standard same-day shift: break end MUST be strictly after break start
+      if (bEnd < bStart) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break End Time (${this.formatTime12(this.breakEndTime)}) cannot be earlier than Break Start Time (${this.formatTime12(this.breakStartTime)}).`;
+        return;
+      }
+
+      // Break must fall within [shiftStartMins, shiftEndMins]
+      if (!this.shiftTimingError && (bStart < shiftStartMins || bEnd > shiftEndMins)) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break time (${this.formatTime12(this.breakStartTime)} – ${this.formatTime12(this.breakEndTime)}) must fall within the scheduled duty hours (${this.formatTime12(this.minutesToHHMM(shiftStartMins))} – ${this.formatTime12(this.minutesToHHMM(shiftEndMins))}).`;
+        return;
+      }
+
+      this.breakMinutes = bEnd - bStart;
+    } else {
+      // Overnight shift crossing midnight: normalize times relative to shiftStartMins
+      const normBStart = bStart >= shiftStartMins ? (bStart - shiftStartMins) : (24 * 60 - shiftStartMins + bStart);
+      const normBEnd = bEnd >= shiftStartMins ? (bEnd - shiftStartMins) : (24 * 60 - shiftStartMins + bEnd);
+
+      if (normBEnd <= normBStart) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break End Time (${this.formatTime12(this.breakEndTime)}) cannot be earlier than Break Start Time (${this.formatTime12(this.breakStartTime)}).`;
+        return;
+      }
+
+      if (!this.shiftTimingError && (normBStart < 0 || normBEnd > grossShiftMinutes)) {
+        this.breakMinutes = 0;
+        this.breakTimingError = `Break time (${this.formatTime12(this.breakStartTime)} – ${this.formatTime12(this.breakEndTime)}) must fall within the overnight shift window.`;
+        return;
+      }
+
+      this.breakMinutes = normBEnd - normBStart;
+    }
+
+    if (!this.shiftTimingError && grossShiftMinutes > 0 && this.breakMinutes >= grossShiftMinutes) {
+      this.breakTimingError = `Break duration (${this.breakMinutes} mins) cannot equal or exceed total shift duration (${grossShiftMinutes} mins).`;
+      this.breakMinutes = 0;
+    }
+  }
+
+  private minutesToHHMM(totalMins: number): string {
+    const h = Math.floor(totalMins / 60) % 24;
+    const m = totalMins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   formatTime12(timeStr: string): string {
@@ -2298,6 +2688,12 @@ export class WorkforceShiftEditComponent implements OnInit {
         const s = res?.data || res;
         if (!s) return;
 
+        if ((s.status || '').toLowerCase() === 'completed') {
+          this.toast.warning('Completed shifts are locked from editing.');
+          this.router.navigate(['/workforce/console/shifts', id, 'report']);
+          return;
+        }
+
         this.shiftCode = s.shiftCode;
         this.selectedSiteId = s.clientSiteId;
         this.facilityName = s.facilityName || '';
@@ -2312,6 +2708,8 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.hasBreak = this.breakMinutes > 0;
         this.requiredWorkspaceStationName = s.requiredWorkspaceStationName || '';
         this.shiftStatus = s.status || 'Scheduled';
+        this.assignmentMode = (s.assignmentMode === 'Mandatory') ? 'Mandatory' : 'Offer';
+        this.requireClaimApproval = !!s.requireClaimApproval;
         this.dutyNotes = s.notes || '';
 
         if (s.startsAtUtc) {
@@ -2338,6 +2736,8 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   recalculateScheduleMetrics(): void {
+    this.validateTimings();
+
     if (this.isEditMode || this.schedulePattern === 'Single') {
       if (this.singleStartDateTime && this.singleEndDateTime) {
         const start = new Date(this.singleStartDateTime);
@@ -2349,7 +2749,7 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.calculatedTotalDays = 1;
         this.calculatedDailyHours = Math.round(netHours * 10) / 10;
         this.calculatedTotalHours = this.calculatedDailyHours;
-        this.isOvernightShift = end.getDate() !== start.getDate();
+        this.isOvernightShift = diffMs > 0 && end.getDate() !== start.getDate();
       }
       return;
     }
@@ -2391,6 +2791,18 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   saveSchedule(): void {
+    this.validateTimings();
+
+    if (this.shiftTimingError) {
+      this.toast.error(this.shiftTimingError);
+      return;
+    }
+
+    if (this.hasBreak && this.breakTimingError) {
+      this.toast.error(this.breakTimingError);
+      return;
+    }
+
     if (!this.selectedSiteId) {
       this.toast.error('Please select a Work Location.');
       return;
@@ -2408,6 +2820,8 @@ export class WorkforceShiftEditComponent implements OnInit {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignmentMode: this.assignmentMode,
+        requireClaimApproval: this.requireClaimApproval,
         postName: this.postName,
         facilityName: this.facilityName,
         address: this.address,
@@ -2419,7 +2833,7 @@ export class WorkforceShiftEditComponent implements OnInit {
         hourlyChargeRate: this.hourlyChargeRate,
         status: this.shiftStatus,
         requiredWorkspaceStationName: this.requiredWorkspaceStationName,
-        acceptanceDeadlineUtc: this.acceptanceDeadlineLocal ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
+        acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
         notes: this.dutyNotes
       };
 
@@ -2443,6 +2857,9 @@ export class WorkforceShiftEditComponent implements OnInit {
         clientSiteId: this.selectedSiteId,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignmentMode: this.assignmentMode,
+        requireClaimApproval: this.requireClaimApproval,
+        acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
         postName: this.postName,
         facilityName: this.facilityName,
         address: this.address,
@@ -2477,6 +2894,9 @@ export class WorkforceShiftEditComponent implements OnInit {
       clientSiteId: this.selectedSiteId,
       assignedUserId: this.assignedUserId || null,
       assignedUserName: this.assignedStaffName || null,
+      assignmentMode: this.assignmentMode,
+      requireClaimApproval: this.requireClaimApproval,
+      acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
       postName: this.postName,
       facilityName: this.facilityName,
       address: this.address,

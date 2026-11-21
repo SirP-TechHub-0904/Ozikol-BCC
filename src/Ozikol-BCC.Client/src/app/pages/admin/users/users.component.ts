@@ -543,22 +543,22 @@ Chart.register(...registerables);
             <div class="form-grid-2">
               <div class="form-group">
                 <label>First Name *</label>
-                <input type="text" [(ngModel)]="newUser.firstName" placeholder="e.g. John" />
+                <input type="text" [(ngModel)]="newUser.firstName" placeholder="e.g. First Name" />
               </div>
               <div class="form-group">
                 <label>Last Name *</label>
-                <input type="text" [(ngModel)]="newUser.lastName" placeholder="e.g. Doe" />
+                <input type="text" [(ngModel)]="newUser.lastName" placeholder="e.g. Last Name" />
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
                 <label>Email Address *</label>
-                <input type="email" [(ngModel)]="newUser.email" placeholder="e.g. john@domain.com" />
+                <input type="email" [(ngModel)]="newUser.email" placeholder="name@company.com" />
               </div>
               <div class="form-group">
                 <label>Phone Number</label>
-                <input type="text" [(ngModel)]="newUser.phoneNumber" placeholder="+123456789" />
+                <input type="text" [(ngModel)]="newUser.phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
               </div>
             </div>
 

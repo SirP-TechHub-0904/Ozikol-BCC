@@ -1,3 +1,8 @@
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Application.Services.Cloudflare;
 using static Ozikol_BCC.Domain.Enum.Enum;
 using System;
 using System.Collections.Generic;
@@ -37,6 +42,9 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext? _master;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ICloudflareR2StorageService? _r2Storage;
+        private readonly ICloudinaryService? _cloudinaryService;
+        private readonly ILogger<WorkforceMemberWorkspaceApiController>? _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WorkforceMemberWorkspaceApiController"/> class.
@@ -45,12 +53,18 @@ namespace Ozikol_BCC.Api.Controllers
             DashboardDbContext db,
             MasterCatalogDbContext? master = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            ICloudflareR2StorageService? r2Storage = null,
+            ICloudinaryService? cloudinaryService = null,
+            ILogger<WorkforceMemberWorkspaceApiController>? logger = null)
         {
             _db = db;
             _master = master;
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
+            _r2Storage = r2Storage;
+            _cloudinaryService = cloudinaryService;
+            _logger = logger;
         }
 
         private string CurrentTenantKey => ResolveCurrentTenantKey();
@@ -80,15 +94,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (pref == null)
             {
-                return NotificationChannels.InApp | NotificationChannels.Email;
+                return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
             var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
             if (pref.EnableEmail) channels |= NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
         }
 
         /// <summary>
@@ -178,6 +192,7 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
                     ConfirmedAtUtc = s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
@@ -225,6 +240,7 @@ namespace Ozikol_BCC.Api.Controllers
                     PlannedDurationHours = s.PlannedDurationHours,
                     HourlyPayRate = s.HourlyPayRate,
                     HourlyChargeRate = s.HourlyChargeRate,
+                    RequireClaimApproval = s.RequireClaimApproval,
                     Status = "Open",
                     Notes = s.Notes,
                     SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
@@ -253,11 +269,69 @@ namespace Ozikol_BCC.Api.Controllers
                 return Conflict(ApiResponse<bool>.FailureResponse("This shift has already been claimed by another officer.", errorCode: "ERR-2005"));
             }
 
+            if (shift.RequireClaimApproval)
+            {
+                shift.AssignedUserId = CurrentUserId;
+                shift.AssignedUserName = CurrentUserName;
+                shift.Status = "ClaimPending";
+                shift.IsConfirmedByGuard = false;
+                shift.ConfirmedAtUtc = null;
+                shift.UpdatedUtc = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                // Dispatch claim pending notifications
+                if (_notificationDispatcher != null)
+                {
+                    try
+                    {
+                        var channels = await ResolveStaffNotificationChannelsAsync(CurrentUserId, ct);
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = CurrentUserId,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Shift Claim Submitted",
+                            Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName} has been submitted for supervisor approval.",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = channels,
+                            Module = "Workforce",
+                            Icon = "hourglass_top",
+                            ActionUrl = "/workforce/workspace/my-shifts"
+                        }, ct);
+
+                        var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                            TargetUserId = supervisorTarget,
+                            TenantKey = CurrentTenantKey,
+                            Title = "Shift Claim Awaiting Approval",
+                            Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                            Module = "Workforce",
+                            Icon = "pending_actions",
+                            ActionUrl = "/workforce/console/shifts"
+                        }, ct);
+                    }
+                    catch
+                    {
+                        // Non-blocking notification dispatch
+                    }
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Your request to claim this shift has been submitted for supervisor approval."));
+            }
+
             shift.AssignedUserId = CurrentUserId;
             shift.AssignedUserName = CurrentUserName;
             shift.Status = "Assigned";
             shift.IsConfirmedByGuard = true;
             shift.ConfirmedAtUtc = DateTime.UtcNow;
+            shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
 
@@ -292,7 +366,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "person_check",
                         ActionUrl = "/workforce/console/schedule"
@@ -321,6 +395,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
             }
 
+            if (shift.AssignedUserId != CurrentUserId)
+            {
+                return Forbid();
+            }
+
             shift.IsConfirmedByGuard = true;
             shift.ConfirmedAtUtc = DateTime.UtcNow;
             if (shift.Status == "Draft" || shift.Status == "Scheduled")
@@ -345,7 +424,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "verified",
                         ActionUrl = "/workforce/console/schedule"
@@ -358,6 +437,73 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift confirmed successfully."));
+        }
+
+        /// <summary>
+        /// Allows an assigned staff member to decline an offered shift that they have not yet accepted.
+        /// Mandatory duties cannot be declined (staff must request a swap or excuse instead).
+        /// The shift returns to the Open pool and the scheduling administrator is notified.
+        /// </summary>
+        [HttpPost("shifts/{id:guid}/decline")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeclineShiftOffer(Guid id, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
+            }
+
+            if (shift.AssignedUserId != CurrentUserId)
+            {
+                return Forbid();
+            }
+
+            if (shift.AssignmentMode == "Mandatory")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This is a mandatory duty and cannot be declined. Please request a shift swap or submit an excuse for approval."));
+            }
+
+            if (shift.IsConfirmedByGuard || shift.Status is "InProgress" or "Completed")
+            {
+                return BadRequest(ApiResponse<bool>.FailureResponse("This shift has already been accepted. Please request a swap or excuse instead."));
+            }
+
+            shift.AssignedUserId = null;
+            shift.AssignedUserName = null;
+            shift.Status = "Open";
+            shift.AcceptanceDeadlineUtc = null;
+            shift.UpdatedUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
+                        TargetUserId = supervisorTarget,
+                        TenantKey = CurrentTenantKey,
+                        Title = $"Shift Offer Declined ({shift.ShiftCode})",
+                        Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Module = "Workforce",
+                        Icon = "person_off",
+                        ActionUrl = "/workforce/console/shifts"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift declined and returned to the open pool."));
         }
 
         /// <summary>
@@ -398,6 +544,7 @@ namespace Ozikol_BCC.Api.Controllers
                     HourlyPayRate = s.HourlyPayRate,
                     Status = s.Status,
                     IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    AssignmentMode = s.AssignmentMode,
                     IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue,
                     IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue,
                     ClockInUtc = s.AttendanceRecord != null ? s.AttendanceRecord.ClockInUtc : null,
@@ -555,7 +702,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officers {swap.RequestingUserName} and {CurrentUserName} have agreed on a shift swap for {swap.Shift?.ShiftCode ?? "duty"} and are awaiting administrative approval.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "supervisor_account",
                         ActionUrl = "/workforce/console/schedule"
@@ -669,7 +816,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} requested {leave.LeaveType} leave ({leave.StartDate:dd MMM yyyy} - {leave.EndDate:dd MMM yyyy}). Reason: {leave.Reason ?? "Not specified"}",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
                         Module = "Workforce",
                         Icon = "event_busy",
                         ActionUrl = "/workforce/console/schedule"
@@ -824,6 +971,144 @@ namespace Ozikol_BCC.Api.Controllers
             await _db.SaveChangesAsync(ct);
 
             return Ok(ApiResponse<Guid>.SuccessResponse(doc.Id, "Compliance document uploaded successfully."));
+        }
+
+        /// <summary>
+        /// Uploads a staff member compliance credential file (SIA license, passport, certificate, right-to-work scan)
+        /// directly to Cloudinary.
+        /// </summary>
+        [HttpPost("documents/upload-media")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadComplianceMedia(
+            [FromForm] IFormFile file,
+            [FromForm] string? folder = "bcp-compliance-vault",
+            CancellationToken ct = default)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded.", errorCode: "ERR-2001"));
+            }
+
+            var folderTarget = string.IsNullOrWhiteSpace(folder) ? "bcp-compliance-vault" : folder.Trim();
+
+            // Validate file extension for safe compliance documents
+            var rawExt = Path.GetExtension(file.FileName);
+            var normalizedExt = rawExt?.TrimStart('.').ToUpperInvariant();
+            var permittedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC",
+                "PDF", "DOC", "DOCX", "ODT", "RTF", "TXT"
+            };
+
+            if (string.IsNullOrWhiteSpace(normalizedExt) || !permittedExts.Contains(normalizedExt))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"File format '{rawExt}' is not permitted for compliance credentials. Supported formats: images (JPG, PNG, WEBP, HEIC) and documents (PDF, DOC, DOCX).",
+                    errorCode: "ERR-2002"));
+            }
+
+            // Reject disguised executable/script payloads
+            var lowerFileName = file.FileName.ToLowerInvariant();
+            if (lowerFileName.Contains('\0') ||
+                lowerFileName.EndsWith(".exe") ||
+                lowerFileName.Contains(".php.") ||
+                lowerFileName.Contains(".asp.") ||
+                lowerFileName.Contains(".aspx.") ||
+                lowerFileName.Contains(".jsp.") ||
+                lowerFileName.Contains(".sh.") ||
+                lowerFileName.Contains(".bat."))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded.", errorCode: "ERR-2003"));
+            }
+
+            var folderTarget = $"tenants/{CurrentTenantKey}/compliance-documents";
+
+            // 1. Primary Cloud Storage: Cloudflare R2 Global Edge CDN
+            if (_r2Storage != null)
+            {
+                try
+                {
+                    await using var stream = file.OpenReadStream();
+                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                    var r2Result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, folderTarget);
+                    if (r2Result.Success && !string.IsNullOrWhiteSpace(r2Result.Url))
+                    {
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = r2Result.Url,
+                            key = r2Result.Key ?? r2Result.SafeFileName ?? file.FileName,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Compliance document uploaded successfully to Cloudflare CDN."));
+                    }
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[Workforce] Cloudflare R2 upload attempt encountered an issue: {Message}. Trying secondary cloud provider.", r2Ex.Message);
+                }
+            }
+
+            // 2. Secondary Cloud Storage: Cloudinary
+            if (_cloudinaryService != null)
+            {
+                try
+                {
+                    string? customCloud = null;
+                    string? customKey = null;
+                    string? customSecret = null;
+                    var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (config?.UseCustomStorage == true &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                    {
+                        customCloud = config.CustomCloudinaryCloudName;
+                        customKey = config.CustomCloudinaryApiKey;
+                        customSecret = config.CustomCloudinaryApiSecret;
+                    }
+
+                    var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
+                    if (isImage)
+                    {
+                        var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        {
+                            return Ok(ApiResponse<object>.SuccessResponse(new
+                            {
+                                url = uploadResult.Url,
+                                key = uploadResult.PublicId,
+                                fileName = file.FileName,
+                                fileSize = file.Length,
+                                contentType = file.ContentType
+                            }, "Compliance document uploaded successfully."));
+                        }
+                    }
+                    else
+                    {
+                        var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        {
+                            return Ok(ApiResponse<object>.SuccessResponse(new
+                            {
+                                url = uploadResult.Url,
+                                key = uploadResult.PublicId,
+                                fileName = file.FileName,
+                                fileSize = file.Length,
+                                contentType = file.ContentType
+                            }, "Compliance document uploaded successfully."));
+                        }
+                    }
+                }
+                catch (Exception cloudEx)
+                {
+                    _logger?.LogWarning(cloudEx, "[Workforce] Cloudinary storage attempt encountered an issue: {Message}", cloudEx.Message);
+                }
+            }
+
+            // Zero local disk storage fallback - strictly return error if cloud CDN is unavailable
+            _logger?.LogError("[Workforce] All cloud storage options (Cloudflare R2 CDN and Cloudinary) are unavailable for file {FileName}.", file.FileName);
+            return StatusCode(500, ApiResponse<object>.FailureResponse("Cloud storage service is currently unavailable. Please verify Cloudflare CDN credentials and try again.", errorCode: "ERR-STORAGE-UNAVAILABLE"));
         }
 
         // =========================================================================
@@ -1011,7 +1296,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with alert: {flagReason}",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Error,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
                         Module = "Workforce",
                         Icon = "warning",
                         ActionUrl = "/workforce/console/live"
@@ -1110,6 +1395,152 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Welfare ping acknowledged. Lone-worker safety verified."));
         }
 
+        // =========================================================================
+        // 14. EMERGENCY SOS PROTOCOLS & SHIFT DUTY REPORTS
+        // =========================================================================
+
+        /// <summary>
+        /// Retrieves the active emergency and security incident categories configured for this tenant organization.
+        /// Returns dynamic categories configured by the business in shift settings, or platform baseline categories if not customized.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>List of emergency incident category definitions.</returns>
+        [HttpGet("emergency/categories")]
+        public async Task<ActionResult<ApiResponse<object>>> GetEmergencyCategories(CancellationToken ct)
+        {
+            string? json = null;
+            try
+            {
+                var policy = await _db.BcpWorkforcePolicySettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+
+                json = policy?.EmergencyCategoriesJson;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Could not read EmergencyCategoriesJson from database (pending migration). Using defaults.");
+            }
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                json = WorkforceRotaApiController.GetDefaultEmergencyCategoriesJson();
+            }
+
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<object>(json);
+                return Ok(ApiResponse<object>.SuccessResponse(parsed, "Emergency categories retrieved successfully."));
+            }
+            catch
+            {
+                return Ok(ApiResponse<string>.SuccessResponse(json, "Emergency categories retrieved successfully."));
+            }
+        }
+
+        /// <summary>
+        /// Submits or updates the activity report and occurrence log for an active or completed duty shift.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift.</param>
+        /// <param name="request">Duty report summary details.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Success confirmation boolean.</returns>
+        [HttpPost("shifts/{id:guid}/duty-report")]
+        public async Task<ActionResult<ApiResponse<bool>>> SubmitShiftDutyReport(Guid id, [FromBody] MemberShiftDutyReportRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
+            }
+
+            // Ensure the shift belongs to current user or attendance record matches current user
+            if (!string.Equals(shift.AssignedUserId, CurrentUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                var isAttendanceUser = await _db.BcpShiftAttendances.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
+                if (!isAttendanceUser)
+                {
+                    return Forbid();
+                }
+            }
+
+            shift.ReportContent = request.ReportContent;
+            shift.ReportSubmissionUtc = DateTime.UtcNow;
+            shift.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift duty report submitted successfully."));
+        }
+
+        /// <summary>
+        /// Dispatches an immediate high-priority Emergency SOS alert across SMS, Email, WhatsApp, and Web Push notifications
+        /// to operations administration, supervisors, and incident response controllers.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift where the emergency occurred.</param>
+        /// <param name="request">Emergency incident details including category, description, and GPS coordinates.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Success confirmation boolean.</returns>
+        [HttpPost("shifts/{id:guid}/emergency-sos")]
+        public async Task<ActionResult<ApiResponse<bool>>> DispatchEmergencySos(Guid id, [FromBody] MemberEmergencySosRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .Include(s => s.ClientSite)
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
+            }
+
+            var siteName = shift.ClientSite?.SiteName ?? "Assigned Site";
+            var postName = shift.PostName ?? "Main Post";
+            var categoryName = !string.IsNullOrWhiteSpace(request.CategoryName) ? request.CategoryName.Trim() : "Security Incident";
+            var timeUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+            var locationString = (request.Latitude.HasValue && request.Longitude.HasValue)
+                ? $"{request.Latitude.Value:F5}, {request.Longitude.Value:F5}"
+                : "GPS unavailable";
+
+            var alertTitle = $"🚨 CRITICAL SOS: {categoryName} at {siteName}";
+            var alertMessage = $"URGENT EMERGENCY ALERT: Officer {CurrentUserName} engaged panic alert at {siteName} ({postName}). Category: {categoryName}. Details: {request.Description}. Location: {locationString}. Time: {timeUtc} UTC.";
+
+            // 1. Log incident permanently into Shift occurrence / duty report
+            var incidentLogEntry = $"\n[{timeUtc} UTC] 🚨 EMERGENCY SOS TRIGGERED: {categoryName}\nOfficer: {CurrentUserName}\nDetails: {request.Description}\nGPS: {locationString}\n";
+            shift.ReportContent = string.IsNullOrWhiteSpace(shift.ReportContent)
+                ? incidentLogEntry
+                : shift.ReportContent + "\n" + incidentLogEntry;
+            shift.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            // 2. Dispatch across ALL channels simultaneously (SMS, Email, WhatsApp, Push) via CentralNotificationDispatcher
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        TenantKey = CurrentTenantKey,
+                        Title = alertTitle,
+                        Message = alertMessage,
+                        Category = BcpMessageCategory.Security,
+                        Severity = NotificationSeverity.Error,
+                        Channels = NotificationChannels.All,
+                        Module = "Workforce",
+                        Icon = "emergency",
+                        ActionUrl = "/workforce/console/live"
+                    }, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Failed to broadcast Emergency SOS notifications for shift {ShiftId}", id);
+                }
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Emergency SOS broadcasted successfully across SMS, Email, WhatsApp, and Push notifications."));
+        }
+
         private static double CalculateHaversineDistanceMeters(double lat1, double lon1, double lat2, double lon2)
         {
             const double earthRadiusMeters = 6371000;
@@ -1125,5 +1556,52 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;
+    }
+
+    /// <summary>
+    /// Payload submitted by a rostered staff member to record duty report activity, occurrence checks, or handover remarks.
+    /// </summary>
+    public class MemberShiftDutyReportRequest
+    {
+        /// <summary>
+        /// Textual summary of duty checks, occurrence observations, access control logs, and handover remarks.
+        /// </summary>
+        public string ReportContent { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Payload dispatched by a staff member on active duty to trigger a critical emergency SOS security broadcast.
+    /// </summary>
+    public class MemberEmergencySosRequest
+    {
+        /// <summary>
+        /// Identifier of the dynamic emergency category selected by the staff member.
+        /// </summary>
+        public string CategoryId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Display title or classification of the incident (e.g. Intruder, Violence, Fire).
+        /// </summary>
+        public string CategoryName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Severity classification (e.g. Critical, High).
+        /// </summary>
+        public string Severity { get; set; } = "Critical";
+
+        /// <summary>
+        /// Urgent incident description or assistance requirements submitted by the staff member.
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional GPS latitude of the staff member when the SOS trigger was engaged.
+        /// </summary>
+        public double? Latitude { get; set; }
+
+        /// <summary>
+        /// Optional GPS longitude of the staff member when the SOS trigger was engaged.
+        /// </summary>
+        public double? Longitude { get; set; }
     }
 }

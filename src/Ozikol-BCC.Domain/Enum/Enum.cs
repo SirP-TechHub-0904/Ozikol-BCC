@@ -1144,6 +1144,27 @@ namespace Ozikol_BCC.Domain.Enum
         }
 
         /// <summary>
+        /// External or platform communication delivery providers fulfilling outbox message transmission.
+        /// </summary>
+        public enum BcpMessageProvider
+        {
+            /// <summary>
+            /// Unconfigured or provider-agnostic dispatch route.
+            /// </summary>
+            Unconfigured = 0,
+
+            /// <summary>
+            /// Native Mailcow SMTP infrastructure (mail.ozikol.cloud).
+            /// </summary>
+            Mailcow = 1,
+
+            /// <summary>
+            /// OneSignal push notification delivery provider across Web, Mobile, and Desktop.
+            /// </summary>
+            OneSignal = 2
+        }
+
+        /// <summary>
         /// Canonical 6-tier platform notification and alert severity hierarchy across web, mobile, desktop, and transactional channels.
         /// </summary>
         public enum NotificationSeverity

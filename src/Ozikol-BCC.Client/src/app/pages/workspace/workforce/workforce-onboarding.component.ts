@@ -7,6 +7,14 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber,
+  splitPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 /**
  * Public/Worker Self-Activation Landing Page Component.
@@ -20,7 +28,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 @Component({
   selector: 'app-workforce-onboarding',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent, PhoneInputComponent],
   template: `
     <!-- Live Single-Source-of-Truth Outer Shell: Website Layout vs. Auth Layout -->
     <app-landing *ngIf="policy.pageShellLayout !== 'auth'"
@@ -97,10 +105,12 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
             <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
               <label class="rf-sim-label">Phone Number</label>
-              <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+              <app-phone-input
+                [(phoneNumber)]="onboardingModel.phoneNumber"
+              ></app-phone-input>
             </div>
 
-            <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+            <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
               <label class="rf-sim-label">Member Category / Tier</label>
               <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                 <option [ngValue]="null">Standard Member (No Category Tier)</option>
@@ -190,10 +200,12 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
 
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Category Tier</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -305,9 +317,11 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
               <div class="rf-sim-stage-badge">STAGE 2: CATEGORY &amp; SECTOR</div>
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category Tier</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -427,9 +441,11 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
             <div *ngIf="simStep === 2" class="rf-sim-stage">
               <div *ngIf="isCoreFieldPublished('phone')" class="rf-sim-group">
                 <label class="rf-sim-label">Phone Number</label>
-                <input type="text" [(ngModel)]="onboardingModel.phoneNumber" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
+                <app-phone-input
+                  [(phoneNumber)]="onboardingModel.phoneNumber"
+                ></app-phone-input>
               </div>
-              <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+              <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                 <label class="rf-sim-label">Member Category</label>
                 <select class="rf-sim-input" [(ngModel)]="selectedCategoryId">
                   <option [ngValue]="null">Standard Member</option>
@@ -593,6 +609,43 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       background: #f1f5f9;
       color: #64748b;
       cursor: not-allowed;
+    }
+    .phone-input-combo {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .phone-country-select {
+      flex: 0 0 115px;
+      max-width: 125px;
+      height: 40px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+    .phone-country-select:focus {
+      border-color: #0050e5;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-national-control {
+      flex: 1 1 auto;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+    .rf-field-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
     }
     .rf-sim-textarea { height: auto; padding: 8px 12px; resize: none; }
     .rf-sim-checkbox-label {
@@ -815,12 +868,19 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     pageShellLayout: 'website' as 'website' | 'auth',
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
+    isFormDisabled: false,
     unpublishedCoreFields: [] as string[],
+    deletedCoreFields: [] as string[],
     customSections: [] as string[]
   };
   fields: any[] = [];
   categories: any[] = [];
   customAttributes: { [key: string]: any } = {};
+
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
 
   onboardingModel = {
     token: '',
@@ -900,12 +960,18 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const schema = res?.data || res;
         if (schema) {
+          if (schema.isFormDisabled || schema.isFormPublished === false) {
+            this.router.navigate(['/404'], { skipLocationChange: true });
+            return;
+          }
+          this.policy.isFormDisabled = schema.isFormDisabled ?? false;
           this.policy.registrationFormTitle = schema.formTitle || 'Create Your Account';
           this.policy.registrationWelcomeMessage = schema.welcomeMessage || 'Join our member directory and workspace portal.';
           this.policy.pageShellLayout = schema.pageShellLayout || 'website';
           this.policy.formLayoutMode = schema.formLayoutMode || 'single';
           this.policy.requirePassword = schema.requirePassword ?? true;
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
+          this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
           this.recaptchaSiteKey = schema.recaptchaSiteKey || '';
           this.categories = schema.categories || [];
@@ -942,9 +1008,23 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     });
   }
 
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.onboardingModel.phoneNumber = cleaned.canonicalE164;
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
+
   isCoreFieldPublished(key: string): boolean {
-    if (!this.policy.unpublishedCoreFields) return true;
-    return !this.policy.unpublishedCoreFields.includes(key);
+    const unpublished = Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(key);
+    const deleted = Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(key);
+    return !unpublished && !deleted;
   }
 
   private verifyToken(): void {
@@ -958,6 +1038,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
             this.onboardingModel.email = res.data.email;
           }
           if (res.data.phoneNumber) {
+            const split = splitPhoneNumber(res.data.phoneNumber);
+            this.phoneCountryCode = split.countryCode;
+            this.phoneNationalNumber = split.nationalNumber;
             this.onboardingModel.phoneNumber = res.data.phoneNumber;
           }
           if (res.data.fullName) {

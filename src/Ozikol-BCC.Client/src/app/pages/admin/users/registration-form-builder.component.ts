@@ -1917,8 +1917,8 @@ interface IndustryTemplate {
                     <div class="rf-sim-stage-badge">STAGE 4: VERIFY &amp; FINISH</div>
                     <div class="rf-sim-sum-box">
                       <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; color: #1e293b;">Application Review</div>
-                      <div style="font-size: 11px; color: #475569;">Applicant: <strong>{{ simModel.firstName ? (simModel.firstName + ' ' + simModel.lastName) : 'Jane Doe (Sample)' }}</strong></div>
-                      <div style="font-size: 11px; color: #475569;">Email: <strong>{{ simModel.email || 'jane@company.com' }}</strong></div>
+                      <div style="font-size: 11px; color: #475569;">Applicant: <strong>{{ simModel.firstName ? (simModel.firstName + ' ' + simModel.lastName) : 'First Last (Sample)' }}</strong></div>
+                      <div style="font-size: 11px; color: #475569;">Email: <strong>{{ simModel.email || 'user@company.com' }}</strong></div>
                       <div style="font-size: 11px; color: #64748b;">Sector: {{ policy.defaultIndustrySector }}</div>
                       <div style="font-size: 11px; color: #64748b;">Category: {{ getSimCategoryName() }}</div>
                     </div>
@@ -2051,8 +2051,8 @@ interface IndustryTemplate {
                   <div *ngIf="simStep === 3" class="rf-sim-stage">
                     <div class="rf-sim-sum-box">
                       <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px; color: #1e293b;">Final Submission Checklist</div>
-                      <div style="font-size: 11px; color: #475569;">Applicant: <strong>{{ simModel.firstName ? (simModel.firstName + ' ' + simModel.lastName) : 'Jane Doe (Sample)' }}</strong></div>
-                      <div style="font-size: 11px; color: #475569;">Email: <strong>{{ simModel.email || 'jane@company.com' }}</strong></div>
+                      <div style="font-size: 11px; color: #475569;">Applicant: <strong>{{ simModel.firstName ? (simModel.firstName + ' ' + simModel.lastName) : 'First Last (Sample)' }}</strong></div>
+                      <div style="font-size: 11px; color: #475569;">Email: <strong>{{ simModel.email || 'user@company.com' }}</strong></div>
                       <div style="font-size: 11px; color: #64748b;">Ready for submission verification.</div>
                     </div>
                     <div class="rf-sim-recaptcha-box">
@@ -6188,7 +6188,7 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
       layoutName: 'Category Sections Flow',
       layoutReason: 'Splits personal credentials and corporate compliance into structured category cards.',
       sampleQuestions: [
-        { label: 'Company / Organization Name', type: 'text', required: true, placeholder: 'e.g. Acme Global Corporation' },
+        { label: 'Company / Organization Name', type: 'text', required: true, placeholder: 'e.g. Your Organization Name' },
         { label: 'Job Title / Role', type: 'text', required: true, placeholder: 'e.g. Managing Director' },
         { label: 'Organization Size', type: 'select', required: true, options: ['1-10 employees', '11-50 employees', '51-200 employees', '201-1000 employees', '1000+ employees'] },
         { label: 'Industry Sector', type: 'select', required: true, options: ['Technology & Software', 'Financial Services', 'Manufacturing', 'Consulting', 'Healthcare', 'Retail'] },
@@ -6371,11 +6371,11 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
     this.tplTestSubmitted = false;
     const domain = tpl.key === 'education' ? 'institution.edu'
       : tpl.key === 'healthcare' ? 'care.health'
-      : tpl.key === 'saas' ? 'techstart.io'
-      : tpl.key === 'realestate' ? 'primeprop.com'
-      : tpl.key === 'fitness' ? 'fitclub.org'
-      : tpl.key === 'legal' ? 'legalpartners.law'
-      : 'company.com';
+        : tpl.key === 'saas' ? 'techstart.io'
+          : tpl.key === 'realestate' ? 'primeprop.com'
+            : tpl.key === 'fitness' ? 'fitclub.org'
+              : tpl.key === 'legal' ? 'legalpartners.law'
+                : 'company.com';
     this.tplTestModel = {
       firstName: 'Alex',
       lastName: 'Morgan',
@@ -6399,11 +6399,11 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
 
     const domain = this.selectedTemplate.key === 'education' ? 'institution.edu'
       : this.selectedTemplate.key === 'healthcare' ? 'care.health'
-      : this.selectedTemplate.key === 'saas' ? 'techstart.io'
-      : this.selectedTemplate.key === 'realestate' ? 'primeprop.com'
-      : this.selectedTemplate.key === 'fitness' ? 'fitclub.org'
-      : this.selectedTemplate.key === 'legal' ? 'legalpartners.law'
-      : 'company.com';
+        : this.selectedTemplate.key === 'saas' ? 'techstart.io'
+          : this.selectedTemplate.key === 'realestate' ? 'primeprop.com'
+            : this.selectedTemplate.key === 'fitness' ? 'fitclub.org'
+              : this.selectedTemplate.key === 'legal' ? 'legalpartners.law'
+                : 'company.com';
 
     this.tplTestModel.firstName = 'Alex';
     this.tplTestModel.lastName = 'Morgan';
@@ -6533,7 +6533,7 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadPolicy();
@@ -6692,7 +6692,7 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
           };
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -7046,7 +7046,7 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.categories = res?.data || [];
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -7331,7 +7331,7 @@ export class RegistrationFormBuilderComponent implements OnInit, OnDestroy {
           ch.close();
         }
       }
-    } catch {}
+    } catch { }
   }
 
   getFieldTypeIcon(type: string): string {

@@ -250,7 +250,7 @@ interface DomainLiveProbeResult {
                   </span>
                   <div class="probe-item-text">
                     <span class="probe-item-label">
-                      <span *ngIf="probeResults.isIpMatch">A Record Points to Platform IP <code>2.24.162.42</code></span>
+                      <span *ngIf="probeResults.isIpMatch">A Record Points to Platform IP <code>{{ platformIp }}</code></span>
                       <span *ngIf="!probeResults.isIpMatch">DNS Host Record Points to <code>{{ cleanTargetHost }}</code></span>
                     </span>
                     <div *ngIf="!probeResults.cnamePassed" class="probe-subtext">
@@ -394,7 +394,7 @@ interface DomainLiveProbeResult {
                 </div>
                 <p class="remediation-desc">
                   Public DNS resolvers (Google 8.8.8.8, Cloudflare 1.1.1.1) report that <strong>{{ probeResults.domain }}</strong>
-                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong> or Platform IP <strong>2.24.162.42</strong>.
+                  is <strong>not currently pointing</strong> to <strong>{{ cleanTargetHost }}</strong> or Platform IP <strong>{{ platformIp }}</strong>.
                   Anyone typing <code>https://{{ probeResults.domain }}</code> will receive a browser error (<code>DNS_PROBE_FINISHED_NXDOMAIN</code>).
                 </p>
                 <div class="remediation-steps">
@@ -415,7 +415,7 @@ interface DomainLiveProbeResult {
                     <div class="step-desc">
                       Add or update your <strong>DNS Records</strong>:
                       <div class="code-snippet-box">
-                        <div class="code-row"><span>Option 1 (Hostinger / GoDaddy A Record):</span> <strong>Type: A | Name: &#64; | Value: 2.24.162.42</strong></div>
+                        <div class="code-row"><span>Option 1 (Hostinger / GoDaddy A Record):</span> <strong>Type: A | Name: &#64; | Value: {{ platformIp }}</strong></div>
                         <div class="code-row"><span>Option 2 (Subdomain CNAME Record):</span> <strong>Type: CNAME | Name: www | Value: {{ cleanTargetHost }}</strong></div>
                         <div class="code-row"><span>TTL:</span> <strong>Auto (or 300s)</strong></div>
                       </div>
@@ -528,13 +528,17 @@ interface DomainLiveProbeResult {
         </div>
 
         <div class="table-responsive">
+          <div class="mobile-scroll-hint">
+            <span class="material-symbols-outlined">swipe</span>
+            <span>Scroll horizontally to view all DNS targets and copy options</span>
+          </div>
           <table class="dns-table">
             <thead>
               <tr>
-                <th>TYPE</th>
-                <th>NAME / HOST</th>
-                <th>TARGET / VALUE (IP or Hostname)</th>
-                <th>TTL</th>
+                <th style="width: 120px;">TYPE</th>
+                <th style="width: 170px;">NAME / HOST</th>
+                <th style="min-width: 260px;">TARGET / VALUE (IP or Hostname)</th>
+                <th style="width: 120px;">TTL</th>
               </tr>
             </thead>
             <tbody>
@@ -555,8 +559,8 @@ interface DomainLiveProbeResult {
                   <div class="target-options-stack">
                     <div class="target-option-line">
                       <span class="target-opt-label">IP Address:</span>
-                      <code>2.24.162.42</code>
-                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_www')" title="Copy IP Address">
+                      <code>{{ platformIp }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(platformIp, 'ip_www')" title="Copy IP Address">
                         <span class="material-symbols-outlined">{{ copySuccess['ip_www'] ? 'done' : 'content_copy' }}</span>
                         <span>{{ copySuccess['ip_www'] ? 'Copied' : 'Copy IP' }}</span>
                       </button>
@@ -585,14 +589,14 @@ interface DomainLiveProbeResult {
                       <span>{{ copySuccess['name_root'] ? 'Copied' : 'Copy' }}</span>
                     </button>
                   </div>
-                  <span class="rec-desc">Root domain (use IP 2.24.162.42 for Hostinger, GoDaddy, Namecheap)</span>
+                  <span class="rec-desc">Root domain (use IP {{ platformIp }} for Hostinger, GoDaddy, Namecheap)</span>
                 </td>
                 <td>
                   <div class="target-options-stack">
                     <div class="target-option-line">
                       <span class="target-opt-label">IP Address:</span>
-                      <code>2.24.162.42</code>
-                      <button type="button" class="btn-copy" (click)="copyValue('2.24.162.42', 'ip_root')" title="Copy IP Address">
+                      <code>{{ platformIp }}</code>
+                      <button type="button" class="btn-copy" (click)="copyValue(platformIp, 'ip_root')" title="Copy IP Address">
                         <span class="material-symbols-outlined">{{ copySuccess['ip_root'] ? 'done' : 'content_copy' }}</span>
                         <span>{{ copySuccess['ip_root'] ? 'Copied' : 'Copy IP' }}</span>
                       </button>
@@ -677,15 +681,19 @@ interface DomainLiveProbeResult {
           </div>
 
           <div class="table-responsive">
+            <div class="mobile-scroll-hint">
+              <span class="material-symbols-outlined">swipe</span>
+              <span>Scroll horizontally to view target values, status, and verification actions</span>
+            </div>
             <table class="dns-table email-dns-table">
               <thead>
                 <tr>
-                  <th style="width: 100px;">TYPE</th>
+                  <th style="width: 90px;">TYPE</th>
                   <th style="width: 170px;">HOST / NAME</th>
-                  <th>VALUE / TARGET</th>
+                  <th style="min-width: 260px;">VALUE / TARGET</th>
                   <th style="width: 120px;">PRIORITY / TTL</th>
                   <th style="width: 120px;">STATUS</th>
-                  <th style="width: 150px; text-align: right;">ACTION</th>
+                  <th style="width: 140px; text-align: right;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -1621,33 +1629,64 @@ interface DomainLiveProbeResult {
       margin: 0;
     }
     .table-responsive {
+      width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .mobile-scroll-hint {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #0050e5;
+      background: #eff6ff;
+      border-bottom: 1px solid #dbeafe;
+    }
+    .mobile-scroll-hint .material-symbols-outlined {
+      font-size: 16px;
+      color: #0050e5;
     }
     .dns-table {
       width: 100%;
+      min-width: 680px;
       border-collapse: collapse;
       font-size: 13px;
     }
+    .email-dns-table {
+      min-width: 860px;
+      margin-top: 0;
+    }
     .dns-table th {
       text-align: left;
-      padding: 12px 16px;
+      padding: 12px 14px;
       background: #f8fafc;
       color: #64748b;
       font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
       border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
     }
     .dns-table td {
-      padding: 14px 16px;
+      padding: 12px 14px;
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
+      vertical-align: middle;
     }
     .dns-type-tag {
       font-size: 11px;
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 6px;
+      display: inline-block;
+      white-space: nowrap;
     }
     .tag-cname { background: #eff6ff; color: #1d4ed8; }
     .tag-a { background: #f0fdf4; color: #15803d; }
@@ -1655,15 +1694,21 @@ interface DomainLiveProbeResult {
     .value-cell {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: nowrap;
+    }
+    .value-cell .btn-copy {
+      flex-shrink: 0;
     }
     .value-cell code {
       font-size: 12px;
       background: #f1f5f9;
-      padding: 3px 8px;
+      padding: 4px 8px;
       border-radius: 6px;
       font-family: monospace;
       color: #0f172a;
+      min-width: 0;
     }
     .btn-copy, .btn-copy-full {
       display: inline-flex;
@@ -1677,7 +1722,9 @@ interface DomainLiveProbeResult {
       font-weight: 600;
       color: #475569;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
     .btn-copy:hover, .btn-copy-full:hover {
       background: #0050e5;
@@ -1842,8 +1889,9 @@ interface DomainLiveProbeResult {
       margin-top: 3px;
     }
     .code-long {
-      max-width: 480px;
-      white-space: pre-wrap !important;
+      min-width: 180px;
+      max-width: 440px;
+      white-space: normal !important;
       word-break: break-all !important;
       overflow-wrap: anywhere !important;
       line-height: 1.45;
@@ -2606,6 +2654,123 @@ interface DomainLiveProbeResult {
       color: #94a3b8;
       font-style: italic;
     }
+
+    /* Comprehensive Mobile & Tablet Responsive Media Queries */
+    @media (max-width: 768px) {
+      .mobile-scroll-hint {
+        display: flex;
+      }
+      .domain-overview-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .overview-card {
+        padding: 16px;
+      }
+      .card-header, .card-header-bar {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .card-body {
+        padding: 16px;
+      }
+      .email-suite-header {
+        padding: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .header-title-group {
+        width: 100%;
+        min-width: 0;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .email-section-block {
+        padding: 0 16px;
+      }
+      .title-with-quota {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .quota-pill {
+        align-self: flex-start;
+      }
+      .live-health-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .live-health-header .btn-live-test {
+        width: 100%;
+        justify-content: center;
+      }
+      .live-endpoints-grid {
+        grid-template-columns: 1fr;
+      }
+      .endpoint-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .endpoint-url-box {
+        word-break: break-all;
+      }
+      .probe-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .probe-header-title {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .repair-trigger-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .repair-trigger-box .btn-repair {
+        width: 100%;
+        justify-content: center;
+      }
+      .form-row-compact {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .form-col {
+        width: 100%;
+        min-width: 0;
+      }
+      .prefix-input-wrap {
+        width: 100%;
+      }
+      .domain-addon {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .mailbox-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .mailbox-body {
+        padding: 16px;
+      }
+      .target-option-line {
+        flex-wrap: wrap;
+      }
+    }
   `]
 })
 export class CustomDomainComponent implements OnInit, OnDestroy {
@@ -2620,6 +2785,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
   customDomainInput: string = '';
   websiteUrl: string = '';
   adminEmail: string = '';
+  platformIp: string = '2.24.162.42';
 
   probeResults: DnsProbeResult | null = null;
   copySuccess: { [key: string]: boolean } = {};
@@ -2776,7 +2942,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       {
         type: 'A',
         name: 'www',
-        target: '2.24.162.42',
+        target: this.platformIp,
         ttl: 'Auto (300s)',
         key: 'a_www',
         description: 'Option 1 (IP Address - Direct): Point www subdomain directly to platform IPv4 address via A record'
@@ -2792,7 +2958,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       {
         type: 'A',
         name: '@ (Apex Root)',
-        target: '2.24.162.42',
+        target: this.platformIp,
         ttl: 'Auto (300s)',
         key: 'a_root',
         description: 'Option 1 (IP Address - Recommended): Required for Hostinger, GoDaddy, Namecheap apex domain'
@@ -2930,7 +3096,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         // If DNS did NOT verify, reset saving immediately so the button is NOT disabled!
         this.saving = false;
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match Platform IP '2.24.162.42' or '${this.cleanTargetHost}'. The button remains active so you can try again once your registrar updates.`,
+          `Domain not yet pointed. DNS records do not match Platform IP '${this.platformIp}' or '${this.cleanTargetHost}'. The button remains active so you can try again once your registrar updates.`,
           'Verification Required'
         );
         return;
@@ -2958,7 +3124,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
           if (prov?.dnsProbe) {
             this.probeResults = {
               domain: cleanDomain,
-              expectedTarget: prov.dnsProbe.expectedTarget || '2.24.162.42',
+              expectedTarget: prov.dnsProbe.expectedTarget || this.platformIp,
               detectedTarget: prov.dnsProbe.detectedTarget || cleanDomain,
               cnamePassed: prov.dnsProbe.isDnsPointed,
               sslReady: prov.sslActive,
@@ -3071,10 +3237,13 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       const serverRes: any = await this.api.get<any>(`DashboardApi/probe-custom-domain-dns?domain=${encodeURIComponent(cleanDomain)}`).toPromise();
       const probeData = serverRes?.data || serverRes?.Data;
       if (probeData) {
+        if (probeData.expectedTarget && /^[0-9.]+$/.test(probeData.expectedTarget)) {
+          this.platformIp = probeData.expectedTarget;
+        }
         const passed = !!probeData.isDnsPointed;
         this.probeResults = {
           domain: cleanDomain,
-          expectedTarget: probeData.expectedTarget || '2.24.162.42',
+          expectedTarget: probeData.expectedTarget || this.platformIp,
           detectedTarget: probeData.detectedTarget || cleanDomain,
           cnamePassed: passed,
           sslReady: passed,
@@ -3135,7 +3304,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
       .map(a => a.data?.trim());
 
     const cnameMatch = detectedCnames.some(c => c === expectedHost || c.includes(expectedHost) || c.endsWith('.ozikol.cloud'));
-    const validPlatformIps = ['2.24.162.42', '104.21.32.45', '172.67.182.206'];
+    const validPlatformIps = [this.platformIp, '104.21.32.45', '172.67.182.206'];
     const ipMatch = detectedIps.some(ip => validPlatformIps.includes(ip));
     const dnsPassed = cnameMatch || ipMatch;
     const isNxDomain = cnameData?.Status === 3 || aRecordData?.Status === 3;
@@ -3186,7 +3355,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
     try {
       const dnsPassed = await this.executeDnsProbe(cleanDomain);
       if (dnsPassed) {
-        const resolutionNote = this.probeResults?.isIpMatch ? 'A Record IP (2.24.162.42)' : `'${this.cleanTargetHost}'`;
+        const resolutionNote = this.probeResults?.isIpMatch ? `A Record IP (${this.platformIp})` : `'${this.cleanTargetHost}'`;
         this.toast.success(`DNS verified! '${cleanDomain}' correctly points to ${resolutionNote}.`, 'DNS Verified');
 
         // Automatically trigger server routing and SSL provisioning in background
@@ -3210,7 +3379,7 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         });
       } else {
         this.toast.warning(
-          `Domain not yet pointed. DNS records do not match '${this.cleanTargetHost}' or Platform IP '2.24.162.42'. The button remains active.`,
+          `Domain not yet pointed. DNS records do not match '${this.cleanTargetHost}' or Platform IP '${this.platformIp}'. The button remains active.`,
           'Domain Not Yet Pointed'
         );
       }
@@ -3271,9 +3440,11 @@ export class CustomDomainComponent implements OnInit, OnDestroy {
         }
 
         if (data?.succeeded) {
-          this.toast.success(data.message || 'Domain repaired and SSL re-issued successfully!', 'Repair Complete');
+          this.toast.success(data.message || 'Domain verified and dedicated SSL certificate active!', 'Domain Activated');
+        } else if (data?.certbotSuccess) {
+          this.toast.info(data?.message || 'SSL certificate is active. Web application routing is synchronizing.', 'Domain Routing Synchronizing');
         } else {
-          this.toast.error(data?.message || 'Repair attempted, check execution logs.', 'Repair Notice');
+          this.toast.error(data?.message || 'Domain verification could not be completed. Please verify DNS propagation.', 'Verification Notice');
         }
       },
       error: (err) => {

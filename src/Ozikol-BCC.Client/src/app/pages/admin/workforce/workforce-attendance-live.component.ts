@@ -33,14 +33,6 @@ import { ToastService } from '../../../core/services/toast.service';
               <span class="live-text">LIVE TELEMETRY</span>
             </div>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
-            <button
-              type="button"
-              class="info-badge-btn"
-              (click)="showInfoModal = true"
-              title="Click for Live Attendance & Geofence telemetry guide"
-            >
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="subtitle">
             Real-time telemetry of on-duty personnel, GPS geofence compliance, and lone worker safety check-calls.
@@ -48,13 +40,23 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
 
         <div class="header-actions">
-          <a routerLink="/workforce/console/schedule" class="btn btn-outline" title="Return to master rota grid">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span>Back to Rota</span>
+          <a routerLink="/workforce/console/shifts" class="btn btn-outline" title="Return to Shift Manager">
+            <span class="material-symbols-outlined">event_note</span>
+            <span>Shift Manager</span>
           </a>
           <button type="button" class="btn btn-outline" (click)="loadMonitor()" title="Refresh telemetry feed">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh Feed</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline"
+            style="border-color:#bfdbfe; background:#eff6ff; color:#0050e5;"
+            (click)="openNotifyModal(null)"
+            title="Broadcast Push, Email, WhatsApp, or SMS to all active on-duty staff"
+          >
+            <span class="material-symbols-outlined">campaign</span>
+            <span>Broadcast to Active Staff</span>
           </button>
           <a routerLink="/workforce/workspace/clock" class="btn btn-primary" title="Open on-site clock-in terminal">
             <span class="material-symbols-outlined">fingerprint</span>
@@ -326,6 +328,17 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card Footer Actions -->
           <div class="duty-card-footer">
             <button
+              *ngIf="item.guardId"
+              type="button"
+              class="btn btn-outline btn-sm"
+              (click)="openNotifyModal(item)"
+              title="Send Push, Email, WhatsApp, or SMS Alert"
+            >
+              <span class="material-symbols-outlined">notifications_active</span>
+              <span>Notify</span>
+            </button>
+
+            <button
               *ngIf="!item.clockInUtc"
               type="button"
               class="btn btn-primary btn-sm flex-1"
@@ -438,6 +451,16 @@ import { ToastService } from '../../../core/services/toast.service';
                 <td style="text-align: right;">
                   <div class="table-actions">
                     <button
+                      *ngIf="item.guardId"
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      (click)="openNotifyModal(item)"
+                      title="Send Push, Email, WhatsApp, or SMS Alert"
+                    >
+                      <span class="material-symbols-outlined">notifications_active</span>
+                      <span>Notify</span>
+                    </button>
+                    <button
                       *ngIf="!item.clockInUtc"
                       type="button"
                       class="btn btn-sm btn-primary"
@@ -467,6 +490,72 @@ import { ToastService } from '../../../core/services/toast.service';
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Multi-Channel Notify Active Staff Modal -->
+      <div class="modal-backdrop" *ngIf="showNotifyModal" (click)="showNotifyModal = false">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">campaign</span>
+              <div>
+                <h3>{{ notifyTarget ? ('Notify On-Duty Staff: ' + notifyTarget.guardName) : 'Broadcast Alert to All Active On-Duty Staff' }}</h3>
+                <p class="modal-subtitle">Dispatch instant alert via Push Notification, Email, WhatsApp, or SMS.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="showNotifyModal = false">&times;</button>
+          </div>
+          <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">Delivery Channels</label>
+              <div style="display:flex; gap:14px; flex-wrap:wrap; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendPush" />
+                  <span>Push / In-App</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendEmail" />
+                  <span>Email</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendWhatsApp" />
+                  <span>WhatsApp</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendSms" />
+                  <span>SMS</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">Alert Subject / Title *</label>
+              <input
+                type="text"
+                style="width:100%; height:40px; padding:0 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; box-sizing:border-box;"
+                [(ngModel)]="notifyForm.title"
+                placeholder="e.g. Urgent Duty Welfare Check & Site Update"
+              />
+            </div>
+
+            <div>
+              <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">Message Content *</label>
+              <textarea
+                rows="4"
+                style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; box-sizing:border-box;"
+                [(ngModel)]="notifyForm.message"
+                placeholder="Enter operational instructions or welfare check request for on-duty personnel..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn btn-outline" (click)="showNotifyModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" [disabled]="isDispatchingNotify" (click)="sendActiveNotification()">
+              <span class="material-symbols-outlined" *ngIf="!isDispatchingNotify">send</span>
+              <span>{{ isDispatchingNotify ? 'Dispatching...' : 'Send Notification' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1492,10 +1581,65 @@ export class WorkforceAttendanceLiveComponent implements OnInit, OnDestroy {
   showInfoModal: boolean = false;
   lastRefreshedAt: Date = new Date();
 
+  showNotifyModal = false;
+  isDispatchingNotify = false;
+  notifyTarget: LiveDutyMonitorItem | null = null;
+  notifyForm = {
+    title: 'Urgent Duty Welfare Check & Site Update',
+    message: 'Please confirm your current post status and check your workspace terminal for any updates.',
+    sendPush: true,
+    sendEmail: true,
+    sendWhatsApp: false,
+    sendSms: false
+  };
+
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService
   ) {}
+
+  openNotifyModal(item: LiveDutyMonitorItem | null): void {
+    this.notifyTarget = item;
+    this.notifyForm = {
+      title: item ? `Duty Check: ${item.siteName} (${item.shiftCode})` : 'Urgent Duty Broadcast — All Active Staff',
+      message: item
+        ? `Hello ${item.guardName}, please confirm your status at ${item.siteName} (${item.postName || 'Assigned Post'}).`
+        : 'Attention all on-duty personnel: Please confirm your post status and review your shift instructions.',
+      sendPush: true,
+      sendEmail: true,
+      sendWhatsApp: false,
+      sendSms: false
+    };
+    this.showNotifyModal = true;
+  }
+
+  sendActiveNotification(): void {
+    if (!this.notifyForm.title.trim() || !this.notifyForm.message.trim()) {
+      this.toast.warning('Subject title and message are required.');
+      return;
+    }
+    this.isDispatchingNotify = true;
+    this.workforceService.notifyActiveDutyStaff({
+      targetUserId: this.notifyTarget ? (this.notifyTarget.guardId || null) : 'all',
+      shiftId: this.notifyTarget ? this.notifyTarget.shiftId : null,
+      title: this.notifyForm.title.trim(),
+      message: this.notifyForm.message.trim(),
+      sendPush: this.notifyForm.sendPush,
+      sendEmail: this.notifyForm.sendEmail,
+      sendWhatsApp: this.notifyForm.sendWhatsApp,
+      sendSms: this.notifyForm.sendSms
+    }).subscribe({
+      next: (res: any) => {
+        this.isDispatchingNotify = false;
+        this.showNotifyModal = false;
+        this.toast.success(res?.message || 'Notification dispatched to active staff.');
+      },
+      error: (err: any) => {
+        this.isDispatchingNotify = false;
+        this.toast.error(err?.error?.message || 'Failed to dispatch notification.');
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadMonitor();

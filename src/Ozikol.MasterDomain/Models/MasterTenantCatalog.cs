@@ -38,7 +38,7 @@ public class MasterTenantCatalog
     public string PrimaryDomain { get; set; } = null!;
 
     /// <summary>
-    /// Optional custom domain owned by the tenant (e.g. "www.acmecorp.com").
+    /// Optional custom domain owned by the tenant (e.g. "www.customdomain.com").
     /// If custom domain expires, PrimaryDomain remains active as fallback.
     /// </summary>
     [MaxLength(255)]

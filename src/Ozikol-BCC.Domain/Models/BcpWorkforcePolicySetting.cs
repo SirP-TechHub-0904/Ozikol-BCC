@@ -149,6 +149,12 @@ namespace Ozikol_BCC.Domain.Models
         public string? CustomQuestionsJson { get; set; }
 
         /// <summary>
+        /// Optional JSON-serialized array of custom emergency incident categories configured by this tenant business.
+        /// When null or unconfigured, the platform defaults to standard baseline security incident categories.
+        /// </summary>
+        public string? EmergencyCategoriesJson { get; set; }
+
+        /// <summary>
         /// Timestamp when the policy record was created in UTC.
         /// </summary>
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

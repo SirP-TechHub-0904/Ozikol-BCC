@@ -119,6 +119,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// </summary>
     public DbSet<MasterPageHelp> MasterPageHelps { get; set; } = null!;
 
+    /// <summary>
+    /// Central cross-tenant message pool and delivery outbox (Email, SMS, Push, WhatsApp).
+    /// </summary>
+    public DbSet<MasterMessagePool> MasterMessagePools { get; set; } = null!;
+
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
     }
@@ -153,6 +158,15 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                 .OnDelete(DeleteBehavior.SetNull);
         });
         modelBuilder.Entity<CentralRole>(b => b.ToTable("CentralRoles"));
+
+        // Central Multi-Channel Cross-Tenant Message Pool Indexes
+        modelBuilder.Entity<MasterMessagePool>(entity =>
+        {
+            entity.HasIndex(e => new { e.Status, e.Channel, e.Provider });
+            entity.HasIndex(e => new { e.TenantKey, e.CreatedAt });
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.RecipientAddress);
+        });
         modelBuilder.Entity<IdentityUserRole<string>>(b => b.ToTable("CentralUserRoles"));
         modelBuilder.Entity<IdentityUserClaim<string>>(b => b.ToTable("CentralUserClaims"));
         modelBuilder.Entity<IdentityUserLogin<string>>(b => b.ToTable("CentralUserLogins"));

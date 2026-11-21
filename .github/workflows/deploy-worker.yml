@@ -9,12 +9,11 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'src/Ozikol-BCC.Worker/**'
+      - 'src/Ozikol-BCC.Worker.Mailcow/**'
       - 'src/Ozikol-BCC.Domain/**'
       - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
       - 'src/Ozikol-BCC.Application/**'
       - 'src/Ozikol-BCC.Infrastructure/**'
-      - 'src/Ozikol-BCC.EmailServices.Postmark/**'
       - 'src/Ozikol.MasterDomain/**'
       - 'src/Ozikol.MasterPersistence.EF.MasterSQL/**'
       - '.github/workflows/deploy-worker.yml'
@@ -35,7 +34,7 @@ jobs:
 
       - name: Publish Ozikol Worker
         run: |
-          dotnet publish src/Ozikol-BCC.Worker/Ozikol-BCC.Worker.csproj -c Release -o ./publish-worker
+          dotnet publish src/Ozikol-BCC.Worker.Mailcow/Ozikol-BCC.Worker.Mailcow.csproj -c Release -o ./publish-worker
 
       - name: Package Worker Archive
         run: |

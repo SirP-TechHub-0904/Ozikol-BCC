@@ -12,7 +12,6 @@ using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Repository.NotifyRegister;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.Infrastructure.Services.Email;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
@@ -22,7 +21,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
     /// <summary>
     /// Central multi-channel notification and messaging dispatcher implementation.
     /// Dispatches alerts across In-App feeds, live SignalR sockets, native push payloads,
-    /// Postmark transactional emails, carrier SMS, and WhatsApp messages using the
+    /// Mailcow SMTP transactional emails, carrier SMS, and WhatsApp messages using the
     /// canonical 6-tier severity standards (#F06548, #F7B84B, #0AB39C, #38BDF8, #1F6BFF, #9333EA).
     /// </summary>
     public class CentralNotificationDispatcher : ICentralNotificationDispatcher
@@ -30,12 +29,13 @@ namespace Ozikol_BCC.Application.Services.Notifications
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ISmtpEmailDispatcher? _smtpEmailDispatcher;
-        private readonly IPostmarkEmailService? _emailService;
         private readonly ISmsSendService? _smsService;
         private readonly IMessageTemplateService? _templateService;
         private readonly ITenantEmailShellService? _emailShellService;
         private readonly ILogger<CentralNotificationDispatcher> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IOneSignalPushDispatcher? _oneSignalDispatcher;
+        private readonly ICentralMessageOutboxService? _outboxService;
 
         private static readonly string[] SpamBlacklistWords = new[]
         {
@@ -57,30 +57,33 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="logger">Logger service.</param>
         /// <param name="configuration">Application configuration.</param>
         /// <param name="smtpEmailDispatcher">Optional Mailcow SMTP email dispatcher.</param>
-        /// <param name="emailService">Optional Postmark email service.</param>
         /// <param name="smsService">Optional carrier SMS gateway service.</param>
         /// <param name="templateService">Optional multi-channel message template service.</param>
         /// <param name="emailShellService">Optional tenant email shell wrapping service.</param>
+        /// <param name="oneSignalDispatcher">Optional OneSignal REST API push notification dispatcher.</param>
+        /// <param name="outboxService">Optional central message outbox bridge service.</param>
         public CentralNotificationDispatcher(
             DashboardDbContext dbContext,
             IHubContext<NotificationHub> hubContext,
             ILogger<CentralNotificationDispatcher> logger,
             IConfiguration configuration,
             ISmtpEmailDispatcher? smtpEmailDispatcher = null,
-            IPostmarkEmailService? emailService = null,
             ISmsSendService? smsService = null,
             IMessageTemplateService? templateService = null,
-            ITenantEmailShellService? emailShellService = null)
+            ITenantEmailShellService? emailShellService = null,
+            IOneSignalPushDispatcher? oneSignalDispatcher = null,
+            ICentralMessageOutboxService? outboxService = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _smtpEmailDispatcher = smtpEmailDispatcher;
-            _emailService = emailService;
             _smsService = smsService;
             _templateService = templateService;
             _emailShellService = emailShellService;
+            _oneSignalDispatcher = oneSignalDispatcher;
+            _outboxService = outboxService;
         }
 
         /// <inheritdoc />
@@ -145,6 +148,12 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         .Where(u => u.BcpUserCategoryId == payload.TargetCategoryId.Value)
                         .ToListAsync(cancellationToken);
                 }
+                else if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
+                {
+                    targetProfiles = await _dbContext.Users
+                        .Where(u => u.UserStatus == UserStatus.Active)
+                        .ToListAsync(cancellationToken);
+                }
 
                 // 3. Channel 1: In-App Database Persistence & Live SignalR Broadcast
                 if (payload.Channels.HasFlag(NotificationChannels.InApp))
@@ -158,7 +167,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     await DispatchPushChannelAsync(payload, targetProfiles, result, cancellationToken);
                 }
 
-                // 5. Channel 3: Transactional Email via Postmark Suite (Rich HTML with anti-spam scrubbing)
+                // 5. Channel 3: Transactional Email via Mailcow SMTP (Rich HTML with anti-spam scrubbing)
                 if (payload.Channels.HasFlag(NotificationChannels.Email) || payload.SendEmailCopy)
                 {
                     await DispatchEmailChannelAsync(payload, targetProfiles, result, cancellationToken);
@@ -300,6 +309,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.InAppNotification,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = null,
                     RecipientAddress = "All Users (Broadcast)",
                     RecipientName = "Broadcast",
@@ -354,6 +364,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.InAppNotification,
+                        Provider = BcpMessageProvider.Unconfigured,
                         RelatedUserId = profile.Id,
                         RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
                         RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
@@ -434,14 +445,48 @@ namespace Ozikol_BCC.Application.Services.Notifications
             pushData["module"] = payload.Module ?? "General";
 
             _logger.LogInformation(
-                "[CentralNotificationDispatcher] Push notification queued for target {Target} (Recipients: {Count}). Title='{Title}', Body='{Body}', Severity={Severity}, TenantKey={TenantKey}",
+                "[CentralNotificationDispatcher] Dispatching push notification for target {Target} (Recipients: {Count}). Title='{Title}', Body='{Body}', Severity={Severity}, TenantKey={TenantKey}",
                 payload.TargetType, recipientCount, cleanPushTitle, cleanPushBody, payload.Severity, payload.TenantKey);
+
+            // Execute instant delivery via OneSignal REST API
+            bool pushDelivered = false;
+            string? pushError = null;
+            string? oneSignalExternalId = null;
+
+            if (_oneSignalDispatcher != null)
+            {
+                var targetUserIds = payload.TargetType == NotificationDispatchTarget.BroadcastAll
+                    ? null
+                    : targetProfiles.Select(p => p.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+
+                var dispatchResult = await _oneSignalDispatcher.SendPushNotificationAsync(
+                    cleanPushTitle,
+                    cleanPushBody,
+                    payload.ActionUrl,
+                    targetUserIds,
+                    payload.TenantKey,
+                    pushData,
+                    cancellationToken);
+
+                pushDelivered = dispatchResult.Success;
+                pushError = dispatchResult.ErrorMessage;
+                oneSignalExternalId = dispatchResult.OneSignalNotificationId;
+            }
+            else
+            {
+                pushError = "OneSignal push dispatcher is not configured in service collection.";
+            }
+
+            var provider = _oneSignalDispatcher != null ? BcpMessageProvider.OneSignal : BcpMessageProvider.Unconfigured;
+            var queueStatus = pushDelivered ? BcpQueueStatus.Sent : BcpQueueStatus.Failed;
+            var sentTimestamp = pushDelivered ? DateTime.UtcNow : (DateTime?)null;
 
             if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
             {
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.Push,
+                    Provider = provider,
                     RelatedUserId = null,
                     RecipientAddress = "All Devices (Push Broadcast)",
                     RecipientName = "Push Broadcast",
@@ -452,8 +497,10 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     Severity = payload.Severity,
                     Priority = payload.Priority,
                     EventType = payload.EventType,
-                    Status = BcpQueueStatus.Queued,
-                    SentAt = null,
+                    Status = queueStatus,
+                    SentAt = sentTimestamp,
+                    LastError = pushError,
+                    ProviderMessageId = oneSignalExternalId,
                     MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                     CreatedAt = DateTime.UtcNow
                 });
@@ -465,6 +512,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Push,
+                        Provider = provider,
                         RelatedUserId = profile.Id,
                         RecipientAddress = profile.UserName ?? profile.Email ?? profile.Id,
                         RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
@@ -475,8 +523,10 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         Severity = payload.Severity,
                         Priority = payload.Priority,
                         EventType = payload.EventType,
-                        Status = BcpQueueStatus.Queued,
-                        SentAt = null,
+                        Status = queueStatus,
+                        SentAt = sentTimestamp,
+                        LastError = pushError,
+                        ProviderMessageId = oneSignalExternalId,
                         MetadataJson = System.Text.Json.JsonSerializer.Serialize(pushData),
                         CreatedAt = DateTime.UtcNow
                     });
@@ -492,7 +542,14 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save push BcpMessagePool records: {Msg}", ex.Message);
             }
 
-            result.DispatchedPushCount += recipientCount;
+            if (pushDelivered)
+            {
+                result.DispatchedPushCount += recipientCount;
+            }
+            else if (!string.IsNullOrWhiteSpace(pushError))
+            {
+                result.Errors.Add($"Push delivery: {pushError}");
+            }
         }
 
         /// <summary>
@@ -572,7 +629,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             actionUrl: payload.ActionUrl,
                             actionText: "View in Workspace",
                             brandColorHex: colorHex,
-                            badgeLabel: severityLabel);
+                            badgeLabel: null);
                     }
                     else
                     {
@@ -610,9 +667,18 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         ? siteConfig.SenderName.Trim()
                         : tenantBrand;
 
+                    var emailMetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        fromName,
+                        fromEmail = fromAddress,
+                        tenantKey = payload.TenantKey,
+                        module = payload.Module
+                    });
+
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
+                        Provider = BcpMessageProvider.Mailcow,
                         RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
                         RecipientAddress = email,
                         RecipientName = payload.RecipientName,
@@ -622,13 +688,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         ActionUrl = payload.ActionUrl,
                         Icon = payload.Icon,
                         SenderOrTemplateName = string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
-                        MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
-                        {
-                            fromName,
-                            fromEmail = fromAddress,
-                            tenantKey = payload.TenantKey,
-                            module = payload.Module
-                        }),
+                        MetadataJson = emailMetadataJson,
                         Category = payload.Category,
                         Severity = payload.Severity,
                         Priority = payload.Priority,
@@ -637,6 +697,29 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         SentAt = null,
                         CreatedAt = DateTime.UtcNow
                     });
+
+                    // Route to central Master Message Pool so autonomous workers dispatch with zero tenant DB dependency
+                    if (_outboxService != null)
+                    {
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: tenantBrand,
+                            channel: "Email",
+                            provider: "Mailcow",
+                            recipientAddress: email,
+                            recipientName: payload.RecipientName,
+                            subject: safeSubject,
+                            content: htmlBody,
+                            plainTextFallback: StripHtmlTags(!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message).Trim(),
+                            actionUrl: payload.ActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            senderOrTemplateName: string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
+                            metadataJson: emailMetadataJson,
+                            scheduledAt: null,
+                            cancellationToken: cancellationToken);
+                    }
 
                     result.DispatchedEmailCount++;
                 }
@@ -648,6 +731,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     _dbContext.BcpMessagePools.Add(new BcpMessagePool
                     {
                         Channel = BcpMessageChannel.Email,
+                        Provider = BcpMessageProvider.Mailcow,
                         RelatedUserId = targetProfiles.FirstOrDefault(p => p.Email != null && p.Email.Equals(email, StringComparison.OrdinalIgnoreCase))?.Id,
                         RecipientAddress = email,
                         RecipientName = payload.RecipientName,
@@ -720,6 +804,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.Sms,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = targetProfile?.Id,
                     RecipientAddress = phone,
                     RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
@@ -797,6 +882,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 _dbContext.BcpMessagePools.Add(new BcpMessagePool
                 {
                     Channel = BcpMessageChannel.WhatsApp,
+                    Provider = BcpMessageProvider.Unconfigured,
                     RelatedUserId = targetProfile?.Id,
                     RecipientAddress = phone,
                     RecipientName = targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
@@ -854,12 +940,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 }
             }
 
-            var prefix = $"[{severity.ToString().ToUpperInvariant()}] ";
-            if (!trimmed.StartsWith("[", StringComparison.Ordinal))
-            {
-                trimmed = prefix + trimmed;
-            }
-
             return (trimmed, warnings);
         }
 
@@ -885,13 +965,18 @@ namespace Ozikol_BCC.Application.Services.Notifications
             string tenantBrand = "Workspace",
             string? logoUrl = null)
         {
+            const string buttonColor = "#0050e5"; // Official Royal Blue per AGENTS.md Rule 7
             var actionButtonHtml = !string.IsNullOrWhiteSpace(actionUrl)
-                ? $"<div style='margin-top:28px;'><a href='{actionUrl}' style='display:inline-block; background-color:{colorHex}; color:#ffffff; font-weight:600; font-size:14px; padding:12px 28px; border-radius:8px; text-decoration:none;'>View in Workspace</a></div>"
+                ? $"<div style='margin-top:32px; text-align:center;'><a href='{actionUrl}' style='display:inline-block; background-color:{buttonColor}; color:#ffffff; font-weight:700; font-size:14px; padding:13px 32px; border-radius:8px; text-decoration:none; box-shadow:0 2px 6px rgba(0,80,229,0.25);'>View in Workspace</a></div>"
                 : string.Empty;
 
             var brandDisplayHtml = !string.IsNullOrWhiteSpace(logoUrl)
-                ? $"<img src='{logoUrl.Trim()}' alt='{System.Net.WebUtility.HtmlEncode(tenantBrand)}' style='max-height:32px; max-width:180px; object-fit:contain; vertical-align:middle;' />"
-                : $"<span style='font-size:18px; font-weight:800; color:#FFFFFF; letter-spacing:-0.5px;'>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</span>";
+                ? $"<img src='{logoUrl.Trim()}' alt='{System.Net.WebUtility.HtmlEncode(tenantBrand)}' style='max-height:44px; max-width:220px; object-fit:contain; display:inline-block; vertical-align:middle;' />"
+                : $"<span style='font-size:20px; font-weight:800; color:#0f172a; letter-spacing:-0.4px;'>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</span>";
+
+            var badgeHtml = !string.IsNullOrWhiteSpace(severityLabel)
+                ? $"<div style='margin-top:8px;'><span style='display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:3px 10px; border-radius:100px; background-color:#f1f5f9; color:#475569; border:1px solid #cbd5e1;'>{severityLabel}</span></div>"
+                : string.Empty;
 
             return $@"
 <!DOCTYPE html>
@@ -905,19 +990,13 @@ namespace Ozikol_BCC.Application.Services.Notifications
         <tr>
             <td align='center'>
                 <table width='600' cellpadding='0' cellspacing='0' style='max-width:600px; width:100%; background-color:#FFFFFF; border-radius:16px; border:1px solid #E2E8F0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);'>
-                    <!-- Header Banner -->
+                    <!-- Header Banner (Crisp White + Centered Logo) -->
                     <tr>
-                        <td style='background-color:#0F172A; padding:24px 32px; border-bottom:4px solid {colorHex};'>
-                            <table width='100%' cellpadding='0' cellspacing='0'>
-                                <tr>
-                                    <td>
-                                        {brandDisplayHtml}
-                                    </td>
-                                    <td align='right'>
-                                        <span style='display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:4px 12px; border-radius:100px; background-color:{colorHex}22; color:{colorHex}; border:1px solid {colorHex};'>{severityLabel}</span>
-                                    </td>
-                                </tr>
-                            </table>
+                        <td align='center' style='background-color:#FFFFFF; padding:28px 24px; text-align:center; border-bottom:1px solid #E2E8F0;'>
+                            <div style='text-align:center; margin:0 auto;'>
+                                {brandDisplayHtml}
+                            </div>
+                            {badgeHtml}
                         </td>
                     </tr>
                     <!-- Body Content -->

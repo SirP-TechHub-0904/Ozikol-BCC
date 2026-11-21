@@ -9,17 +9,26 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="notif-center-container">
+      <!-- Canonical BCC Page Header -->
       <div class="page-header">
-        <div>
-          <h1 class="page-title">Notification Center</h1>
-          <p class="page-sub">View your account activity, security alerts, and workspace broadcast announcements.</p>
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span class="current">Notification Center</span>
+          </div>
+          <div class="title-row">
+            <h1>Notification Center</h1>
+            <span class="badge-suite">Personal Workspace</span>
+          </div>
+          <p class="subtitle">View your account activity, security alerts, and workspace broadcast announcements.</p>
         </div>
         <div class="header-actions">
-          <button (click)="markAllAsRead()" class="btn-action primary" [disabled]="!hasUnread()">
+          <button (click)="markAllAsRead()" class="btn btn-primary" [disabled]="!hasUnread()">
             <span class="material-symbols-outlined">done_all</span>
             <span>Mark All as Read</span>
           </button>
-          <button (click)="clearAll()" class="btn-action danger" [disabled]="!notifications.length">
+          <button (click)="clearAll()" class="btn btn-outline" [disabled]="!notifications.length">
             <span class="material-symbols-outlined">delete_sweep</span>
             <span>Clear History</span>
           </button>

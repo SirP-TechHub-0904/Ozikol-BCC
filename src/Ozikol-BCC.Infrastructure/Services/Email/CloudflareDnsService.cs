@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Ozikol_BCC.Infrastructure.Services.Email;
@@ -21,6 +22,7 @@ public sealed class CloudflareDnsService : ICloudflareDnsService
     private readonly HttpClient _httpClient;
     private readonly ILogger<CloudflareDnsService> _logger;
     private readonly IMailInfrastructureCredentialProvider? _credentialProvider;
+    private readonly IConfiguration? _configuration;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CloudflareDnsService"/> class.
@@ -28,14 +30,17 @@ public sealed class CloudflareDnsService : ICloudflareDnsService
     /// <param name="httpClient">HTTP client for Cloudflare v4 REST calls.</param>
     /// <param name="logger">Logger instance.</param>
     /// <param name="credentialProvider">Central Master DB credential provider.</param>
+    /// <param name="configuration">Configuration provider for resolving platform server IP.</param>
     public CloudflareDnsService(
         HttpClient httpClient,
         ILogger<CloudflareDnsService> logger,
-        IMailInfrastructureCredentialProvider? credentialProvider = null)
+        IMailInfrastructureCredentialProvider? credentialProvider = null,
+        IConfiguration? configuration = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _credentialProvider = credentialProvider;
+        _configuration = configuration;
     }
 
     /// <inheritdoc />
@@ -224,7 +229,16 @@ public sealed class CloudflareDnsService : ICloudflareDnsService
             }
         }
 
-        return ("2.24.162.42", true);
+        var fallbackIp = _configuration?["CustomDomain:PlatformIp"]
+            ?? _configuration?["PLATFORM_SERVER_IP"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_SERVER_IP");
+
+        if (string.IsNullOrWhiteSpace(fallbackIp))
+        {
+            throw new InvalidOperationException("Platform server IP is not configured. Please set 'CustomDomain:PlatformIp' or 'PLATFORM_SERVER_IP' in your .env configuration.");
+        }
+
+        return (fallbackIp.Trim(), true);
     }
 
     private async Task<CloudflareEmailDnsResult> UpsertDnsRecordAsync(

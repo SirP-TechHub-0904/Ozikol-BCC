@@ -28,9 +28,6 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
           <span class="cd-eyebrow">{{ 'committees.eyebrow' | translate:'PEOPLE & COMMUNITY' }}</span>
           <div class="cd-title-row">
             <h1>{{ 'committees.browse_join' | translate:'Browse & Join' }} {{ aliases.aliasPlural }}</h1>
-            <button type="button" class="cd-info-btn" (click)="openInfo()">
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="cd-subtitle">
             {{ 'committees.core_identity_note' | translate:'Core member details (First Name, Last Name, Email, Phone) are already stored in the workspace. Add ONLY extra fields specific to your groups.' }}

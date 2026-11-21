@@ -29,7 +29,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Ozikol.MasterDomain.Security;
 using Ozikol_BCC.Infrastructure.Caching;
 using StackExchange.Redis;
-using Ozikol_BCC.EmailServices.Postmark;
 
 namespace Ozikol_BCC.Api // CI trigger comment – no functional change
 // trigger CI dummy comment
@@ -68,10 +67,9 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
             builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Recaptcha.IRecaptchaCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformRecaptchaCredentialProvider>();
             builder.Services.AddSingleton<Ozikol_BCC.Infrastructure.Services.Email.IMailInfrastructureCredentialProvider, Ozikol_BCC.Api.Services.MasterPlatformEmailInfrastructureCredentialProvider>();
 
-            builder.Services.AddPostmarkEmailServices(builder.Configuration);
-            builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.EmailServices.Postmark.Configuration.PostmarkOptions>, Ozikol_BCC.Api.Services.MasterPlatformPostmarkPostConfigure>();
             builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudinarySettings>, Ozikol_BCC.Api.Services.MasterPlatformCloudinaryPostConfigure>();
             builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Ozikol_BCC.Application.Configuration.CloudflareR2Settings>, Ozikol_BCC.Api.Services.MasterPlatformCloudflareR2PostConfigure>();
+            builder.Services.AddSingleton<Microsoft.Extensions.Options.IPostConfigureOptions<Sentry.AspNetCore.SentryAspNetCoreOptions>, Ozikol_BCC.Api.Services.MasterPlatformSentryPostConfigure>();
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 

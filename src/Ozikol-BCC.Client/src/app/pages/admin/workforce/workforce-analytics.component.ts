@@ -28,9 +28,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Workforce Analytics &amp; Staff Directory</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Workforce Intelligence Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Graphical fulfillment trends, labor spend, punctuality ratings, and staff roster management.</p>
@@ -40,13 +37,21 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <a routerLink="/workforce/console/settings" class="btn btn-outline" title="Manage Staff Classifications, Baseline Hours & Rules">
-            <span class="material-symbols-outlined">settings</span>
-            <span>Rota Settings</span>
+          <a routerLink="/workforce/console/staff" class="btn btn-outline" title="Open Staff Manager">
+            <span class="material-symbols-outlined">badge</span>
+            <span>Staff Manager</span>
           </a>
-          <a routerLink="/workforce/console/enroll" class="btn btn-primary">
+          <a routerLink="/workforce/console/shifts" class="btn btn-outline" title="Open Shift Manager">
+            <span class="material-symbols-outlined">event_note</span>
+            <span>Shift Manager</span>
+          </a>
+          <a routerLink="/workforce/console/enroll" class="btn btn-outline" title="Send One-Time Registration Invitation">
+            <span class="material-symbols-outlined">mail</span>
+            <span>Invite to Register</span>
+          </a>
+          <a routerLink="/workforce/console/staff/create" class="btn btn-primary" title="Register Staff In-House">
             <span class="material-symbols-outlined">person_add</span>
-            <span>Enroll Member</span>
+            <span>Full Staff Registration</span>
           </a>
         </div>
       </div>
@@ -170,8 +175,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <!-- Card 5: Enrolled Talent Pool -->
           <div
             class="metric-card clickable"
-            (click)="scrollToRoster()"
-            title="Click to jump to Staff Directory & Roster"
+            (click)="navigateTo('/workforce/console/staff')"
+            title="Click to open Staff Manager"
           >
             <div class="card-top">
               <div class="card-icon bg-purple">
@@ -297,12 +302,12 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
 
-        <!-- 4. Staff Directory & Performance Roster Table -->
+        <!-- 4. Active Staff On Duty Table -->
         <div class="cms-card" id="staffRosterSection">
           <div class="table-toolbar">
             <div class="toolbar-left">
-              <h3>Workforce Staff Roster &amp; Ratings</h3>
-              <span class="count-badge">{{ filteredStaffMembers.length }} Staff Enrolled</span>
+              <h3>Active Staff On Duty Now</h3>
+              <span class="count-badge">{{ filteredActiveDuty.length }} Active On Duty</span>
             </div>
             <div class="toolbar-right">
               <div class="search-input-box">
@@ -310,17 +315,26 @@ import { ToastService } from '../../../core/services/toast.service';
                 <input
                   type="text"
                   [(ngModel)]="searchQuery"
-                  placeholder="Search staff by name or email..."
+                  placeholder="Search active staff, venue, or shift code..."
                   class="search-input"
                 />
                 <button type="button" class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''">
                   &times;
                 </button>
               </div>
-              <select class="filter-dropdown" [(ngModel)]="selectedRoleFilter">
-                <option value="">All Job Roles</option>
-                <option *ngFor="let role of availableJobRoles" [value]="role">{{ role }}</option>
-              </select>
+              <button
+                *ngIf="filteredActiveDuty.length > 0"
+                type="button"
+                class="btn btn-primary"
+                (click)="openNotifyModal(null)"
+              >
+                <span class="material-symbols-outlined">campaign</span>
+                <span>Broadcast to On-Duty Staff</span>
+              </button>
+              <a routerLink="/workforce/console/live" class="btn btn-outline">
+                <span class="material-symbols-outlined">radar</span>
+                <span>Open Live Monitor</span>
+              </a>
             </div>
           </div>
 
@@ -328,88 +342,90 @@ import { ToastService } from '../../../core/services/toast.service';
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>STAFF MEMBER</th>
-                  <th>JOB TITLE</th>
-                  <th>DEFAULT HOURLY RATE</th>
-                  <th>COMPLETED SHIFTS</th>
-                  <th>AVG RATING</th>
-                  <th>PUNCTUALITY</th>
+                  <th>ON-DUTY STAFF MEMBER</th>
+                  <th>CLIENT VENUE &amp; POST</th>
+                  <th>SHIFT WINDOW</th>
+                  <th>CLOCK-IN STATUS</th>
+                  <th>GEOFENCE &amp; SAFETY</th>
                   <th style="text-align: right;">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let m of filteredStaffMembers">
+                <tr *ngFor="let item of filteredActiveDuty">
                   <td>
                     <div class="staff-user-cell">
                       <div class="avatar-circle">
-                        <img *ngIf="m.avatarUrl" [src]="m.avatarUrl" [alt]="m.fullName || 'Staff'" class="avatar-img" (error)="m.avatarUrl = null" />
-                        <span *ngIf="!m.avatarUrl" class="material-symbols-outlined avatar-icon">person</span>
+                        <span class="material-symbols-outlined avatar-icon">shield_person</span>
                       </div>
                       <div class="user-info">
-                        <a [routerLink]="['/workforce/console/members', m.userId]" class="user-name clickable-profile-link" title="Click to view full staff profile & documents">
-                          {{ m.fullName || 'Staff Member' }}
+                        <a *ngIf="item.guardId" [routerLink]="['/workforce/console/members', item.guardId]" class="user-name clickable-profile-link">
+                          {{ item.guardName || 'Staff Member' }}
                         </a>
-                        <div class="user-email">{{ m.email }}</div>
+                        <span *ngIf="!item.guardId" class="user-name">{{ item.guardName || 'Unassigned' }}</span>
+                        <div class="user-email">Shift: {{ item.shiftCode }}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span class="job-title-pill">{{ m.jobTitle }}</span>
-                    <span class="staff-type-pill" [class.type-temp]="m.staffTypeName?.toLowerCase()?.includes('temp')" [class.type-contract]="m.staffTypeName?.toLowerCase()?.includes('contract')">
-                      {{ m.staffTypeName || 'Permanent' }}
-                    </span>
-                    <span class="staff-type-pill" *ngIf="m.preferredWorkingTime && m.preferredWorkingTime !== 'Any'">
-                      {{ m.preferredWorkingTime }} Shift
-                    </span>
+                    <span class="job-title-pill">{{ item.siteName }}</span>
+                    <span class="staff-type-pill" *ngIf="item.postName">{{ item.postName }}</span>
                   </td>
                   <td>
-                    <span class="rate-text">
-                      {{ m.defaultHourlyRate ? (currencySymbol + (m.defaultHourlyRate | number:'1.2-2') + '/h') : 'Standard Rate' }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="shifts-count">{{ m.totalShiftsCompleted }}</span>
-                  </td>
-                  <td>
-                    <div class="rating-display">
-                      <span class="material-symbols-outlined star-icon">star</span>
-                      <strong>{{ (m.averageRating || 5.0) | number:'1.1-1' }}</strong>
-                      <span class="ratings-sub">({{ m.totalRatingsCount || 0 }})</span>
-                    </div>
+                    <span class="rate-text">{{ item.startsAtUtc | date:'d MMM, HH:mm' }} – {{ item.endsAtUtc | date:'HH:mm' }}</span>
                   </td>
                   <td>
                     <span
                       class="punctuality-pill"
-                      [class.good]="(m.punctualityScorePercent || 100) >= 90"
-                      [class.warning]="(m.punctualityScorePercent || 100) < 90"
+                      [class.good]="!!item.clockInUtc"
+                      [class.warning]="!item.clockInUtc"
                     >
-                      {{ (m.punctualityScorePercent || 100) | number:'1.0-0' }}% On-Time
+                      {{ item.clockInUtc ? ('Clocked In: ' + (item.clockInUtc | date:'HH:mm')) : (item.isMissedClockIn ? 'Missed (>15m)' : 'Awaiting Clock-In') }}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      class="punctuality-pill"
+                      [class.good]="item.isGeofenceVerified"
+                      [class.warning]="!item.isGeofenceVerified"
+                    >
+                      {{ item.isGeofenceVerified ? 'Geofence Verified' : (item.clockInUtc ? 'Out of Range' : 'GPS Standby') }}
                     </span>
                   </td>
                   <td style="text-align: right;">
                     <div class="actions-group">
-                      <a [routerLink]="['/workforce/console/members', m.userId]" class="btn-action-sm" title="View Full Profile & Vault">
-                        <span class="material-symbols-outlined">badge</span>
-                        <span>Profile</span>
-                      </a>
-                      <button type="button" class="btn-action-sm" (click)="openRateModal(m)">
-                        <span class="material-symbols-outlined">rate_review</span>
-                        <span>Rate Duty</span>
+                      <button
+                        *ngIf="item.guardId"
+                        type="button"
+                        class="btn-action-sm"
+                        (click)="openNotifyModal(item)"
+                        title="Send Push, Email, WhatsApp, or SMS Alert"
+                      >
+                        <span class="material-symbols-outlined">notifications_active</span>
+                        <span>Notify</span>
                       </button>
+                      <a [routerLink]="['/workforce/console/shifts', item.shiftId, 'report']" class="btn-action-sm" title="View Shift Duty Report">
+                        <span class="material-symbols-outlined">assignment</span>
+                        <span>Report</span>
+                      </a>
                     </div>
                   </td>
                 </tr>
-                <tr *ngIf="filteredStaffMembers.length === 0">
-                  <td colspan="7" class="empty-cell">
+                <tr *ngIf="filteredActiveDuty.length === 0">
+                  <td colspan="6" class="empty-cell">
                     <div class="empty-roster-box">
-                      <span class="material-symbols-outlined">person_search</span>
-                      <h4>No Workforce Members Found</h4>
-                      <p *ngIf="searchQuery || selectedRoleFilter">No staff members match the selected filters. Clear your filters to see the full roster.</p>
-                      <p *ngIf="!searchQuery && !selectedRoleFilter">No staff members enrolled yet. Click "Enroll Member" to send an onboarding invitation.</p>
-                      <a routerLink="/workforce/console/enroll" class="btn btn-primary mt-2" *ngIf="!searchQuery && !selectedRoleFilter">
-                        <span class="material-symbols-outlined">person_add</span>
-                        <span>Enroll First Member</span>
-                      </a>
+                      <span class="material-symbols-outlined">sensors</span>
+                      <h4>No Staff Currently Active On Duty</h4>
+                      <p>There are no staff members clocked in or on an active shift at this moment.</p>
+                      <div style="display:flex; gap:10px; justify-content:center; margin-top:8px;">
+                        <a routerLink="/workforce/console/shifts" class="btn btn-outline">
+                          <span class="material-symbols-outlined">event_note</span>
+                          <span>View Shift Manager</span>
+                        </a>
+                        <a routerLink="/workforce/console/schedule/create" class="btn btn-primary">
+                          <span class="material-symbols-outlined">add</span>
+                          <span>Schedule Shift</span>
+                        </a>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -418,6 +434,72 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
       </ng-container>
+
+      <!-- Multi-Channel Notify Active Staff Modal -->
+      <div class="modal-backdrop" *ngIf="showNotifyModal" (click)="showNotifyModal = false">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-blue">campaign</span>
+              <div>
+                <h3>{{ notifyTarget ? ('Notify On-Duty Staff: ' + notifyTarget.guardName) : 'Broadcast Alert to All Active On-Duty Staff' }}</h3>
+                <p class="modal-subtitle">Dispatch instant alert via Push Notification, Email, WhatsApp, or SMS.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="showNotifyModal = false">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Delivery Channels</label>
+              <div style="display:flex; gap:14px; flex-wrap:wrap; padding:8px 0;">
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendPush" />
+                  <span>Push / In-App</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendEmail" />
+                  <span>Email</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendWhatsApp" />
+                  <span>WhatsApp</span>
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="notifyForm.sendSms" />
+                  <span>SMS</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Alert Subject / Title *</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="notifyForm.title"
+                placeholder="e.g. Urgent Duty Welfare Check & Site Update"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Message Content *</label>
+              <textarea
+                class="form-control"
+                rows="4"
+                [(ngModel)]="notifyForm.message"
+                placeholder="Enter operational instructions or welfare check request for on-duty personnel..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="showNotifyModal = false">Cancel</button>
+            <button type="button" class="btn btn-primary" [disabled]="isDispatchingNotify" (click)="sendActiveNotification()">
+              <span class="material-symbols-outlined" *ngIf="!isDispatchingNotify">send</span>
+              <span>{{ isDispatchingNotify ? 'Dispatching...' : 'Send Notification' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- 5. Rate Member Modal -->
       <div class="modal-backdrop" *ngIf="showRateModal" (click)="showRateModal = false">
@@ -543,12 +625,14 @@ import { ToastService } from '../../../core/services/toast.service';
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
       background: var(--md-sys-color-surface, #ffffff);
-      padding: 24px 28px;
-      border-radius: 16px;
+      padding: 18px 22px;
+      border-radius: 14px;
       border: 1px solid var(--md-sys-color-outline, #e2e8f0);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
     .breadcrumb {
       display: flex;
@@ -615,21 +699,30 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .header-actions {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 13px;
+      justify-content: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+    }
+    .btn .material-symbols-outlined {
+      font-size: 16px;
     }
     .btn-primary {
       background: #0050e5;
@@ -1466,6 +1559,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
   isSubmitting = false;
   analytics: any = null;
   staffMembers: any[] = [];
+  liveDutyFeed: any[] = [];
 
   get currencySymbol(): string {
     return this.analytics?.currencySymbol || '';
@@ -1480,6 +1574,18 @@ export class WorkforceAnalyticsComponent implements OnInit {
   showRateModal = false;
   showInfoModal = false;
   targetMember: any = null;
+
+  showNotifyModal = false;
+  isDispatchingNotify = false;
+  notifyTarget: any = null;
+  notifyForm = {
+    title: 'Urgent Duty Welfare Check & Site Update',
+    message: 'Please confirm your current post status and check your workspace terminal for any updates.',
+    sendPush: true,
+    sendEmail: true,
+    sendWhatsApp: false,
+    sendSms: false
+  };
 
   ratingForm = {
     shiftId: '00000000-0000-0000-0000-000000000000',
@@ -1502,6 +1608,7 @@ export class WorkforceAnalyticsComponent implements OnInit {
   loadAll(): void {
     this.isLoading = true;
     this.loadJobRoles();
+    this.loadLiveDuty();
     this.workforceService.getAnalytics().subscribe({
       next: (res: any) => {
         if (res.isSuccess) {
@@ -1511,6 +1618,70 @@ export class WorkforceAnalyticsComponent implements OnInit {
       },
       error: () => {
         this.loadMembers();
+      }
+    });
+  }
+
+  loadLiveDuty(): void {
+    this.workforceService.getLiveDutyMonitor().subscribe({
+      next: (res: any) => {
+        this.liveDutyFeed = Array.isArray(res?.data) ? res.data : [];
+      },
+      error: () => {}
+    });
+  }
+
+  get filteredActiveDuty(): any[] {
+    const active = this.liveDutyFeed.filter(i => i.guardId && (i.clockInUtc || i.shiftStatus === 'InProgress' || i.shiftStatus === 'Scheduled' || i.shiftStatus === 'Confirmed'));
+    if (!this.searchQuery || !this.searchQuery.trim()) return active;
+    const q = this.searchQuery.toLowerCase().trim();
+    return active.filter(i =>
+      (i.guardName || '').toLowerCase().includes(q) ||
+      (i.siteName || '').toLowerCase().includes(q) ||
+      (i.postName || '').toLowerCase().includes(q) ||
+      (i.shiftCode || '').toLowerCase().includes(q)
+    );
+  }
+
+  openNotifyModal(item: any | null): void {
+    this.notifyTarget = item;
+    this.notifyForm = {
+      title: item ? `Duty Check: ${item.siteName} (${item.shiftCode})` : 'Urgent Duty Broadcast — All Active Staff',
+      message: item
+        ? `Hello ${item.guardName}, please confirm your status at ${item.siteName} (${item.postName || 'Assigned Post'}).`
+        : 'Attention all on-duty personnel: Please confirm your post status and review your shift instructions.',
+      sendPush: true,
+      sendEmail: true,
+      sendWhatsApp: false,
+      sendSms: false
+    };
+    this.showNotifyModal = true;
+  }
+
+  sendActiveNotification(): void {
+    if (!this.notifyForm.title.trim() || !this.notifyForm.message.trim()) {
+      this.toast.warning('Subject title and message are required.');
+      return;
+    }
+    this.isDispatchingNotify = true;
+    this.workforceService.notifyActiveDutyStaff({
+      targetUserId: this.notifyTarget ? this.notifyTarget.guardId : 'all',
+      shiftId: this.notifyTarget ? this.notifyTarget.shiftId : null,
+      title: this.notifyForm.title.trim(),
+      message: this.notifyForm.message.trim(),
+      sendPush: this.notifyForm.sendPush,
+      sendEmail: this.notifyForm.sendEmail,
+      sendWhatsApp: this.notifyForm.sendWhatsApp,
+      sendSms: this.notifyForm.sendSms
+    }).subscribe({
+      next: (res: any) => {
+        this.isDispatchingNotify = false;
+        this.showNotifyModal = false;
+        this.toast.success(res?.message || 'Notification dispatched to active staff.');
+      },
+      error: (err: any) => {
+        this.isDispatchingNotify = false;
+        this.toast.error(err?.error?.message || 'Failed to dispatch notification.');
       }
     });
   }

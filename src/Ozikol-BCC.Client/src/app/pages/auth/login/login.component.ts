@@ -5,6 +5,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
 import { MultiWorkspaceService } from '../../../core/services/multi-workspace.service';
+import { OneSignalService } from '../../../core/services/onesignal.service';
 import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
@@ -998,7 +999,8 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private tenantState: TenantStateService,
-    private multiWorkspace: MultiWorkspaceService
+    private multiWorkspace: MultiWorkspaceService,
+    private oneSignal: OneSignalService
   ) {}
 
   ngOnInit(): void {
@@ -1010,6 +1012,10 @@ export class LoginComponent implements OnInit {
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
           if (!payload.exp || Date.now() < payload.exp * 1000) {
+            const uid = payload.sub || payload.nameid || localStorage.getItem('user_id');
+            if (uid) {
+              this.oneSignal.login(uid, localStorage.getItem('tenant_key') || undefined);
+            }
             this.navigateAfterLogin();
             return;
           }
@@ -1269,6 +1275,10 @@ export class LoginComponent implements OnInit {
 
   private storeLoginSession(data: any): void {
     localStorage.setItem('access_token', data.token);
+    if (data.userId) {
+      localStorage.setItem('user_id', data.userId);
+      this.oneSignal.login(data.userId, data.tenantKey);
+    }
     if (data.tenantKey) localStorage.setItem('tenant_key', data.tenantKey);
     if (data.fullName) localStorage.setItem('user_name', data.fullName);
     if (data.email) localStorage.setItem('user_email', data.email);

@@ -29,9 +29,6 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
           <span class="cm-eyebrow">{{ 'committees.eyebrow' | translate:'PEOPLE & COMMUNITY' }}</span>
           <div class="cm-title-row">
             <h1>{{ 'committees.my_groups' | translate:'My' }} {{ aliases.aliasPlural }}</h1>
-            <button type="button" class="cm-info-trigger" (click)="openHubInfo()" title="Section Information">
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="cm-subtitle">
             Access your active {{ aliases.aliasPlural.toLowerCase() }}, {{ aliases.subGroupAliasPlural.toLowerCase() }}, meeting schedules, shared cloud shelves, and reporting workspace.

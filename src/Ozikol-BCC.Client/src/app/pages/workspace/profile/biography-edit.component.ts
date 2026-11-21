@@ -1,24 +1,43 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BiographyService, UserBiography, WorkExperience, Education, CertificationProject, LanguageSkill } from '../../../core/services/biography.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-biography-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bio-editor-container">
-      <div class="editor-header">
-        <div>
-          <h1 class="page-title">My Professional CV Biography</h1>
-          <p class="page-sub">Set up your biography to share with the alumni network and download a print-ready CV.</p>
+      <!-- Canonical Dashboard Page Header -->
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <a routerLink="/users/workspace/profile">My Profile</a>
+            <span class="sep">/</span>
+            <span class="current">Professional CV Biography</span>
+          </div>
+          <div class="title-row">
+            <h1>My Professional CV Biography</h1>
+            <span class="badge-suite">Personal Workspace</span>
+          </div>
+          <p class="subtitle">Set up your biography to share with the alumni network and download a print-ready CV.</p>
         </div>
-        <button type="button" class="btn-primary" (click)="saveBiography()" [disabled]="saving">
-          <span class="material-symbols-outlined">save</span>
-          <span>{{ saving ? 'Saving Changes...' : 'Save CV Biography' }}</span>
-        </button>
+        <div class="header-actions">
+          <a routerLink="/users/workspace/profile" class="btn btn-outline">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Profile</span>
+          </a>
+          <button type="button" class="btn btn-primary" (click)="saveBiography()" [disabled]="saving">
+            <span class="material-symbols-outlined">save</span>
+            <span>{{ saving ? 'Saving Changes...' : 'Save CV Biography' }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="editor-grid">

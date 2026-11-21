@@ -10,28 +10,38 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="kpi-container">
-      <!-- Header with Interactive Evaluation Period Switcher -->
-      <div class="kpi-header-row">
-        <div>
-          <h1 class="page-title">My Performance & KPI Scorecard</h1>
-          <p class="page-sub">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span class="current">My Performance &amp; KPI Scorecard</span>
+          </div>
+          <div class="title-row">
+            <h1>My Performance &amp; KPI Scorecard</h1>
+            <span class="badge-suite">Personal Workspace</span>
+          </div>
+          <p class="subtitle">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
         </div>
 
         <!-- Period Switcher Selector -->
-        <div class="period-switcher-wrap">
-          <label class="period-label">Evaluation Period:</label>
-          <div class="period-chips">
-            <button
-              *ngFor="let p of periodsList"
-              type="button"
-              class="period-chip-btn"
-              [class.active]="selectedPeriod === p.title"
-              (click)="selectPeriod(p.title)"
-            >
-              <span class="material-symbols-outlined">calendar_today</span>
-              <span>{{ p.title }}</span>
-              <span *ngIf="p.isActive" class="active-dot" title="Current Active Cycle"></span>
-            </button>
+        <div class="header-actions">
+          <div class="period-switcher-wrap">
+            <label class="period-label">Period:</label>
+            <div class="period-chips">
+              <button
+                *ngFor="let p of periodsList"
+                type="button"
+                class="period-chip-btn"
+                [class.active]="selectedPeriod === p.title"
+                (click)="selectPeriod(p.title)"
+              >
+                <span class="material-symbols-outlined">calendar_today</span>
+                <span>{{ p.title }}</span>
+                <span *ngIf="p.isActive" class="active-dot" title="Current Active Cycle"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -154,26 +164,173 @@ import { ApiService } from '../../core/services/api.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .kpi-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
-    .kpi-header-row {
+    /* Canonical BCC Page Header */
+    .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      flex-wrap: wrap;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
       gap: 16px;
-      margin-bottom: 4px;
     }
-    .page-title {
-      font-size: 22px;
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .breadcrumb::-webkit-scrollbar { display: none; }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb span, .breadcrumb .current {
+      color: var(--md-sys-color-on-surface, #334155);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
       color: var(--md-sys-color-on-surface, #0f172a);
-      margin: 0 0 4px;
+      margin: 0;
+      letter-spacing: -0.5px;
     }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .kpi-container {
+        gap: 14px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: flex !important;
+      }
+      .period-switcher-wrap {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 6px !important;
+      }
+      .period-chips {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
 
     /* Period Switcher */
     .period-switcher-wrap {
@@ -335,7 +492,7 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 8px;
     }
-    .trend-title h3 { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
+    .trend-title h3 { font-size: 15px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0; }
     .trend-title span { font-size: 20px; }
     .growth-pill {
       font-size: 11.5px;
@@ -381,7 +538,7 @@ import { ApiService } from '../../core/services/api.service';
       width: 38px;
       font-size: 12px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       text-align: right;
     }
 
@@ -410,7 +567,7 @@ import { ApiService } from '../../core/services/api.service';
     .card-title {
       font-size: 16px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       margin: 0;
     }
     .badge-count {
@@ -512,11 +669,11 @@ import { ApiService } from '../../core/services/api.service';
 export class WorkspaceKpiComponent implements OnInit {
   selectedPeriod = 'Q3 2026';
   periodsList: any[] = [];
-  overallScore = 88;
-  grade = 'A';
+  overallScore = 0;
+  grade = 'N/A';
   kpiScores: any[] = [];
   historicalTrend: any[] = [];
-  supervisorRemarks = 'Exceptional consistency across operational deliverables and high engagement.';
+  supervisorRemarks = '';
 
   constructor(private api: ApiService) {}
 
@@ -532,22 +689,14 @@ export class WorkspaceKpiComponent implements OnInit {
           const active = this.periodsList.find(p => p.isActive);
           this.selectedPeriod = active ? active.title : this.periodsList[0].title;
         } else {
-          this.periodsList = [
-            { title: 'Q3 2026', isActive: true },
-            { title: 'Q2 2026', isActive: false },
-            { title: 'Q1 2026', isActive: false }
-          ];
-          this.selectedPeriod = 'Q3 2026';
+          this.periodsList = [];
+          this.selectedPeriod = '';
         }
         this.loadScorecard(this.selectedPeriod);
       },
       error: () => {
-        this.periodsList = [
-          { title: 'Q3 2026', isActive: true },
-          { title: 'Q2 2026', isActive: false },
-          { title: 'Q1 2026', isActive: false }
-        ];
-        this.loadScorecard('Q3 2026');
+        this.periodsList = [];
+        this.loadScorecard('');
       }
     });
   }
@@ -561,27 +710,19 @@ export class WorkspaceKpiComponent implements OnInit {
     this.api.get<any>(`PortalUsersApi/my-kpi?period=${encodeURIComponent(period)}`).subscribe({
       next: (res) => {
         if (res?.data) {
-          this.overallScore = res.data.overallScore || 88;
-          this.grade = res.data.grade || 'A';
           this.kpiScores = res.data.scores || [];
+          this.overallScore = this.kpiScores.length > 0 ? (res.data.overallScore || 0) : 0;
+          this.grade = this.kpiScores.length > 0 ? (res.data.grade || 'A') : 'N/A';
           this.historicalTrend = res.data.historicalTrend || [];
-          this.supervisorRemarks = res.data.supervisorRemarks || 'Exceptional execution across designated milestones.';
+          this.supervisorRemarks = res.data.supervisorRemarks || '';
         }
       },
       error: () => {
-        // Fallback demo data
-        this.overallScore = 88;
-        this.grade = 'A';
-        this.kpiScores = [
-          { title: 'Project Deliverables & Milestones', category: 'Operational Execution', weight: 0.4, targetValue: 100, score: 92, remarks: 'Delivered all designated sprints on time.' },
-          { title: 'Attendance & Community Participation', category: 'Engagement', weight: 0.3, targetValue: 100, score: 85, remarks: 'Active engagement in committee meetings.' },
-          { title: 'Code Quality & Adherence to Standards', category: 'Technical Excellence', weight: 0.3, targetValue: 100, score: 87, remarks: 'High code review pass rate.' }
-        ];
-        this.historicalTrend = [
-          { period: 'Q1 2026', score: 82 },
-          { period: 'Q2 2026', score: 85 },
-          { period: 'Q3 2026', score: 88 }
-        ];
+        this.overallScore = 0;
+        this.grade = 'N/A';
+        this.kpiScores = [];
+        this.historicalTrend = [];
+        this.supervisorRemarks = '';
       }
     });
   }

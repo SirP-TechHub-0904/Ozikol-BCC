@@ -5,9 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 
 namespace Ozikol.Central.Services.Jobs.Handlers
 {
@@ -18,18 +18,18 @@ namespace Ozikol.Central.Services.Jobs.Handlers
     public class SubscriptionExpirationJobHandler : IBackgroundJobHandler
     {
         private readonly MasterCatalogDbContext _masterCatalogDbContext;
-        private readonly IPostmarkEmailService _emailService;
+        private readonly ICentralEmailService _emailService;
         private readonly ILogger<SubscriptionExpirationJobHandler> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SubscriptionExpirationJobHandler"/> class.
         /// </summary>
         /// <param name="masterCatalogDbContext">Master Catalog database context.</param>
-        /// <param name="emailService">Postmark email service for notifications.</param>
+        /// <param name="emailService">Central email service for notifications.</param>
         /// <param name="logger">Structured logger instance.</param>
         public SubscriptionExpirationJobHandler(
             MasterCatalogDbContext masterCatalogDbContext,
-            IPostmarkEmailService emailService,
+            ICentralEmailService emailService,
             ILogger<SubscriptionExpirationJobHandler> logger)
         {
             _masterCatalogDbContext = masterCatalogDbContext;
@@ -116,10 +116,11 @@ namespace Ozikol.Central.Services.Jobs.Handlers
                                 <p style='font-size: 11px; color: #94a3b8;'>This is an automated platform alert from Ozikol Central.</p>
                             </div>";
 
-                        await _emailService.SendHtmlEmailAsync(
-                            to: tenant.AdminEmail,
+                        await _emailService.SendEmailAsync(
+                            toEmail: tenant.AdminEmail,
                             subject: $"[Ozikol Alert] Subscription Expired for {tenant.OrganizationName}",
-                            htmlBody: emailBody);
+                            htmlBody: emailBody,
+                            cancellationToken: cancellationToken);
 
                         logs.Add($"   │   └── ✉️ Expiration email alert successfully sent to {tenant.AdminEmail}");
                     }

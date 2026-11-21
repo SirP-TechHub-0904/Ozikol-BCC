@@ -437,7 +437,13 @@ import { ToastService } from '../../../core/services/toast.service';
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
       margin-bottom: 1.5rem;
       gap: 1.5rem;
     }

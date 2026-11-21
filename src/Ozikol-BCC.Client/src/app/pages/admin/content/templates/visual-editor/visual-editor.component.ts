@@ -219,7 +219,7 @@ export interface SectionPreset {
               class="json-textarea"
               [(ngModel)]="rawJsonText"
               (ngModelChange)="onJsonTextChange($event)"
-              placeholder="e.g. { &#34;brandName&#34;: &#34;Acme Global&#34;, ... }"
+              placeholder="e.g. { &#34;brandName&#34;: &#34;Your Organization&#34;, ... }"
               spellcheck="false"
             ></textarea>
           </div>
@@ -758,7 +758,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
       {
         editorTokens: this.editorTokens,
         previewMenuContent: this.sampleContent,
-        currentTenantBrandName: this.sampleContent?.brandName || 'Acme Global'
+        currentTenantBrandName: this.sampleContent?.brandName || 'Your Organization'
       }
     );
 

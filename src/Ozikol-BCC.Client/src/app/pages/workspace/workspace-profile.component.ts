@@ -10,10 +10,31 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="profile-container">
+      <!-- Canonical BCC Page Header -->
       <div class="page-header">
-        <div>
-          <h1 class="page-title">My Profile & Dossier</h1>
-          <p class="page-sub">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span>Manage My Account</span>
+            <span class="sep">/</span>
+            <span class="current">My Profile &amp; Dossier</span>
+          </div>
+          <div class="title-row">
+            <h1>My Profile &amp; Dossier</h1>
+            <span class="badge-suite">Personal Workspace</span>
+          </div>
+          <p class="subtitle">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/dashboard/workspace" class="btn btn-outline">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Workspace Home</span>
+          </a>
+          <a routerLink="/users/workspace/security" class="btn btn-primary">
+            <span class="material-symbols-outlined">security</span>
+            <span>Security &amp; 2FA</span>
+          </a>
         </div>
       </div>
 
@@ -107,7 +128,7 @@ import { ApiService } from '../../core/services/api.service';
               <span>My CV & Biography</span>
               <span class="material-symbols-outlined arrow">chevron_right</span>
             </a>
-            <a routerLink="/identity/console/account" class="dossier-nav-btn">
+            <a routerLink="/users/workspace/security" class="dossier-nav-btn">
               <span class="material-symbols-outlined">security</span>
               <span>Manage Security & 2FA</span>
               <span class="material-symbols-outlined arrow">chevron_right</span>
@@ -457,14 +478,139 @@ import { ApiService } from '../../core/services/api.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .profile-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
-    .page-header { margin-bottom: 4px; }
-    .page-title { font-size: 22px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+    /* Canonical BCC Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      gap: 16px;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .breadcrumb::-webkit-scrollbar { display: none; }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb span, .breadcrumb .current {
+      color: #334155;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--md-sys-color-on-surface, #0f172a);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .header-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    .header-actions .btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .header-actions .btn-outline {
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .header-actions .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .header-actions .btn-primary {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .header-actions .btn-primary:hover {
+      background: #003ebd;
+    }
 
     /* Global Unverified Alert Banner */
     .global-unverified-alert {
@@ -477,6 +623,9 @@ import { ApiService } from '../../core/services/api.service';
       padding: 14px 18px;
       border-radius: 12px;
       color: #92400e;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .global-unverified-alert .alert-icon-col span {
       font-size: 24px;
@@ -488,16 +637,24 @@ import { ApiService } from '../../core/services/api.service';
       gap: 2px;
       font-size: 13px;
       line-height: 1.45;
+      min-width: 0;
+      flex: 1;
     }
 
     .profile-layout {
       display: grid;
-      grid-template-columns: 310px 1fr;
+      grid-template-columns: 310px minmax(0, 1fr);
       gap: 24px;
       align-items: start;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     @media (max-width: 960px) {
-      .profile-layout { grid-template-columns: 1fr; }
+      .profile-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+      }
     }
 
     /* Left Avatar Card */
@@ -511,6 +668,10 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       text-align: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .avatar-circle-wrap {
       position: relative;
@@ -559,6 +720,8 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 8px;
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
       margin-bottom: 20px;
     }
     .dossier-pill {
@@ -570,6 +733,9 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 12.5px;
       font-weight: 600;
       text-align: left;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .dossier-pill span.material-symbols-outlined { font-size: 18px; }
     .dossier-pill.member-id { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
@@ -581,12 +747,14 @@ import { ApiService } from '../../core/services/api.service';
     /* Security Health Box */
     .security-health-box {
       width: 100%;
+      max-width: 100%;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 14px;
       margin-bottom: 16px;
       text-align: left;
+      box-sizing: border-box;
     }
     .health-header {
       display: flex;
@@ -636,6 +804,8 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 8px;
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .dossier-nav-btn {
       display: flex;
@@ -650,6 +820,9 @@ import { ApiService } from '../../core/services/api.service';
       font-weight: 600;
       text-decoration: none;
       transition: background 0.15s, border-color 0.15s;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .dossier-nav-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
     .dossier-nav-btn .arrow { margin-left: auto; font-size: 18px; color: #94a3b8; }
@@ -668,6 +841,10 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .form-card {
       background: var(--md-sys-color-surface, #ffffff);
@@ -675,6 +852,10 @@ import { ApiService } from '../../core/services/api.service';
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .card-header {
       display: flex;
@@ -683,14 +864,28 @@ import { ApiService } from '../../core/services/api.service';
       margin-bottom: 20px;
       padding-bottom: 14px;
       border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .head-title {
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 0;
     }
-    .head-title span { font-size: 22px; }
-    .head-title h3 { font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; }
+    .head-title span { font-size: 22px; flex-shrink: 0; }
+    .head-title h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .text-primary { color: #0050e5; }
     .text-blue { color: #0284c7; }
     .text-green { color: #16a34a; }
@@ -703,18 +898,31 @@ import { ApiService } from '../../core/services/api.service';
       font-weight: 700;
       padding: 5px 12px;
       border-radius: 20px;
+      flex-shrink: 0;
     }
-    .status-badge span { font-size: 16px; }
+    .status-badge span { font-size: 16px; flex-shrink: 0; }
     .status-badge.verified { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
     .status-badge.unverified { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
-    @media (max-width: 640px) {
-      .form-grid { grid-template-columns: 1fr; }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 14px !important;
+      }
+    }
+    .form-group {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .form-group.full-width { grid-column: 1 / -1; }
     .form-group label {
@@ -728,6 +936,7 @@ import { ApiService } from '../../core/services/api.service';
 
     .form-input {
       width: 100%;
+      max-width: 100%;
       height: 42px;
       padding: 0 14px;
       border: 1px solid #cbd5e1;
@@ -738,6 +947,7 @@ import { ApiService } from '../../core/services/api.service';
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
+      min-width: 0;
     }
     .form-input:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1); }
     .form-input.code-input {
@@ -752,6 +962,9 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       gap: 8px;
       height: 42px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .gender-label {
       flex: 1;
@@ -765,6 +978,8 @@ import { ApiService } from '../../core/services/api.service';
       color: #475569;
       cursor: pointer;
       transition: all 0.2s;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .gender-label input { display: none; }
     .gender-label.checked {
@@ -778,6 +993,10 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       align-items: center;
       gap: 14px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .btn-primary {
       display: inline-flex;
@@ -895,6 +1114,10 @@ import { ApiService } from '../../core/services/api.service';
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      gap: 10px;
     }
     .contact-val {
       display: flex;
@@ -902,12 +1125,21 @@ import { ApiService } from '../../core/services/api.service';
       gap: 12px;
       font-size: 15px;
       color: #0f172a;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .contact-val span { font-size: 20px; color: #64748b; }
+    .contact-val span { font-size: 20px; color: #64748b; flex-shrink: 0; }
+    .contact-val strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .contact-actions-wrap {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-shrink: 0;
     }
 
     .unverified-alert-banner {
@@ -919,6 +1151,9 @@ import { ApiService } from '../../core/services/api.service';
       border: 1px solid #fde68a;
       border-radius: 10px;
       color: #92400e;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .alert-icon { font-size: 22px; color: #f59e0b; flex-shrink: 0; }
     .unverified-text { font-size: 13px; line-height: 1.4; flex: 1; }
@@ -929,6 +1164,9 @@ import { ApiService } from '../../core/services/api.service';
       border: 1px solid #cbd5e1;
       border-radius: 12px;
       padding: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .otp-flow-header {
       display: flex;
@@ -952,6 +1190,239 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
+    }
+
+    /* Authoritative Mobile Responsive Rules (iPhone 16 / 393px Viewport) */
+    @media (max-width: 768px) {
+      .profile-container {
+        padding: 0 0 20px 0 !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 14px !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+      }
+      .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        height: 36px !important;
+        box-sizing: border-box !important;
+      }
+      .global-unverified-alert {
+        padding: 12px 14px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .avatar-card {
+        padding: 18px 14px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .form-card {
+        padding: 16px 14px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .card-header {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        margin-bottom: 14px !important;
+        padding-bottom: 10px !important;
+      }
+      .head-title {
+        min-width: 0 !important;
+        gap: 8px !important;
+      }
+      .head-title span {
+        font-size: 20px !important;
+      }
+      .head-title h3 {
+        font-size: 14.5px !important;
+      }
+      .status-badge {
+        font-size: 10.5px !important;
+        padding: 3px 8px !important;
+      }
+      .form-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 12px !important;
+        width: 100% !important;
+      }
+      .form-input {
+        height: 38px !important;
+        font-size: 13px !important;
+        padding: 0 12px !important;
+      }
+      .form-actions {
+        margin-top: 16px !important;
+        width: 100% !important;
+      }
+      .form-actions .btn-primary {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 40px !important;
+      }
+      .current-contact-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 14px 12px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .contact-val {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .contact-val span {
+        font-size: 18px !important;
+        flex-shrink: 0 !important;
+      }
+      .contact-val strong {
+        font-size: 13.5px !important;
+        word-break: break-all !important;
+        white-space: normal !important;
+        line-height: 1.35 !important;
+      }
+      .contact-actions-wrap {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+      }
+      .contact-actions-wrap button,
+      .contact-actions-wrap .btn-verify-highlight,
+      .contact-actions-wrap .btn-outline {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        height: 36px !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+        gap: 6px !important;
+      }
+      .contact-actions-wrap button .material-symbols-outlined {
+        font-size: 15px !important;
+      }
+      .unverified-alert-banner {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px 14px !important;
+        gap: 10px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .unverified-alert-banner .unverified-text {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+      }
+      .unverified-alert-banner button {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 36px !important;
+        font-size: 12px !important;
+      }
+      .otp-flow-box {
+        padding: 14px 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .otp-inputs-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+      }
+      .otp-actions-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .otp-actions-row button {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 38px !important;
+      }
     }
   `]
 })
@@ -1029,7 +1500,7 @@ export class WorkspaceProfileComponent implements OnInit, OnDestroy {
   phoneSuccessMsg = '';
   phoneErrorMsg = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   ngOnInit(): void {
     this.loadProfile();

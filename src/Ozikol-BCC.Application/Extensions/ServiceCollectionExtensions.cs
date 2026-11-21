@@ -28,7 +28,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Ozikol_BCC.Application.Repository.NotifyRegister.INotifyRegisterService, Ozikol_BCC.Application.Repository.NotifyRegister.NotifyRegisterService>();
         services.AddScoped<Ozikol_BCC.Application.Repository.NotifyRegister.IEmailSendService, Ozikol_BCC.Application.Repository.NotifyRegister.EmailSendService>();
         services.AddScoped<Ozikol_BCC.Application.Repository.NotifyRegister.ISmsSendService, Ozikol_BCC.Application.Repository.NotifyRegister.SmsSendService>();
-        services.AddScoped<Ozikol_BCC.Application.Repository.NotifyRegister.IZeptoMailService, Ozikol_BCC.Application.Repository.NotifyRegister.ZeptoMailService>();
         services.AddScoped<Ozikol_BCC.Application.Repository.BCP.UserManagement.IBcpUserManagementRepository, Ozikol_BCC.Application.Repository.BCP.UserManagement.BcpUserManagementRepository>();
         services.AddScoped<Ozikol_BCC.Application.Repository.Bcp.Groups.IBcpGroupRepository, Ozikol_BCC.Application.Repository.Bcp.Groups.BcpGroupRepository>();
         services.AddScoped<Ozikol_BCC.Application.Services.IOtpVerificationService, Ozikol_BCC.Application.Services.OtpVerificationService>();
@@ -36,6 +35,8 @@ public static class ServiceCollectionExtensions
         services.Configure<Ozikol_BCC.Application.Configuration.CloudflareR2Settings>(configuration.GetSection("CloudflareR2"));
         services.AddScoped<Ozikol_BCC.Application.Services.Cloudflare.ICloudflareR2StorageService, Ozikol_BCC.Application.Services.Cloudflare.CloudflareR2StorageService>();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher, Ozikol_BCC.Application.Services.Notifications.CentralNotificationDispatcher>();
+        services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralMessageOutboxService, Ozikol_BCC.Application.Services.Notifications.CentralMessageOutboxService>();
+        services.AddHttpClient<Ozikol_BCC.Application.Interfaces.Services.IOneSignalPushDispatcher, Ozikol_BCC.Application.Services.Notifications.OneSignalPushDispatcher>();
         services.AddSingleton<Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector, Ozikol_BCC.Application.Services.Logging.CentralLogCollector>();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger, Ozikol_BCC.Application.Services.Logging.TenantActivityLogger>();
         services.AddScoped<Ozikol_BCC.Application.Services.LoggerLibrary>();

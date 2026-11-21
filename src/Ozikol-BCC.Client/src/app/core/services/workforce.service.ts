@@ -47,6 +47,8 @@ export interface Shift {
   requiredWorkspaceStationName?: string;
   status: string;
   isConfirmedByGuard: boolean;
+  assignmentMode?: 'Offer' | 'Mandatory' | string;
+  requireClaimApproval?: boolean;
   confirmedAtUtc?: string;
   acceptanceDeadlineUtc?: string;
   acceptanceCountdownMinutes?: number;
@@ -231,6 +233,21 @@ export class WorkforceService {
     return this.apiService.post<any>(`workforce/shifts/${shiftId}/confirm`, {});
   }
 
+  /** Staff declines an offered (non-mandatory) shift; it returns to the open pool. */
+  declineShift(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/decline`, {});
+  }
+
+  /** Admin revokes an assigned shift that has not yet been accepted. */
+  revokeShift(shiftId: string): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/revoke`, {});
+  }
+
+  /** Admin reviews a pending claim on an open shift (approve or reject). */
+  reviewShiftClaim(shiftId: string, payload: { approve: boolean; reviewNote?: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/review-claim`, payload);
+  }
+
   // --- OPEN SHIFTS & CLAIMS ---
   getOpenShifts(): Observable<any> {
     return this.apiService.get<any>('workforce/shifts/open').pipe(
@@ -320,6 +337,19 @@ export class WorkforceService {
     return this.apiService.get<any>('workforce/attendance/live-monitor');
   }
 
+  notifyActiveDutyStaff(payload: {
+    targetUserId?: string | null;
+    shiftId?: string | null;
+    title: string;
+    message: string;
+    sendPush: boolean;
+    sendEmail: boolean;
+    sendWhatsApp: boolean;
+    sendSms: boolean;
+  }): Observable<any> {
+    return this.apiService.post<any>('workforce/attendance/notify-active', payload);
+  }
+
   getSupervisorTimesheets(status?: string): Observable<any> {
     const params: any = {};
     if (status) params.status = status;
@@ -390,7 +420,7 @@ export class WorkforceService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', 'bcp-compliance-vault');
-    return this.apiService.post<any>('ContentApi/upload-media', formData);
+    return this.apiService.post<any>('workforce/documents/upload-media', formData);
   }
 
   // --- CUSTOM SHIFT REMINDER PREFERENCES ---
@@ -503,5 +533,53 @@ export class WorkforceService {
 
   deleteDocumentCategory(id: string): Observable<any> {
     return this.apiService.delete<any>(`workforce/document-categories/${id}`);
+  }
+
+  // --- STAFF–ADMIN MESSAGE POOL & SUPPORT TICKET DESK ---
+  getAllMessages(): Observable<any> {
+    return this.apiService.get<any>('workforce/messages');
+  }
+
+  getMyMessages(): Observable<any> {
+    return this.apiService.get<any>('workforce/my-messages');
+  }
+
+  createMessageTicket(payload: {
+    staffUserId?: string;
+    category: string;
+    relatedShiftId?: string | null;
+    relatedShiftLabel?: string | null;
+    topic: string;
+    message: string;
+  }): Observable<any> {
+    return this.apiService.post<any>('workforce/messages', payload);
+  }
+
+  replyToMessageTicket(ticketId: string, payload: { message: string; senderRole?: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/messages/${ticketId}/reply`, payload);
+  }
+
+  updateMessageTicketStatus(ticketId: string, status: 'Open' | 'Closed'): Observable<any> {
+    return this.apiService.put<any>(`workforce/messages/${ticketId}/status`, { status });
+  }
+
+  // --- EMERGENCY PROTOCOLS & SHIFT DUTY REPORTS ---
+  getEmergencyCategories(): Observable<any> {
+    return this.apiService.get<any>('workforce/emergency/categories');
+  }
+
+  submitShiftDutyReport(shiftId: string, payload: { reportContent: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/duty-report`, payload);
+  }
+
+  transmitEmergencySos(shiftId: string, payload: {
+    categoryId: string;
+    categoryName: string;
+    severity?: string;
+    description: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/emergency-sos`, payload);
   }
 }

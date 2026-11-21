@@ -9,19 +9,20 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="workspace-dashboard-container">
-      <!-- Member Hero Banner -->
-      <section class="member-hero-card">
-        <div class="hero-avatar-wrap">
-          <img *ngIf="userProfile?.avatarUrl" [src]="userProfile.avatarUrl" alt="Avatar" class="hero-avatar-img" />
-          <div *ngIf="!userProfile?.avatarUrl" class="hero-avatar-placeholder">
-            {{ getInitials(userProfile?.fullName || userName) }}
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <span class="root-crumb">Personal Workspace</span>
+            <span class="sep">/</span>
+            <span class="current">Workspace Home</span>
           </div>
-        </div>
-        <div class="hero-info">
-          <div class="hero-badge-row">
-            <span class="member-id-pill" title="Official Member ID">
+          <div class="title-row">
+            <h1>Welcome back, {{ userProfile?.firstName || userName || 'Member' }}!</h1>
+            <span class="badge-suite">SUITE: PERSONAL WORKSPACE</span>
+            <span class="member-id-pill" title="Official Member ID" *ngIf="userProfile?.memberId">
               <span class="material-symbols-outlined">badge</span>
-              {{ userProfile?.memberId || 'CC-2026-0099' }}
+              {{ userProfile.memberId }}
             </span>
             <span class="category-pill" *ngIf="userProfile?.categoryName">
               {{ userProfile.categoryName }}
@@ -31,20 +32,23 @@ import { ApiService } from '../../core/services/api.service';
               Active Member
             </span>
           </div>
-          <h1 class="hero-title">Welcome back, {{ userProfile?.firstName || userName || 'Member' }}!</h1>
-          <p class="hero-sub">{{ userProfile?.designation || 'Member of Organization' }} • {{ userProfile?.email || userEmail }}</p>
+          <p class="subtitle">{{ userProfile?.designation || 'Member of Organization' }} &bull; {{ userProfile?.email || userEmail }}</p>
         </div>
-        <div class="hero-actions">
-          <a routerLink="/users/workspace/profile" class="btn-hero primary">
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadAllData()" title="Refresh workspace data">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
+          <a routerLink="/users/workspace/profile" class="btn btn-outline">
             <span class="material-symbols-outlined">person</span>
             <span>Edit Profile</span>
           </a>
-          <a routerLink="/users/workspace/security" class="btn-hero secondary">
-            <span class="material-symbols-outlined">lock_reset</span>
-            <span>Security</span>
+          <a routerLink="/users/workspace/security" class="btn btn-primary">
+            <span class="material-symbols-outlined">security</span>
+            <span>Security &amp; 2FA</span>
           </a>
         </div>
-      </section>
+      </div>
 
       <!-- 3-Column Personal Telemetry Grid -->
       <div class="workspace-grid">
@@ -76,22 +80,23 @@ import { ApiService } from '../../core/services/api.service';
                 </svg>
                 <div class="donut-center-content">
                   <span class="donut-score">{{ overallScore }}%</span>
-                  <span class="donut-grade-pill grade-{{ grade.toLowerCase() }}">Grade {{ grade }}</span>
+                  <span class="donut-grade-pill grade-{{ grade.toLowerCase() }}">{{ grade === 'N/A' ? 'No Grade' : ('Grade ' + grade) }}</span>
                 </div>
               </div>
 
               <div class="kpi-score-meta">
-                <div class="score-status text-success">
-                  <span class="material-symbols-outlined">check_circle</span>
-                  <span>Performance on track</span>
+                <div class="score-status" [class.text-success]="evaluationsCount > 0" [style.color]="evaluationsCount === 0 ? '#64748b' : ''">
+                  <span class="material-symbols-outlined">{{ evaluationsCount > 0 ? 'check_circle' : 'info' }}</span>
+                  <span>{{ evaluationsCount > 0 ? 'Performance on track' : 'No KPI evaluations yet' }}</span>
                 </div>
                 <p class="score-eval-count">{{ evaluationsCount }} evaluation milestone(s) recorded</p>
-                <div class="kpi-target-indicator">Target: 85% • Standing: <strong>Top 15%</strong></div>
+                <div class="kpi-target-indicator" *ngIf="evaluationsCount > 0">Target: 85% • Score: <strong>{{ overallScore }}%</strong></div>
+                <div class="kpi-target-indicator" *ngIf="evaluationsCount === 0">Scores appear once an administrator records an evaluation</div>
               </div>
             </div>
 
             <!-- Horizontal Metric Progress Bars -->
-            <div class="metrics-bars-wrap">
+            <div class="metrics-bars-wrap" *ngIf="kpiMetrics.length > 0">
               <div class="metric-bar-item" *ngFor="let m of kpiMetrics">
                 <div class="metric-bar-header">
                   <span class="metric-bar-label">{{ m.name }}</span>
@@ -101,6 +106,9 @@ import { ApiService } from '../../core/services/api.service';
                   <div class="metric-progress-fill" [style.width.%]="m.score" [ngClass]="m.colorClass"></div>
                 </div>
               </div>
+            </div>
+            <div *ngIf="kpiMetrics.length === 0" class="kpi-empty-box">
+              No individual KPI metrics have been scored for your account yet.
             </div>
           </div>
         </section>
@@ -112,13 +120,13 @@ import { ApiService } from '../../core/services/api.service';
               <span class="material-symbols-outlined head-icon text-info">badge</span>
               <h2 class="card-title">Membership Status</h2>
             </div>
-            <span class="status-pill good">Verified</span>
+            <span class="status-pill good">{{ userProfile?.userStatus || 'Active' }}</span>
           </div>
           <div class="card-body">
             <ul class="meta-list">
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">tag</span> Member ID:</span>
-                <strong class="meta-value">{{ userProfile?.memberId || 'CC-2026-0099' }}</strong>
+                <strong class="meta-value">{{ userProfile?.memberId || 'N/A' }}</strong>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">category</span> User Category:</span>
@@ -126,31 +134,37 @@ import { ApiService } from '../../core/services/api.service';
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">mail</span> Email Status:</span>
-                <span class="status-tag verified">
+                <span class="status-tag verified" *ngIf="userProfile?.emailConfirmed">
                   <span class="material-symbols-outlined">check</span>
                   Verified
+                </span>
+                <span class="status-tag" *ngIf="!userProfile?.emailConfirmed" style="color: #d97706; font-weight: 700; font-size: 12px;">
+                  Pending Verification
                 </span>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">call</span> Phone Status:</span>
-                <span class="status-tag verified">
-                  <span class="material-symbols-outlined">check</span>
-                  {{ userProfile?.phoneNumber ? 'Verified (' + userProfile.phoneNumber + ')' : 'Verified (+234)' }}
+                <span class="status-tag verified" *ngIf="userProfile?.phoneNumber">
+                  <span class="material-symbols-outlined">{{ userProfile?.phoneNumberConfirmed ? 'check' : 'schedule' }}</span>
+                  {{ (userProfile?.phoneNumberConfirmed ? 'Verified' : 'Registered') + ' (' + userProfile.phoneNumber + ')' }}
+                </span>
+                <span class="status-tag" *ngIf="!userProfile?.phoneNumber" style="color: #64748b; font-size: 12px;">
+                  Not Provided
                 </span>
               </li>
               <li>
                 <span class="meta-label"><span class="material-symbols-outlined icon-mini">event_available</span> Member Since:</span>
-                <strong class="meta-value">{{ (userProfile?.joinDate | date:'mediumDate') || '2026' }}</strong>
+                <strong class="meta-value">{{ (userProfile?.joinDate | date:'mediumDate') || 'N/A' }}</strong>
               </li>
             </ul>
 
             <div class="profile-complete-box">
               <div class="p-comp-head">
                 <span>Profile Completeness</span>
-                <strong>95%</strong>
+                <strong>{{ profileCompleteness }}%</strong>
               </div>
               <div class="metric-progress-track">
-                <div class="metric-progress-fill bg-blue" style="width: 95%;"></div>
+                <div class="metric-progress-fill bg-blue" [style.width.%]="profileCompleteness"></div>
               </div>
             </div>
           </div>
@@ -289,58 +303,76 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       flex-direction: column;
       gap: 20px;
-    }
-    .member-hero-card {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 28px 32px;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      color: #ffffff;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-    .hero-avatar-wrap {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
-    }
-    .hero-avatar-img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 20px;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
-    .hero-avatar-placeholder {
-      font-size: 26px;
-      font-weight: 800;
-      color: #ffffff;
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
-    .hero-info {
+    .header-left {
       flex: 1;
       min-width: 0;
     }
-    .hero-badge-row {
+    .breadcrumb {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb .root-crumb {
+      color: #0050e5;
+      font-weight: 600;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .breadcrumb .current { color: var(--md-sys-color-on-surface, #334155); font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
     .member-id-pill {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(0, 80, 229, 0.25);
-      border: 1px solid #0050e5;
-      color: #60a5fa;
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.3);
+      color: #0050e5;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -349,9 +381,9 @@ import { ApiService } from '../../core/services/api.service';
     }
     .member-id-pill span { font-size: 14px; }
     .category-pill {
-      background: rgba(168, 85, 247, 0.2);
-      border: 1px solid #a855f7;
-      color: #c084fc;
+      background: rgba(168, 85, 247, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #9333ea;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -361,9 +393,9 @@ import { ApiService } from '../../core/services/api.service';
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid #22c55e;
-      color: #4ade80;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #16a34a;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -378,46 +410,50 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 11px;
       font-weight: 700;
     }
-    .hero-title {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 0 0 4px;
-    }
-    .hero-sub {
-      font-size: 13px;
-      color: #94a3b8;
+    .subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       margin: 0;
     }
-    .hero-actions {
+    .header-actions {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex-shrink: 0;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .btn-hero {
+    .btn {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 6px;
-      padding: 9px 16px;
+      padding: 8px 16px;
       border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
     }
-    .btn-hero.primary {
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid var(--md-sys-color-outline, #cbd5e1);
+      color: var(--md-sys-color-on-surface, #334155);
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
+      border-color: #94a3b8;
+    }
+    .btn-primary {
+      background: #0050e5;
+      border: 1px solid #0050e5;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.35);
     }
-    .btn-hero.primary:hover {
-      transform: translateY(-1px);
-    }
-    .btn-hero.secondary {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #cbd5e1;
+    .btn-primary:hover {
+      background: #0040b8;
     }
     .btn-hero.secondary:hover {
       background: rgba(255, 255, 255, 0.15);
@@ -484,6 +520,7 @@ import { ApiService } from '../../core/services/api.service';
     .donut-bg {
       fill: none;
       stroke: #e2e8f0;
+      stroke: var(--md-sys-color-outline, #e2e8f0);
     }
     .donut-progress {
       fill: none;
@@ -504,6 +541,7 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 17px;
       font-weight: 900;
       color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       line-height: 1.1;
     }
     .donut-grade-pill {
@@ -531,6 +569,8 @@ import { ApiService } from '../../core/services/api.service';
     .score-status span.material-symbols-outlined { font-size: 16px; }
     .score-eval-count { font-size: 12px; color: #64748b; margin: 4px 0 2px; }
     .kpi-target-indicator { font-size: 11.5px; color: #475569; }
+    .score-eval-count { font-size: 12px; color: var(--md-sys-color-on-surface-variant, #64748b); margin: 4px 0 2px; }
+    .kpi-target-indicator { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant, #475569); }
 
     /* Metric Horizontal Bars */
     .metrics-bars-wrap {
@@ -538,6 +578,7 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 10px;
       border-top: 1px solid #f1f5f9;
+      border-top: 1px solid var(--md-sys-color-outline, #f1f5f9);
       padding-top: 12px;
     }
     .metric-bar-item { display: flex; flex-direction: column; gap: 4px; }
@@ -547,12 +588,15 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 12px;
       font-weight: 600;
       color: #334155;
+      color: var(--md-sys-color-on-surface-variant, #334155);
     }
     .metric-bar-val { font-weight: 700; color: #0f172a; }
+    .metric-bar-val { font-weight: 700; color: var(--md-sys-color-on-surface, #0f172a); }
     .metric-progress-track {
       width: 100%;
       height: 7px;
       background: #f1f5f9;
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       border-radius: 10px;
       overflow: hidden;
     }
@@ -582,6 +626,7 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 6px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .icon-mini { font-size: 16px; color: #94a3b8; }
     .meta-value { color: var(--md-sys-color-on-surface, #0f172a); }
@@ -614,6 +659,7 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 12px;
       font-weight: 700;
       color: #334155;
+      color: var(--md-sys-color-on-surface, #334155);
       margin-bottom: 6px;
     }
 
@@ -623,6 +669,8 @@ import { ApiService } from '../../core/services/api.service';
       font-weight: 700;
       color: #64748b;
       background: #f1f5f9;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       padding: 2px 8px;
       border-radius: 12px;
     }
@@ -643,6 +691,7 @@ import { ApiService } from '../../core/services/api.service';
       max-width: 32px;
       height: 90px;
       background: #f1f5f9;
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       border-radius: 8px;
       display: flex;
       align-items: flex-end;
@@ -661,6 +710,8 @@ import { ApiService } from '../../core/services/api.service';
     }
     .day-label { font-size: 11px; font-weight: 700; color: #64748b; }
     .day-count { font-size: 10px; color: #94a3b8; }
+    .day-label { font-size: 11px; font-weight: 700; color: var(--md-sys-color-on-surface-variant, #64748b); }
+    .day-count { font-size: 10px; color: var(--md-sys-color-on-surface-variant, #94a3b8); }
 
     /* Connected Devices Card */
     .devices-list {
@@ -680,6 +731,7 @@ import { ApiService } from '../../core/services/api.service';
     }
     .device-row:hover {
       background: #f1f5f9;
+      background: var(--md-sys-color-surface, #f1f5f9);
       border-color: #cbd5e1;
     }
     .device-icon-wrap {
@@ -689,6 +741,9 @@ import { ApiService } from '../../core/services/api.service';
       background: #ffffff;
       border: 1px solid #e2e8f0;
       color: #64748b;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -739,6 +794,7 @@ import { ApiService } from '../../core/services/api.service';
       gap: 5px;
       font-size: 11px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -755,6 +811,7 @@ import { ApiService } from '../../core/services/api.service';
       text-align: center;
       padding: 24px 12px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .empty-sec-icon {
       font-size: 36px;
@@ -764,12 +821,14 @@ import { ApiService } from '../../core/services/api.service';
     .devices-empty h4 {
       margin: 0 0 4px;
       color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       font-size: 13.5px;
       font-weight: 700;
     }
     .devices-empty p {
       margin: 0;
       font-size: 11.5px;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .devices-footer-pill {
       display: flex;
@@ -816,32 +875,124 @@ import { ApiService } from '../../core/services/api.service';
     .manage-sec-btn .material-symbols-outlined {
       font-size: 14px;
     }
+    .kpi-empty-box {
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
+      border: 1px dashed var(--md-sys-color-outline, #cbd5e1);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
+    }
 
-    /* Dark Mode Adjustments */
+    /* Comprehensive Dark Mode Theme Support */
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .ws-card {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .card-title,
+    :host-context(.dark-mode) .meta-value,
+    :host-context(.dark-mode) .donut-score {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .subtitle,
+    :host-context(.dark-mode) .score-eval-count,
+    :host-context(.dark-mode) .kpi-target-indicator,
+    :host-context(.dark-mode) .meta-label,
+    :host-context(.dark-mode) .device-sub-row,
+    :host-context(.dark-mode) .qa-desc {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .sep {
+      color: #475569 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .current {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .btn-outline {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .btn-outline:hover {
+      background: #1e293b !important;
+      border-color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .card-head {
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    :host-context(.dark-mode) .kpi-empty-box {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .donut-bg {
+      stroke: #334155 !important;
+    }
+    :host-context(.dark-mode) .metrics-bars-wrap {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    :host-context(.dark-mode) .metric-bar-label {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .metric-bar-val {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .metric-progress-track {
+      background: #0f172a !important;
+    }
+    :host-context(.dark-mode) .meta-list li {
+      border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    :host-context(.dark-mode) .p-comp-head {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .p-comp-head strong {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .qa-item {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .qa-item:hover {
+      border-color: #0050e5 !important;
+      background: #1e293b !important;
+    }
+    :host-context(.dark-mode) .qa-title {
+      color: #f8fafc !important;
+    }
     :host-context(.dark-mode) .device-row {
-      background: #0f172a;
-      border-color: rgba(255,255,255,0.08);
+      background: #0f172a !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
     }
     :host-context(.dark-mode) .device-icon-wrap {
-      background: #1e293b;
-      border-color: rgba(255,255,255,0.1);
-      color: #cbd5e1;
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #cbd5e1 !important;
     }
     :host-context(.dark-mode) .device-icon-wrap.current-device {
-      background: rgba(0, 80, 229, 0.2);
-      border-color: #0050e5;
-      color: #6ea2ff;
+      background: rgba(0, 80, 229, 0.2) !important;
+      border-color: #0050e5 !important;
+      color: #6ea2ff !important;
     }
     :host-context(.dark-mode) .device-name {
-      color: #f8fafc;
+      color: #f8fafc !important;
     }
     :host-context(.dark-mode) .devices-footer-pill {
-      border-top-color: rgba(255,255,255,0.08);
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
     }
     :host-context(.dark-mode) .manage-sec-btn {
-      background: rgba(0, 80, 229, 0.2);
-      border-color: rgba(0, 80, 229, 0.4);
-      color: #6ea2ff;
+      background: rgba(0, 80, 229, 0.2) !important;
+      border-color: rgba(0, 80, 229, 0.4) !important;
+      color: #6ea2ff !important;
     }
 
     /* Quick Actions */
@@ -887,42 +1038,217 @@ import { ApiService } from '../../core/services/api.service';
     .text-success { color: #16a34a; }
     .qa-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface, #0f172a); }
     .qa-desc { font-size: 11px; color: #64748b; }
+    .qa-desc { font-size: 11px; color: var(--md-sys-color-on-surface-variant, #64748b); }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .workspace-dashboard-container {
+        gap: 16px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 14px !important;
+      }
+      .breadcrumb {
+        font-size: 11px !important;
+        gap: 4px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .title-row {
+        gap: 8px !important;
+      }
+      .title-row h1 {
+        font-size: 1.25rem !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite, .member-id-pill, .category-pill, .status-pill.active {
+        font-size: 10.5px !important;
+        padding: 2px 8px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+      }
+      .header-actions {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+      .header-actions .btn {
+        flex: 1 1 0 !important;
+        justify-content: center !important;
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+      }
+      .workspace-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .ws-card {
+        padding: 16px 14px !important;
+      }
+      .activity-bars-grid {
+        gap: 8px !important;
+        padding: 12px 0 4px !important;
+      }
+      .bar-track {
+        height: 75px !important;
+      }
+      .kpi-gauge-hero {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 12px !important;
+      }
+      .quick-action-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    }
   `]
 })
 export class WorkspaceDashboardComponent implements OnInit {
   userName = localStorage.getItem('user_name') || 'Member';
   userEmail = localStorage.getItem('user_email') || '';
   userProfile: any = null;
-  grade = 'A';
-  overallScore = 88;
-  evaluationsCount = 3;
+  grade = 'N/A';
+  overallScore = 0;
+  evaluationsCount = 0;
   myGroups: any[] = [];
   recentDevices: any[] = [];
   isLoadingDevices = false;
   activeFeatureCodes: Set<string> = new Set<string>();
 
-  kpiMetrics = [
-    { name: 'Attendance & Engagement', score: 92, colorClass: 'bg-blue' },
-    { name: 'Project Milestones', score: 85, colorClass: 'bg-green' },
-    { name: 'Training & Knowledge', score: 88, colorClass: 'bg-purple' }
+  kpiMetrics: { name: string; score: number; colorClass: string }[] = [];
+
+  weeklyActivity: { day: string; activityCount: number; percentage: number }[] = [
+    { day: 'Mon', activityCount: 0, percentage: 4 },
+    { day: 'Tue', activityCount: 0, percentage: 4 },
+    { day: 'Wed', activityCount: 0, percentage: 4 },
+    { day: 'Thu', activityCount: 0, percentage: 4 },
+    { day: 'Fri', activityCount: 0, percentage: 4 },
+    { day: 'Sat', activityCount: 0, percentage: 4 },
+    { day: 'Sun', activityCount: 0, percentage: 4 }
   ];
 
-  weeklyActivity = [
-    { day: 'Mon', activityCount: 4, percentage: 60 },
-    { day: 'Tue', activityCount: 6, percentage: 85 },
-    { day: 'Wed', activityCount: 3, percentage: 45 },
-    { day: 'Thu', activityCount: 7, percentage: 100 },
-    { day: 'Fri', activityCount: 5, percentage: 70 },
-    { day: 'Sat', activityCount: 2, percentage: 30 },
-    { day: 'Sun', activityCount: 4, percentage: 55 }
-  ];
-
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   ngOnInit(): void {
+    this.loadAllData();
+  }
+
+  loadAllData(): void {
     this.loadActiveFeatures();
     this.loadProfile();
+    this.loadMyKpi();
+    this.loadWeeklyActivity();
     this.loadRecentDevices();
+  }
+
+  /**
+   * Dynamically computes profile completeness percentage from real profile fields.
+   */
+  get profileCompleteness(): number {
+    if (!this.userProfile) return 0;
+    const checks = [
+      !!this.userProfile.firstName,
+      !!this.userProfile.lastName,
+      !!this.userProfile.email,
+      !!this.userProfile.emailConfirmed,
+      !!this.userProfile.phoneNumber,
+      !!this.userProfile.designation,
+      !!this.userProfile.avatarUrl,
+      !!this.userProfile.dateOfBirth
+    ];
+    const completed = checks.filter(Boolean).length;
+    return Math.round((completed / checks.length) * 100);
+  }
+
+  /**
+   * Loads the member's real KPI evaluations from the database.
+   */
+  loadMyKpi(): void {
+    this.api.get<any>('PortalUsersApi/my-kpi').subscribe({
+      next: (res) => {
+        const d = res?.data;
+        if (d) {
+          const scores: any[] = Array.isArray(d.scores) ? d.scores : [];
+          this.evaluationsCount = scores.length;
+          this.overallScore = scores.length > 0 ? (d.overallScore || 0) : 0;
+          this.grade = scores.length > 0 ? (d.grade || 'A') : 'N/A';
+          const colors = ['bg-blue', 'bg-green', 'bg-purple', 'bg-amber'];
+          this.kpiMetrics = scores.slice(0, 4).map((s: any, idx: number) => {
+            const target = s.targetValue > 0 ? s.targetValue : 100;
+            const pct = Math.min(100, Math.round(((s.score || 0) / target) * 100));
+            return {
+              name: s.title || 'Metric',
+              score: pct,
+              colorClass: colors[idx % colors.length]
+            };
+          });
+        }
+      },
+      error: () => {
+        this.overallScore = 0;
+        this.grade = 'N/A';
+        this.evaluationsCount = 0;
+        this.kpiMetrics = [];
+      }
+    });
+  }
+
+  /**
+   * Computes the last 7 days of activity dynamically from real user activity logs.
+   */
+  loadWeeklyActivity(): void {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const daysMap: { dateKey: string; day: string; activityCount: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      daysMap.push({
+        dateKey: key,
+        day: dayNames[d.getDay()],
+        activityCount: 0
+      });
+    }
+
+    this.api.get<any>('PortalUsersApi/my-activity').subscribe({
+      next: (res) => {
+        const logs: any[] = Array.isArray(res?.data) ? res.data : [];
+        for (const log of logs) {
+          if (log?.date) {
+            const key = new Date(log.date).toISOString().slice(0, 10);
+            const bucket = daysMap.find(b => b.dateKey === key);
+            if (bucket) {
+              bucket.activityCount++;
+            }
+          }
+        }
+        const maxCount = Math.max(1, ...daysMap.map(b => b.activityCount));
+        this.weeklyActivity = daysMap.map(b => ({
+          day: b.day,
+          activityCount: b.activityCount,
+          percentage: b.activityCount > 0 ? Math.max(15, Math.round((b.activityCount / maxCount) * 100)) : 4
+        }));
+      },
+      error: () => {
+        this.weeklyActivity = daysMap.map(b => ({
+          day: b.day,
+          activityCount: 0,
+          percentage: 4
+        }));
+      }
+    });
   }
 
   /**

@@ -193,10 +193,9 @@ import {
             </section>
 
             <!-- Metadata & Tour Actions -->
-            <div class="help-footer-meta">
+            <div class="help-footer-meta" *ngIf="currentPageHelp?.updatedAtUtc">
               <span class="last-updated">
                 Updated {{ currentPageHelp?.updatedAtUtc | date:'mediumDate' }}
-                <span *ngIf="currentPageHelp?.lastUpdatedBy">· {{ currentPageHelp?.lastUpdatedBy }}</span>
               </span>
             </div>
           </div>

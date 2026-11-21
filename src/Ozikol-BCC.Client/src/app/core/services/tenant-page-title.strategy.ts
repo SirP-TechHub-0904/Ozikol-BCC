@@ -57,6 +57,8 @@ export class TenantPageTitleStrategy extends TitleStrategy {
   public resolvePageTitleFromUrl(url: string): string {
     const clean = (url || '').toLowerCase();
 
+    if (clean.includes('/form-success')) return 'Thank You! Submission Received';
+    if (clean.includes('/register') || clean.includes('/signup') || clean.includes('/join') || clean.includes('/apply') || clean.includes('/enroll') || clean.includes('/get-started') || clean.includes('/onboarding')) return 'Member Registration';
     if (clean.includes('/workspace/stations')) return 'Workstations & Gatekeeper';
     if (clean.includes('/dashboard/workspace')) return 'Workspace Home';
     if (clean.includes('/dashboard/console') || clean.includes('/admin/dashboard')) return 'Dashboard';

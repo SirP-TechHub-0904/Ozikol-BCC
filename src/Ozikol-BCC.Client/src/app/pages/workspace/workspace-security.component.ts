@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { OneSignalService } from '../../core/services/onesignal.service';
 
 @Component({
   selector: 'app-workspace-security',
@@ -11,10 +12,29 @@ import { ToastService } from '../../core/services/toast.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="security-container">
+      <!-- Canonical BCC Page Header -->
       <div class="page-header">
-        <div>
-          <h1 class="page-title">Security & Credentials</h1>
-          <p class="page-sub">Manage your account password, multi-factor authentication, and verification badges.</p>
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span class="current">Security &amp; Credentials</span>
+          </div>
+          <div class="title-row">
+            <h1>Security &amp; Credentials</h1>
+            <span class="badge-suite">Personal Workspace</span>
+          </div>
+          <p class="subtitle">Manage your account password, multi-factor authentication, and active device sessions.</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/users/workspace/profile" class="btn btn-outline">
+            <span class="material-symbols-outlined">person</span>
+            <span>My Profile</span>
+          </a>
+          <a routerLink="/dashboard/workspace" class="btn btn-primary">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Workspace Home</span>
+          </a>
         </div>
       </div>
 
@@ -227,6 +247,33 @@ import { ToastService } from '../../core/services/toast.service';
             </div>
           </section>
 
+          <!-- Card: Push Notifications -->
+          <section class="sec-card animate-fade">
+            <div class="card-head">
+              <div class="head-title-wrap">
+                <span class="material-symbols-outlined head-icon text-primary">notifications_active</span>
+                <h2 class="card-title">Push Notifications</h2>
+              </div>
+              <span class="status-pill good" *ngIf="pushStatus === 'granted'">Enabled</span>
+              <span class="status-pill blue" *ngIf="pushStatus !== 'granted'">Not Enabled</span>
+            </div>
+            <div class="card-body">
+              <p class="section-desc-text">
+                Receive instant alerts for new shifts, open shifts, swaps, leave decisions and admin messages on this device.
+              </p>
+              <p class="section-desc-text" *ngIf="pushStatus === 'denied'" style="color: #b45309;">
+                Notifications are blocked in your browser. Click the lock icon beside the address bar, set Notifications to Allow, then press the button below.
+              </p>
+              <p class="section-desc-text" *ngIf="pushStatus === 'unsupported'">
+                This browser does not support push notifications.
+              </p>
+              <button type="button" class="btn-primary" (click)="enablePushNotifications()" [disabled]="isEnablingPush || pushStatus === 'unsupported'">
+                <span class="material-symbols-outlined">{{ isEnablingPush ? 'hourglass_top' : 'notifications_active' }}</span>
+                <span>{{ pushStatus === 'granted' ? 'Re-Sync Push on This Device' : 'Enable Push Notifications' }}</span>
+              </button>
+            </div>
+          </section>
+
           <!-- Card 3: Verification Status Badges -->
           <section class="sec-card animate-fade">
             <div class="card-head">
@@ -323,25 +370,164 @@ import { ToastService } from '../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    .security-container { display: flex; flex-direction: column; gap: 20px; }
-    .page-header { margin-bottom: 4px; }
-    .page-title { font-size: 22px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
-    
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .security-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    /* Canonical BCC Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      gap: 16px;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .breadcrumb::-webkit-scrollbar { display: none; }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb span, .breadcrumb .current {
+      color: var(--md-sys-color-on-surface, #334155);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--md-sys-color-on-surface, #0f172a);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .header-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    .header-actions .btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .header-actions .btn-outline {
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .header-actions .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .header-actions .btn-primary {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .header-actions .btn-primary:hover {
+      background: #003ebd;
+    }
+
     .security-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 24px;
       align-items: start;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     @media (max-width: 860px) {
-      .security-grid { grid-template-columns: 1fr; }
+      .security-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+      }
     }
 
     .sec-column {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
 
     .sec-card {
@@ -350,6 +536,10 @@ import { ToastService } from '../../core/services/toast.service';
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .card-head {
       display: flex;
@@ -657,6 +847,126 @@ import { ToastService } from '../../core/services/toast.service';
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Authoritative Mobile Responsive Rules (iPhone 16 / 393px Viewport) */
+    @media (max-width: 768px) {
+      .security-container {
+        padding: 0 0 20px 0 !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 14px !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+      }
+      .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        height: 36px !important;
+        box-sizing: border-box !important;
+      }
+      .security-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 14px !important;
+        width: 100% !important;
+      }
+      .sec-card {
+        padding: 16px 14px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .card-head {
+        margin-bottom: 14px !important;
+        padding-bottom: 10px !important;
+      }
+      .head-title h3 {
+        font-size: 15px !important;
+      }
+      .card-desc {
+        font-size: 12px !important;
+        margin-bottom: 14px !important;
+      }
+      .form-input {
+        height: 38px !important;
+        font-size: 13px !important;
+        padding: 0 12px !important;
+      }
+      .btn-primary, .btn-secondary, .btn-danger {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 40px !important;
+      }
+      .twofa-status-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px 14px !important;
+        gap: 10px !important;
+      }
+      .sessions-table {
+        display: block !important;
+        overflow-x: auto !important;
+        width: 100% !important;
+      }
+    }
   `]
 })
 export class WorkspaceSecurityComponent implements OnInit {
@@ -693,9 +1003,29 @@ export class WorkspaceSecurityComponent implements OnInit {
   activeSessions: any[] = [];
   isRevoking = false;
 
-  constructor(private api: ApiService, private toast: ToastService) {}
+  constructor(private api: ApiService, private toast: ToastService, private oneSignal: OneSignalService) {}
+
+  pushStatus: 'granted' | 'denied' | 'default' | 'unsupported' = 'default';
+  isEnablingPush = false;
+
+  /**
+   * Re-triggers the browser push permission prompt and OneSignal subscription for users
+   * who previously dismissed or never saw the push notice.
+   */
+  async enablePushNotifications(): Promise<void> {
+    this.isEnablingPush = true;
+    const res = await this.oneSignal.enableAndPromptPushNotifications();
+    this.pushStatus = this.oneSignal.getPermissionStatus();
+    this.isEnablingPush = false;
+    if (res.status === 'granted') {
+      this.toast.success(res.message, 'Push Enabled');
+    } else {
+      this.toast.warning(res.message, 'Push Not Enabled');
+    }
+  }
 
   ngOnInit(): void {
+    this.pushStatus = this.oneSignal.getPermissionStatus();
     this.loadMfaStatus();
     this.loadActiveSessions();
   }

@@ -437,7 +437,7 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
   <div class="row g-3">
     <div class="col-md-6">
       <label class="form-label fw-semibold">Organization Name *</label>
-      <input type="text" name="organization_name" class="form-control" placeholder="e.g. Acme Corporation" required />
+      <input type="text" name="organization_name" class="form-control" placeholder="e.g. Your Organization Name" required />
     </div>
     <div class="col-md-6">
       <label class="form-label fw-semibold">Work Email *</label>

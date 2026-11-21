@@ -177,7 +177,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <textarea
                 [(ngModel)]="manualEmailsText"
                 rows="4"
-                placeholder="john@example.com, Sarah Connor <sarah@company.com>, alex@tech.org"
+                placeholder="user@domain.com, Member Name <member@company.com>, team@domain.org"
                 class="form-control font-mono"
               ></textarea>
               <span class="help-text">You can type bare email addresses or formatted "Name &lt;email&gt;".</span>

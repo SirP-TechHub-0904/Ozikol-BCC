@@ -4613,7 +4613,7 @@
     <value>Enter Workspace Domain</value>
   </data>
   <data name="Mobile_Step2_Desc" xml:space="preserve">
-    <value>On the launch screen, enter your organization's unique domain (e.g. acme.ozikol.cloud or custom domain) to connect to your dedicated instance.</value>
+    <value>On the launch screen, enter your organization's unique domain (e.g. workspace.ozikol.cloud or custom domain) to connect to your dedicated instance.</value>
   </data>
   <data name="Mobile_Step3_Title" xml:space="preserve">
     <value>Authenticate &amp; Go</value>

@@ -55,33 +55,32 @@ namespace Ozikol_BCC.Api.Controllers
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetAllFields()
         {
-            var fields = await _context.BcpRegistrationFormFields
+            var rawEntities = await _context.BcpRegistrationFormFields
                 .AsNoTracking()
                 .Where(f => f.FieldKey != "__form_layout_policy__")
                 .Include(f => f.BcpUserCategory)
                 .OrderBy(f => f.SortOrder)
                 .ThenBy(f => f.CreatedAtUtc)
-                .Select(f => new RegistrationFormFieldDto
-                {
-                    Id = f.Id,
-                    FieldKey = f.FieldKey,
-                    Label = f.Label,
-                    Placeholder = f.Placeholder,
-                    FieldType = f.FieldType,
-                    Options = !string.IsNullOrWhiteSpace(f.OptionsJson)
-                        ? JsonSerializer.Deserialize<List<string>>(f.OptionsJson, (JsonSerializerOptions?)null) ?? new List<string>()
-                        : new List<string>(),
-                    IsRequired = f.IsRequired,
-                    SortOrder = f.SortOrder,
-                    IsActive = f.IsActive,
-                    BcpUserCategoryId = f.BcpUserCategoryId,
-                    CategoryName = f.BcpUserCategory != null ? f.BcpUserCategory.Name : null,
-                    HelpText = f.HelpText,
-                    ShowInWorkspaceProfile = f.ShowInWorkspaceProfile,
-                    CreatedAtUtc = f.CreatedAtUtc,
-                    UpdatedAtUtc = f.UpdatedAtUtc
-                })
                 .ToListAsync();
+
+            var fields = rawEntities.Select(f => new RegistrationFormFieldDto
+            {
+                Id = f.Id,
+                FieldKey = f.FieldKey,
+                Label = f.Label,
+                Placeholder = f.Placeholder,
+                FieldType = f.FieldType,
+                Options = ParseOptionsJson(f.OptionsJson),
+                IsRequired = f.IsRequired,
+                SortOrder = f.SortOrder,
+                IsActive = f.IsActive,
+                BcpUserCategoryId = f.BcpUserCategoryId,
+                CategoryName = f.BcpUserCategory != null ? f.BcpUserCategory.Name : null,
+                HelpText = f.HelpText,
+                ShowInWorkspaceProfile = f.ShowInWorkspaceProfile,
+                CreatedAtUtc = f.CreatedAtUtc,
+                UpdatedAtUtc = f.UpdatedAtUtc
+            }).ToList();
 
             var fieldSections = await LoadFieldSectionsAsync();
             foreach (var f in fields)
@@ -695,9 +694,7 @@ namespace Ozikol_BCC.Api.Controllers
                 Label = f.Label,
                 Placeholder = f.Placeholder,
                 FieldType = f.FieldType,
-                Options = !string.IsNullOrWhiteSpace(f.OptionsJson)
-                    ? JsonSerializer.Deserialize<List<string>>(f.OptionsJson, (JsonSerializerOptions?)null) ?? new List<string>()
-                    : new List<string>(),
+                Options = ParseOptionsJson(f.OptionsJson),
                 IsRequired = f.IsRequired,
                 SortOrder = f.SortOrder,
                 BcpUserCategoryId = f.BcpUserCategoryId,
@@ -914,6 +911,86 @@ namespace Ozikol_BCC.Api.Controllers
                 policyRow.UpdatedAtUtc = DateTime.UtcNow;
             }
             await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Safely parses the dynamic options JSON string into a string list with full resilience against
+        /// schema format differences (array of strings, array of key-value objects, or comma-separated text).
+        /// </summary>
+        /// <param name="optionsJson">Raw JSON or comma-separated options string stored in the database.</param>
+        /// <returns>Clean list of option strings.</returns>
+        private static List<string> ParseOptionsJson(string? optionsJson)
+        {
+            if (string.IsNullOrWhiteSpace(optionsJson))
+                return new List<string>();
+
+            var trimmed = optionsJson.Trim();
+
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Array)
+                {
+                    var list = new List<string>();
+                    foreach (var el in root.EnumerateArray())
+                    {
+                        if (el.ValueKind == JsonValueKind.String)
+                        {
+                            var s = el.GetString();
+                            if (!string.IsNullOrWhiteSpace(s))
+                                list.Add(s.Trim());
+                        }
+                        else if (el.ValueKind == JsonValueKind.Object)
+                        {
+                            string? val = null;
+                            if (el.TryGetProperty("label", out var labelProp) && labelProp.ValueKind == JsonValueKind.String)
+                                val = labelProp.GetString();
+                            else if (el.TryGetProperty("value", out var valProp) && valProp.ValueKind == JsonValueKind.String)
+                                val = valProp.GetString();
+                            else if (el.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String)
+                                val = nameProp.GetString();
+                            else if (el.TryGetProperty("title", out var titleProp) && titleProp.ValueKind == JsonValueKind.String)
+                                val = titleProp.GetString();
+                            else
+                                val = el.ToString();
+
+                            if (!string.IsNullOrWhiteSpace(val))
+                                list.Add(val.Trim());
+                        }
+                        else
+                        {
+                            var val = el.ToString();
+                            if (!string.IsNullOrWhiteSpace(val))
+                                list.Add(val.Trim());
+                        }
+                    }
+                    return list;
+                }
+
+                if (root.ValueKind == JsonValueKind.Object)
+                {
+                    if (root.TryGetProperty("options", out var optionsProp) && optionsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        var list = new List<string>();
+                        foreach (var el in optionsProp.EnumerateArray())
+                        {
+                            var s = el.GetString() ?? el.ToString();
+                            if (!string.IsNullOrWhiteSpace(s))
+                                list.Add(s.Trim());
+                        }
+                        return list;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback: If not valid JSON, treat as comma-separated or newline-separated values
+                return trimmed.Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            }
+
+            return new List<string>();
         }
     }
 

@@ -709,11 +709,14 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         modelBuilder.Entity<BcpMessagePool>(entity =>
         {
             entity.HasIndex(e => e.Channel);
+            entity.HasIndex(e => e.Provider);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.ScheduledAt);
             entity.HasIndex(e => e.RecipientAddress);
             entity.HasIndex(e => new { e.Channel, e.Status });
+            entity.HasIndex(e => new { e.Channel, e.Provider, e.Status });
+            entity.Property(e => e.Provider).IsRequired();
             entity.HasOne(e => e.RelatedUser)
                 .WithMany()
                 .HasForeignKey(e => e.RelatedUserId)

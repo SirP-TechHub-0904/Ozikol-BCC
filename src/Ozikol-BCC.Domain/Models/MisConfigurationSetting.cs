@@ -200,7 +200,7 @@ namespace Ozikol_BCC.Domain.Models
         public bool EnableSms { get; set; } = true;
 
         /// <summary>
-        /// Active SMS provider selection ("Termii", "Twilio", "KudiSMS").
+        /// Active SMS provider selection ("Termii", "Twilio").
         /// </summary>
         [MaxLength(50)]
         public string SmsProvider { get; set; } = "Termii";

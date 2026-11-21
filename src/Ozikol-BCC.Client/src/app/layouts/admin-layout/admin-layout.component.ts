@@ -16,6 +16,7 @@ import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/serv
 import { CommitteesService } from '../../core/services/committees.service';
 import { WorkforceService } from '../../core/services/workforce.service';
 import { MasterHelpService } from '../../core/services/master-help.service';
+import { OneSignalService } from '../../core/services/onesignal.service';
 import { HelpDrawerComponent } from '../../shared/components/help-drawer/help-drawer.component';
 import { 
   getStoredUserRoles, 
@@ -60,7 +61,7 @@ export interface SuiteInfoDetail {
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
       <div class="sidebar-header">
-        <a routerLink="/admin/dashboard" class="brand-logo ozikol-brand-logo" [title]="brandName">
+        <a [routerLink]="homeRoute" class="brand-logo ozikol-brand-logo" [title]="brandName">
           <img [src]="brandLogoUrl" [alt]="brandName" class="brand-logo-img" *ngIf="brandLogoUrl">
           <span *ngIf="!brandLogoUrl" class="brand-logo-text">{{ brandName || 'Workspace' }}</span>
         </a>
@@ -431,6 +432,7 @@ export interface SuiteInfoDetail {
           </ng-container>
 
           <!-- Administrator Account & Security Management Dropdown (Top-Level) -->
+          <div class="menu-title">{{ 'nav.my_account' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('admin_manage_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account') || isCurrentRoute('/users/workspace/profile')" (click)="toggleMenu('admin_manage_account')">
               <div class="nav-link-content">
@@ -665,6 +667,16 @@ export interface SuiteInfoDetail {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/shifts" [class.active]="isCurrentRoute('/workforce/console/shifts')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>Shift Manager</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/shifts')" (click)="togglePin('Shift Manager', '/workforce/console/shifts', 'event_note')" [title]="isPinned('/workforce/console/shifts') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/shifts') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/workforce/console/schedule" [class.active]="isCurrentRoute('/workforce/console/schedule')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Rota Calendar</span>
                   </a>
@@ -680,6 +692,16 @@ export interface SuiteInfoDetail {
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/live')" (click)="togglePin('Live Duty Monitor', '/workforce/console/live', 'radar')" [title]="isPinned('/workforce/console/live') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/workforce/console/live') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/workforce/console/messages" [class.active]="isCurrentRoute('/workforce/console/messages')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">forum</span>Staff Message Pool</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/workforce/console/messages')" (click)="togglePin('Staff Message Pool', '/workforce/console/messages', 'forum')" [title]="isPinned('/workforce/console/messages') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/workforce/console/messages') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -1381,6 +1403,16 @@ export interface SuiteInfoDetail {
               </a>
             </div>
 
+            <!-- 6b. Messages & Support Desk -->
+            <div class="nav-item">
+              <a routerLink="/workforce/workspace/messages" [class.active]="isCurrentRoute('/workforce/workspace/messages')" class="nav-link">
+                <div class="nav-link-content">
+                  <span class="material-symbols-outlined">forum</span>
+                  <span>Messages &amp; Support Desk</span>
+                </div>
+              </a>
+            </div>
+
             <!-- 7. Duty Clock-In & Safety -->
             <div class="nav-item" *ngIf="isFeatureActive('bcp-attendance-tracking')">
               <a routerLink="/attendance/workspace/clock" [class.active]="isCurrentRoute('/attendance/workspace/clock') || isCurrentRoute('/workforce/workspace/clock')" class="nav-link">
@@ -1393,6 +1425,7 @@ export interface SuiteInfoDetail {
           </ng-container>
 
           <!-- 5. Manage My Account Dropdown -->
+          <div class="menu-title">{{ 'nav.my_account' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
@@ -1483,7 +1516,7 @@ export interface SuiteInfoDetail {
       <!-- Standardized Topbar from Materialdesignui -->
       <header id="topbar">
         <div class="topbar-left">
-          <a routerLink="/admin/dashboard" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
+          <a [routerLink]="homeRoute" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
             <img [src]="brandIconUrl" [alt]="brandName" class="topbar-brand-img">
           </a>
           <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" [title]="'adm.toggle_navigation' | translate:'Toggle Navigation'">
@@ -1496,53 +1529,6 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="topbar-right">
-          <!-- Multi-Workspace Switcher Dropdown Trigger -->
-          <div class="workspace-switcher-wrapper" *ngIf="enrolledWorkspaces.length > 0">
-            <button type="button" class="topbar-action-btn workspace-badge-btn" (click)="toggleDropdown('workspaces', $event)" [title]="'Current: ' + (brandName || tenantKey) + ' (Switch Organization)'">
-              <span class="material-symbols-outlined">domain</span>
-              <span class="workspace-short-pill" *ngIf="enrolledWorkspaces.length > 1">{{ enrolledWorkspaces.length }}</span>
-            </button>
-            <div class="workspace-switch-dropdown" *ngIf="activeDropdown === 'workspaces'">
-              <div class="dropdown-header">
-                <span>{{ 'adm.switch_organization' | translate:'Switch Organization' }}</span>
-                <span class="badge-pill" style="background: #10b981;">{{ activeWorkspacesCount }} Active</span>
-              </div>
-              <div class="workspace-list">
-                <div 
-                  *ngFor="let ws of enrolledWorkspaces" 
-                  class="workspace-item" 
-                  [class.current]="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()"
-                  (click)="onSelectWorkspace(ws)"
-                >
-                  <div class="ws-item-avatar">
-                    <img *ngIf="ws.brandIconUrl || ws.brandLogoUrl" [src]="ws.brandIconUrl || ws.brandLogoUrl" class="ws-avatar-img" />
-                    <span *ngIf="!ws.brandIconUrl && !ws.brandLogoUrl" class="material-symbols-outlined">domain</span>
-                  </div>
-                  <div class="ws-item-info">
-                    <div class="ws-item-name">{{ ws.organizationName || ws.tenantKey }}</div>
-                    <div class="ws-item-sub">
-                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">{{ 'adm.current' | translate:'Current' }}</span>
-                      <span *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken" class="ws-active-tag">● Logged In</span>
-                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">{{ 'adm.signed_out' | translate:'Signed Out' }}</span>
-                      <span class="ws-item-email" *ngIf="ws.userEmail">&bull; {{ ws.userEmail }}</span>
-                    </div>
-                  </div>
-                  <div class="ws-item-action">
-                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()">check</span>
-                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken">swap_horiz</span>
-                    <span class="material-symbols-outlined" *ngIf="!ws.authToken">login</span>
-                  </div>
-                </div>
-              </div>
-              <div class="dropdown-footer" style="padding: 8px 12px; border-top: 1px solid var(--md-sys-color-outline); display: flex; justify-content: space-between; align-items: center;">
-                <a routerLink="/auth/login" (click)="closeDropdowns()" class="view-all-link" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #0050e5; text-decoration: none; font-weight: 600;">
-                  <span class="material-symbols-outlined" style="font-size: 16px;">add_business</span>
-                  Connect Another Workspace
-                </a>
-              </div>
-            </div>
-          </div>
-
           <!-- Central Pattern Multi-Language Switcher Component -->
           <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
             <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" [attr.aria-label]="'adm.select_language' | translate:'Select Language'" [title]="'Select Language (' + currentLangOption.name + ')'">
@@ -1557,35 +1543,6 @@ export interface SuiteInfoDetail {
                 <span class="oz-lang-name">{{ opt.nativeName }}</span>
                 <span class="material-symbols-outlined check-icon" *ngIf="currentLang === opt.code">check</span>
               </a>
-            </div>
-          </div>
-
-
-
-          <!-- Calendar Popover -->
-          <div class="calendar-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" [title]="'adm.calendar' | translate:'Calendar'">
-              <span class="material-symbols-outlined">calendar_today</span>
-            </button>
-            <div class="calendar-dropdown-menu" *ngIf="activeDropdown === 'calendar'">
-              <div class="calendar-header">
-                <span class="calendar-month-title">August 2026</span>
-                <div style="display:flex; gap:4px;">
-                  <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined">chevron_left</span></button>
-                  <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined">chevron_right</span></button>
-                </div>
-              </div>
-              <div class="calendar-weekdays">
-                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-              </div>
-              <div class="calendar-days">
-                <span class="prev-month">26</span><span class="prev-month">27</span><span class="prev-month">28</span><span class="prev-month">29</span><span class="prev-month">30</span><span class="prev-month">31</span><span>1</span>
-                <span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                <span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span class="today">15</span>
-                <span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span>
-                <span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span>
-                <span>30</span><span>31</span>
-              </div>
             </div>
           </div>
 
@@ -1678,10 +1635,40 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">account_circle</span>
                 <span>{{ 'nav.my_profile' | translate }}</span>
               </a>
-              <a routerLink="/identity/console/account" (click)="closeDropdowns()" class="dropdown-item">
+              <a [routerLink]="isAdmin ? '/identity/console/account' : '/users/workspace/account'" (click)="closeDropdowns()" class="dropdown-item">
                 <span class="material-symbols-outlined">manage_accounts</span>
                 <span>{{ 'nav.manage_account' | translate }}</span>
               </a>
+              <a routerLink="/users/workspace/security" (click)="closeDropdowns()" class="dropdown-item">
+                <span class="material-symbols-outlined">shield_person</span>
+                <span>Security &amp; Access</span>
+              </a>
+              <button 
+                type="button" 
+                (click)="triggerEnablePushNotifications(); closeDropdowns()" 
+                class="dropdown-item"
+                [disabled]="isEnablingPush || pushNotificationStatus === 'unsupported'"
+                style="display: flex; align-items: center; justify-content: space-between;"
+              >
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="material-symbols-outlined" [style.color]="pushNotificationStatus === 'granted' ? '#10b981' : '#0050e5'">
+                    {{ pushNotificationStatus === 'granted' ? 'notifications_active' : 'notifications' }}
+                  </span>
+                  <span>{{ pushNotificationStatus === 'granted' ? 'Notifications Active' : 'Enable Notifications' }}</span>
+                </div>
+                <span 
+                  *ngIf="pushNotificationStatus === 'granted'" 
+                  style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 1px 6px; border-radius: 9999px;"
+                >
+                  Active
+                </span>
+                <span 
+                  *ngIf="pushNotificationStatus !== 'granted'" 
+                  style="font-size: 10px; font-weight: 700; color: #0050e5; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 9999px;"
+                >
+                  Turn On
+                </span>
+              </button>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
                 <span>{{ 'adm.workspace_settings' | translate:'Workspace Settings' }}</span>
@@ -1690,8 +1677,8 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">sync_alt</span>
                 <span>{{ 'adm.queue_monitor' | translate:'Queue Monitor' }}</span>
               </a>
-              <!-- Multi-Workspace Quick Switch in Profile Dropdown -->
-              <ng-container *ngIf="otherActiveWorkspaces.length > 0">
+              <!-- Multi-Workspace Quick Switch in Profile Dropdown (Admin Console only) -->
+              <ng-container *ngIf="isAdmin && otherActiveWorkspaces.length > 0">
                 <div class="dropdown-divider"></div>
                 <div class="profile-dropdown-section-title" style="padding: 6px 16px 4px; font-size: 10px; font-weight: 700; color: var(--sidebar-header-color); letter-spacing: 0.5px; text-transform: uppercase;">
                   Switch Workspace
@@ -1723,6 +1710,46 @@ export interface SuiteInfoDetail {
           </div>
         </div>
       </header>
+
+      <!-- Push Notification Opt-In Modal Popup (Triggers after 12s of login if permission is default) -->
+      <div class="push-optin-backdrop" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'">
+        <div class="push-optin-card" (click)="$event.stopPropagation()">
+          <div class="poc-header">
+            <div class="poc-icon-wrap">
+              <span class="material-symbols-outlined">notifications_active</span>
+            </div>
+            <button type="button" class="poc-close-btn" (click)="dismissPushBanner()" aria-label="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="poc-body">
+            <div class="poc-badge">Real-Time Platform Alerts</div>
+            <h3>Enable Web Push Notifications</h3>
+            <p>
+              Stay instantly updated with open shift offers, mandatory rota alerts, schedule approvals, and urgent duty broadcasts on this device &mdash; even when your browser is in the background.
+            </p>
+            <div class="poc-features">
+              <div class="poc-feat-item">
+                <span class="material-symbols-outlined text-primary">calendar_clock</span>
+                <span>Immediate shift offers &amp; rota schedule updates</span>
+              </div>
+              <div class="poc-feat-item">
+                <span class="material-symbols-outlined text-primary">verified_user</span>
+                <span>Shift claim decisions &amp; compliance alerts</span>
+              </div>
+            </div>
+          </div>
+          <div class="poc-footer">
+            <button type="button" class="poc-btn-later" (click)="dismissPushBanner()">
+              Maybe Later
+            </button>
+            <button type="button" class="poc-btn-enable" (click)="acceptPushBanner()">
+              <span class="material-symbols-outlined">notifications_active</span>
+              <span>Enable Notifications</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console, re-shows every 24h after dismissal) -->
       <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0 && !isExpirationBannerDismissed" style="align-items: flex-start;">
@@ -2037,6 +2064,7 @@ export interface SuiteInfoDetail {
       .bcp-page-shell,
       .bcp-page-shell.is-workspace-mode {
         padding: 14px 12px !important;
+        overflow-x: hidden !important;
       }
       .sidebar-close-btn {
         display: flex !important;
@@ -2120,6 +2148,7 @@ export interface SuiteInfoDetail {
       height: 100%;
       max-height: 100%;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 24px;
       min-width: 0;
       box-sizing: border-box;
@@ -2193,7 +2222,7 @@ export interface SuiteInfoDetail {
     }
     .tab-close-btn:hover { color: var(--md-sys-color-error); }
 
-    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
+    .apps-grid-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
       position: relative;
     }
     .workspace-badge-btn {
@@ -2362,54 +2391,6 @@ export interface SuiteInfoDetail {
       color: #fff;
     }
     .app-icon-bg span { font-size: 20px; }
-
-    .calendar-dropdown-menu {
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      width: 280px;
-      background: var(--md-sys-color-surface);
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      z-index: 1000;
-      padding: 14px;
-    }
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    .calendar-nav-btn {
-      background: none;
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px;
-      color: var(--sidebar-color);
-    }
-    .calendar-weekdays, .calendar-days {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      font-size: 11px;
-    }
-    .calendar-weekdays { font-weight: 700; color: var(--sidebar-header-color); margin-bottom: 6px; }
-    .calendar-days span {
-      padding: 6px 0;
-      border-radius: 4px;
-      cursor: pointer;
-      color: var(--sidebar-color);
-    }
-    .calendar-days span:hover { background: var(--sidebar-hover-bg); }
-    .calendar-days .today { background: var(--sidebar-active-color); color: #fff; font-weight: 700; }
-    .calendar-days .prev-month { color: var(--md-sys-color-outline); }
 
     .notification-circle-btn {
       width: 38px !important;
@@ -2592,7 +2573,7 @@ export interface SuiteInfoDetail {
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      width: 220px;
+      width: 250px;
       background: var(--md-sys-color-surface);
       border: 1px solid var(--md-sys-color-outline);
       border-radius: 12px;
@@ -2719,6 +2700,137 @@ export interface SuiteInfoDetail {
     .mode-switch-icon {
       font-size: 15px;
     }
+
+    /* Push Notification Opt-In Modal Popup (12s Trigger) */
+    .push-optin-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(3px);
+      z-index: 10500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .push-optin-card {
+      background: #ffffff;
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      box-shadow: 0 20px 45px -10px rgba(0, 80, 229, 0.25), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+      max-width: 460px;
+      width: 100%;
+      overflow: hidden;
+      animation: slideUpScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .poc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 22px 0 22px;
+    }
+    .poc-icon-wrap {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.12);
+    }
+    .poc-icon-wrap .material-symbols-outlined { font-size: 26px; }
+    .poc-close-btn {
+      background: none;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .poc-close-btn:hover { background: #f1f5f9; color: #334155; }
+    .poc-close-btn .material-symbols-outlined { font-size: 20px; }
+    .poc-body { padding: 16px 22px; display: flex; flex-direction: column; gap: 8px; }
+    .poc-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 999px;
+      width: fit-content;
+      letter-spacing: 0.03em;
+    }
+    .poc-body h3 { margin: 4px 0 0 0; font-size: 18px; font-weight: 800; color: #0f172a; }
+    .poc-body p { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }
+    .poc-features {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .poc-feat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #334155;
+      font-weight: 600;
+    }
+    .poc-feat-item .material-symbols-outlined { font-size: 18px; color: #0050e5; }
+    .poc-footer {
+      padding: 14px 22px 20px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .poc-btn-later {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      cursor: pointer;
+    }
+    .poc-btn-later:hover { background: #f8fafc; border-color: #94a3b8; }
+    .poc-btn-enable {
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+      transition: background 0.15s ease;
+    }
+    .poc-btn-enable:hover { background: #003bb5; }
+    .poc-btn-enable .material-symbols-outlined { font-size: 18px; }
 
     /* Central Feature Expiration Banner (Strictly Admin Console) */
     .central-feature-expiration-banner {
@@ -3907,6 +4019,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     return canAccessConsole(this.userRoles);
   }
 
+  /// <summary>
+  /// Dynamically resolves the appropriate home route based on user privileges and active shell mode.
+  /// Administrators in console mode route to '/admin/dashboard', while members and workspace sessions route to '/dashboard/workspace'.
+  /// </summary>
+  get homeRoute(): string {
+    return this.isAdmin && this.isConsoleActive ? '/admin/dashboard' : '/dashboard/workspace';
+  }
+
   get isGlobalAdmin(): boolean {
     return isGlobalAdmin(this.userRoles);
   }
@@ -4307,8 +4427,95 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     private committeesService: CommitteesService,
     private workforceService: WorkforceService,
     private masterHelpService: MasterHelpService,
+    private oneSignal: OneSignalService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  /// <summary>
+  /// Resolves the current browser push notification permission status.
+  /// </summary>
+  public get pushNotificationStatus(): 'granted' | 'denied' | 'default' | 'unsupported' {
+    return this.oneSignal.getPermissionStatus();
+  }
+
+  /// <summary>
+  /// Tracks whether a browser push permission request is actively in progress.
+  /// </summary>
+  public isEnablingPush = false;
+
+  /// <summary>
+  /// Manually triggers browser push notification permission prompt and binds the device to the user account.
+  /// </summary>
+  public async triggerEnablePushNotifications(): Promise<void> {
+    if (this.isEnablingPush) return;
+    this.isEnablingPush = true;
+    try {
+      const res = await this.oneSignal.enableAndPromptPushNotifications();
+      if (res.status === 'granted') {
+        this.toast.success('Push notifications are now enabled on this device!');
+      } else if (res.status === 'denied') {
+        this.toast.warning('Notifications are blocked by your browser. Please allow notifications in site settings.');
+      } else if (res.status === 'unsupported') {
+        this.toast.error('This browser does not support web push notifications.');
+      }
+    } catch (err: any) {
+      this.toast.error(err?.message || 'Failed to enable push notifications');
+    } finally {
+      this.isEnablingPush = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /// <summary>
+  /// Controls the visibility of the interactive slide-down push notification permission banner.
+  /// </summary>
+  public showPushBannerPrompt = false;
+
+  /// <summary>
+  /// Dismisses the push notification opt-in prompt and stores the preference permanently in localStorage so it never disturbs again.
+  /// </summary>
+  public dismissPushBanner(): void {
+    this.showPushBannerPrompt = false;
+    localStorage.setItem('push_prompt_dismissed', 'true');
+    sessionStorage.setItem('push_prompt_dismissed', 'true');
+  }
+
+  /// <summary>
+  /// Accepts the push notification opt-in prompt and initiates browser permission request.
+  /// </summary>
+  public async acceptPushBanner(): Promise<void> {
+    this.showPushBannerPrompt = false;
+    localStorage.setItem('push_prompt_dismissed', 'true');
+    sessionStorage.setItem('push_prompt_dismissed', 'true');
+    await this.triggerEnablePushNotifications();
+  }
+
+  /// <summary>
+  /// Displays the interactive push notification opt-in popup modal after 12 seconds of session load.
+  /// Direct user click on "Enable Notifications" provides the trusted user gesture required by modern browsers.
+  /// Checks localStorage first so users who clicked "Maybe Later" are never disturbed again.
+  /// </summary>
+  private schedulePushNotificationSoftPrompt(): void {
+    if (typeof window === 'undefined') return;
+
+    // If notifications are already active or granted, no prompt is needed
+    if (this.pushNotificationStatus === 'granted') return;
+
+    // If user previously chose "Maybe Later" or dismissed, do not disturb again
+    if (localStorage.getItem('push_prompt_dismissed') === 'true' || sessionStorage.getItem('push_prompt_dismissed') === 'true') {
+      return;
+    }
+
+    // Trigger the opt-in popup exactly 12 seconds after login as requested
+    setTimeout(() => {
+      if (this.pushNotificationStatus === 'default' &&
+          localStorage.getItem('push_prompt_dismissed') !== 'true' &&
+          sessionStorage.getItem('push_prompt_dismissed') !== 'true') {
+        this.showPushBannerPrompt = true;
+        this.cdr.markForCheck();
+      }
+    }, 12000);
+  }
 
   public toggleHelpDrawer(): void {
     this.masterHelpService.toggle();
@@ -4379,6 +4586,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     });
     this.workforceService.refreshOpenShiftsCount();
+
+    // Schedule non-intrusive soft push prompt reminder
+    this.schedulePushNotificationSoftPrompt();
 
     // Subscribe to global AI assistant layout and open state
     this.aiAssistantService.isOpen$.subscribe(open => this.isAiOpen = open);
@@ -5592,7 +5802,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.apps-grid-wrapper') &&
-        !target.closest('.calendar-wrapper') &&
         !target.closest('.notifications-wrapper') &&
         !target.closest('.user-profile-wrapper') &&
         !target.closest('.oz-lang-switcher')) {
@@ -5733,7 +5942,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.closeDropdowns();
 
     if (notif.actionUrl) {
-      this.router.navigateByUrl(notif.actionUrl);
+      let targetUrl = notif.actionUrl;
+      // Rewrite console account routes to workspace account routes for members
+      if (!this.isAdmin && targetUrl.startsWith('/identity/console/account')) {
+        targetUrl = targetUrl.replace('/identity/console/account', '/users/workspace/account');
+      }
+      this.router.navigateByUrl(targetUrl);
     }
   }
 

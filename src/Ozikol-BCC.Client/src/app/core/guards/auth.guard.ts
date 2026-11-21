@@ -66,6 +66,14 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
     }
   }
 
+  // Smart redirect for self-service account management (/identity/console/account):
+  // Members seamlessly redirect to their personal workspace account page (/users/workspace/account)
+  if (state.url.startsWith('/identity/console/account') && isMemberOnly(userRoles)) {
+    const target = state.url.replace('/identity/console/account', '/users/workspace/account');
+    router.navigateByUrl(target);
+    return false;
+  }
+
   // Evaluate role permissions for this specific route (resolving deepest child route data when triggered on parent shell)
   let deepestRoute: ActivatedRouteSnapshot = route;
   while (deepestRoute.firstChild) {

@@ -21,6 +21,12 @@ namespace Ozikol_BCC.Domain.Models
         public BcpMessageChannel Channel { get; set; } = BcpMessageChannel.Email;
 
         /// <summary>
+        /// Gets or sets the target communication provider responsible for message transmission (Required).
+        /// </summary>
+        [Required]
+        public BcpMessageProvider Provider { get; set; }
+
+        /// <summary>
         /// The user this communication relates to (nullable for external recipients).
         /// </summary>
         public string? RelatedUserId { get; set; }

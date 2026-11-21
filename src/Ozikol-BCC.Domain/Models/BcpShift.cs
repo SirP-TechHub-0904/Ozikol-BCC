@@ -127,6 +127,20 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsConfirmedByGuard { get; set; }
 
         /// <summary>
+        /// How the shift was given to the assigned staff member:
+        /// "Offer" = staff can Accept or Decline (admin may Revoke until accepted);
+        /// "Mandatory" = staff must attend and can only Acknowledge (excuse/swap via approval).
+        /// </summary>
+        [StringLength(20)]
+        public string AssignmentMode { get; set; } = "Offer";
+
+        /// <summary>
+        /// When true, claiming this open shift requires manager/supervisor approval before assignment.
+        /// When false (default), the worker claims and assumes the shift immediately.
+        /// </summary>
+        public bool RequireClaimApproval { get; set; } = false;
+
+        /// <summary>
         /// Timestamp in UTC when the guard confirmed acceptance of the shift.
         /// </summary>
         public DateTime? ConfirmedAtUtc { get; set; }

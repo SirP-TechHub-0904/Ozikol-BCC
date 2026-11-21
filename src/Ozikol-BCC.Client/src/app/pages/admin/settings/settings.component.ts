@@ -126,7 +126,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <span>Company / Organization Name</span>
                   <span class="field-req">*</span>
                 </label>
-                <input type="text" [(ngModel)]="brand.companyName" (input)="onCompanyNameChange()" class="form-control" placeholder="e.g. Acme Corporation, Global Enterprises" />
+                <input type="text" [(ngModel)]="brand.companyName" (input)="onCompanyNameChange()" class="form-control" placeholder="e.g. Your Organization Name" />
                 <span class="field-hint">Official organization name displayed across the portal</span>
               </div>
 
@@ -134,7 +134,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <label class="form-label">
                   <span>Company Abbreviation (Initials)</span>
                 </label>
-                <input type="text" [(ngModel)]="brand.companyNameAbbreviation" class="form-control" placeholder="e.g. ACME, CORP, ORG" />
+                <input type="text" [(ngModel)]="brand.companyNameAbbreviation" class="form-control" placeholder="e.g. ORG, CO" />
                 <span class="field-hint">Short name or initials used across portal headers and badges</span>
               </div>
             </div>

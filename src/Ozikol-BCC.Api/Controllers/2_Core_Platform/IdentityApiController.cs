@@ -838,12 +838,46 @@ namespace Ozikol_BCC.Api.Controllers
 
             var emailClean = request.Email.Trim().ToLowerInvariant();
 
-            // 1. Check if user already exists
+            // 1. Check if user already exists by email
             var existingUser = await _userManager.FindByEmailAsync(emailClean);
             if (existingUser != null)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address is already registered on the platform."));
 
-            // 2. Clear any active pending invitations for this email to avoid duplicates
+            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == emailClean);
+            if (emailInDb)
+                return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address is already registered on the platform."));
+
+            // 2. Check if phone number already exists
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                var phoneClean = request.PhoneNumber.Trim();
+                var normalizedPhone = PhoneNumberNormalizer.Normalize(phoneClean);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(phoneClean);
+
+                var phoneExists = await _dbContext.Users.AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == phoneClean ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
+                if (phoneExists)
+                    return BadRequest(ApiResponse<object>.FailureResponse($"A user with phone number '{phoneClean}' is already registered on the platform."));
+
+                // Invalidate any unredeemed invitations with this phone number to prevent duplicates
+                var existingPhoneInvites = await _dbContext.Invitations
+                    .Where(i => i.PhoneNumber != null && !i.IsUsed &&
+                               (i.PhoneNumber == phoneClean || i.PhoneNumber == normalizedPhone ||
+                                (sigDigits.Length >= 8 && i.PhoneNumber.EndsWith(sigDigits))))
+                    .ToListAsync();
+                foreach (var pi in existingPhoneInvites)
+                {
+                    pi.IsUsed = true;
+                }
+
+                request.PhoneNumber = normalizedPhone;
+            }
+
+            // 3. Clear any active pending invitations for this email to avoid duplicates
             var existingPending = await _dbContext.BcpUserInvitations
                 .Where(i => i.Email == emailClean && !i.IsAccepted)
                 .ToListAsync();

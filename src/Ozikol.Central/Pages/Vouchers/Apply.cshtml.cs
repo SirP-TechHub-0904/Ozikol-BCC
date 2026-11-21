@@ -211,7 +211,7 @@ namespace Ozikol.Central.Pages.Vouchers
         [MaxLength(200)]
         public string OrganizationName { get; set; } = string.Empty;
 
-        [Display(Name = "Preferred Workspace Subdomain (e.g. acme)")]
+        [Display(Name = "Preferred Workspace Subdomain (e.g. access code or url)")]
         [MaxLength(100)]
         [RegularExpression("^[a-z0-9\\-]*$", ErrorMessage = "Subdomain can only contain lowercase letters, numbers, and hyphens.")]
         public string? WorkspaceSlug { get; set; }

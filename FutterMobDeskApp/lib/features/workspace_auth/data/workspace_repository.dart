@@ -12,7 +12,7 @@ class WorkspaceRepository {
   Dio get _dio => _apiClient.dio;
 
   /// Resolves a workspace by Organization Access Code, Subdomain, or Custom Web Address.
-  /// Normalizes input (e.g. "acme", "acme.ozikol.cloud", "portal.acme.com", "https://rozzy-touchxcx.localhost:4200/").
+  /// Normalizes input (e.g. "workspace", "workspace.ozikol.cloud", "portal.domain.com", "https://tenant.localhost:4200/").
   Future<Workspace> resolveWorkspace(String rawInput) async {
     final cleanInput = _cleanIdentifier(rawInput);
     if (cleanInput.isEmpty) {

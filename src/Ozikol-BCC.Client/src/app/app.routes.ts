@@ -22,6 +22,9 @@ import { CommitteesCloudVaultComponent } from './pages/workspace/committees/comm
 
 // Workforce Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking)
 import { WorkforceAnalyticsComponent } from './pages/admin/workforce/workforce-analytics.component';
+import { WorkforceStaffManagerComponent } from './pages/admin/workforce/workforce-staff-manager.component';
+import { WorkforceStaffCreateComponent } from './pages/admin/workforce/workforce-staff-create.component';
+import { WorkforceShiftManagerComponent } from './pages/admin/workforce/workforce-shift-manager.component';
 import { WorkforceScheduleComponent } from './pages/admin/workforce/workforce-schedule.component';
 import { WorkforceShiftEditComponent } from './pages/admin/workforce/workforce-shift-edit.component';
 import { WorkforceSitesComponent } from './pages/admin/workforce/workforce-sites.component';
@@ -32,7 +35,9 @@ import { WorkforceEnrollComponent } from './pages/admin/workforce/workforce-enro
 import { WorkforceSettingsComponent } from './pages/admin/workforce/workforce-settings.component';
 import { WorkforceMemberProfileComponent } from './pages/admin/workforce/workforce-member-profile.component';
 import { WorkforceAttendanceLiveComponent } from './pages/admin/workforce/workforce-attendance-live.component';
+import { WorkforceMessagePoolComponent } from './pages/admin/workforce/workforce-message-pool.component';
 import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforce-my-shifts.component';
+import { WorkforceMyMessagesComponent } from './pages/workspace/workforce/workforce-my-messages.component';
 import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
 import { WorkforceOnboardingComponent } from './pages/workspace/workforce/workforce-onboarding.component';
 
@@ -306,7 +311,9 @@ export const routes: Routes = [
       // Admin Console Routes
       { path: 'workforce/console', redirectTo: 'workforce/console/analytics', pathMatch: 'full' },
       { path: 'workforce/console/analytics', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
-      { path: 'workforce/console/staff', component: WorkforceAnalyticsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', view: 'staff' } },
+      { path: 'workforce/console/staff', component: WorkforceStaffManagerComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/staff/create', component: WorkforceStaffCreateComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/shifts', component: WorkforceShiftManagerComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule', component: WorkforceScheduleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/create', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/schedule/edit/:id', component: WorkforceShiftEditComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
@@ -318,6 +325,7 @@ export const routes: Routes = [
       { path: 'workforce/console/enroll', component: WorkforceEnrollComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/members/:id', component: WorkforceMemberProfileComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/settings', component: WorkforceSettingsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/console/messages', component: WorkforceMessagePoolComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/live', component: WorkforceAttendanceLiveComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/console/attendance', redirectTo: 'workforce/console/live', pathMatch: 'full' },
       { path: 'attendance/console', redirectTo: 'attendance/console/live', pathMatch: 'full' },
@@ -331,6 +339,7 @@ export const routes: Routes = [
       { path: 'workforce/workspace/timesheets', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'timesheets' } },
       { path: 'workforce/workspace/leave', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'leave' } },
       { path: 'workforce/workspace/documents', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'documents' } },
+      { path: 'workforce/workspace/messages', component: WorkforceMyMessagesComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/workspace/availability', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'availability' } },
       { path: 'workforce/workspace/reminders', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'reminders' } },
       { path: 'workforce/workspace/clock', component: WorkforceClockComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
@@ -442,6 +451,15 @@ export const routes: Routes = [
 
       // Suite 11: Workstation Supervisor & Application Gatekeeper (bcp-workspace)
       { path: 'workspace/stations', component: WorkstationsConsoleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin'], feature: 'bcp-workspace', featureName: 'Workspace (Desktop only)' } },
+      { path: 'workspace/security', redirectTo: 'users/workspace/security', pathMatch: 'full' },
+      { path: 'workspace/profile', redirectTo: 'users/workspace/profile', pathMatch: 'full' },
+      { path: 'workspace/account', redirectTo: 'users/workspace/account', pathMatch: 'full' },
+      // Legacy Notification & Deep Link aliases
+      { path: 'dashboard/cms/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
+      { path: 'dashboard/cms', redirectTo: 'content/console/forms', pathMatch: 'full' },
+      { path: 'workforce/my-shifts', redirectTo: 'workforce/workspace/my-shifts', pathMatch: 'full' },
+      { path: 'dashboard/commerce/orders', redirectTo: 'products/console/orders', pathMatch: 'full' },
+      { path: 'dashboard/committees', redirectTo: 'committees/workspace/my', pathMatch: 'full' },
       { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
       { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
 
@@ -484,7 +502,7 @@ export const routes: Routes = [
     ]
   },
   // Dynamic Public Website Content Routes
-  { path: 'form-success', loadComponent: () => import('./pages/public/form-success.component').then(m => m.FormSuccessComponent) },
+  { path: 'form-success', title: 'Thank You! Submission Received', loadComponent: () => import('./pages/public/form-success.component').then(m => m.FormSuccessComponent) },
   { path: 'page/:slug', component: LandingComponent },
   { path: 'blog', component: LandingComponent },
   { path: 'blog/:id', component: LandingComponent },

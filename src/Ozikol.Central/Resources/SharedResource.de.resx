@@ -3907,7 +3907,7 @@
     <comment>Support portal localized key (de)</comment>
   </data>
   <data name="Support_Form_Organization_Placeholder" xml:space="preserve">
-    <value>z.B. Quartier St. Georg oder Acme GmbH</value>
+    <value>z.B. Ihre Organisation</value>
     <comment>Support portal localized key (de)</comment>
   </data>
   <data name="Support_Form_JobTitle" xml:space="preserve">
@@ -4621,7 +4621,7 @@
     <value>Domain der Organisation eingeben</value>
   </data>
   <data name="Mobile_Step2_Desc" xml:space="preserve">
-    <value>Geben Sie auf dem Startbildschirm die Domain Ihrer Organisation (z. B. acme.ozikol.cloud oder eigene Domain) ein.</value>
+    <value>Geben Sie auf dem Startbildschirm die Domain Ihrer Organisation (z. B. workspace.ozikol.cloud oder eigene Domain) ein.</value>
   </data>
   <data name="Mobile_Step3_Title" xml:space="preserve">
     <value>Anmelden &amp; loslegen</value>

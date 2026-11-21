@@ -7,6 +7,14 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LandingComponent } from '../../landing/landing.component';
 import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.component';
+import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
+import {
+  SUPPORTED_COUNTRY_PHONES,
+  CountryPhoneOption,
+  resolveDefaultCountryCode,
+  cleanPhoneNumber,
+  splitPhoneNumber
+} from '../../../core/utils/phone-cleaner.util';
 
 /**
  * Dedicated Page Component for Enrolling Workforce Staff Members.
@@ -19,7 +27,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 @Component({
   selector: 'app-workforce-enroll',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LandingComponent, AuthLayoutComponent, PhoneInputComponent],
   template: `
     <div class="bcp-page-container">
       <!-- 1. Breadcrumbs & Header -->
@@ -56,7 +64,31 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
       <!-- 2. ONE-TIME INVITATION (LEFT) + EXACT LIVE PUBLISHED REGISTRATION FORM (RIGHT) -->
       <div class="tab-pane-content">
-        <div class="invite-form-grid">
+        <!-- Status Warning Banner: Form Disabled -->
+        <div *ngIf="policy.isFormDisabled" class="enroll-status-banner banner-disabled">
+          <span class="material-symbols-outlined">blur_on</span>
+          <div class="banner-body">
+            <strong>Form Disabled:</strong> The Registration Form is currently disabled. Staff enrollment is blurred and locked until you re-enable the form in the Registration Form Builder.
+          </div>
+          <a routerLink="/users/console/registration-form" class="banner-action-btn">
+            <span class="material-symbols-outlined">tune</span>
+            <span>Enable in Form Builder</span>
+          </a>
+        </div>
+
+        <!-- Status Warning Banner: Form Unpublished -->
+        <div *ngIf="!policy.isFormDisabled && policy.isFormPublished === false" class="enroll-status-banner banner-unpublished">
+          <span class="material-symbols-outlined">visibility_off</span>
+          <div class="banner-body">
+            <strong>Form Unpublished:</strong> The Registration Form is currently in draft mode and not published. You cannot send onboarding invitations until you publish the form.
+          </div>
+          <a routerLink="/users/console/registration-form" class="banner-action-btn">
+            <span class="material-symbols-outlined">publish</span>
+            <span>Publish in Form Builder</span>
+          </a>
+        </div>
+
+        <div class="invite-form-grid" [class.enroll-blurred]="policy.isFormDisabled">
           <!-- Left Column: Simple One-Time Invitation Inputs -->
           <div class="cms-card">
             <div class="card-header">
@@ -67,6 +99,16 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                   <p class="card-subtitle">Enter basic contact details to send a single-use onboarding link.</p>
                 </div>
               </div>
+              <button
+                *ngIf="inviteModel.fullName || inviteModel.email || inviteModel.phoneNumber || generatedOnboardingUrl"
+                type="button"
+                class="btn-clear-form"
+                (click)="clearInviteForm()"
+                title="Clear all fields to enroll another staff member"
+              >
+                <span class="material-symbols-outlined">refresh</span>
+                <span>Clear Form</span>
+              </button>
             </div>
 
             <div class="card-body">
@@ -96,14 +138,12 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
 
               <div class="form-group">
                 <label class="form-label">Phone Number <span class="required">*</span></label>
-                <input
-                  type="tel"
-                  class="form-control"
-                  [(ngModel)]="inviteModel.phoneNumber"
-                  (ngModelChange)="syncInviteToPreview()"
-                  placeholder="e.g. +0 (000) 000-0000"
-                  required
-                />
+                <app-phone-input
+                  [(phoneNumber)]="inviteModel.phoneNumber"
+                  [defaultCurrency]="currencyCode || 'NGN'"
+                  (phoneNumberChange)="syncInviteToPreview()"
+                  [required]="true"
+                ></app-phone-input>
               </div>
 
               <div class="form-row-dual">
@@ -249,11 +289,13 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                   type="button"
                   class="btn btn-primary full-width"
                   (click)="sendInvite()"
-                  [disabled]="isSubmitting"
+                  [disabled]="isSubmitting || policy.isFormDisabled || policy.isFormPublished === false"
+                  [title]="policy.isFormDisabled ? 'Form is disabled' : (policy.isFormPublished === false ? 'Form is unpublished — publish it first to send invitations' : 'Send Invitation Link')"
                 >
-                  <span class="material-symbols-outlined" *ngIf="!isSubmitting">send</span>
+                  <span class="material-symbols-outlined" *ngIf="!isSubmitting && !policy.isFormDisabled && policy.isFormPublished !== false">send</span>
+                  <span class="material-symbols-outlined" *ngIf="!isSubmitting && (policy.isFormDisabled || policy.isFormPublished === false)">lock</span>
                   <span class="material-symbols-outlined spin" *ngIf="isSubmitting">sync</span>
-                  <span>{{ isSubmitting ? 'Sending...' : 'Send Invitation Link' }}</span>
+                  <span>{{ isSubmitting ? 'Sending...' : (policy.isFormDisabled ? 'Form Disabled — Cannot Invite' : (policy.isFormPublished === false ? 'Form Unpublished — Cannot Invite' : 'Send Invitation Link')) }}</span>
                 </button>
               </div>
 
@@ -266,13 +308,23 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                 <div class="generated-link-row">
                   <input type="text" class="form-control" [value]="generatedOnboardingUrl" readonly />
                   <button type="button" class="btn btn-outline" (click)="copyGeneratedLink()">
-                    <span class="material-symbols-outlined">content_copy</span>
-                    <span>Copy</span>
+                    <span class="material-symbols-outlined">{{ copiedLink ? 'done' : 'content_copy' }}</span>
+                    <span>{{ copiedLink ? 'Copied' : 'Copy' }}</span>
                   </button>
                   <a [href]="generatedOnboardingUrl" target="_blank" class="btn btn-primary">
                     <span class="material-symbols-outlined">open_in_new</span>
                     <span>Open</span>
                   </a>
+                </div>
+                <div class="generated-link-actions">
+                  <button type="button" class="btn btn-primary" (click)="closeSuccessModal()">
+                    <span class="material-symbols-outlined">group</span>
+                    <span>View Staff Directory</span>
+                  </button>
+                  <button type="button" class="btn btn-outline-primary" (click)="addAnotherStaff()">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Add Another Staff</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -403,7 +455,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                     </div>
 
                     <!-- Core Category -->
-                    <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                    <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                       <label class="rf-sim-label">Member Category / Tier</label>
                       <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                         <option [ngValue]="null">Standard Member (No Category Tier)</option>
@@ -511,7 +563,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
 
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Category Tier</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -657,7 +709,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                         <label class="rf-sim-label">Phone Number (Optional)</label>
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Member Category Tier</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -801,7 +853,7 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
                         <label class="rf-sim-label">Phone Number</label>
                         <input type="text" [(ngModel)]="simModel.phone" class="rf-sim-input" placeholder="e.g. +0 (000) 000-0000" />
                       </div>
-                      <div *ngIf="isCoreFieldPublished('category')" class="rf-sim-group">
+                      <div *ngIf="categories.length > 0 && isCoreFieldPublished('category')" class="rf-sim-group">
                         <label class="rf-sim-label">Member Category</label>
                         <select class="rf-sim-input" [(ngModel)]="simulatedCategoryId">
                           <option [ngValue]="null">Standard Member</option>
@@ -934,6 +986,97 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
           </app-auth-layout>
         </div>
       </div>
+
+      <!-- ============================================================= -->
+      <!-- SUCCESS MODAL POPUP: INVITATION DISPATCHED                    -->
+      <!-- ============================================================= -->
+      <div class="enroll-modal-backdrop" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+        <div class="enroll-modal-card" (click)="$event.stopPropagation()">
+          <div class="enroll-modal-header">
+            <div class="modal-icon-badge">
+              <span class="material-symbols-outlined text-green">check_circle</span>
+            </div>
+            <div class="modal-title-group">
+              <h3>One-Time Invitation Link Generated</h3>
+              <p>Onboarding link has been created for {{ lastInvitedStaff?.fullName || 'the member' }}.</p>
+            </div>
+            <button type="button" class="btn-modal-close" (click)="closeSuccessModal()" aria-label="Close modal">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="enroll-modal-body">
+            <!-- Staff Summary Card: Distinct Identity Details -->
+            <div class="staff-summary-card" *ngIf="lastInvitedStaff">
+              <div class="staff-summary-top">
+                <div class="staff-avatar">
+                  <span class="material-symbols-outlined">person</span>
+                </div>
+                <div class="staff-summary-headline">
+                  <div class="staff-name">{{ lastInvitedStaff.fullName }}</div>
+                  <span class="staff-meta-badge" *ngIf="lastInvitedStaff.jobTitle">
+                    <span class="material-symbols-outlined">badge</span>
+                    {{ lastInvitedStaff.jobTitle }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Distinct Email & Phone Number Channels -->
+              <div class="staff-contact-details">
+                <div class="contact-pill email-pill">
+                  <div class="pill-label">
+                    <span class="material-symbols-outlined">mail</span>
+                    <span>Email Address</span>
+                  </div>
+                  <div class="pill-value" [title]="lastInvitedStaff.email">{{ lastInvitedStaff.email }}</div>
+                </div>
+
+                <div class="contact-pill phone-pill" *ngIf="lastInvitedStaff.phoneNumber">
+                  <div class="pill-label">
+                    <span class="material-symbols-outlined">call</span>
+                    <span>Phone Number</span>
+                  </div>
+                  <div class="pill-value">{{ lastInvitedStaff.phoneNumber }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Single-Use Onboarding Link Box -->
+            <div class="modal-link-box">
+              <div class="link-box-header">
+                <span class="material-symbols-outlined text-blue">link</span>
+                <strong>Single-Use Registration Link</strong>
+              </div>
+              <div class="link-input-row">
+                <input type="text" class="form-control" [value]="generatedOnboardingUrl" readonly />
+                <button type="button" class="btn btn-outline" (click)="copyGeneratedLink()">
+                  <span class="material-symbols-outlined">{{ copiedLink ? 'done' : 'content_copy' }}</span>
+                  <span>{{ copiedLink ? 'Copied' : 'Copy' }}</span>
+                </button>
+                <a [href]="generatedOnboardingUrl" target="_blank" class="btn btn-primary">
+                  <span class="material-symbols-outlined">open_in_new</span>
+                  <span>Open</span>
+                </a>
+              </div>
+              <p class="link-expiry-hint">
+                <span class="material-symbols-outlined">info</span>
+                <span>This link works once. As soon as the invited member submits the registration form, it automatically invalidates.</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="enroll-modal-footer">
+            <button type="button" class="btn btn-primary" (click)="closeSuccessModal()">
+              <span class="material-symbols-outlined">group</span>
+              <span>Done &amp; View Staff Directory</span>
+            </button>
+            <button type="button" class="btn btn-outline" (click)="addAnotherStaff()">
+              <span class="material-symbols-outlined">person_add</span>
+              <span>Add Another Staff</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -943,6 +1086,75 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
       gap: 24px;
       padding: 0 4px 40px 4px;
       width: 100%;
+    }
+
+    .enroll-status-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .enroll-status-banner .material-symbols-outlined {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .enroll-status-banner .banner-body {
+      flex: 1;
+    }
+    .enroll-status-banner.banner-disabled {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #991B1B;
+    }
+    .enroll-status-banner.banner-disabled .material-symbols-outlined {
+      color: #DC2626;
+    }
+    .enroll-status-banner.banner-unpublished {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+    }
+    .enroll-status-banner.banner-unpublished .material-symbols-outlined {
+      color: #D97706;
+    }
+    .enroll-status-banner .banner-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .enroll-status-banner.banner-disabled .banner-action-btn {
+      background: #DC2626;
+      color: #FFFFFF;
+    }
+    .enroll-status-banner.banner-disabled .banner-action-btn .material-symbols-outlined {
+      color: #FFFFFF;
+      font-size: 16px;
+    }
+    .enroll-status-banner.banner-unpublished .banner-action-btn {
+      background: #D97706;
+      color: #FFFFFF;
+    }
+    .enroll-status-banner.banner-unpublished .banner-action-btn .material-symbols-outlined {
+      color: #FFFFFF;
+      font-size: 16px;
+    }
+    .enroll-blurred {
+      filter: blur(5px);
+      opacity: 0.55;
+      pointer-events: none;
+      user-select: none;
+      transition: filter 0.2s ease, opacity 0.2s ease;
     }
 
     /* Page Header */
@@ -1171,6 +1383,36 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
     .form-control:focus {
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-input-combo {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .phone-country-select {
+      flex: 0 0 120px;
+      max-width: 130px;
+      padding: 10px 8px;
+      border: 1px solid #cbd5e1;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .phone-country-select:focus {
+      border-color: #0050e5;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+    .phone-national-control {
+      flex: 1 1 auto;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
     }
 
     /* =========================================================================
@@ -1738,6 +1980,309 @@ import { AuthLayoutComponent } from '../../../layouts/auth-layout/auth-layout.co
         grid-template-columns: 1fr;
       }
     }
+
+    /* Clear Form Button */
+    .btn-clear-form {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-clear-form:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-clear-form .material-symbols-outlined {
+      font-size: 15px;
+    }
+
+    .btn-outline-primary {
+      background: #ffffff;
+      color: #0050e5;
+      border: 1px solid #0050e5;
+    }
+    .btn-outline-primary:hover {
+      background: #eff6ff;
+    }
+    .generated-link-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    /* Success Modal Styles */
+    .enroll-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 16px;
+      box-sizing: border-box;
+      animation: fadeIn 0.15s ease-out;
+    }
+    .enroll-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 32px -8px rgba(15, 23, 42, 0.18), 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: scaleIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .enroll-modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: #fafbfc;
+      position: relative;
+    }
+    .modal-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-icon-badge .material-symbols-outlined {
+      font-size: 26px;
+      color: #16a34a;
+    }
+    .modal-title-group {
+      flex: 1;
+      min-width: 0;
+      padding-right: 28px;
+    }
+    .modal-title-group h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 3px;
+    }
+    .modal-title-group p {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+    .btn-modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .btn-modal-close:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    .enroll-modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .staff-summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .staff-summary-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .staff-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .staff-summary-headline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .staff-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .staff-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .staff-meta-badge .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .staff-contact-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .contact-pill {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .contact-pill .pill-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #64748b;
+    }
+    .contact-pill.email-pill .pill-label .material-symbols-outlined {
+      font-size: 14px;
+      color: #0050e5;
+    }
+    .contact-pill.phone-pill .pill-label .material-symbols-outlined {
+      font-size: 14px;
+      color: #059669;
+    }
+    .contact-pill .pill-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .modal-link-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .link-box-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: #166534;
+    }
+    .link-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .link-input-row .form-control {
+      flex: 1;
+      min-width: 180px;
+      font-family: monospace;
+      font-size: 12.5px;
+      background: #ffffff;
+      padding: 8px 12px;
+    }
+    .link-expiry-hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #15803d;
+    }
+    .link-expiry-hint .material-symbols-outlined {
+      font-size: 15px;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .enroll-modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #f1f5f9;
+      background: #fafbfc;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .enroll-modal-header, .enroll-modal-body, .enroll-modal-footer {
+        padding: 16px;
+      }
+      .link-input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .link-input-row .form-control {
+        min-width: 100%;
+      }
+      .enroll-modal-footer {
+        flex-direction: column-reverse;
+      }
+      .enroll-modal-footer .btn {
+        width: 100%;
+      }
+    }
   `]
 })
 export class WorkforceEnrollComponent implements OnInit, OnDestroy {
@@ -1745,13 +2290,22 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   private syncTimer?: any;
   isSubmitting = false;
   currencySymbol = '₦';
+  currencyCode = 'NGN';
   staffTypes: any[] = [];
   jobRoles: any[] = [];
   generatedOnboardingUrl = '';
+  showSuccessModal = false;
+  copiedLink = false;
+  lastInvitedStaff: any = null;
 
   showJobTitleInfo = false;
   showStaffTypeInfo = false;
   showFullScreenPreview = false;
+
+  // International Phone Cleaner State
+  supportedCountries: CountryPhoneOption[] = SUPPORTED_COUNTRY_PHONES;
+  phoneCountryCode: string = '+234';
+  phoneNationalNumber: string = '';
 
   // Exact Registration Form Builder State (`policy`, `fields`, `categories`, `simModel`, `simStep`)
   policy = {
@@ -1767,7 +2321,10 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     formLayoutMode: 'single' as 'single' | 'sections' | 'stepper' | 'pages',
     requirePassword: true,
     allowSaveAndContinue: false,
+    isFormDisabled: false,
+    isFormPublished: true,
     unpublishedCoreFields: [] as string[],
+    deletedCoreFields: [] as string[],
     customSections: [] as string[]
   };
   fields: any[] = [];
@@ -1829,6 +2386,10 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         if (res?.data?.currencySymbol) {
           this.currencySymbol = res.data.currencySymbol;
+        }
+        if (res?.data?.currencyCode) {
+          this.currencyCode = res.data.currencyCode;
+          this.phoneCountryCode = resolveDefaultCountryCode(res.data.currencyCode);
         }
       },
       error: () => {}
@@ -1901,6 +2462,12 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const schema = res?.data || res;
         if (schema) {
+          if (schema.isFormDisabled !== undefined) {
+            this.policy.isFormDisabled = schema.isFormDisabled;
+          }
+          if (schema.isFormPublished !== undefined) {
+            this.policy.isFormPublished = schema.isFormPublished;
+          }
           this.policy.registrationFormTitle = schema.formTitle || this.policy.registrationFormTitle || 'Create Your Account';
           this.policy.registrationWelcomeMessage = schema.welcomeMessage || this.policy.registrationWelcomeMessage || 'Join our member directory and workspace portal.';
           this.policy.pageShellLayout = schema.pageShellLayout || this.policy.pageShellLayout || 'website';
@@ -1909,6 +2476,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
           this.policy.allowSaveAndContinue = schema.allowSaveAndContinue ?? false;
           this.policy.defaultIndustrySector = schema.defaultIndustrySector || 'Business & Enterprise';
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
+          this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
           this.categories = schema.categories || [];
 
@@ -1989,8 +2557,9 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
    * Checks whether a built-in core field (phone or category) is published on the registration form.
    */
   isCoreFieldPublished(key: string): boolean {
-    if (!this.policy.unpublishedCoreFields) return true;
-    return !this.policy.unpublishedCoreFields.includes(key);
+    const unpublished = Array.isArray(this.policy.unpublishedCoreFields) && this.policy.unpublishedCoreFields.includes(key);
+    const deleted = Array.isArray(this.policy.deletedCoreFields) && this.policy.deletedCoreFields.includes(key);
+    return !unpublished && !deleted;
   }
 
   /**
@@ -2033,6 +2602,14 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   }
 
   sendInvite(): void {
+    if (this.policy.isFormDisabled) {
+      this.toast.error('Cannot send invitation: The Registration Form is currently disabled.');
+      return;
+    }
+    if (this.policy.isFormPublished === false) {
+      this.toast.error('Cannot send invitation: The Registration Form is unpublished. Please publish the form first.');
+      return;
+    }
     if (!this.inviteModel.fullName?.trim() || !this.inviteModel.email?.trim() || !this.inviteModel.phoneNumber?.trim()) {
       this.toast.warning('Full Name, Email Address, and Phone Number are mandatory.');
       return;
@@ -2046,6 +2623,21 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
         this.generatedOnboardingUrl = relUrl && typeof window !== 'undefined'
           ? `${window.location.origin}${relUrl}`
           : relUrl;
+
+        // Snapshot invited member details for the confirmation modal
+        this.lastInvitedStaff = {
+          fullName: this.inviteModel.fullName,
+          email: this.inviteModel.email,
+          phoneNumber: this.inviteModel.phoneNumber,
+          jobTitle: this.inviteModel.jobTitle,
+          staffTypeName: this.inviteModel.staffTypeName || this.staffTypes.find(t => t.id === this.inviteModel.staffTypeId)?.name || '',
+          emailSent: !!res?.data?.emailSent
+        };
+
+        // Automatically trigger success modal and reset copy status
+        this.showSuccessModal = true;
+        this.copiedLink = false;
+
         if (res?.data?.emailSent) {
           this.toast.success(`Invitation email sent to ${this.inviteModel.email} and single-use link generated.`);
         } else {
@@ -2062,6 +2654,55 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
   copyGeneratedLink(): void {
     if (!this.generatedOnboardingUrl) return;
     navigator.clipboard.writeText(this.generatedOnboardingUrl);
+    this.copiedLink = true;
+    setTimeout(() => {
+      this.copiedLink = false;
+    }, 2500);
     this.toast.success('One-time invitation link copied to clipboard.');
+  }
+
+  closeSuccessModal(): void {
+    this.showSuccessModal = false;
+    this.router.navigate(['/workforce/console/staff']);
+  }
+
+  addAnotherStaff(): void {
+    this.showSuccessModal = false;
+    this.clearInviteForm();
+    this.toast.info('Form cleared. Ready to enter new staff member details.');
+  }
+
+  onPhoneInputChanged(): void {
+    const cleaned = cleanPhoneNumber(this.phoneCountryCode, this.phoneNationalNumber);
+    if (this.phoneNationalNumber !== cleaned.nationalNumber) {
+      this.phoneNationalNumber = cleaned.nationalNumber;
+    }
+    this.inviteModel.phoneNumber = cleaned.canonicalE164;
+    this.syncInviteToPreview();
+  }
+
+  get selectedCountryPlaceholder(): string {
+    const found = this.supportedCountries.find(c => c.code === this.phoneCountryCode);
+    return found ? found.samplePlaceholder : 'e.g. 0801 234 5678 or 801 234 5678';
+  }
+
+  clearInviteForm(): void {
+    this.inviteModel = {
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      jobTitle: '',
+      staffTypeId: this.staffTypes.length > 0 ? this.staffTypes[0].id : '',
+      staffTypeName: this.staffTypes.length > 0 ? this.staffTypes[0].name : '',
+      defaultHourlyRate: 0,
+      contractedWeeklyHours: 0,
+      preferredWorkingTime: 'Any',
+      workingAvailability: 'Available',
+      welcomeNote: ''
+    };
+    this.phoneNationalNumber = '';
+    this.generatedOnboardingUrl = '';
+    this.copiedLink = false;
+    this.syncInviteToPreview();
   }
 }

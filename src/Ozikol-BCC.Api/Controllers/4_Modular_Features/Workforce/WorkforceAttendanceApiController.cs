@@ -76,15 +76,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (pref == null)
             {
-                return NotificationChannels.InApp | NotificationChannels.Email;
+                return NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email;
             }
 
             var channels = NotificationChannels.None;
-            if (pref.EnableInApp) channels |= NotificationChannels.InApp;
+            if (pref.EnableInApp) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
             if (pref.EnableEmail) channels |= NotificationChannels.Email;
             if (pref.EnableWhatsApp) channels |= NotificationChannels.WhatsApp;
 
-            return channels == NotificationChannels.None ? NotificationChannels.InApp : channels;
+            return channels == NotificationChannels.None ? (NotificationChannels.InApp | NotificationChannels.Push) : channels;
         }
 
         // =========================================================================
@@ -133,6 +133,107 @@ namespace Ozikol_BCC.Api.Controllers
                 .ToListAsync(ct);
 
             return Ok(ApiResponse<List<LiveDutyMonitorDto>>.SuccessResponse(activeShifts, "Live duty monitor feed retrieved."));
+        }
+
+        /// <summary>
+        /// Dispatches a multi-channel operational notification (Push/In-App, Email, WhatsApp, SMS)
+        /// to a specific active on-duty staff member or broadcasts to all active on-duty staff.
+        /// </summary>
+        [HttpPost("notify-active")]
+        public async Task<ActionResult<ApiResponse<object>>> NotifyActiveDutyStaff(
+            [FromBody] NotifyActiveStaffRequest request,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Message))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Notification title and message are required."));
+            }
+
+            var channels = NotificationChannels.None;
+            if (request.SendPush) channels |= (NotificationChannels.InApp | NotificationChannels.Push);
+            if (request.SendEmail) channels |= NotificationChannels.Email;
+            if (request.SendWhatsApp) channels |= NotificationChannels.WhatsApp;
+            if (request.SendSms) channels |= NotificationChannels.Sms;
+
+            if (channels == NotificationChannels.None)
+            {
+                channels = NotificationChannels.InApp | NotificationChannels.Push;
+            }
+
+            var targetUserIds = new List<string>();
+            if (!string.IsNullOrWhiteSpace(request.TargetUserId) && !string.Equals(request.TargetUserId, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                targetUserIds.Add(request.TargetUserId.Trim());
+            }
+            else
+            {
+                var nowUtc = DateTime.UtcNow;
+                var windowStart = nowUtc.AddHours(-18);
+                var windowEnd = nowUtc.AddHours(12);
+
+                targetUserIds = await _db.BcpShifts
+                    .AsNoTracking()
+                    .Where(s => s.TenantKey == CurrentTenantKey &&
+                                s.AssignedUserId != null &&
+                                s.AssignedUserId != "" &&
+                                s.StartsAtUtc >= windowStart &&
+                                s.StartsAtUtc <= windowEnd &&
+                                s.Status != "Cancelled" &&
+                                s.Status != "Completed")
+                    .Select(s => s.AssignedUserId!)
+                    .Distinct()
+                    .ToListAsync(ct);
+            }
+
+            if (targetUserIds.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No active on-duty staff members found to notify."));
+            }
+
+            var users = await _db.Users
+                .AsNoTracking()
+                .Where(u => targetUserIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FullName, u.Email, u.PhoneNumber })
+                .ToListAsync(ct);
+
+            int dispatchedCount = 0;
+            if (_notificationDispatcher != null)
+            {
+                foreach (var u in users)
+                {
+                    try
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = u.Id,
+                            RecipientEmail = u.Email,
+                            RecipientName = u.FullName ?? "Staff Member",
+                            TenantKey = CurrentTenantKey,
+                            Title = request.Title.Trim(),
+                            Message = request.Message.Trim(),
+                            Category = BcpMessageCategory.General,
+                            Severity = NotificationSeverity.Update,
+                            Channels = channels,
+                            SendEmailCopy = request.SendEmail,
+                            Module = "Workforce",
+                            Icon = "campaign",
+                            ActionUrl = "/workforce/workspace/clock"
+                        }, ct);
+                        dispatchedCount++;
+                    }
+                    catch
+                    {
+                        // Non-blocking per-recipient dispatch
+                    }
+                }
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                DispatchedCount = dispatchedCount,
+                TotalTargets = targetUserIds.Count
+            }, $"Notification dispatched to {dispatchedCount} active on-duty staff member(s)."));
         }
 
         /// <summary>
@@ -448,6 +549,18 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? ShiftId { get; set; }
         public string? ShiftCode { get; set; }
         public string Message { get; set; } = string.Empty;
+    }
+
+    public class NotifyActiveStaffRequest
+    {
+        public string? TargetUserId { get; set; }
+        public Guid? ShiftId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool SendPush { get; set; } = true;
+        public bool SendEmail { get; set; } = true;
+        public bool SendWhatsApp { get; set; } = false;
+        public bool SendSms { get; set; } = false;
     }
 }
 

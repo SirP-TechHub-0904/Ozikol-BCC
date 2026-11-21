@@ -26,7 +26,7 @@ namespace Ozikol.Central.Services.Notifications
         /// <param name="targetRole">Target security role (or null for all).</param>
         /// <param name="targetAudience">Target audience group (or null).</param>
         /// <param name="sendPush">Whether to dispatch via OneSignal web/device push.</param>
-        /// <param name="sendEmail">Whether to dispatch via Postmark email.</param>
+        /// <param name="sendEmail">Whether to dispatch via SMTP email.</param>
         /// <param name="createdByUserId">Operator ID who created the notification (if manual).</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The persisted notification record.</returns>

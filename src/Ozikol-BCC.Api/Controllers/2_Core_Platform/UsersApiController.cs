@@ -8,6 +8,7 @@ using Ozikol_BCC.Application.Commands.UserCommands;
 using Ozikol_BCC.Application.Queries.UserQueries;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Services;
 using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Application.Hubs;
@@ -578,14 +579,28 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest(ApiResponse<object>.FailureResponse("Email is required."));
 
-            var existing = await _userManager.FindByEmailAsync(request.Email);
+            var cleanEmail = request.Email.Trim().ToLowerInvariant();
+            var existing = await _userManager.FindByEmailAsync(cleanEmail);
             if (existing != null)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
 
+            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail);
+            if (emailInDb)
+                return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
+
+            string? normalizedPhone = null;
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
                 var trimmedPhone = request.PhoneNumber.Trim();
-                var phoneExists = await _dbContext.Users.AnyAsync(u => u.PhoneNumber == trimmedPhone);
+                normalizedPhone = PhoneNumberNormalizer.Normalize(trimmedPhone);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(trimmedPhone);
+
+                var phoneExists = await _dbContext.Users.AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    (u.PhoneNumber == trimmedPhone ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
                 if (phoneExists)
                     return BadRequest(ApiResponse<object>.FailureResponse($"A member with phone number '{trimmedPhone}' is already registered."));
             }
@@ -609,7 +624,7 @@ namespace Ozikol_BCC.Api.Controllers
                 LastName = request.LastName?.Trim(),
                 Title = request.Title?.Trim(),
                 Gender = request.Gender ?? GenderStatus.Male,
-                PhoneNumber = request.PhoneNumber?.Trim(),
+                PhoneNumber = normalizedPhone ?? request.PhoneNumber?.Trim(),
                 MemberId = generatedMemberId,
                 Designation = request.Designation?.Trim() ?? "Member",
                 BcpUserCategoryId = request.BcpUserCategoryId,
@@ -861,17 +876,44 @@ namespace Ozikol_BCC.Api.Controllers
                 user.Gender = request.Gender.Value;
             }
 
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var cleanEmail = request.Email.Trim().ToLowerInvariant();
+                if (!string.Equals(user.Email, cleanEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    var emailExists = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail && u.Id != id);
+                    if (emailExists)
+                        return BadRequest(ApiResponse<object>.FailureResponse($"A member with email address '{cleanEmail}' is already registered."));
+
+                    profileDiffs.Add($"Email: '{user.Email}' ➔ '{cleanEmail}'");
+                    user.Email = cleanEmail;
+                    user.NormalizedEmail = cleanEmail.ToUpperInvariant();
+                    user.UserName = cleanEmail;
+                    user.NormalizedUserName = cleanEmail.ToUpperInvariant();
+                    user.EmailConfirmed = false;
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
                 var trimmedPhone = request.PhoneNumber.Trim();
-                var phoneExists = await _dbContext.Users.AnyAsync(u => u.PhoneNumber == trimmedPhone && u.Id != id);
+                var normalizedPhone = PhoneNumberNormalizer.Normalize(trimmedPhone);
+                var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(trimmedPhone);
+
+                var phoneExists = await _dbContext.Users.AnyAsync(u =>
+                    u.PhoneNumber != null &&
+                    u.Id != id &&
+                    (u.PhoneNumber == trimmedPhone ||
+                     u.PhoneNumber == normalizedPhone ||
+                     (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
                 if (phoneExists)
                     return BadRequest(ApiResponse<object>.FailureResponse($"A member with phone number '{trimmedPhone}' is already registered."));
 
-                if (user.PhoneNumber != trimmedPhone)
+                if (user.PhoneNumber != normalizedPhone)
                 {
-                    profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ '{trimmedPhone}'");
-                    user.PhoneNumber = trimmedPhone;
+                    profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ '{normalizedPhone}'");
+                    user.PhoneNumber = normalizedPhone;
                     user.PhoneNumberConfirmed = false;
                 }
             }
@@ -2435,6 +2477,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
+        public string? Email { get; set; }
         public string? Title { get; set; }
         public string? Suffix { get; set; }
         public GenderStatus? Gender { get; set; }

@@ -10,6 +10,7 @@ using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Application.Common;
 using System.Security.Claims;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -288,7 +289,23 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
 
-            var result = await _otpService.SendPhoneOtpAsync(userId, request.NewPhoneNumber.Trim());
+            var cleanPhone = request.NewPhoneNumber.Trim();
+            var normalizedPhone = PhoneNumberNormalizer.Normalize(cleanPhone);
+            var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(cleanPhone);
+
+            var phoneInUse = await _dbContext.Users.AnyAsync(u =>
+                u.PhoneNumber != null &&
+                u.Id != userId &&
+                (u.PhoneNumber == cleanPhone ||
+                 u.PhoneNumber == normalizedPhone ||
+                 (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
+            if (phoneInUse)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This phone number is already registered to another account."));
+            }
+
+            var result = await _otpService.SendPhoneOtpAsync(userId, normalizedPhone);
             if (!result.Success)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(result.Message));
@@ -322,7 +339,22 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var cleanPhone = request.NewPhoneNumber.Trim();
-            var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, cleanPhone);
+            var normalizedPhone = PhoneNumberNormalizer.Normalize(cleanPhone);
+            var sigDigits = PhoneNumberNormalizer.GetSignificantDigits(cleanPhone);
+
+            var phoneInUse = await _dbContext.Users.AnyAsync(u =>
+                u.PhoneNumber != null &&
+                u.Id != userId &&
+                (u.PhoneNumber == cleanPhone ||
+                 u.PhoneNumber == normalizedPhone ||
+                 (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits))));
+
+            if (phoneInUse)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This phone number is already registered to another account."));
+            }
+
+            var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, normalizedPhone);
             if (!setPhoneResult.Succeeded)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", setPhoneResult.Errors.Select(e => e.Description))));
@@ -429,11 +461,13 @@ namespace Ozikol_BCC.Api.Controllers
 
             var averageScore = periodScores.Count > 0
                 ? (int)Math.Round(periodScores.Average(x => ((double)x.Score / (double)(x.TargetValue > 0 ? x.TargetValue : 100)) * 100))
-                : 88;
+                : 0;
 
-            var grade = averageScore >= 80 ? "A" : (averageScore >= 70 ? "B" : (averageScore >= 60 ? "C" : "D"));
+            var grade = periodScores.Count == 0
+                ? "N/A"
+                : (averageScore >= 80 ? "A" : (averageScore >= 70 ? "B" : (averageScore >= 60 ? "C" : "D")));
 
-            // Compute historical multi-quarter trend
+            // Compute historical multi-quarter trend strictly from real database records
             var historicalTrend = allUserScores
                 .Where(s => !string.IsNullOrEmpty(s.Period))
                 .GroupBy(s => s.Period)
@@ -444,15 +478,7 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToList();
 
-            if (historicalTrend.Count == 0)
-            {
-                historicalTrend.Add(new { Period = "Q1 2026", Score = 82 });
-                historicalTrend.Add(new { Period = "Q2 2026", Score = 85 });
-                historicalTrend.Add(new { Period = "Q3 2026", Score = 88 });
-            }
-
-            var latestRemarks = periodScores.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Remarks))?.Remarks
-                ?? "Exceptional consistency across operational deliverables and high engagement.";
+            var latestRemarks = periodScores.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.Remarks))?.Remarks ?? string.Empty;
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {

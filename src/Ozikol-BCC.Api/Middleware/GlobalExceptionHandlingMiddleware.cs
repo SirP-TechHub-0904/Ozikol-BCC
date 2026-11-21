@@ -9,8 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Api.Filters;
 using Ozikol_BCC.Application.Common.Errors;
-using Ozikol_BCC.EmailServices.Postmark.Interfaces;
-using Ozikol_BCC.EmailServices.Postmark.Models;
+using Ozikol_BCC.Infrastructure.Services.Email;
 
 namespace Ozikol_BCC.Api.Middleware;
 
@@ -191,7 +190,7 @@ public class GlobalExceptionHandlingMiddleware
     }
 
     /// <summary>
-    /// Dispatches an administrative email alert via Postmark with cooldown deduplication.
+    /// Dispatches an administrative email alert via Mailcow SMTP with cooldown deduplication.
     /// </summary>
     private async Task DispatchCrashAlertEmailAsync(HttpContext context, Exception ex, string tenantKey, string path, string method)
     {
@@ -203,9 +202,8 @@ public class GlobalExceptionHandlingMiddleware
                 return;
             }
 
-            var postmarkService = context.RequestServices.GetService<IPostmarkEmailService>();
-            var smtpDispatcher = context.RequestServices.GetService<Ozikol_BCC.Infrastructure.Services.Email.ISmtpEmailDispatcher>();
-            if (smtpDispatcher == null && postmarkService == null)
+            var smtpDispatcher = context.RequestServices.GetService<ISmtpEmailDispatcher>();
+            if (smtpDispatcher == null)
             {
                 return;
             }
@@ -232,25 +230,13 @@ public class GlobalExceptionHandlingMiddleware
                 <pre>{ex.StackTrace}</pre>
                 """;
 
-            if (smtpDispatcher != null)
-            {
-                await smtpDispatcher.SendEmailAsync(
-                    toEmail: alertRecipient,
-                    subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
-                    htmlBody: body,
-                    fromEmail: "security@ozikol.cloud",
-                    fromName: "Ozikol API Crash Telemetry",
-                    isCentralPlatformEmail: true);
-            }
-            else if (postmarkService != null)
-            {
-                await postmarkService.SendHtmlEmailAsync(
-                    to: alertRecipient,
-                    subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
-                    htmlBody: body,
-                    from: "Ozikol System Check <systemcheck@ozikol.cloud>",
-                    tag: "api-crash-telemetry");
-            }
+            await smtpDispatcher.SendEmailAsync(
+                toEmail: alertRecipient,
+                subject: $"[API Crash] {ex.GetType().Name} at {method} {path}",
+                htmlBody: body,
+                fromEmail: "security@ozikol.cloud",
+                fromName: "Ozikol API Crash Telemetry",
+                isCentralPlatformEmail: true);
         }
         catch
         {

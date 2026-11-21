@@ -56,21 +56,80 @@ public static class SentryTelemetryExtensions
             options.Release = release;
 
             // 3. Telemetry parameters
-            options.TracesSampleRate = 1.0;
-            options.MaxRequestBodySize = RequestSize.Always;
+            options.TracesSampleRate = 0.2; // 20% performance trace sample rate to conserve monthly quota
+            options.MaxRequestBodySize = RequestSize.Medium;
             options.SendDefaultPii = false; // Security: do not send raw personal identifiers by default
             options.AttachStacktrace = true;
 
-            // 4. Scrub sensitive fields (passwords, tokens, API keys) from event payloads
+            // 4. Intelligent Noise Filtering & Tenant Context Enrichment
             options.SetBeforeSend((sentryEvent, hint) =>
             {
-                // Tag the originating application name
+                // A. Filter out transient network disconnects and cancelled requests
+                if (sentryEvent.Exception is OperationCanceledException or TaskCanceledException)
+                {
+                    return null; // Silently drop: does not consume Sentry quota
+                }
+
+                // B. Filter out bot probes and benign missing asset 404s
+                var path = sentryEvent.Request?.Url?.ToLowerInvariant() ?? string.Empty;
+                if (path.EndsWith(".php") ||
+                    path.Contains("wp-login") ||
+                    path.Contains("xmlrpc") ||
+                    path.Contains(".env") ||
+                    path.EndsWith("/favicon.ico") ||
+                    path.EndsWith("/robots.txt"))
+                {
+                    return null; // Silently drop bot noise
+                }
+
+                // C. Tag Origin Application
                 sentryEvent.SetTag("application", appName);
 
-                // Scrub Authorization header from request context if captured
-                if (sentryEvent.Request?.Headers != null && sentryEvent.Request.Headers.ContainsKey("Authorization"))
+                // D. Extract & Tag Tenant Origin
+                string? tenantKey = null;
+                if (sentryEvent.Request?.Headers != null)
                 {
-                    sentryEvent.Request.Headers["Authorization"] = "[SCRUBBED]";
+                    if (sentryEvent.Request.Headers.TryGetValue("X-Tenant-Key", out var headerKey) && !string.IsNullOrWhiteSpace(headerKey))
+                    {
+                        tenantKey = headerKey.Trim();
+                    }
+                    else if (sentryEvent.Request.Headers.TryGetValue("Host", out var hostVal) && !string.IsNullOrWhiteSpace(hostVal))
+                    {
+                        var hostLower = hostVal.ToLowerInvariant();
+                        var parts = hostLower.Split('.');
+                        if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+                        {
+                            tenantKey = parts[0];
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    sentryEvent.SetTag("scope", "Tenant");
+                    sentryEvent.SetTag("tenant", tenantKey.ToLowerInvariant());
+                }
+                else
+                {
+                    sentryEvent.SetTag("scope", "Central");
+                    sentryEvent.SetTag("tenant", "Platform-Central");
+                }
+
+                // E. Scrub Sensitive Headers & PII
+                if (sentryEvent.Request?.Headers != null)
+                {
+                    if (sentryEvent.Request.Headers.ContainsKey("Authorization"))
+                    {
+                        sentryEvent.Request.Headers["Authorization"] = "[SCRUBBED]";
+                    }
+                    if (sentryEvent.Request.Headers.ContainsKey("Cookie"))
+                    {
+                        sentryEvent.Request.Headers["Cookie"] = "[SCRUBBED]";
+                    }
+                    if (sentryEvent.Request.Headers.ContainsKey("X-Device-Trust-Token"))
+                    {
+                        sentryEvent.Request.Headers["X-Device-Trust-Token"] = "[SCRUBBED]";
+                    }
                 }
 
                 return sentryEvent;

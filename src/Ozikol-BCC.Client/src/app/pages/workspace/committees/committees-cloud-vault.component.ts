@@ -28,9 +28,6 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
           <span class="vault-eyebrow">{{ 'committees.eyebrow' | translate:'PEOPLE & COMMUNITY' }}</span>
           <div class="vault-title-row">
             <h1>{{ 'committees.cloud_vault' | translate:'My Connected Cloud Docs' }}</h1>
-            <button type="button" class="vault-info-btn" (click)="openInfo()">
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="vault-subtitle">
             Connect Google Docs, Google Sheets, Slides, Cloud Notebooks, or Excel Online workbooks and pin them to your {{ aliases.aliasPlural.toLowerCase() }}.

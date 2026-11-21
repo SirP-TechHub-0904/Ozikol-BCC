@@ -4621,7 +4621,7 @@
     <value>Ingresar el dominio de la organización</value>
   </data>
   <data name="Mobile_Step2_Desc" xml:space="preserve">
-    <value>En la pantalla inicial, ingrese el dominio único de su organización (ej. acme.ozikol.cloud o dominio propio) para conectarse.</value>
+    <value>En la pantalla inicial, ingrese el dominio único de su organización (ej. workspace.ozikol.cloud o dominio propio) para conectarse.</value>
   </data>
   <data name="Mobile_Step3_Title" xml:space="preserve">
     <value>Autenticarse y comenzar</value>

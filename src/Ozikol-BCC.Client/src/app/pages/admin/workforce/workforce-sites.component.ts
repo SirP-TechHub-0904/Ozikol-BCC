@@ -28,9 +28,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Client Sites &amp; Geofences</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Site &amp; Geofence Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Manage operating customer sites, GPS geofence zones, and Site Assignment Instructions (SIs).</p>
@@ -785,6 +782,35 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .site-card-actions {
       margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    .site-card-actions .btn {
+      height: 38px;
+      padding: 0 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border-radius: 10px;
+      margin: 0;
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: center;
+    }
+    .site-card-actions .btn .material-symbols-outlined {
+      font-size: 17px;
+    }
+    .site-card-actions .btn-primary {
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.22);
+    }
+    .site-card-actions .btn-outline {
+      background: #f8fafc;
+    }
+    .site-card-actions .btn-outline:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #0050e5;
     }
 
     /* CMS Table Styles */
@@ -1130,7 +1156,7 @@ export class WorkforceSitesComponent implements OnInit {
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadSites();
@@ -1144,7 +1170,7 @@ export class WorkforceSitesComponent implements OnInit {
           this.documentCategories = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 

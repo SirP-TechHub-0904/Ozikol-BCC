@@ -547,9 +547,9 @@ namespace Ozikol_BCC.Api.Controllers
             var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
             var data = new
             {
-                emailProvider = config?.EmailProvider ?? "Postmark",
-                smsProvider = config?.SmsProvider ?? "Termii",
-                enableSms = config?.EnableSms ?? true,
+                emailProvider = config?.EmailProvider ?? "Mailcow",
+                smsProvider = config?.SmsProvider ?? "Unconfigured",
+                enableSms = config?.EnableSms ?? false,
                 smsCreditBalance = config?.SmsCreditBalance ?? 0
             };
             return Ok(ApiResponse<object>.SuccessResponse(data, "Communication settings retrieved."));

@@ -1,4 +1,4 @@
-﻿using Ozikol_BCC.Application.Dtos.NotifyDtos;
+using Ozikol_BCC.Application.Dtos.NotifyDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ namespace Ozikol_BCC.Application.Repository.NotifyRegister
 {
     /// <summary>
     /// Legacy email-send abstraction for immediate mail operations.
-    /// Background queue processing should prefer ZeptoMail-specific worker contracts.
+    /// Background queue processing should prefer Mailcow SMTP worker contracts.
     /// </summary>
     public interface IEmailSendService
     {
