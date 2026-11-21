@@ -944,7 +944,7 @@ export class LoginComponent implements OnInit {
   otpCode = '';
   otpLoading = false;
   otpResendLoading = false;
-  otpResendCountdown = 60;
+  otpResendCountdown = 0;
   otpResendInterval: any = null;
   otpError = '';
 
@@ -1149,7 +1149,7 @@ export class LoginComponent implements OnInit {
         // If unconfirmed email required by policy (403), open OTP verification dialog
         if (err.status === 403 && (err?.error?.data?.requiresEmailVerification === true || (err?.error?.message || '').toLowerCase().includes('email confirmation'))) {
           this.showOtpVerifyModal = true;
-          this.onRequestNewOtp();
+          this.startOtpCountdown();
           return;
         }
 
@@ -1391,17 +1391,30 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  onRequestNewOtp(): void {
-    if (this.otpResendLoading || this.otpResendCountdown > 0) return;
+  onRequestNewOtp(force = false): void {
+    if (this.otpResendLoading) return;
+    if (!force && this.otpResendCountdown > 0) return;
+
     this.otpResendLoading = true;
-    this.api.post<any>('auth/otp/request', { email: this.email }).subscribe({
+    this.api.post<any>('auth/resend-email-otp', { email: this.email }).subscribe({
       next: () => {
         this.otpResendLoading = false;
         this.otpError = '';
         this.startOtpCountdown();
       },
       error: () => {
-        this.otpResendLoading = false;
+        // Fallback to auth/otp/request
+        this.api.post<any>('auth/otp/request', { email: this.email }).subscribe({
+          next: () => {
+            this.otpResendLoading = false;
+            this.otpError = '';
+            this.startOtpCountdown();
+          },
+          error: (err) => {
+            this.otpResendLoading = false;
+            this.otpError = err?.error?.message || 'Could not send verification code. Please try again.';
+          }
+        });
       }
     });
   }

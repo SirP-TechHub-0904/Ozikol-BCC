@@ -145,14 +145,10 @@ import {
               <span *ngIf="f.helpText" class="rf-sim-help">{{ f.helpText }}</span>
             </div>
 
-            <!-- Google reCAPTCHA Anti-Bot Protection -->
+            <!-- Google reCAPTCHA Anti-Bot Protection & Dynamic Legal Consents -->
             <div class="rf-sim-recaptcha-box">
               <div id="g-recaptcha-wf-single" class="g-recaptcha" *ngIf="recaptchaSiteKey"></div>
-              <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                <input type="checkbox" [(ngModel)]="reCaptchaChecked" style="cursor: pointer;" />
-                <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
-                <span style="font-size: 11.5px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
-              </label>
+              <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
             </div>
 
             <button type="button" class="rf-sim-btn rf-sim-btn-finish" [disabled]="isSubmitting" (click)="submitOnboarding()">
@@ -239,14 +235,10 @@ import {
               </div>
             </div>
 
-            <!-- Google reCAPTCHA Anti-Bot Protection -->
+            <!-- Google reCAPTCHA Anti-Bot Protection & Dynamic Legal Consents -->
             <div class="rf-sim-recaptcha-box">
               <div id="g-recaptcha-wf-sections" class="g-recaptcha" *ngIf="recaptchaSiteKey"></div>
-              <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                <input type="checkbox" [(ngModel)]="reCaptchaChecked" style="cursor: pointer;" />
-                <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
-                <span style="font-size: 11.5px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
-              </label>
+              <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
             </div>
 
             <button type="button" class="rf-sim-btn rf-sim-btn-finish" [disabled]="isSubmitting" (click)="submitOnboarding()">
@@ -371,14 +363,10 @@ import {
                 <div style="font-size: 11px; color: #475569;">Applicant: <strong>{{ onboardingModel.firstName }} {{ onboardingModel.lastName }}</strong></div>
                 <div style="font-size: 11px; color: #475569;">Email: <strong>{{ onboardingModel.email }}</strong></div>
               </div>
-              <!-- Google reCAPTCHA Anti-Bot Protection -->
+              <!-- Google reCAPTCHA Anti-Bot Protection & Dynamic Legal Consents -->
               <div class="rf-sim-recaptcha-box">
                 <div id="g-recaptcha-wf-stepper" class="g-recaptcha" *ngIf="recaptchaSiteKey"></div>
-                <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                  <input type="checkbox" [(ngModel)]="reCaptchaChecked" style="cursor: pointer;" />
-                  <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
-                  <span style="font-size: 11.5px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
-                </label>
+                <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
               </div>
               <div class="rf-sim-nav-row">
                 <button type="button" class="rf-sim-btn-sub" (click)="simStep = (fields.length > 0 ? 3 : 2)">
@@ -480,14 +468,10 @@ import {
                 <div style="font-size: 11px; color: #475569;">Email: <strong>{{ onboardingModel.email }}</strong></div>
                 <div style="font-size: 11px; color: #64748b;">Ready for submission verification.</div>
               </div>
-              <!-- Google reCAPTCHA Anti-Bot Protection -->
+              <!-- Google reCAPTCHA Anti-Bot Protection & Dynamic Legal Consents -->
               <div class="rf-sim-recaptcha-box">
                 <div id="g-recaptcha-wf-pages" class="g-recaptcha" *ngIf="recaptchaSiteKey"></div>
-                <label class="rf-sim-recaptcha-check" style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                  <input type="checkbox" [(ngModel)]="reCaptchaChecked" style="cursor: pointer;" />
-                  <span class="material-symbols-outlined rf-recaptcha-shield">verified_user</span>
-                  <span style="font-size: 11.5px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
-                </label>
+                <ng-container *ngTemplateOutlet="legalConsentsBlock"></ng-container>
               </div>
               <div class="rf-sim-nav-row">
                 <button type="button" class="rf-sim-btn-sub" (click)="simStep = 2">
@@ -503,6 +487,37 @@ import {
           </div>
         </div>
       </div>
+
+      <!-- Dynamic Legal & Terms Consent Checkboxes from Registration Form Builder -->
+      <ng-template #legalConsentsBlock>
+        <div *ngIf="activeLegalConsents.length > 0" class="rf-sim-legal-consents" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+          <label *ngFor="let item of activeLegalConsents"
+                 class="rf-sim-legal-check"
+                 style="cursor: pointer; display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #334155; line-height: 1.45;">
+            <input type="checkbox"
+                   [(ngModel)]="acceptedConsents[item.id]"
+                   style="margin-top: 3px; cursor: pointer;" />
+            <span>
+              {{ item.label }}
+              <ng-container *ngFor="let lnk of getConsentLinks(item); let ki = index; let last = last">
+                <span *ngIf="ki > 0">{{ last ? ' and ' : ', ' }}</span>
+                <a *ngIf="lnk.linkText"
+                   [href]="getLegalConsentHref(lnk)"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   (click)="$event.stopPropagation()"
+                   style="color: #0050e5; font-weight: 600; text-decoration: underline;">
+                  {{ lnk.linkText }}
+                </a>
+              </ng-container>
+              <span *ngIf="item.isRequired" style="color: #ef4444; font-weight: 700; margin-left: 2px;">*</span>
+            </span>
+          </label>
+        </div>
+        <p *ngIf="activeLegalConsents.length === 0" class="rf-sim-terms-fallback" style="font-size: 11px; color: #64748b; margin: 8px 0 0; line-height: 1.4;">
+          By completing registration, you agree to our workspace terms of service, privacy statement, and workforce policies.
+        </p>
+      </ng-template>
     </div>
     </ng-template>
   `,
@@ -861,6 +876,7 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   selectedCategoryId: string | null = null;
   recaptchaSiteKey = '';
   reCaptchaChecked = false;
+  acceptedConsents: { [id: string]: boolean } = {};
 
   policy = {
     registrationFormTitle: 'Create Your Account',
@@ -871,8 +887,40 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     isFormDisabled: false,
     unpublishedCoreFields: [] as string[],
     deletedCoreFields: [] as string[],
-    customSections: [] as string[]
+    customSections: [] as string[],
+    legalConsents: [] as any[]
   };
+
+  /** Active legal consent rules configured in Registration Form Builder */
+  get activeLegalConsents(): any[] {
+    const list = this.policy.legalConsents || [];
+    return Array.isArray(list) ? list.filter((c: any) => c && c.isActive !== false) : [];
+  }
+
+  /** Normalizes the list of links for a consent rule (supports multi-link and legacy single-link items) */
+  getConsentLinks(item: any): any[] {
+    if (!item) return [];
+    if (Array.isArray(item.links) && item.links.length > 0) {
+      return item.links;
+    }
+    return [{
+      linkText: item.linkText || item.label || 'Terms & Conditions',
+      pageId: item.pageId || null,
+      pageSlug: item.pageSlug || null,
+      customUrl: item.customUrl || null
+    }];
+  }
+
+  /** Resolves public link href for CMS legal pages or custom URLs */
+  getLegalConsentHref(item: any): string {
+    if (item?.customUrl && String(item.customUrl).trim()) {
+      return String(item.customUrl).trim();
+    }
+    if (item?.pageSlug && item.pageSlug !== '__custom__') {
+      return '/p/' + String(item.pageSlug).replace(/^\/+/, '');
+    }
+    return '#';
+  }
   fields: any[] = [];
   categories: any[] = [];
   customAttributes: { [key: string]: any } = {};
@@ -973,6 +1021,7 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
           this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
+          this.policy.legalConsents = schema.legalConsents || [];
           this.recaptchaSiteKey = schema.recaptchaSiteKey || '';
           this.categories = schema.categories || [];
           this.initRecaptcha();
@@ -1107,6 +1156,12 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
     const widgetToken = grecaptcha && typeof grecaptcha.getResponse === 'function' ? grecaptcha.getResponse() : '';
     if (!this.reCaptchaChecked && !widgetToken) {
       this.toast.warning('Please complete the Google reCAPTCHA anti-bot verification before submitting.');
+      return;
+    }
+
+    const missingConsent = this.activeLegalConsents.find(c => c.isRequired && !this.acceptedConsents[c.id]);
+    if (missingConsent) {
+      this.toast.warning(`Please accept "${missingConsent.linkText || missingConsent.label || 'Terms & Conditions'}" before continuing.`);
       return;
     }
 

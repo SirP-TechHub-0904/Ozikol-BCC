@@ -369,6 +369,10 @@ export class WorkforceService {
     return this.apiService.post<any>('workforce/members/enroll', member);
   }
 
+  getAvailableUsers(): Observable<any> {
+    return this.apiService.get<any>('workforce/members/available-users');
+  }
+
   getMembers(): Observable<any> {
     return this.apiService.get<any>('workforce/members');
   }

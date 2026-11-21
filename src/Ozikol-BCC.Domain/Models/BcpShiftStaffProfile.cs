@@ -69,10 +69,10 @@ namespace Ozikol_BCC.Domain.Models
         public decimal? ContractedWeeklyHours { get; set; }
 
         /// <summary>
-        /// Cumulative average performance rating calculated from supervisor post-shift reviews (scale 1.0 to 5.0).
+        /// Cumulative average performance rating calculated from supervisor post-shift reviews (scale 1.0 to 5.0, 0 = unrated).
         /// </summary>
         [Column(TypeName = "decimal(3,2)")]
-        public decimal AverageRating { get; set; } = 5.0m;
+        public decimal AverageRating { get; set; } = 0m;
 
         /// <summary>
         /// Total number of post-shift ratings submitted for this staff member.

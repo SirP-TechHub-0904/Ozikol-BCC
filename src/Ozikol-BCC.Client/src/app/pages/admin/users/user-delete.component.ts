@@ -45,10 +45,14 @@ import { ToastService } from '../../../core/services/toast.service';
       <!-- Policy Warning Banner if User Deletion is Disabled -->
       <div *ngIf="policyDisabled && !loading" class="alert-banner warning">
         <span class="material-symbols-outlined">gpp_maybe</span>
-        <div>
+        <div style="flex: 1;">
           <strong>User Deletion Disabled in System Settings:</strong>
-          <span> Administrator user deletion is currently locked by organization security policies. You must enable "Allow Administrator User Account Deletion" in <a routerLink="/settings/console/general" style="color:inherit; text-decoration:underline; font-weight:800;">System Settings</a> to proceed.</span>
+          <span> Administrator user deletion is currently locked by organization security policies. You can enable it below or in <a routerLink="/users/console/settings" style="color:inherit; text-decoration:underline; font-weight:800;">User Settings</a> to proceed.</span>
         </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="enablePolicyNow()" [disabled]="enablingPolicy">
+          <span class="material-symbols-outlined fs-6">{{ enablingPolicy ? 'hourglass_top' : 'lock_open' }}</span>
+          <span>{{ enablingPolicy ? 'Enabling...' : 'Enable Deletion Policy' }}</span>
+        </button>
       </div>
 
       <!-- Error State -->
@@ -80,11 +84,11 @@ import { ToastService } from '../../../core/services/toast.service';
 
               <div class="meta-row">
                 <span class="meta-pill id-pill">Member ID: {{ user.memberId || 'None' }}</span>
-                <span class="meta-pill role-pill">{{ user.role || 'Member' }}</span>
-                <span class="meta-pill" [ngClass]="user.isActive ? 'active' : 'suspended'">
-                  {{ user.isActive ? 'Active Account' : 'Suspended' }}
+                <span class="meta-pill role-pill">{{ (user.roles && user.roles[0]) || user.role || 'Member' }}</span>
+                <span class="meta-pill" [ngClass]="user.userStatus === 'Active' ? 'active' : (user.userStatus === 'Suspended' ? 'suspended' : 'pending')">
+                  {{ user.userStatus || 'Active' }} Account
                 </span>
-                <span class="meta-date">Joined: {{ user.createdAt | date:'mediumDate' }}</span>
+                <span class="meta-date">Joined: {{ (user.joinDate || user.createdAt) | date:'mediumDate' }}</span>
               </div>
             </div>
           </div>
@@ -99,22 +103,22 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <ul class="consequences-list">
             <li>
-              <strong>Credential & Session Invalidation:</strong> All active login tokens, sessions, MFA authenticators, and password credentials will be immediately wiped.
+              <strong>Immediate Credential & Session Invalidation:</strong> All active login tokens, device sessions, and OAuth credentials will be revoked immediately.
             </li>
             <li>
-              <strong>KPI Evaluation & Performance History:</strong> All historical evaluation ratings, score logs, and metric submissions recorded for this member will be permanently detached and purged.
+              <strong>Compliance & Audit Archive:</strong> Under fintech soft-delete standards, financial transactions, shift timesheets, and audit records remain intact for compliance while the profile is sealed.
             </li>
             <li>
-              <strong>User Notes & Administrative Logs:</strong> All confidential administrative notes, warnings, and dossier flags attached to this profile will be erased.
+              <strong>Directory & Workforce Removal:</strong> The member is permanently excluded from active member directories, shift allocations, open bidding, and portal access.
             </li>
             <li>
-              <strong>Irreversible Data Loss:</strong> This member account cannot be recovered or restored after deletion.
+              <strong>Permanent Account Lockout:</strong> This member account is placed under permanent security lockout and cannot be used for portal access.
             </li>
           </ul>
         </div>
 
         <!-- Suspend-First Enforcement Banner if Account is Still Active -->
-        <div *ngIf="user && user.userStatus !== 'Suspended' && !loading" class="alert-banner warning">
+        <div *ngIf="user && user.userStatus === 'Active' && !loading" class="alert-banner warning">
           <span class="material-symbols-outlined">shield_person</span>
           <div style="flex: 1;">
             <strong>Account Must Be Suspended First:</strong>
@@ -165,10 +169,10 @@ import { ToastService } from '../../../core/services/toast.service';
               type="button"
               class="btn btn-danger"
               (click)="executeDelete()"
-              [disabled]="!isNameMatched() || deleting || (user && user.userStatus !== 'Suspended')"
+              [disabled]="!isNameMatched() || deleting || (user && user.userStatus === 'Active')"
             >
               <span class="material-symbols-outlined">{{ deleting ? 'hourglass_top' : 'person_remove' }}</span>
-              <span>{{ user && user.userStatus !== 'Suspended' ? 'Suspend Account First to Delete' : (deleting ? 'Archiving Account...' : 'I understand the consequences, delete this user permanently') }}</span>
+              <span>{{ user && user.userStatus === 'Active' ? 'Suspend Account First to Delete' : (deleting ? 'Archiving Account...' : 'I understand the consequences, delete this user permanently') }}</span>
             </button>
           </div>
         </div>
@@ -433,6 +437,7 @@ export class UserDeleteComponent implements OnInit {
   deleting = false;
   suspending = false;
   policyDisabled = false;
+  enablingPolicy = false;
   confirmationInput = '';
   errorMsg = '';
 
@@ -449,7 +454,7 @@ export class UserDeleteComponent implements OnInit {
   suspendUserFirst(): void {
     if (!this.userId) return;
     this.suspending = true;
-    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: false }).subscribe({
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: false, status: 'Suspended' }).subscribe({
       next: () => {
         this.suspending = false;
         if (this.user) {
@@ -461,6 +466,21 @@ export class UserDeleteComponent implements OnInit {
       error: (err) => {
         this.suspending = false;
         this.toast.error(err?.error?.message || 'Failed to suspend account.');
+      }
+    });
+  }
+
+  enablePolicyNow(): void {
+    this.enablingPolicy = true;
+    this.api.put<any>('UsersApi/member-id-config', { enableUserDeletion: true }).subscribe({
+      next: () => {
+        this.enablingPolicy = false;
+        this.policyDisabled = false;
+        this.toast.success('User deletion policy enabled. You may now proceed with account archiving.');
+      },
+      error: (err) => {
+        this.enablingPolicy = false;
+        this.toast.error(err?.error?.message || 'Failed to enable deletion policy.');
       }
     });
   }

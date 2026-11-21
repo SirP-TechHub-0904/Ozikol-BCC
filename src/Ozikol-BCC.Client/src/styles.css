@@ -3521,3 +3521,55 @@ body.dark-mode .summary-item strong {
   }
 }
 
+/* ==========================================================================
+   UNIVERSAL SELECT & FORM INPUT THEME CONTRAST (LIGHT & DARK MODE)
+   ========================================================================== */
+select,
+select.form-control,
+.form-select {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+select option,
+select.form-control option,
+.form-select option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+body.dark-mode select,
+body.dark-mode select.form-control,
+body.dark-mode .form-select,
+body.dark-mode input.form-control,
+body.dark-mode textarea.form-control,
+body.dark-mode .form-control {
+  color: #f8fafc !important;
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode select option,
+body.dark-mode select.form-control option,
+body.dark-mode .form-select option {
+  color: #f8fafc !important;
+  background-color: #1e293b !important;
+}
+
+body.dark-mode select:focus,
+body.dark-mode .form-control:focus {
+  border-color: #0050e5 !important;
+  box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.25) !important;
+}
+
+body.dark-mode .form-label,
+body.dark-mode label {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .field-hint,
+body.dark-mode .form-text {
+  color: #94a3b8 !important;
+}
+
+

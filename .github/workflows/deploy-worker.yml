@@ -70,6 +70,8 @@ jobs:
                 ln -sf /var/www/ozikol-api/.env /var/www/ozikol-worker/.env
               fi
             fi
+            sed -i 's/Ozikol-BCC\.Worker\.dll/Ozikol-BCC.Worker.Mailcow.dll/g' /etc/systemd/system/ozikol-worker.service
+            systemctl daemon-reload
             systemctl restart ozikol-worker
             sleep 2
             systemctl is-active --quiet ozikol-worker && echo "ozikol-worker deployed successfully and active." || (journalctl -u ozikol-worker -n 20 --no-pager && exit 1)

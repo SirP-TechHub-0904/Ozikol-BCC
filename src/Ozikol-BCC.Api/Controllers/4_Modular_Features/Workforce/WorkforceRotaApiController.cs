@@ -21,6 +21,7 @@ using Ozikol_BCC.Api.Authorization;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Common;
+using Ozikol_BCC.Application.Services;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -41,6 +42,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ITenantProvider? _tenantProvider;
         private readonly ITenantFeatureGateService? _featureGateService;
         private readonly UserManager<Profile>? _userManager;
+        private readonly IMemberIdGeneratorService? _memberIdGenerator;
 
         /// <summary>
         /// In-memory single-use invitation registry ensuring resilient one-time token tracking.
@@ -69,7 +71,8 @@ namespace Ozikol_BCC.Api.Controllers
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ITenantProvider? tenantProvider = null,
             ITenantFeatureGateService? featureGateService = null,
-            UserManager<Profile>? userManager = null)
+            UserManager<Profile>? userManager = null,
+            IMemberIdGeneratorService? memberIdGenerator = null)
         {
             _db = db;
             _master = master;
@@ -77,6 +80,93 @@ namespace Ozikol_BCC.Api.Controllers
             _tenantProvider = tenantProvider;
             _featureGateService = featureGateService;
             _userManager = userManager;
+            _memberIdGenerator = memberIdGenerator;
+        }
+
+        /// <summary>
+        /// Dynamically resolves the designated operational job role for the current tenant from database.
+        /// Avoids static hardcoded titles and ensures industry-specific role alignment (e.g. Security, Care, Hospitality).
+        /// </summary>
+        private async Task<string> ResolveTenantJobRoleAsync(string? requestedTitle, CancellationToken ct = default)
+        {
+            if (!string.IsNullOrWhiteSpace(requestedTitle) && requestedTitle.Trim().ToLowerInvariant() != "undefined")
+            {
+                return requestedTitle.Trim();
+            }
+
+            var tenantRole = await _db.BcpJobRoles.AsNoTracking()
+                .Where(r => (r.TenantKey == CurrentTenantKey || r.TenantKey == "default") && r.IsActive)
+                .OrderBy(r => r.SortOrder)
+                .FirstOrDefaultAsync(ct);
+
+            return tenantRole?.Title ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Dynamically resolves the staff employment classification from the tenant's configured types in database.
+        /// Avoids static hardcoding and supports custom business classifications (e.g. Full-Time, Zero-Hours, Subcontractor).
+        /// </summary>
+        private async Task<(Guid? StaffTypeId, string StaffTypeName)> ResolveTenantStaffTypeAsync(Guid? requestedTypeId, string? requestedTypeName, CancellationToken ct = default)
+        {
+            if (requestedTypeId.HasValue)
+            {
+                var matchedById = await _db.BcpStaffTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.Id == requestedTypeId.Value, ct);
+                if (matchedById != null)
+                {
+                    return (matchedById.Id, matchedById.Name);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(requestedTypeName) && requestedTypeName.Trim().ToLowerInvariant() != "undefined")
+            {
+                var cleanName = requestedTypeName.Trim().ToLowerInvariant();
+                var matchedByName = await _db.BcpStaffTypes.AsNoTracking()
+                    .FirstOrDefaultAsync(t => (t.TenantKey == CurrentTenantKey || t.TenantKey == "default") && t.Name.ToLower() == cleanName, ct);
+                if (matchedByName != null)
+                {
+                    return (matchedByName.Id, matchedByName.Name);
+                }
+                return (null, requestedTypeName.Trim());
+            }
+
+            var defaultType = await _db.BcpStaffTypes.AsNoTracking()
+                .Where(t => t.TenantKey == CurrentTenantKey || t.TenantKey == "default")
+                .OrderBy(t => t.Name)
+                .FirstOrDefaultAsync(ct);
+
+            return (defaultType?.Id, defaultType?.Name ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Generates a standardized, tenant-branded Member ID using the configured Brand Setting pattern.
+        /// </summary>
+        private async Task<string> GenerateTenantMemberIdAsync(string firstName, string lastName, string? jobTitle)
+        {
+            if (_memberIdGenerator != null)
+            {
+                try
+                {
+                    var id = await _memberIdGenerator.GenerateMemberIdAsync(firstName, lastName, jobTitle);
+                    if (!string.IsNullOrWhiteSpace(id)) return id;
+                }
+                catch
+                {
+                    // Fallback to random alphanumeric token below
+                }
+            }
+
+            var fInitial = !string.IsNullOrWhiteSpace(firstName) ? firstName[..1].ToUpperInvariant() : "M";
+            var lInitial = !string.IsNullOrWhiteSpace(lastName) ? lastName[..1].ToUpperInvariant() : "B";
+            return $"{fInitial}{lInitial}-{RandomNumberGenerator.GetInt32(1000, 9999)}";
+        }
+
+        /// <summary>
+        /// Generates a secure, cryptographically random temporary password with standard complexity (no arbitrary brand names).
+        /// </summary>
+        private static string GenerateSecureTemporaryPassword()
+        {
+            return $"Temp#{RandomNumberGenerator.GetInt32(100000, 999999)}!Aa";
         }
 
         private string CurrentTenantKey => ResolveCurrentTenantKey();
@@ -146,6 +236,41 @@ namespace Ozikol_BCC.Api.Controllers
                 return parts[0];
             }
             return "default";
+        }
+
+        /// <summary>
+        /// Dynamically hydrates AssignedUserName directly from the central AspNetUsers identity table,
+        /// resolving active member names or 'Archived Staff' for soft-deleted accounts (Single Source of Truth).
+        /// </summary>
+        private async Task HydrateShiftUserNamesAsync(IEnumerable<ShiftDto> shiftDtos, CancellationToken ct = default)
+        {
+            var userIds = shiftDtos
+                .Where(s => !string.IsNullOrWhiteSpace(s.AssignedUserId))
+                .Select(s => s.AssignedUserId!)
+                .Distinct()
+                .ToList();
+
+            if (userIds.Count == 0) return;
+
+            var userMap = await _db.Users.IgnoreQueryFilters()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.IsDeleted }, ct);
+
+            foreach (var s in shiftDtos)
+            {
+                if (string.IsNullOrWhiteSpace(s.AssignedUserId))
+                {
+                    s.AssignedUserName = null;
+                }
+                else if (userMap.TryGetValue(s.AssignedUserId, out var u))
+                {
+                    s.AssignedUserName = u.IsDeleted ? "Archived Staff" : (u.FullName ?? "Staff Member");
+                }
+                else
+                {
+                    s.AssignedUserName = "Archived Staff";
+                }
+            }
         }
 
         private async Task<string> ResolveTenantCompanyNameAsync(CancellationToken ct)
@@ -497,6 +622,8 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync(ct);
 
+            await HydrateShiftUserNamesAsync(shifts, ct);
+
             var roster = shifts
                 .Where(s => !string.IsNullOrWhiteSpace(s.AssignedUserId))
                 .GroupBy(s => s.AssignedUserId!)
@@ -839,6 +966,8 @@ namespace Ozikol_BCC.Api.Controllers
                     SupervisorApproved = s.AttendanceRecord != null && s.AttendanceRecord.SupervisorApproved
                 })
                 .ToListAsync(ct);
+
+            await HydrateShiftUserNamesAsync(shifts, ct);
 
             return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(shifts, "Shifts retrieved successfully."));
         }
@@ -1229,6 +1358,8 @@ namespace Ozikol_BCC.Api.Controllers
                 SupervisorNotes = s.AttendanceRecord?.SupervisorNotes,
                 SupervisorApproved = s.AttendanceRecord?.SupervisorApproved ?? false
             };
+
+            await HydrateShiftUserNamesAsync(new[] { dto }, ct);
 
             return Ok(ApiResponse<ShiftDto>.SuccessResponse(dto, "Shift details retrieved successfully."));
         }
@@ -1759,6 +1890,62 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         /// <summary>
+        /// Retrieves directory members from User Manager who are eligible to be enrolled into Workforce shifts
+        /// (active/pending members who are not administrators and not already enrolled in workforce).
+        /// </summary>
+        [HttpGet("members/available-users")]
+        public async Task<ActionResult<ApiResponse<List<AvailableWorkforceMemberDto>>>> GetAvailableWorkforceMembers(CancellationToken ct)
+        {
+            var currentTenant = (CurrentTenantKey ?? "default").Trim().ToLowerInvariant();
+
+            // 1. Identify enrolled active staff user IDs in the current tenant
+            var enrolledUserIds = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Where(p => (p.TenantKey.ToLower() == currentTenant || p.TenantKey == "default" || string.IsNullOrEmpty(p.TenantKey)) && p.IsActive)
+                .Select(p => p.UserId)
+                .ToListAsync(ct);
+            var enrolledSet = enrolledUserIds.ToHashSet();
+
+            // 2. Discover Admin & SuperAdmin user IDs to strictly exclude administrators
+            var adminRoleIds = await _db.Roles
+                .AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            var adminUserIds = await _db.UserRoles
+                .AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+            var adminUserIdSet = adminUserIds.ToHashSet();
+
+            // 3. Query directory users from User Manager
+            var availableUsers = await _db.Users
+                .AsNoTracking()
+                .Where(u => !enrolledSet.Contains(u.Id) &&
+                            !adminUserIdSet.Contains(u.Id) &&
+                            !u.IsDeleted &&
+                            u.UserStatus != UserStatus.Deleted)
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .Select(u => new AvailableWorkforceMemberDto
+                {
+                    UserId = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email ?? string.Empty,
+                    PhoneNumber = u.PhoneNumber,
+                    MemberId = u.MemberId,
+                    AvatarUrl = u.AvatarUrl,
+                    Designation = u.Designation,
+                    UserStatus = u.UserStatus.ToString()
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<AvailableWorkforceMemberDto>>.SuccessResponse(availableUsers, "Available directory members retrieved successfully."));
+        }
+
+        /// <summary>
         /// Enrolls a staff member into the workforce rota system, configuring their job title,
         /// contracted hours, default hourly rate, and triggers a transactional onboarding email.
         /// </summary>
@@ -1786,7 +1973,16 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.BcpShiftStaffProfiles.Add(profile);
             }
 
-            profile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
+            var resolvedJobTitle = !string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined"
+                ? request.JobTitle.Trim()
+                : await ResolveTenantJobRoleAsync(null, ct);
+            var (resolvedStaffTypeId, resolvedStaffTypeName) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
+
+            profile.JobTitle = resolvedJobTitle;
+            profile.StaffTypeId = request.StaffTypeId ?? resolvedStaffTypeId;
+            profile.StaffTypeName = !string.IsNullOrWhiteSpace(request.StaffTypeName) && request.StaffTypeName.ToLowerInvariant() != "undefined"
+                ? request.StaffTypeName.Trim()
+                : resolvedStaffTypeName;
             profile.DefaultHourlyRate = request.DefaultHourlyRate;
             profile.ContractedWeeklyHours = request.ContractedWeeklyHours;
             if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) profile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
@@ -2009,6 +2205,103 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.Entry(invitationRecord).State = EntityState.Detached;
             }
 
+            // Provision staff identity account (Pending Onboarding) and BcpShiftStaffProfile immediately
+            // so the invited member is visible in the Staff Directory roster right away with a 'Pending Onboarding' badge.
+            // Dynamically resolve tenant-configured operational job role and staff classification (Zero Hardcoding)
+            var cleanInviteJobTitle = await ResolveTenantJobRoleAsync(request.JobTitle, ct);
+            var (resolvedStaffTypeId, cleanInviteStaffType) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
+
+            Profile? invitedUser = null;
+            if (_userManager != null)
+            {
+                invitedUser = await _userManager.FindByEmailAsync(email);
+            }
+            else
+            {
+                invitedUser = await _db.Users.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email, ct);
+            }
+
+            if (invitedUser == null)
+            {
+                var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var firstName = nameParts.Length > 0 ? nameParts[0] : fullName;
+                var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+                var tempPassword = GenerateSecureTemporaryPassword();
+                var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, cleanInviteJobTitle);
+
+                invitedUser = new Profile
+                {
+                    Id = Guid.CreateVersion7().ToString(),
+                    UserName = email,
+                    Email = email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    PhoneNumber = phoneNumber,
+                    MemberId = memberId,
+                    Designation = cleanInviteJobTitle,
+                    UserStatus = UserStatus.Pending,
+                    EmailConfirmed = false,
+                    MustChangePassword = true,
+                    JoinDate = DateTime.UtcNow
+                };
+
+                if (_userManager != null)
+                {
+                    await _userManager.CreateAsync(invitedUser, tempPassword);
+                }
+                else
+                {
+                    _db.Users.Add(invitedUser);
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+
+            var invitedStaffProfile = await _db.BcpShiftStaffProfiles
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == invitedUser.Id, ct);
+
+            if (invitedStaffProfile == null)
+            {
+                invitedStaffProfile = new BcpShiftStaffProfile
+                {
+                    Id = Guid.CreateVersion7(),
+                    TenantKey = CurrentTenantKey,
+                    UserId = invitedUser.Id,
+                    JobTitle = cleanInviteJobTitle,
+                    StaffTypeId = resolvedStaffTypeId,
+                    StaffTypeName = cleanInviteStaffType,
+                    DefaultHourlyRate = request.DefaultHourlyRate ?? 0,
+                    ContractedWeeklyHours = request.ContractedWeeklyHours ?? 0,
+                    WorkingAvailability = "Pending Onboarding",
+                    PreferredWorkingTime = "Any",
+                    IsActive = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    AverageRating = 0m,
+                    TotalRatingsCount = 0,
+                    PunctualityScorePercent = 100
+                };
+                _db.BcpShiftStaffProfiles.Add(invitedStaffProfile);
+            }
+            else
+            {
+                invitedStaffProfile.JobTitle = cleanInviteJobTitle;
+                if (resolvedStaffTypeId.HasValue) invitedStaffProfile.StaffTypeId = resolvedStaffTypeId;
+                invitedStaffProfile.StaffTypeName = cleanInviteStaffType;
+                if (request.DefaultHourlyRate.HasValue) invitedStaffProfile.DefaultHourlyRate = request.DefaultHourlyRate.Value;
+                if (request.ContractedWeeklyHours.HasValue) invitedStaffProfile.ContractedWeeklyHours = request.ContractedWeeklyHours.Value;
+                invitedStaffProfile.WorkingAvailability = "Pending Onboarding";
+                invitedStaffProfile.IsActive = true;
+                invitedStaffProfile.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch
+            {
+                // Non-blocking fallback
+            }
+
             var onboardingUrl = $"/workforce/onboarding/{token}";
 
             // Resolve full client origin for clickable external email link
@@ -2119,17 +2412,46 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var cleanEmail = email.Trim().ToLowerInvariant();
+            var normalizedEmail = cleanEmail.ToUpperInvariant();
+
+            // Look up existing user across all records (including soft-deleted)
+            var existingUser = await _db.Users.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => (u.Email != null && u.Email.ToLower() == cleanEmail) || u.NormalizedUserName == normalizedEmail, ct);
+
             Profile? user = null;
-            if (_userManager != null)
+            string userId;
+
+            // Prepare custom attributes dictionary
+            var customAttrs = new Dictionary<string, object>();
+            if (request.CustomAttributes != null)
             {
-                user = await _userManager.FindByEmailAsync(email);
+                foreach (var kv in request.CustomAttributes)
+                {
+                    customAttrs[kv.Key] = kv.Value;
+                }
             }
-            else
+            if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
             {
-                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+                customAttrs["emergencyContact"] = new
+                {
+                    name = request.EmergencyContactName?.Trim(),
+                    relationship = request.EmergencyContactRelationship?.Trim(),
+                    phone = request.EmergencyContactPhone?.Trim()
+                };
+            }
+            if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
+            {
+                customAttrs["bankDetails"] = new
+                {
+                    bankName = request.BankName?.Trim(),
+                    accountHolder = request.AccountHolderName?.Trim() ?? fullName,
+                    sortCode = request.SortCode?.Trim(),
+                    accountNumber = request.AccountNumber?.Trim(),
+                    nationalInsurance = request.NationalInsuranceNumber?.Trim()
+                };
             }
 
-            string userId;
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
                 var phone = request.PhoneNumber.Trim();
@@ -2141,7 +2463,7 @@ namespace Ozikol_BCC.Api.Controllers
                     (u.PhoneNumber == phone ||
                      u.PhoneNumber == normalizedPhone ||
                      (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits)))
-                    && (user == null || u.Id != user.Id), ct);
+                    && (existingUser == null || u.Id != existingUser.Id), ct);
 
                 if (phoneExists)
                 {
@@ -2151,50 +2473,31 @@ namespace Ozikol_BCC.Api.Controllers
                 request.PhoneNumber = normalizedPhone;
             }
 
-            if (user == null)
+            // Dynamically resolve tenant-configured operational job role and staff classification (Zero Hardcoding)
+            var cleanEnrollJobTitle = await ResolveTenantJobRoleAsync(request.JobTitle, ct);
+            var (resolvedStaffTypeId, cleanEnrollStaffType) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
+
+            if (existingUser != null)
+            {
+                user = existingUser;
+                userId = existingUser.Id;
+            }
+            else
             {
                 userId = Guid.CreateVersion7().ToString();
-                var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? $"Ozi@{Guid.NewGuid().ToString("N")[..6]}!" : request.Password;
-
-                var customAttrs = new Dictionary<string, object>();
-                if (request.CustomAttributes != null)
-                {
-                    foreach (var kv in request.CustomAttributes)
-                    {
-                        customAttrs[kv.Key] = kv.Value;
-                    }
-                }
-                if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
-                {
-                    customAttrs["emergencyContact"] = new
-                    {
-                        name = request.EmergencyContactName?.Trim(),
-                        relationship = request.EmergencyContactRelationship?.Trim(),
-                        phone = request.EmergencyContactPhone?.Trim()
-                    };
-                }
-                if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
-                {
-                    customAttrs["bankDetails"] = new
-                    {
-                        bankName = request.BankName?.Trim(),
-                        accountHolder = request.AccountHolderName?.Trim() ?? fullName,
-                        sortCode = request.SortCode?.Trim(),
-                        accountNumber = request.AccountNumber?.Trim(),
-                        nationalInsurance = request.NationalInsuranceNumber?.Trim()
-                    };
-                }
+                var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? GenerateSecureTemporaryPassword() : request.Password;
+                var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, cleanEnrollJobTitle);
 
                 user = new Profile
                 {
                     Id = userId,
-                    UserName = email,
-                    Email = email,
+                    UserName = cleanEmail,
+                    Email = cleanEmail,
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = request.PhoneNumber?.Trim(),
-                    MemberId = $"WRK-{new Random().Next(1000, 9999)}",
-                    Designation = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim(),
+                    MemberId = memberId,
+                    Designation = cleanEnrollJobTitle,
                     UserStatus = UserStatus.Active,
                     EmailConfirmed = true,
                     MustChangePassword = request.MustChangePassword,
@@ -2217,10 +2520,6 @@ namespace Ozikol_BCC.Api.Controllers
                     await _db.SaveChangesAsync(ct);
                 }
             }
-            else
-            {
-                userId = user.Id;
-            }
 
             // Provision or update BcpShiftStaffProfile
             var staffProfile = await _db.BcpShiftStaffProfiles
@@ -2238,9 +2537,9 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.BcpShiftStaffProfiles.Add(staffProfile);
             }
 
-            staffProfile.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim();
-            staffProfile.StaffTypeId = request.StaffTypeId;
-            staffProfile.StaffTypeName = !string.IsNullOrWhiteSpace(request.StaffTypeName) ? request.StaffTypeName.Trim() : "Permanent";
+            staffProfile.JobTitle = cleanEnrollJobTitle;
+            staffProfile.StaffTypeId = resolvedStaffTypeId;
+            staffProfile.StaffTypeName = cleanEnrollStaffType;
             staffProfile.DefaultHourlyRate = request.DefaultHourlyRate;
             staffProfile.ContractedWeeklyHours = request.ContractedWeeklyHours;
             if (!string.IsNullOrWhiteSpace(request.PreferredWorkingTime)) staffProfile.PreferredWorkingTime = request.PreferredWorkingTime.Trim();
@@ -2555,8 +2854,17 @@ namespace Ozikol_BCC.Api.Controllers
                 request.PhoneNumber = normalizedPhone;
             }
 
+            var resolvedOnboardingJobTitle = !string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined"
+                ? request.JobTitle.Trim()
+                : await ResolveTenantJobRoleAsync(tenantKey, ct);
+            var (defaultStaffTypeId, defaultStaffTypeName) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
+            var resolvedOnboardingStaffType = !string.IsNullOrWhiteSpace(request.StaffTypeName) && request.StaffTypeName.Trim().ToLowerInvariant() != "undefined"
+                ? request.StaffTypeName.Trim()
+                : defaultStaffTypeName;
+
             if (user == null)
             {
+                var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, resolvedOnboardingJobTitle);
                 user = new Profile
                 {
                     Id = Guid.CreateVersion7().ToString(),
@@ -2565,8 +2873,8 @@ namespace Ozikol_BCC.Api.Controllers
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = request.PhoneNumber?.Trim(),
-                    MemberId = $"WRK-{new Random().Next(1000, 9999)}",
-                    Designation = string.IsNullOrWhiteSpace(request.JobTitle) ? "Staff Member" : request.JobTitle.Trim(),
+                    MemberId = memberId,
+                    Designation = resolvedOnboardingJobTitle,
                     UserStatus = UserStatus.Active,
                     EmailConfirmed = true,
                     MustChangePassword = false,
@@ -2595,6 +2903,8 @@ namespace Ozikol_BCC.Api.Controllers
                 user.LastName = !string.IsNullOrWhiteSpace(lastName) ? lastName : user.LastName;
                 user.PhoneNumber = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : user.PhoneNumber;
                 user.CustomAttributesJson = customAttrs.Count > 0 ? JsonSerializer.Serialize(customAttrs) : user.CustomAttributesJson;
+                user.UserStatus = UserStatus.Active;
+                user.EmailConfirmed = true;
                 user.MustChangePassword = false;
 
                 if (_userManager != null)
@@ -2625,18 +2935,12 @@ namespace Ozikol_BCC.Api.Controllers
                 _db.BcpShiftStaffProfiles.Add(staffProfile);
             }
 
-            if (!string.IsNullOrWhiteSpace(request.JobTitle))
-            {
-                staffProfile.JobTitle = request.JobTitle.Trim();
-            }
-            if (request.StaffTypeId.HasValue)
-            {
-                staffProfile.StaffTypeId = request.StaffTypeId.Value;
-            }
-            if (!string.IsNullOrWhiteSpace(request.StaffTypeName))
-            {
-                staffProfile.StaffTypeName = request.StaffTypeName.Trim();
-            }
+            staffProfile.JobTitle = resolvedOnboardingJobTitle;
+            staffProfile.StaffTypeId = request.StaffTypeId ?? defaultStaffTypeId;
+            staffProfile.StaffTypeName = resolvedOnboardingStaffType;
+            staffProfile.WorkingAvailability = !string.IsNullOrWhiteSpace(request.WorkingAvailability) && !request.WorkingAvailability.ToLower().Contains("pending")
+                ? request.WorkingAvailability.Trim()
+                : "Available";
             staffProfile.IsActive = true;
             staffProfile.UpdatedUtc = DateTime.UtcNow;
 
@@ -2730,47 +3034,133 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("members")]
         public async Task<ActionResult<ApiResponse<List<StaffMemberDto>>>> GetStaffMembers(CancellationToken ct)
         {
+            var currentTenant = (CurrentTenantKey ?? "default").Trim().ToLowerInvariant();
+
+            // 1. Fetch all existing profiles matching this tenant or baseline defaults
             var profiles = await _db.BcpShiftStaffProfiles
-                .AsNoTracking()
-                .Where(p => p.TenantKey == CurrentTenantKey && p.IsActive)
+                .Where(p => (p.TenantKey.ToLower() == currentTenant || p.TenantKey == "default" || string.IsNullOrEmpty(p.TenantKey)) && p.IsActive)
                 .OrderBy(p => p.JobTitle)
                 .ToListAsync(ct);
 
-            // Cross-reference with central users table where available
+            // Dynamically resolve tenant-configured operational defaults (Zero Hardcoding)
+            var defaultJobTitle = await ResolveTenantJobRoleAsync(null, ct);
+            var (defaultStaffTypeId, defaultStaffTypeName) = await ResolveTenantStaffTypeAsync(null, null, ct);
+
+            bool dbFixNeeded = false;
+            foreach (var p in profiles)
+            {
+                if (p.JobTitle != null && p.JobTitle.Trim().ToLowerInvariant() == "undefined")
+                {
+                    p.JobTitle = defaultJobTitle;
+                    dbFixNeeded = true;
+                }
+                if (p.StaffTypeName != null && p.StaffTypeName.Trim().ToLowerInvariant() == "undefined")
+                {
+                    p.StaffTypeName = defaultStaffTypeName;
+                    p.StaffTypeId ??= defaultStaffTypeId;
+                    dbFixNeeded = true;
+                }
+                // Ratings are earned dynamically over time — clear any legacy hardcoded 5.0 on unrated profiles
+                if (p.TotalRatingsCount == 0 && p.AverageRating > 0)
+                {
+                    p.AverageRating = 0m;
+                    dbFixNeeded = true;
+                }
+            }
+
+            // 2. Discover Admin & SuperAdmin user IDs to strictly exclude administrators from shift rosters
+            var adminRoleIds = await _db.Roles
+                .AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            var adminUserIds = await _db.UserRoles
+                .AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+            var adminUserIdSet = adminUserIds.ToHashSet();
+
+            // 3. Cross-reference with central users table for identity details (Active & non-deleted users strictly from User Manager)
             var userIds = profiles.Select(p => p.UserId).Distinct().ToList();
             var users = await _db.Users
                 .AsNoTracking()
-                .Where(u => userIds.Contains(u.Id))
-                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber, u.AvatarUrl }, ct);
+                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.UserStatus != UserStatus.Deleted)
+                .ToDictionaryAsync(u => u.Id, u => new { u.FullName, u.Email, u.PhoneNumber, u.AvatarUrl, u.Designation }, ct);
 
-            var result = profiles.Select(p =>
+            var result = new List<StaffMemberDto>();
+            foreach (var p in profiles)
             {
-                users.TryGetValue(p.UserId, out var u);
-                return new StaffMemberDto
+                // Strict Identity Isolation: If user does not exist or was soft-deleted from User Manager, deactivate orphan profile and exclude from directory
+                if (!users.TryGetValue(p.UserId, out var u) || u == null)
+                {
+                    if (p.IsActive)
+                    {
+                        p.IsActive = false;
+                        p.UpdatedUtc = DateTime.UtcNow;
+                        dbFixNeeded = true;
+                    }
+                    continue;
+                }
+
+                // Administrator Exclusion: Admins & SuperAdmins manage the workspace and NEVER participate in shift rosters
+                if (adminUserIdSet.Contains(p.UserId))
+                {
+                    if (p.IsActive)
+                    {
+                        p.IsActive = false;
+                        p.UpdatedUtc = DateTime.UtcNow;
+                        dbFixNeeded = true;
+                    }
+                    continue;
+                }
+
+                var resolvedJobTitle = (!string.IsNullOrWhiteSpace(p.JobTitle) && p.JobTitle.ToLowerInvariant() != "undefined")
+                    ? p.JobTitle
+                    : (!string.IsNullOrWhiteSpace(u.Designation) && u.Designation.ToLowerInvariant() != "undefined" ? u.Designation : defaultJobTitle);
+
+                var resolvedStaffType = (!string.IsNullOrWhiteSpace(p.StaffTypeName) && p.StaffTypeName.ToLowerInvariant() != "undefined")
+                    ? p.StaffTypeName
+                    : defaultStaffTypeName;
+
+                result.Add(new StaffMemberDto
                 {
                     ProfileId = p.Id,
                     UserId = p.UserId,
-                    FullName = u?.FullName ?? "Staff Member",
-                    Email = u?.Email ?? string.Empty,
-                    PhoneNumber = u?.PhoneNumber,
-                    AvatarUrl = u?.AvatarUrl,
-                    JobTitle = p.JobTitle,
-                    StaffTypeId = p.StaffTypeId,
-                    StaffTypeName = p.StaffTypeName,
+                    FullName = u.FullName ?? "Staff Member",
+                    Email = u.Email ?? string.Empty,
+                    PhoneNumber = u.PhoneNumber,
+                    AvatarUrl = u.AvatarUrl,
+                    JobTitle = resolvedJobTitle,
+                    StaffTypeId = p.StaffTypeId ?? defaultStaffTypeId,
+                    StaffTypeName = resolvedStaffType,
                     DefaultHourlyRate = p.DefaultHourlyRate,
                     ContractedWeeklyHours = p.ContractedWeeklyHours,
-                    PreferredWorkingTime = p.PreferredWorkingTime,
-                    WorkingAvailability = p.WorkingAvailability,
+                    PreferredWorkingTime = p.PreferredWorkingTime ?? "Any",
+                    WorkingAvailability = p.WorkingAvailability ?? "Available",
                     WeeklyAvailabilityJson = p.WeeklyAvailabilityJson,
-                    AverageRating = p.AverageRating,
+                    AverageRating = (p.TotalRatingsCount > 0 && p.AverageRating > 0) ? p.AverageRating : 0m,
                     TotalRatingsCount = p.TotalRatingsCount,
                     TotalShiftsCompleted = p.TotalShiftsCompleted,
-                    PunctualityScorePercent = p.PunctualityScorePercent,
+                    PunctualityScorePercent = p.PunctualityScorePercent > 0 ? p.PunctualityScorePercent : 100,
                     NoShowCount = p.NoShowCount,
                     IsActive = p.IsActive,
                     EnrolledUtc = p.CreatedUtc
-                };
-            }).ToList();
+                });
+            }
+
+            if (dbFixNeeded)
+            {
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+                catch
+                {
+                    // Non-blocking fallback if transient sync conflict occurs
+                }
+            }
 
             return Ok(ApiResponse<List<StaffMemberDto>>.SuccessResponse(result, "Workforce staff members retrieved."));
         }
@@ -4196,6 +4586,16 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+            var defaultDetailJobRole = await ResolveTenantJobRoleAsync(null, ct);
+            var (defaultDetailTypeId, defaultDetailTypeName) = await ResolveTenantStaffTypeAsync(profile?.StaffTypeId, profile?.StaffTypeName, ct);
+
+            var resolvedDetailJobTitle = !string.IsNullOrWhiteSpace(profile?.JobTitle) && profile.JobTitle.ToLowerInvariant() != "undefined"
+                ? profile.JobTitle
+                : (!string.IsNullOrWhiteSpace(user?.Designation) && user.Designation.ToLowerInvariant() != "undefined" ? user.Designation : defaultDetailJobRole);
+
+            var resolvedDetailStaffType = !string.IsNullOrWhiteSpace(profile?.StaffTypeName) && profile.StaffTypeName.ToLowerInvariant() != "undefined"
+                ? profile.StaffTypeName
+                : defaultDetailTypeName;
 
             var dto = new StaffMemberDetailDto
             {
@@ -4207,15 +4607,15 @@ namespace Ozikol_BCC.Api.Controllers
                 Email = user?.Email ?? "",
                 PhoneNumber = user?.PhoneNumber,
                 MemberId = user?.MemberId ?? "WRK-0000",
-                JobTitle = profile?.JobTitle ?? user?.Designation ?? "Staff Member",
-                StaffTypeId = profile?.StaffTypeId,
-                StaffTypeName = profile?.StaffTypeName ?? "Permanent",
+                JobTitle = resolvedDetailJobTitle,
+                StaffTypeId = profile?.StaffTypeId ?? defaultDetailTypeId,
+                StaffTypeName = resolvedDetailStaffType,
                 DefaultHourlyRate = profile?.DefaultHourlyRate,
                 ContractedWeeklyHours = profile?.ContractedWeeklyHours ?? 40.0m,
                 PreferredWorkingTime = profile?.PreferredWorkingTime ?? "Any",
                 WorkingAvailability = profile?.WorkingAvailability ?? "Available",
                 WeeklyAvailabilityJson = profile?.WeeklyAvailabilityJson,
-                AverageRating = profile?.AverageRating ?? 5.0m,
+                AverageRating = (profile != null && profile.TotalRatingsCount > 0 && profile.AverageRating > 0) ? profile.AverageRating : 0m,
                 TotalRatingsCount = profile?.TotalRatingsCount ?? 0,
                 TotalShiftsCompleted = profile?.TotalShiftsCompleted ?? 0,
                 PunctualityScorePercent = profile?.PunctualityScorePercent ?? 100.0m,
@@ -5012,11 +5412,25 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Email { get; set; }
         public string? FullName { get; set; }
         public string? PhoneNumber { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
+        public Guid? StaffTypeId { get; set; }
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
         public string? WorkingAvailability { get; set; }
+    }
+
+    public class AvailableWorkforceMemberDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? MemberId { get; set; }
+        public string? AvatarUrl { get; set; }
+        public string? Designation { get; set; }
+        public string UserStatus { get; set; } = "Active";
     }
 
     public class StaffMemberDto
@@ -5027,9 +5441,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string? AvatarUrl { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";
@@ -5240,9 +5654,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? WelcomeNote { get; set; }
@@ -5263,9 +5677,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Password { get; set; }
         public bool MustChangePassword { get; set; } = true;
 
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
@@ -5300,6 +5714,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
         public string? StaffTypeName { get; set; }
+        public string? WorkingAvailability { get; set; }
 
         public Dictionary<string, object>? CustomAttributes { get; set; }
         public List<StaffDocumentSubmissionDto>? ComplianceDocuments { get; set; }
@@ -5490,9 +5905,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string MemberId { get; set; } = string.Empty;
-        public string JobTitle { get; set; } = "Staff Member";
+        public string? JobTitle { get; set; }
         public Guid? StaffTypeId { get; set; }
-        public string StaffTypeName { get; set; } = "Permanent";
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal ContractedWeeklyHours { get; set; }
         public string PreferredWorkingTime { get; set; } = "Any";

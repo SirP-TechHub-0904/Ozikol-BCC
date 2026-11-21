@@ -253,9 +253,10 @@ interface YearMonthGrid {
                   class="cell-event-chip"
                   [class.chip-open]="isOpenShift(s)"
                   [class.chip-done]="isShiftDone(s)"
+                  [class.chip-archived]="s.assignedUserName === 'Archived Staff'"
                 >
                   <span class="ev-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
-                  <span class="ev-title">{{ s.siteName || s.postName }} &bull; {{ s.assignedUserName || 'Open' }}</span>
+                  <span class="ev-title" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">{{ s.siteName || s.postName }} &bull; {{ s.assignedUserName || 'Open' }}</span>
                 </div>
                 <div class="more-events-link" *ngIf="cell.shifts.length > 2">
                   +{{ cell.shifts.length - 2 }} more on this day
@@ -310,7 +311,7 @@ interface YearMonthGrid {
                 >
                   <div class="tev-time">{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }}</div>
                   <div class="tev-venue">{{ s.siteName }} ({{ s.postName }})</div>
-                  <div class="tev-staff">{{ s.assignedUserName || 'Open Shift' }}</div>
+                  <div class="tev-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">{{ s.assignedUserName || 'Open Shift' }}</div>
                 </div>
               </div>
             </div>
@@ -386,8 +387,8 @@ interface YearMonthGrid {
                 <div class="dts-main">
                   <strong>{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }}</strong>
                   <span class="dts-site">{{ s.siteName }} &bull; {{ s.postName }}</span>
-                  <span class="dts-staff">
-                    <span class="material-symbols-outlined">person</span>
+                  <span class="dts-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
+                    <span class="material-symbols-outlined">{{ isOpenShift(s) ? 'person_search' : (s.assignedUserName === 'Archived Staff' ? 'person_off' : 'person') }}</span>
                     {{ s.assignedUserName || 'Open Shift (Unassigned)' }}
                   </span>
                 </div>
@@ -551,8 +552,8 @@ interface YearMonthGrid {
                   <span class="material-symbols-outlined">schedule</span>
                   <span>{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours || 8 }}h)</span>
                 </div>
-                <div class="dsc-staff">
-                  <span class="material-symbols-outlined">{{ isOpenShift(s) ? 'person_search' : 'person' }}</span>
+                <div class="dsc-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
+                  <span class="material-symbols-outlined">{{ isOpenShift(s) ? 'person_search' : (s.assignedUserName === 'Archived Staff' ? 'person_off' : 'person') }}</span>
                   <strong>{{ s.assignedUserName || 'Open Shift — Unassigned' }}</strong>
                 </div>
                 <div class="dsc-actions">
@@ -1015,8 +1016,10 @@ interface YearMonthGrid {
     }
     .cell-event-chip.chip-open { border-left-color: #d97706; background: #fffbeb; color: #92400e; }
     .cell-event-chip.chip-done { border-left-color: #64748b; opacity: 0.85; }
+    .cell-event-chip.chip-archived { border-left-color: #94a3b8; background: #f8fafc; color: #64748b; }
     .ev-time { font-weight: 800; color: #0050e5; flex-shrink: 0; }
     .ev-title { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+    .archived-ev { color: #64748b !important; font-style: italic; }
     .more-events-link { font-size: 10px; font-weight: 700; color: #0050e5; padding-left: 4px; }
 
     /* Week Timeline View */

@@ -240,33 +240,93 @@ import { TranslationService } from '../../../core/services/translation.service';
             <div class="card-header bg-danger-light">
               <span class="material-symbols-outlined text-danger">warning</span>
               <div>
-                <h3 class="text-danger">{{ 'user_details.danger_title' | translate:'Account Access & Danger Zone' }}</h3>
-                <p>{{ 'user_details.danger_subtitle' | translate:'Restrict or permanently remove member account' }}</p>
+                <h3 class="text-danger">{{ 'user_details.danger_title' | translate:'Administrative Actions & Danger Zone' }}</h3>
+                <p>{{ 'user_details.danger_subtitle' | translate:'Administrative account status overrides and deletion actions' }}</p>
               </div>
             </div>
             <div class="card-body danger-actions">
-              <div class="danger-row">
-                <div>
-                  <strong>{{ user.userStatus === 'Active' ? ('user_details.suspend_account' | translate:'Suspend Account') : ('user_details.reactivate_account' | translate:'Reactivate Account') }}</strong>
-                  <p>{{ user.userStatus === 'Active' ? ('user_details.suspend_desc' | translate:'Temporarily revoke workspace access') : ('user_details.reactivate_desc' | translate:'Restore full access to member portal') }}</p>
+              <!-- Tile 1: Access State (Active, Suspended, or Pending) -->
+              <div class="danger-tile">
+                <div class="danger-tile-header">
+                  <div class="tile-status-icon" [ngClass]="user.userStatus === 'Active' ? 'status-icon-active' : (user.userStatus === 'Suspended' ? 'status-icon-suspended' : 'status-icon-pending')">
+                    <span class="material-symbols-outlined">
+                      {{ user.userStatus === 'Active' ? 'verified_user' : (user.userStatus === 'Suspended' ? 'block' : 'hourglass_top') }}
+                    </span>
+                  </div>
+                  <div class="tile-meta">
+                    <div class="tile-headline">
+                      <strong class="tile-title">
+                        {{ user.userStatus === 'Active' ? ('user_details.active_workspace_access' | translate:'Active Workspace Access') : (user.userStatus === 'Suspended' ? ('user_details.account_suspended' | translate:'Account Suspended') : ('user_details.pending_account' | translate:'Pending Account Verification')) }}
+                      </strong>
+                      <span class="tile-badge" [ngClass]="user.userStatus === 'Active' ? 'badge-pill-active' : (user.userStatus === 'Suspended' ? 'badge-pill-suspended' : 'badge-pill-pending')">
+                        {{ user.userStatus || 'Pending' }}
+                      </span>
+                    </div>
+                    <p class="tile-subtitle">
+                      {{ user.userStatus === 'Active' ? ('user_details.suspend_desc' | translate:'Member has active sign-in access. You can temporarily suspend this account.') : (user.userStatus === 'Suspended' ? ('user_details.reactivate_desc' | translate:'Account is locked. Restore full access to member workspace.') : ('user_details.pending_desc' | translate:'Account is awaiting verification. You can activate or suspend.')) }}
+                    </p>
+                  </div>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus()">
-                  {{ user.userStatus === 'Active' ? ('user_details.suspend' | translate:'Suspend') : ('user_details.reactivate' | translate:'Reactivate') }}
-                </button>
+
+                <div class="tile-action-bar">
+                  <!-- Active State Action -->
+                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-action-tile btn-warning-tile" (click)="toggleAccountStatus('suspend')">
+                    <span class="material-symbols-outlined">block</span>
+                    <span>{{ 'user_details.suspend' | translate:'Suspend Account' }}</span>
+                  </button>
+
+                  <!-- Suspended State Action -->
+                  <button *ngIf="user.userStatus === 'Suspended'" type="button" class="btn btn-action-tile btn-success-tile" (click)="toggleAccountStatus('activate')">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>{{ 'user_details.reactivate' | translate:'Reactivate Account' }}</span>
+                  </button>
+
+                  <!-- Pending State Actions -->
+                  <div *ngIf="user.userStatus !== 'Active' && user.userStatus !== 'Suspended'" class="tile-button-grid">
+                    <button type="button" class="btn btn-action-tile btn-success-tile" (click)="toggleAccountStatus('activate')">
+                      <span class="material-symbols-outlined">check</span>
+                      <span>{{ 'user_details.activate' | translate:'Activate' }}</span>
+                    </button>
+                    <button type="button" class="btn btn-action-tile btn-warning-tile" (click)="toggleAccountStatus('suspend')">
+                      <span class="material-symbols-outlined">block</span>
+                      <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
-                <div>
-                  <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
-                  <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') }}</p>
+              <!-- Tile 2: Permanent Member Deletion & Soft-Delete Archiving -->
+              <div class="danger-tile danger-tile-destructive">
+                <div class="danger-tile-header">
+                  <div class="tile-status-icon status-icon-destructive">
+                    <span class="material-symbols-outlined">person_remove</span>
+                  </div>
+                  <div class="tile-meta">
+                    <div class="tile-headline">
+                      <strong class="tile-title text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
+                      <span class="tile-badge badge-pill-danger">{{ 'user_details.permanent_badge' | translate:'Permanent' }}</span>
+                    </div>
+                    <p class="tile-subtitle">
+                      {{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : (user.userStatus === 'Active' ? ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') : ('user_details.delete_desc_pending' | translate:'Unverified pending registration. Ready for cancellation and deletion.')) }}
+                    </p>
+                  </div>
                 </div>
-                <a *ngIf="user.userStatus === 'Suspended'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
-                  {{ 'user_details.delete_user' | translate:'Delete User' }}
-                </a>
-                <button *ngIf="user.userStatus !== 'Suspended'" type="button" class="btn btn-outline-danger btn-sm" (click)="toggleAccountStatus()" title="Suspend account to unlock deletion">
-                  <span class="material-symbols-outlined fs-6">block</span>
-                  <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
-                </button>
+
+                <div class="tile-action-bar">
+                  <!-- If user is Suspended or Pending: Proceed to delete console -->
+                  <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-action-tile btn-danger-tile">
+                    <span class="material-symbols-outlined">delete_forever</span>
+                    <span>{{ 'user_details.delete_user' | translate:'Delete Member Account' }}</span>
+                    <span class="material-symbols-outlined action-chevron">arrow_forward</span>
+                  </a>
+
+                  <!-- If user is Active: Suspend first -->
+                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-action-tile btn-outline-danger-tile" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
+                    <span class="material-symbols-outlined">lock_reset</span>
+                    <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete Account' }}</span>
+                    <span class="material-symbols-outlined action-chevron">arrow_forward</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -385,17 +445,81 @@ import { TranslationService } from '../../../core/services/translation.service';
               </div>
 
               <!-- Direct Temporary Password Setter -->
-              <div class="direct-reset-box" style="margin-top: 18px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:8px;">{{ 'user_details.admin_override_title' | translate:'Set New Password Directly (Admin Override)' }}</label>
-                <div style="display:flex; gap:8px;">
-                  <input type="text" [(ngModel)]="directNewPassword" placeholder="e.g. TempPass@2026" style="flex:1;" />
-                  <button type="button" class="btn btn-outline btn-sm" (click)="generateDirectRandomPassword()">{{ 'user_details.generate' | translate:'Generate' }}</button>
-                  <button type="button" class="btn btn-primary btn-sm" (click)="applyDirectPassword()" [disabled]="!directNewPassword.trim()">{{ 'user_details.apply' | translate:'Apply' }}</button>
+              <div class="direct-reset-box">
+                <div class="direct-reset-header">
+                  <div class="direct-reset-title-group">
+                    <span class="material-symbols-outlined reset-title-icon">password</span>
+                    <div>
+                      <label class="reset-title-label">{{ 'user_details.admin_override_title' | translate:'Set New Password Directly (Admin Override)' }}</label>
+                      <p class="reset-title-hint">{{ 'user_details.admin_override_desc' | translate:'Instantly assign a temporary credential for emergency member access' }}</p>
+                    </div>
+                  </div>
                 </div>
-                <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;">
-                  <input type="checkbox" [(ngModel)]="sendEmailOnPasswordReset" />
-                  <span>{{ 'user_details.email_temp_pwd_desc' | translate:'Email temporary password & first-time sign in instructions to' }} <strong>{{ user.email }}</strong></span>
-                </label>
+
+                <div class="password-input-toolbar">
+                  <div class="password-field-container">
+                    <span class="material-symbols-outlined field-leading-icon">lock</span>
+                    <input
+                      [type]="showDirectPassword ? 'text' : 'password'"
+                      [(ngModel)]="directNewPassword"
+                      placeholder="e.g. TempPass@2026"
+                      class="password-text-input"
+                      autocomplete="new-password"
+                      spellcheck="false"
+                    />
+                    <div class="field-trailing-actions">
+                      <button
+                        *ngIf="directNewPassword"
+                        type="button"
+                        class="btn-field-icon"
+                        (click)="copyDirectPassword()"
+                        title="Copy password"
+                      >
+                        <span class="material-symbols-outlined">content_copy</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-field-icon"
+                        (click)="showDirectPassword = !showDirectPassword"
+                        [title]="showDirectPassword ? 'Hide password' : 'Show password'"
+                      >
+                        <span class="material-symbols-outlined">{{ showDirectPassword ? 'visibility_off' : 'visibility' }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="password-buttons-group">
+                    <button
+                      type="button"
+                      class="btn btn-generate-pwd"
+                      (click)="generateDirectRandomPassword()"
+                      title="Generate random secure password"
+                    >
+                      <span class="material-symbols-outlined">casino</span>
+                      <span>{{ 'user_details.generate' | translate:'Generate' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-apply-pwd"
+                      (click)="applyDirectPassword()"
+                      [disabled]="!directNewPassword.trim()"
+                      title="Apply temporary password to member"
+                    >
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>{{ 'user_details.apply' | translate:'Apply' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="reset-checkbox-row">
+                  <label class="custom-checkbox-container">
+                    <input type="checkbox" [(ngModel)]="sendEmailOnPasswordReset" />
+                    <span class="checkbox-text">
+                      <span class="material-symbols-outlined checkbox-mail-icon">forward_to_inbox</span>
+                      <span>{{ 'user_details.email_temp_pwd_desc' | translate:'Email temporary password & first-time sign in instructions to' }} <strong>{{ user.email }}</strong></span>
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -550,6 +674,233 @@ import { TranslationService } from '../../../core/services/translation.service';
     .btn-copy-otp:hover { background: #0050e5; color: #ffffff; }
     .otp-sub-hint { font-size: 11px; color: #64748b; }
 
+    /* Direct Password Setter Re-architecture */
+    .direct-reset-box {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .direct-reset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .direct-reset-title-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .reset-title-icon {
+      font-size: 20px;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 6px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .reset-title-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      display: block;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .reset-title-hint {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 2px 0 0;
+      line-height: 1.3;
+    }
+
+    .password-input-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      .password-input-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .password-field-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .field-leading-icon {
+      position: absolute;
+      left: 12px;
+      font-size: 18px;
+      color: #94a3b8;
+      pointer-events: none;
+      transition: color 0.15s;
+    }
+    .password-field-container:focus-within .field-leading-icon {
+      color: #0050e5;
+    }
+
+    .password-text-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 72px 0 38px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.15s ease-in-out;
+      box-sizing: border-box;
+    }
+    .password-text-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+      background: #ffffff;
+    }
+    .password-text-input::placeholder {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .field-trailing-actions {
+      position: absolute;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .btn-field-icon {
+      background: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      padding: 0;
+    }
+    .btn-field-icon:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-field-icon .material-symbols-outlined {
+      font-size: 17px;
+    }
+
+    .password-buttons-group {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-generate-pwd {
+      height: 40px;
+      padding: 0 14px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-generate-pwd:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .btn-generate-pwd .material-symbols-outlined {
+      font-size: 17px;
+      color: #64748b;
+    }
+
+    .btn-apply-pwd {
+      height: 40px;
+      padding: 0 18px;
+      background: #0050e5 !important;
+      border: 1.5px solid #0050e5 !important;
+      border-radius: 8px;
+      color: #ffffff !important;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      box-shadow: 0 2px 4px rgba(0, 80, 229, 0.2);
+    }
+    .btn-apply-pwd:hover:not(:disabled) {
+      background: #0040b8 !important;
+      border-color: #0040b8 !important;
+      box-shadow: 0 3px 6px rgba(0, 80, 229, 0.3);
+    }
+    .btn-apply-pwd:disabled {
+      background: #94a3b8 !important;
+      border-color: #94a3b8 !important;
+      opacity: 0.65;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-apply-pwd span, .btn-apply-pwd .material-symbols-outlined {
+      color: #ffffff !important;
+      font-size: 17px;
+    }
+
+    .reset-checkbox-row {
+      display: flex;
+      align-items: center;
+      padding: 4px 0 0;
+    }
+    .custom-checkbox-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #475569;
+      user-select: none;
+    }
+    .custom-checkbox-container input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1.5px solid #cbd5e1;
+      cursor: pointer;
+      accent-color: #0050e5;
+    }
+    .checkbox-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .checkbox-mail-icon {
+      font-size: 16px;
+      color: #0050e5;
+    }
+
     /* OTP Modal Dialog */
     .otp-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .otp-modal-container { background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; animation: popIn 0.2s ease-out; }
@@ -577,14 +928,206 @@ import { TranslationService } from '../../../core/services/translation.service';
     .btn-bypass-verify .material-symbols-outlined { font-size: 14px; }
     .otp-modal-footer { padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #fafbfc; display: flex; justify-content: flex-end; gap: 10px; }
 
-    /* Danger */
+    /* Danger Zone Re-architecture */
     .border-danger { border-color: #fecaca; }
     .bg-danger-light { background: #fff5f5; }
     .text-danger { color: #dc2626; }
-    .danger-actions { display: flex; flex-direction: column; gap: 12px; }
-    .danger-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .danger-row strong { font-size: 13px; display: block; }
-    .danger-row p { font-size: 11px; color: #64748b; margin: 2px 0 0; }
+    .danger-actions { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; }
+
+    .danger-tile {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .danger-tile:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .danger-tile-destructive {
+      background: #fff8f8;
+      border-color: #fecaca;
+    }
+    .danger-tile-destructive:hover {
+      border-color: #f87171;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+    }
+
+    .danger-tile-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .tile-status-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tile-status-icon .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .status-icon-active {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .status-icon-suspended {
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .status-icon-pending {
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .status-icon-destructive {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+
+    .tile-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .tile-headline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tile-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .tile-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-pill-active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge-pill-suspended {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge-pill-pending {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .badge-pill-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .tile-subtitle {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 4px 0 0;
+      line-height: 1.4;
+    }
+
+    .tile-action-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tile-button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-action-tile {
+      width: 100%;
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap !important;
+      transition: all 0.15s ease-in-out;
+      box-sizing: border-box;
+    }
+    .btn-action-tile .action-chevron {
+      margin-left: auto;
+      font-size: 16px;
+      opacity: 0.7;
+      transition: transform 0.15s ease;
+    }
+    .btn-action-tile:hover .action-chevron {
+      transform: translateX(3px);
+      opacity: 1;
+    }
+
+    .btn-warning-tile {
+      background: #ffffff;
+      border: 1.5px solid #fcd34d;
+      color: #b45309;
+    }
+    .btn-warning-tile:hover {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .btn-success-tile {
+      background: #ffffff;
+      border: 1.5px solid #86efac;
+      color: #15803d;
+    }
+    .btn-success-tile:hover {
+      background: #f0fdf4;
+      border-color: #22c55e;
+      color: #166534;
+    }
+
+    .btn-danger-tile {
+      background: #dc2626 !important;
+      border: 1.5px solid #b91c1c !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    .btn-danger-tile:hover {
+      background: #b91c1c !important;
+      box-shadow: 0 3px 6px rgba(220, 38, 38, 0.3);
+    }
+    .btn-danger-tile span, .btn-danger-tile .material-symbols-outlined {
+      color: #ffffff !important;
+    }
+
+    .btn-outline-danger-tile {
+      background: #ffffff;
+      border: 1.5px solid #fca5a5;
+      color: #dc2626;
+    }
+    .btn-outline-danger-tile:hover {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
 
     /* Mini Table */
     .table-responsive { overflow-x: auto; }
@@ -607,18 +1150,21 @@ import { TranslationService } from '../../../core/services/translation.service';
     .log-meta { font-size: 11px; color: #94a3b8; }
     .empty-cell { text-align: center; color: #94a3b8; font-size: 12px; padding: 16px; }
 
-    .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
-    .btn-sm { height: 32px; padding: 0 12px; font-size: 11px; }
+    .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; white-space: nowrap; flex-shrink: 0; }
+    .btn-sm { height: 32px; padding: 0 14px; font-size: 11.5px; white-space: nowrap; flex-shrink: 0; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
+    .btn-outline-danger { background: #ffffff; border-color: #fca5a5; color: #dc2626; }
+    .btn-outline-danger:hover { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
     .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
     .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
     .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
     .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
     .btn-primary:disabled { background: #0050e5 !important; color: #ffffff !important; opacity: 0.65; cursor: not-allowed; }
     .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
-    .btn-danger { background: #dc2626; color: #ffffff; }
-    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger { background: #dc2626 !important; color: #ffffff !important; border: 1px solid #b91c1c !important; }
+    .btn-danger:hover { background: #b91c1c !important; }
+    .btn-danger span, .btn-danger .material-symbols-outlined { color: #ffffff !important; }
 
     /* Role & Permissions Card */
     .btn-permission-action {
@@ -707,6 +1253,7 @@ export class UserDetailsComponent implements OnInit {
   // Direct Password Setter
   directNewPassword = '';
   sendEmailOnPasswordReset = true;
+  showDirectPassword = true;
 
   // Notes
   newNoteText = '';
@@ -1081,6 +1628,14 @@ export class UserDetailsComponent implements OnInit {
       pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     this.directNewPassword = pass;
+    this.showDirectPassword = true;
+  }
+
+  copyDirectPassword(): void {
+    if (!this.directNewPassword) return;
+    navigator.clipboard.writeText(this.directNewPassword).then(() => {
+      this.toast.success('Temporary password copied to clipboard!');
+    });
   }
 
   applyDirectPassword(): void {
@@ -1120,24 +1675,55 @@ export class UserDetailsComponent implements OnInit {
     });
   }
 
-  async toggleAccountStatus(): Promise<void> {
-    const isSuspending = this.user.userStatus === 'Active';
-    const title = isSuspending ? 'Suspend Member Account' : 'Reactivate Member Account';
-    const message = isSuspending
+  async toggleAccountStatus(targetAction?: 'suspend' | 'activate'): Promise<void> {
+    const isCurrentlySuspended = this.user.userStatus === 'Suspended';
+    const shouldSuspend = targetAction ? (targetAction === 'suspend') : !isCurrentlySuspended;
+
+    const title = shouldSuspend ? 'Suspend Member Account' : 'Reactivate Member Account';
+    const message = shouldSuspend
       ? `Are you sure you want to temporarily suspend access for '${this.user.fullName}'?`
       : `Are you sure you want to restore full workspace access for '${this.user.fullName}'?`;
 
-    const confirmed = await this.toast.confirm(title, message, isSuspending ? 'Suspend Account' : 'Reactivate Account', 'Cancel', isSuspending ? 'warning' : 'info');
+    const confirmed = await this.toast.confirm(
+      title,
+      message,
+      shouldSuspend ? 'Suspend Account' : 'Reactivate Account',
+      'Cancel',
+      shouldSuspend ? 'warning' : 'info'
+    );
     if (!confirmed) return;
 
-    const newStatus = !isSuspending;
-    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: newStatus }).subscribe({
+    const newStatusBool = !shouldSuspend;
+    const newStatusStr = shouldSuspend ? 'Suspended' : 'Active';
+
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: newStatusBool, status: newStatusStr }).subscribe({
       next: () => {
-        this.toast.success(`Account status updated to ${newStatus ? 'Active' : 'Suspended'}.`);
+        this.toast.success(`Account status updated to ${newStatusStr}.`);
         this.loadDossier();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to update status.');
+      }
+    });
+  }
+
+  async suspendAndProceedToDelete(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Suspend Account to Delete',
+      `Before permanently deleting '${this.user.fullName}', organization fintech policies require the account to be suspended. Would you like to suspend access now and proceed to delete confirmation?`,
+      'Suspend & Proceed',
+      'Cancel',
+      'warning'
+    );
+    if (!confirmed) return;
+
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: false, status: 'Suspended' }).subscribe({
+      next: () => {
+        this.toast.success('Account suspended successfully. Redirecting to delete confirmation...');
+        this.router.navigate(['/users/console/delete', this.userId]);
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Failed to suspend account.');
       }
     });
   }

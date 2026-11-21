@@ -489,11 +489,8 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Safely soft-deletes and archives a member profile.
-        /// Requires the account to be in Suspended state first to guarantee intentional deactivation.
-        /// Automatically revokes active sessions, feature permissions, and marks IsDeleted = true
-        /// so the profile is excluded globally from all queries and counts via the EF Core Global Query Filter
-        /// while preserving historical audit and relational integrity.
+        /// Applies fintech-grade soft-delete and archival to a member account.
+        /// Preserves relational integrity, transaction history, notes, and audit logs while revoking access and marking deleted.
         /// </summary>
         /// <param name="id">The unique identifier of the user to soft-delete.</param>
         /// <returns>Standardized API response confirming soft deletion and archiving.</returns>
@@ -501,7 +498,9 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> DeleteUser(string id)
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
-            if (settings != null && !settings.EnableUserDeletion)
+            var isAuthorizedAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("UserManager") || User.IsInRole("User Manager");
+
+            if (!isAuthorizedAdmin && settings != null && !settings.EnableUserDeletion)
             {
                 return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
             }
@@ -521,48 +520,134 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("This member account has already been deleted and archived."));
             }
 
-            // Enforce suspend-first requirement
-            if (user.UserStatus != UserStatus.Suspended)
+            // Enforce suspend-first requirement (Active accounts MUST be suspended first to prevent accidental deletion of operational members; Suspended or unverified Pending accounts may be deleted)
+            if (user.UserStatus == UserStatus.Active)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Member account must be Suspended before it can be deleted. Please suspend the account first in Administrative Actions."));
             }
 
             var userName = user.FullName;
 
-            // 1. Clean up transient administrative notes and KPI scores
-            var notes = _dbContext.BcpUserNotes.Where(n => n.ProfileId == id);
-            _dbContext.BcpUserNotes.RemoveRange(notes);
-
-            var kpis = _dbContext.BcpKpiUserScores.Where(k => k.ProfileId == id);
-            _dbContext.BcpKpiUserScores.RemoveRange(kpis);
-
-            // 2. Revoke active device sessions & tokens immediately
-            var deviceSessions = _dbContext.UserDeviceSessions.Where(s => s.ProfileId == id);
-            _dbContext.UserDeviceSessions.RemoveRange(deviceSessions);
-
-            var userDevices = _dbContext.BcpUserDevices.Where(d => d.UserId == id);
-            _dbContext.BcpUserDevices.RemoveRange(userDevices);
-
-            // 3. Revoke all feature-level permission roles
-            var featureRoles = _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == id);
-            _dbContext.BcpUserFeatureRoles.RemoveRange(featureRoles);
-
-            // 4. Strip ASP.NET Identity roles
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Any())
+            // 1. Revoke active device sessions (mark revoked without destroying login/device audit history)
+            var deviceSessions = await _dbContext.UserDeviceSessions.Where(s => s.ProfileId == id && !s.IsRevoked).ToListAsync();
+            foreach (var s in deviceSessions)
             {
-                await _userManager.RemoveFromRolesAsync(user, roles);
+                s.IsRevoked = true;
+                s.RevokedAt = DateTime.UtcNow;
             }
 
-            // 5. Apply Soft Delete and permanent lockout
+            // 2. Deactivate feature-level roles (mark inactive without breaking permission history)
+            var featureRoles = await _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == id && r.IsActive).ToListAsync();
+            foreach (var r in featureRoles)
+            {
+                r.IsActive = false;
+            }
+
+            var targetUserIds = new List<string> { id };
+
+            var cleanEmailToFree = user.Email?.Trim().ToLowerInvariant();
+
+            // 4. Apply Complete Fintech/GDPR Soft Delete, Anonymization, and Credential Release
+            // Note: Administrative notes, KPI scores, shift attendance, and financial records are preserved for regulatory audit integrity.
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             user.UserStatus = UserStatus.Deleted;
             user.LockoutEnabled = true;
             user.LockoutEnd = DateTimeOffset.MaxValue;
-            await _userManager.UpdateSecurityStampAsync(user);
+            user.SecurityStamp = Guid.NewGuid().ToString();
 
-            await _dbContext.SaveChangesAsync();
+            // Completely wipe personal identifiable information (Names, Phone, Registration Form Data)
+            user.FirstName = "Deleted";
+            user.LastName = "Member";
+            user.MiddleName = null;
+            user.Title = null;
+            user.PhoneNumber = null;
+            user.PhoneNumberConfirmed = false;
+            user.AvatarUrl = null;
+            user.CustomAttributesJson = null;
+            user.Designation = "Archived Staff";
+
+            // Completely release unique constraints (UserNameIndex & Email) using the unique user.Id so the original email is immediately freed
+            user.UserName = $"deleted_{user.Id}";
+            user.NormalizedUserName = $"DELETED_{user.Id}".ToUpperInvariant();
+            user.Email = $"deleted_{user.Id}@archived.local";
+            user.NormalizedEmail = user.Email.ToUpperInvariant();
+
+            // Defensively clean up any duplicate or orphaned accounts sharing this email (e.g. from previous invitation or seed duplicates)
+            if (!string.IsNullOrWhiteSpace(cleanEmailToFree))
+            {
+                var duplicateAccounts = await _dbContext.Users.IgnoreQueryFilters()
+                    .Where(u => u.Id != id && u.Email != null && u.Email.ToLower() == cleanEmailToFree)
+                    .ToListAsync();
+
+                foreach (var dup in duplicateAccounts)
+                {
+                    targetUserIds.Add(dup.Id);
+                    dup.IsDeleted = true;
+                    dup.DeletedAt = DateTime.UtcNow;
+                    dup.UserStatus = UserStatus.Deleted;
+                    dup.LockoutEnabled = true;
+                    dup.LockoutEnd = DateTimeOffset.MaxValue;
+                    dup.SecurityStamp = Guid.NewGuid().ToString();
+                    dup.FirstName = "Deleted";
+                    dup.LastName = "Member";
+                    dup.MiddleName = null;
+                    dup.Title = null;
+                    dup.PhoneNumber = null;
+                    dup.PhoneNumberConfirmed = false;
+                    dup.AvatarUrl = null;
+                    dup.CustomAttributesJson = null;
+                    dup.Designation = "Archived Staff";
+                    dup.UserName = $"deleted_{dup.Id}";
+                    dup.NormalizedUserName = $"DELETED_{dup.Id}".ToUpperInvariant();
+                    dup.Email = $"deleted_{dup.Id}@archived.local";
+                    dup.NormalizedEmail = dup.Email.ToUpperInvariant();
+                }
+
+                // Invalidate any unredeemed invitations matching this user's email so they are never auto-resurrected
+                var pendingInvites = await _dbContext.Invitations
+                    .Where(i => i.Email != null && i.Email.ToLower() == cleanEmailToFree && !i.IsUsed)
+                    .ToListAsync();
+                foreach (var inv in pendingInvites)
+                {
+                    inv.IsUsed = true;
+                }
+            }
+
+            // 3. Deactivate all associated Workforce Staff Profiles across all target user IDs (preserves shift/roster transactions)
+            var staffProfiles = await _dbContext.BcpShiftStaffProfiles.Where(s => targetUserIds.Contains(s.UserId)).ToListAsync();
+            foreach (var sp in staffProfiles)
+            {
+                sp.IsActive = false;
+                sp.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            // 4. Automatically revert any upcoming or uncompleted shifts assigned to the deleted user to Open Shifts
+            // Operational continuity: departures immediately free upcoming roster slots for active staff to claim or for managers to reassign.
+            // Past completed shifts remain assigned to preserve historical labor and tax compliance audit records.
+            var uncompletedShifts = await _dbContext.BcpShifts
+                .Where(s => targetUserIds.Contains(s.AssignedUserId) && s.Status != "Completed")
+                .ToListAsync();
+
+            foreach (var sh in uncompletedShifts)
+            {
+                sh.AssignedUserId = null;
+                sh.AssignedUserName = null;
+                sh.Status = "Open";
+                sh.IsConfirmedByGuard = false;
+                sh.ConfirmedAtUtc = null;
+                sh.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                await LogActivityAsync("CRITICAL_DELETE_USER_ERROR", $"[ERROR] Failed to save soft-delete for user '{userName}' ({user.Email}): {ex.Message}", id, userName);
+                return StatusCode(500, ApiResponse<object>.FailureResponse("Failed to complete account deletion due to a persistence constraint. Please verify the account state."));
+            }
 
             await LogActivityAsync("CRITICAL_DELETE_USER", $"[CRITICAL] Soft-deleted and archived member account for '{userName}' ({user.Email})", id, userName);
             await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was soft-deleted and archived by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
@@ -580,6 +665,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Email is required."));
 
             var cleanEmail = request.Email.Trim().ToLowerInvariant();
+
             var existing = await _userManager.FindByEmailAsync(cleanEmail);
             if (existing != null)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
@@ -992,7 +1078,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Toggles user account status (Active vs Suspended).
+        /// Toggles user account status (Active, Suspended, etc.).
         /// </summary>
         [HttpPut("{id}/status")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
@@ -1002,22 +1088,38 @@ namespace Ozikol_BCC.Api.Controllers
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
             var oldStatus = user.UserStatus.ToString();
-            user.UserStatus = request.IsActive ? UserStatus.Active : UserStatus.Suspended;
+            if (!string.IsNullOrWhiteSpace(request.Status) && System.Enum.TryParse<UserStatus>(request.Status, true, out var explicitStatus))
+            {
+                user.UserStatus = explicitStatus;
+            }
+            else
+            {
+                user.UserStatus = request.IsActive ? UserStatus.Active : UserStatus.Suspended;
+            }
+
+            // Sync associated Workforce Staff Profile active state if exists
+            var staffProfile = await _dbContext.BcpShiftStaffProfiles.FirstOrDefaultAsync(s => s.UserId == id);
+            if (staffProfile != null)
+            {
+                staffProfile.IsActive = (user.UserStatus == UserStatus.Active);
+                staffProfile.UpdatedUtc = DateTime.UtcNow;
+            }
+
             await _dbContext.SaveChangesAsync();
 
-            bool isSuspension = !request.IsActive;
+            bool isSuspension = (user.UserStatus == UserStatus.Suspended);
             var actionType = isSuspension ? "CRITICAL_STATUS_SUSPEND" : "STATUS_REACTIVATE";
             var desc = isSuspension
                 ? $"[CRITICAL] Account suspended for '{user.FullName}' ({user.Email}) by administration"
                 : $"Account reactivated for '{user.FullName}' ({user.Email}) by administration";
             await LogActivityAsync(actionType, desc, user.Id, user.FullName);
             await NotifyUserAsync(user.Id, "Account Status Updated",
-                request.IsActive
+                user.UserStatus == UserStatus.Active
                     ? "Your account has been reactivated by administration."
                     : "Your account has been temporarily suspended by administration.",
                 "/users/workspace/overview",
-                request.IsActive ? NotificationSeverity.Success : NotificationSeverity.Failed,
-                request.IsActive ? "check_circle" : "block");
+                user.UserStatus == UserStatus.Active ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                user.UserStatus == UserStatus.Active ? "check_circle" : "block");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Account status updated to {user.UserStatus}."));
         }
 
@@ -2510,6 +2612,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class UpdateUserStatusRequest
     {
         public bool IsActive { get; set; }
+        public string? Status { get; set; }
     }
 
     public class AssignCategoryRequest
