@@ -278,44 +278,87 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <!-- Bottom Pagination & Page List Count Bar -->
         <div class="pagination-footer" *ngIf="!isLoading && filteredMembers.length > 0">
-          <div class="page-summary">
-            Showing <strong>{{ startEntryIndex }}</strong> to <strong>{{ endEntryIndex }}</strong> of
-            <strong>{{ filteredMembers.length }}</strong> staff
-          </div>
-
-          <div class="page-size-controls">
-            <span class="size-label">Rows per page:</span>
-            <div class="size-pills">
-              <button
-                *ngFor="let opt of pageSizeOptions"
-                type="button"
-                class="size-pill"
-                [class.active]="pageSize === opt.value"
-                (click)="setPageSize(opt.value)"
+          <!-- Left side: Rows per page dropdown & Showing summary -->
+          <div class="pagination-left">
+            <div class="page-size-dropdown-group">
+              <label for="staffPageSizeSelect" class="size-label">Rows per page:</label>
+              <select
+                id="staffPageSizeSelect"
+                class="page-size-select"
+                [(ngModel)]="pageSize"
+                (ngModelChange)="onPageSizeSelectChange($event)"
               >
-                {{ opt.label }}
-              </button>
+                <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+
+            <div class="page-summary">
+              Showing <strong>{{ startEntryIndex }}</strong> to <strong>{{ endEntryIndex }}</strong> of
+              <strong>{{ filteredMembers.length }}</strong> staff
             </div>
           </div>
 
-          <div class="page-nav-controls" *ngIf="totalPages > 1">
-            <button type="button" class="nav-btn" [disabled]="currentPage <= 1" (click)="goToPage(currentPage - 1)">
-              <span class="material-symbols-outlined">chevron_left</span>
-              <span>Prev</span>
-            </button>
-            <button
-              *ngFor="let p of pageNumbers"
-              type="button"
-              class="page-num-btn"
-              [class.active]="p === currentPage"
-              (click)="goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button type="button" class="nav-btn" [disabled]="currentPage >= totalPages" (click)="goToPage(currentPage + 1)">
-              <span>Next</span>
-              <span class="material-symbols-outlined">chevron_right</span>
-            </button>
+          <!-- Right side: << < 1 2 3 ... 9 10 > >> -->
+          <div class="pagination-right">
+            <div class="page-nav-controls">
+              <!-- First Page (<<) -->
+              <button
+                type="button"
+                class="nav-btn nav-icon-btn"
+                [disabled]="currentPage <= 1 || pageSize === 'all'"
+                (click)="goToPage(1)"
+                title="First Page (<<)"
+              >
+                <span class="material-symbols-outlined">first_page</span>
+              </button>
+
+              <!-- Previous Page (<) -->
+              <button
+                type="button"
+                class="nav-btn nav-icon-btn"
+                [disabled]="currentPage <= 1 || pageSize === 'all'"
+                (click)="goToPage(currentPage - 1)"
+                title="Previous Page (<)"
+              >
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+
+              <!-- Numeric Pages with Ellipsis (...) -->
+              <ng-container *ngFor="let p of displayedPages">
+                <span *ngIf="p === '...'" class="page-ellipsis">&hellip;</span>
+                <button
+                  *ngIf="p !== '...'"
+                  type="button"
+                  class="page-num-btn"
+                  [class.active]="p === currentPage"
+                  (click)="goToPage(+p)"
+                >
+                  {{ p }}
+                </button>
+              </ng-container>
+
+              <!-- Next Page (>) -->
+              <button
+                type="button"
+                class="nav-btn nav-icon-btn"
+                [disabled]="currentPage >= totalPages || pageSize === 'all'"
+                (click)="goToPage(currentPage + 1)"
+                title="Next Page (>)"
+              >
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+
+              <!-- Last Page (>>) -->
+              <button
+                type="button"
+                class="nav-btn nav-icon-btn"
+                [disabled]="currentPage >= totalPages || pageSize === 'all'"
+                (click)="goToPage(totalPages)"
+                title="Last Page (>>)"
+              >
+                <span class="material-symbols-outlined">last_page</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -471,21 +514,47 @@ import { ToastService } from '../../../core/services/toast.service';
     .sn-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; font-family: monospace; }
 
     .pagination-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 1px solid #f1f5f9; background: #fafbfc; flex-wrap: wrap; }
+    .pagination-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .page-size-dropdown-group { display: inline-flex; align-items: center; gap: 8px; }
+    .size-label { font-size: 12.5px; font-weight: 600; color: #64748b; }
+    .page-size-select { height: 32px; padding: 0 10px 0 8px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 12.5px; font-weight: 600; cursor: pointer; outline: none; transition: all 0.15s ease; }
+    .page-size-select:focus { border-color: #0050e5; box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.12); }
     .page-summary { font-size: 12.5px; color: #64748b; }
     .page-summary strong { color: #0f172a; }
-    .page-size-controls { display: flex; align-items: center; gap: 10px; }
-    .size-label { font-size: 12px; font-weight: 600; color: #64748b; }
-    .size-pills { display: inline-flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 2px; gap: 2px; }
-    .size-pill { border: none; background: transparent; color: #475569; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
-    .size-pill:hover { background: #f1f5f9; color: #0f172a; }
-    .size-pill.active { background: #0050e5; color: #ffffff; }
-    .page-nav-controls { display: flex; align-items: center; gap: 6px; }
-    .nav-btn, .page-num-btn { display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 32px; padding: 0 10px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
-    .page-num-btn { min-width: 32px; padding: 0 6px; }
+    .pagination-right { display: flex; align-items: center; }
+    .page-nav-controls { display: inline-flex; align-items: center; gap: 4px; }
+    .nav-btn, .page-num-btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; min-width: 32px; padding: 0 6px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+    .nav-icon-btn { padding: 0 4px; }
+    .nav-icon-btn .material-symbols-outlined { font-size: 18px; }
     .nav-btn:hover:not(:disabled), .page-num-btn:hover { background: #eff6ff; color: #0050e5; border-color: #bfdbfe; }
-    .page-num-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; }
-    .nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .nav-btn .material-symbols-outlined { font-size: 16px; }
+    .page-num-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; font-weight: 700; }
+    .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; background: #f8fafc; }
+    .page-ellipsis { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 32px; color: #94a3b8; font-weight: 700; letter-spacing: 2px; }
+
+    :host-context(.dark-mode) .pagination-footer,
+    body.dark-mode .pagination-footer { background: #0f172a; border-top-color: #1e293b; }
+    :host-context(.dark-mode) .page-size-select,
+    body.dark-mode .page-size-select { background: #1e293b; border-color: #334155; color: #f1f5f9; }
+    :host-context(.dark-mode) .size-label,
+    body.dark-mode .size-label,
+    :host-context(.dark-mode) .page-summary,
+    body.dark-mode .page-summary { color: #94a3b8; }
+    :host-context(.dark-mode) .page-summary strong,
+    body.dark-mode .page-summary strong { color: #f8fafc; }
+    :host-context(.dark-mode) .nav-btn,
+    body.dark-mode .nav-btn,
+    :host-context(.dark-mode) .page-num-btn,
+    body.dark-mode .page-num-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+    :host-context(.dark-mode) .nav-btn:hover:not(:disabled),
+    body.dark-mode .nav-btn:hover:not(:disabled),
+    :host-context(.dark-mode) .page-num-btn:hover,
+    body.dark-mode .page-num-btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: #60a5fa; }
+    :host-context(.dark-mode) .page-num-btn.active,
+    body.dark-mode .page-num-btn.active { background: #0050e5; border-color: #0050e5; color: #ffffff; }
+    :host-context(.dark-mode) .nav-btn:disabled,
+    body.dark-mode .nav-btn:disabled { background: #0f172a; border-color: #1e293b; color: #475569; }
+    :host-context(.dark-mode) .page-ellipsis,
+    body.dark-mode .page-ellipsis { color: #64748b; }
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -504,8 +573,10 @@ export class WorkforceStaffManagerComponent implements OnInit {
   showInfoModal = false;
 
   pageSizeOptions: { label: string; value: number | 'all' }[] = [
+    { label: '10', value: 10 },
     { label: '15', value: 15 },
     { label: '25', value: 25 },
+    { label: '50', value: 50 },
     { label: '100', value: 100 },
     { label: 'All', value: 'all' }
   ];
@@ -531,12 +602,17 @@ export class WorkforceStaffManagerComponent implements OnInit {
           this.pageSize = 'all';
         } else if (saved) {
           const parsed = parseInt(saved, 10);
-          if ([15, 25, 100].includes(parsed)) {
+          if ([10, 15, 25, 50, 100].includes(parsed)) {
             this.pageSize = parsed;
           }
         }
       }
     } catch {}
+  }
+
+  onPageSizeSelectChange(val: any): void {
+    const parsed = val === 'all' ? 'all' : parseInt(val, 10);
+    this.setPageSize(parsed);
   }
 
   setPageSize(size: number | 'all'): void {
@@ -566,6 +642,38 @@ export class WorkforceStaffManagerComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  get displayedPages(): (number | '...')[] {
+    const total = this.totalPages;
+    if (total <= 1) return [1];
+    if (total <= 7) {
+      const pages: number[] = [];
+      for (let i = 1; i <= total; i++) pages.push(i);
+      return pages;
+    }
+
+    const current = this.currentPage;
+    const result: (number | '...')[] = [];
+
+    if (current <= 4) {
+      for (let i = 1; i <= 5; i++) result.push(i);
+      result.push('...');
+      result.push(total);
+    } else if (current >= total - 3) {
+      result.push(1);
+      result.push('...');
+      for (let i = total - 4; i <= total; i++) result.push(i);
+    } else {
+      result.push(1);
+      result.push('...');
+      result.push(current - 1);
+      result.push(current);
+      result.push(current + 1);
+      result.push('...');
+      result.push(total);
+    }
+    return result;
   }
 
   get paginatedMembers(): any[] {
