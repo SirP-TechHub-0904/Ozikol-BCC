@@ -543,18 +543,56 @@ namespace Ozikol_BCC.Api.Controllers
                 r.IsActive = false;
             }
 
-            // 3. Deactivate all associated Workforce Staff Profiles (preserves shift/roster transactions)
-            var staffProfiles = await _dbContext.BcpShiftStaffProfiles.Where(s => s.UserId == id).ToListAsync();
-            foreach (var sp in staffProfiles)
+            var targetUserIds = new List<string> { id };
+
+            // 4. Apply Fintech Soft Delete and permanent lockout
+            // Note: Administrative notes, KPI scores, shift attendance, and financial/transaction records are preserved for regulatory audit integrity.
+            var deleteMarker = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+            user.UserStatus = UserStatus.Deleted;
+            user.LockoutEnabled = true;
+            user.LockoutEnd = DateTimeOffset.MaxValue;
+            user.SecurityStamp = Guid.NewGuid().ToString();
+
+            // Release unique UserNameIndex constraint so the email/username is freed and duplicate collisions are prevented
+            user.UserName = $"deleted_{deleteMarker}_{uniqueSuffix}";
+            user.NormalizedUserName = user.UserName.ToUpperInvariant();
+            if (!string.IsNullOrWhiteSpace(user.NormalizedEmail))
             {
-                sp.IsActive = false;
-                sp.UpdatedUtc = DateTime.UtcNow;
+                user.NormalizedEmail = $"DELETED_{deleteMarker}_{uniqueSuffix}";
             }
 
-            // Invalidate any unredeemed invitations matching this user's email so they are never auto-resurrected
+            // Defensively clean up any duplicate or orphaned accounts sharing this email (e.g. from previous invitation or seed duplicates)
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
                 var userEmailLower = user.Email.Trim().ToLowerInvariant();
+
+                var duplicateAccounts = await _dbContext.Users.IgnoreQueryFilters()
+                    .Where(u => u.Id != id && u.Email != null && u.Email.ToLower() == userEmailLower)
+                    .ToListAsync();
+
+                foreach (var dup in duplicateAccounts)
+                {
+                    targetUserIds.Add(dup.Id);
+                    var dupSuffix = Guid.NewGuid().ToString("N")[..8];
+                    dup.IsDeleted = true;
+                    dup.DeletedAt = DateTime.UtcNow;
+                    dup.UserStatus = UserStatus.Deleted;
+                    dup.LockoutEnabled = true;
+                    dup.LockoutEnd = DateTimeOffset.MaxValue;
+                    dup.SecurityStamp = Guid.NewGuid().ToString();
+                    dup.UserName = $"deleted_{deleteMarker}_{dupSuffix}";
+                    dup.NormalizedUserName = dup.UserName.ToUpperInvariant();
+                    if (!string.IsNullOrWhiteSpace(dup.NormalizedEmail))
+                    {
+                        dup.NormalizedEmail = $"DELETED_{deleteMarker}_{dupSuffix}";
+                    }
+                }
+
+                // Invalidate any unredeemed invitations matching this user's email so they are never auto-resurrected
                 var pendingInvites = await _dbContext.Invitations
                     .Where(i => i.Email != null && i.Email.ToLower() == userEmailLower && !i.IsUsed)
                     .ToListAsync();
@@ -564,16 +602,23 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // 4. Apply Fintech Soft Delete and permanent lockout
-            // Note: Administrative notes, KPI scores, shift attendance, and financial/transaction records are preserved for regulatory audit integrity.
-            user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
-            user.UserStatus = UserStatus.Deleted;
-            user.LockoutEnabled = true;
-            user.LockoutEnd = DateTimeOffset.MaxValue;
-            await _userManager.UpdateSecurityStampAsync(user);
+            // 3. Deactivate all associated Workforce Staff Profiles across all target user IDs (preserves shift/roster transactions)
+            var staffProfiles = await _dbContext.BcpShiftStaffProfiles.Where(s => targetUserIds.Contains(s.UserId)).ToListAsync();
+            foreach (var sp in staffProfiles)
+            {
+                sp.IsActive = false;
+                sp.UpdatedUtc = DateTime.UtcNow;
+            }
 
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                await LogActivityAsync("CRITICAL_DELETE_USER_ERROR", $"[ERROR] Failed to save soft-delete for user '{userName}' ({user.Email}): {ex.Message}", id, userName);
+                return StatusCode(500, ApiResponse<object>.FailureResponse("Failed to complete account deletion due to a persistence constraint. Please verify the account state."));
+            }
 
             await LogActivityAsync("CRITICAL_DELETE_USER", $"[CRITICAL] Soft-deleted and archived member account for '{userName}' ({user.Email})", id, userName);
             await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was soft-deleted and archived by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
