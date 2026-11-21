@@ -445,17 +445,81 @@ import { TranslationService } from '../../../core/services/translation.service';
               </div>
 
               <!-- Direct Temporary Password Setter -->
-              <div class="direct-reset-box" style="margin-top: 18px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:8px;">{{ 'user_details.admin_override_title' | translate:'Set New Password Directly (Admin Override)' }}</label>
-                <div style="display:flex; gap:8px;">
-                  <input type="text" [(ngModel)]="directNewPassword" placeholder="e.g. TempPass@2026" style="flex:1;" />
-                  <button type="button" class="btn btn-outline btn-sm" (click)="generateDirectRandomPassword()">{{ 'user_details.generate' | translate:'Generate' }}</button>
-                  <button type="button" class="btn btn-primary btn-sm" (click)="applyDirectPassword()" [disabled]="!directNewPassword.trim()">{{ 'user_details.apply' | translate:'Apply' }}</button>
+              <div class="direct-reset-box">
+                <div class="direct-reset-header">
+                  <div class="direct-reset-title-group">
+                    <span class="material-symbols-outlined reset-title-icon">password</span>
+                    <div>
+                      <label class="reset-title-label">{{ 'user_details.admin_override_title' | translate:'Set New Password Directly (Admin Override)' }}</label>
+                      <p class="reset-title-hint">{{ 'user_details.admin_override_desc' | translate:'Instantly assign a temporary credential for emergency member access' }}</p>
+                    </div>
+                  </div>
                 </div>
-                <label style="font-size:11.5px; color:#64748b; display:flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;">
-                  <input type="checkbox" [(ngModel)]="sendEmailOnPasswordReset" />
-                  <span>{{ 'user_details.email_temp_pwd_desc' | translate:'Email temporary password & first-time sign in instructions to' }} <strong>{{ user.email }}</strong></span>
-                </label>
+
+                <div class="password-input-toolbar">
+                  <div class="password-field-container">
+                    <span class="material-symbols-outlined field-leading-icon">lock</span>
+                    <input
+                      [type]="showDirectPassword ? 'text' : 'password'"
+                      [(ngModel)]="directNewPassword"
+                      placeholder="e.g. TempPass@2026"
+                      class="password-text-input"
+                      autocomplete="new-password"
+                      spellcheck="false"
+                    />
+                    <div class="field-trailing-actions">
+                      <button
+                        *ngIf="directNewPassword"
+                        type="button"
+                        class="btn-field-icon"
+                        (click)="copyDirectPassword()"
+                        title="Copy password"
+                      >
+                        <span class="material-symbols-outlined">content_copy</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-field-icon"
+                        (click)="showDirectPassword = !showDirectPassword"
+                        [title]="showDirectPassword ? 'Hide password' : 'Show password'"
+                      >
+                        <span class="material-symbols-outlined">{{ showDirectPassword ? 'visibility_off' : 'visibility' }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="password-buttons-group">
+                    <button
+                      type="button"
+                      class="btn btn-generate-pwd"
+                      (click)="generateDirectRandomPassword()"
+                      title="Generate random secure password"
+                    >
+                      <span class="material-symbols-outlined">casino</span>
+                      <span>{{ 'user_details.generate' | translate:'Generate' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-apply-pwd"
+                      (click)="applyDirectPassword()"
+                      [disabled]="!directNewPassword.trim()"
+                      title="Apply temporary password to member"
+                    >
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>{{ 'user_details.apply' | translate:'Apply' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="reset-checkbox-row">
+                  <label class="custom-checkbox-container">
+                    <input type="checkbox" [(ngModel)]="sendEmailOnPasswordReset" />
+                    <span class="checkbox-text">
+                      <span class="material-symbols-outlined checkbox-mail-icon">forward_to_inbox</span>
+                      <span>{{ 'user_details.email_temp_pwd_desc' | translate:'Email temporary password & first-time sign in instructions to' }} <strong>{{ user.email }}</strong></span>
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -609,6 +673,233 @@ import { TranslationService } from '../../../core/services/translation.service';
     .btn-copy-otp { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #ffffff; border: 1px solid #0050e5; color: #0050e5; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
     .btn-copy-otp:hover { background: #0050e5; color: #ffffff; }
     .otp-sub-hint { font-size: 11px; color: #64748b; }
+
+    /* Direct Password Setter Re-architecture */
+    .direct-reset-box {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .direct-reset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .direct-reset-title-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .reset-title-icon {
+      font-size: 20px;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 6px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .reset-title-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      display: block;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .reset-title-hint {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 2px 0 0;
+      line-height: 1.3;
+    }
+
+    .password-input-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      .password-input-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .password-field-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .field-leading-icon {
+      position: absolute;
+      left: 12px;
+      font-size: 18px;
+      color: #94a3b8;
+      pointer-events: none;
+      transition: color 0.15s;
+    }
+    .password-field-container:focus-within .field-leading-icon {
+      color: #0050e5;
+    }
+
+    .password-text-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 72px 0 38px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.15s ease-in-out;
+      box-sizing: border-box;
+    }
+    .password-text-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+      background: #ffffff;
+    }
+    .password-text-input::placeholder {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .field-trailing-actions {
+      position: absolute;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .btn-field-icon {
+      background: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      padding: 0;
+    }
+    .btn-field-icon:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-field-icon .material-symbols-outlined {
+      font-size: 17px;
+    }
+
+    .password-buttons-group {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-generate-pwd {
+      height: 40px;
+      padding: 0 14px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-generate-pwd:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .btn-generate-pwd .material-symbols-outlined {
+      font-size: 17px;
+      color: #64748b;
+    }
+
+    .btn-apply-pwd {
+      height: 40px;
+      padding: 0 18px;
+      background: #0050e5 !important;
+      border: 1.5px solid #0050e5 !important;
+      border-radius: 8px;
+      color: #ffffff !important;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      box-shadow: 0 2px 4px rgba(0, 80, 229, 0.2);
+    }
+    .btn-apply-pwd:hover:not(:disabled) {
+      background: #0040b8 !important;
+      border-color: #0040b8 !important;
+      box-shadow: 0 3px 6px rgba(0, 80, 229, 0.3);
+    }
+    .btn-apply-pwd:disabled {
+      background: #94a3b8 !important;
+      border-color: #94a3b8 !important;
+      opacity: 0.65;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-apply-pwd span, .btn-apply-pwd .material-symbols-outlined {
+      color: #ffffff !important;
+      font-size: 17px;
+    }
+
+    .reset-checkbox-row {
+      display: flex;
+      align-items: center;
+      padding: 4px 0 0;
+    }
+    .custom-checkbox-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #475569;
+      user-select: none;
+    }
+    .custom-checkbox-container input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1.5px solid #cbd5e1;
+      cursor: pointer;
+      accent-color: #0050e5;
+    }
+    .checkbox-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .checkbox-mail-icon {
+      font-size: 16px;
+      color: #0050e5;
+    }
 
     /* OTP Modal Dialog */
     .otp-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
@@ -962,6 +1253,7 @@ export class UserDetailsComponent implements OnInit {
   // Direct Password Setter
   directNewPassword = '';
   sendEmailOnPasswordReset = true;
+  showDirectPassword = true;
 
   // Notes
   newNoteText = '';
@@ -1336,6 +1628,14 @@ export class UserDetailsComponent implements OnInit {
       pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     this.directNewPassword = pass;
+    this.showDirectPassword = true;
+  }
+
+  copyDirectPassword(): void {
+    if (!this.directNewPassword) return;
+    navigator.clipboard.writeText(this.directNewPassword).then(() => {
+      this.toast.success('Temporary password copied to clipboard!');
+    });
   }
 
   applyDirectPassword(): void {
