@@ -563,6 +563,9 @@ import {
                       </label>
                     </div>
 
+                    <!-- Dynamic Legal Consents Preview -->
+                    <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
+
                     <!-- Single Submit Button -->
                     <button type="button" class="rf-sim-btn rf-sim-btn-finish">
                       <span class="material-symbols-outlined">how_to_reg</span>
@@ -672,6 +675,9 @@ import {
                         <span style="font-size: 11px; font-weight: 600; color: #334155;">I'm not a robot · Google reCAPTCHA Protected</span>
                       </label>
                     </div>
+
+                    <!-- Dynamic Legal Consents Preview -->
+                    <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
 
                     <button type="button" class="rf-sim-btn rf-sim-btn-finish">
                       <span class="material-symbols-outlined">how_to_reg</span>
@@ -825,6 +831,9 @@ import {
                         </label>
                         <span style="font-size: 10px; color: #94a3b8;">Bot Defense</span>
                       </div>
+
+                      <!-- Dynamic Legal Consents Preview -->
+                      <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
                       <div *ngIf="policy.allowSaveAndContinue" class="rf-sim-save-continue">
                         <a href="javascript:void(0)" class="rf-save-link" (click)="simDraftSaved = true">
                           <span class="material-symbols-outlined">bookmark</span>
@@ -950,6 +959,9 @@ import {
                           <span style="font-size: 11px; font-weight: 600; color: #334155;">Google reCAPTCHA Protected</span>
                         </label>
                       </div>
+
+                      <!-- Dynamic Legal Consents Preview -->
+                      <ng-container *ngTemplateOutlet="simLegalConsentsBlock"></ng-container>
                       <div class="rf-sim-nav-row">
                         <button type="button" class="rf-sim-btn-sub" (click)="simStep = 2">
                           <span class="material-symbols-outlined">arrow_back</span>
@@ -964,6 +976,36 @@ import {
                   </div>
                 </div>
               </div>
+
+              <!-- Dynamic Legal & Terms Consent Checkboxes Mirroring Registration Form Builder -->
+              <ng-template #simLegalConsentsBlock>
+                <div *ngIf="activeSimLegalConsents.length > 0" style="display: flex; flex-direction: column; gap: 6px; margin: 10px 0;">
+                  <label *ngFor="let item of activeSimLegalConsents"
+                         style="display: flex; align-items: flex-start; gap: 7px; font-size: 11.5px; color: #334155; cursor: pointer; line-height: 1.4;">
+                    <input type="checkbox"
+                           [(ngModel)]="simAcceptedConsents[item.id]"
+                           style="margin-top: 2px; cursor: pointer;" />
+                    <span>
+                      {{ item.label }}
+                      <ng-container *ngFor="let lnk of getConsentLinks(item); let ki = index; let last = last">
+                        <span *ngIf="ki > 0">{{ last ? ' and ' : ', ' }}</span>
+                        <a *ngIf="lnk.linkText"
+                           [href]="getLegalConsentLinkHref(lnk)"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           (click)="$event.stopPropagation()"
+                           style="color: #0050e5; text-decoration: underline; font-weight: 600;">
+                          {{ lnk.linkText }}
+                        </a>
+                      </ng-container>
+                      <span *ngIf="item.isRequired" style="color: #ef4444; font-weight: 700; margin-left: 2px;">*</span>
+                    </span>
+                  </label>
+                </div>
+                <p *ngIf="activeSimLegalConsents.length === 0" style="font-size: 11px; color: #64748b; margin: 8px 0 0; line-height: 1.4;">
+                  By completing registration, you agree to our workspace terms of service, privacy statement, and workforce policies.
+                </p>
+              </ng-template>
               </ng-template>
             </div>
           </div>
@@ -2482,10 +2524,44 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     isFormPublished: true,
     unpublishedCoreFields: [] as string[],
     deletedCoreFields: [] as string[],
-    customSections: [] as string[]
+    customSections: [] as string[],
+    legalConsents: [] as any[]
   };
   fields: any[] = [];
   categories: any[] = [];
+
+  simAcceptedConsents: { [id: string]: boolean } = {};
+
+  /** Active legal consent rules rendered in the sandbox preview. */
+  get activeSimLegalConsents(): any[] {
+    const list = this.policy.legalConsents || [];
+    return Array.isArray(list) ? list.filter((c: any) => c && c.isActive !== false) : [];
+  }
+
+  /** Returns normalized list of legal links for a consent checkbox. */
+  getConsentLinks(item: any): any[] {
+    if (!item) return [];
+    if (Array.isArray(item.links) && item.links.length > 0) {
+      return item.links;
+    }
+    return [{
+      linkText: item.linkText || item.label || 'Terms & Conditions',
+      pageId: item.pageId || null,
+      pageSlug: item.pageSlug || null,
+      customUrl: item.customUrl || null
+    }];
+  }
+
+  /** Resolves the clickable href for an individual legal consent link. */
+  getLegalConsentLinkHref(lnk: any): string {
+    if (lnk?.customUrl && String(lnk.customUrl).trim()) {
+      return String(lnk.customUrl).trim();
+    }
+    if (lnk?.pageSlug && lnk.pageSlug !== '__custom__') {
+      return '/p/' + String(lnk.pageSlug).replace(/^\/+/, '');
+    }
+    return '#';
+  }
 
   simStep = 1;
   simulatedCategoryId: string | null = null;
@@ -2635,6 +2711,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
           this.policy.unpublishedCoreFields = schema.unpublishedCoreFields || [];
           this.policy.deletedCoreFields = schema.deletedCoreFields || [];
           this.policy.customSections = schema.customSections || [];
+          this.policy.legalConsents = schema.legalConsents || this.policy.legalConsents || [];
           this.categories = schema.categories || [];
 
           const rawFields: any[] = schema.fields || [];
@@ -2700,6 +2777,10 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     this.simModel.lastName = this.simModel.lastName || 'Last';
     this.simModel.email = this.simModel.email || 'name@company.com';
     this.simModel.phone = this.simModel.phone || '+0 (000) 000-0000';
+    this.simModel.reCaptchaChecked = true;
+    for (const c of this.activeSimLegalConsents) {
+      this.simAcceptedConsents[c.id] = true;
+    }
   }
 
   /**

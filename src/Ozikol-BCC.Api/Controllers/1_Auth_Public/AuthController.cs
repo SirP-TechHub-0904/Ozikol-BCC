@@ -405,10 +405,13 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!isPrivilegedAdmin && requireEmailVerification && !user.EmailConfirmed)
             {
+                var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+                await QueueEmailVerificationOtpAsync(user, resolvedTenantKey, activeUserManager, activeDispatcher);
+
                 return StatusCode(403, new
                 {
                     success = false,
-                    message = "Email confirmation is required by workspace policy before you can sign in.",
+                    message = "Email confirmation is required by workspace policy before you can sign in. A 6-digit verification code has been dispatched to your email.",
                     data = new { requiresEmailVerification = true, email = user.Email }
                 });
             }
@@ -1372,6 +1375,54 @@ namespace Ozikol_BCC.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RequestGeneralOtp([FromBody] RequestOtpRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
+            }
+
+            var cleanEmail = request.Email.Trim();
+            string? resolvedTenantKey = _tenantProvider?.CurrentTenant;
+
+            if (string.IsNullOrEmpty(resolvedTenantKey) && _masterCatalogDbContext != null)
+            {
+                var activeTenants = await _masterCatalogDbContext.MasterTenantCatalogs.Where(t => t.IsActive).ToListAsync();
+                if (_serviceScopeFactory != null)
+                {
+                    foreach (var t in activeTenants)
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var scopedTenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+                        using var tScope = scopedTenantProvider.BeginScope(t.TenantKey);
+                        var scopedUserManager = scope.ServiceProvider.GetRequiredService<UserManager<Profile>>();
+                        var foundUser = await scopedUserManager.FindByEmailAsync(cleanEmail);
+                        if (foundUser != null)
+                        {
+                            resolvedTenantKey = t.TenantKey;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            using var execScope = (!string.IsNullOrEmpty(resolvedTenantKey) && _serviceScopeFactory != null)
+                ? _serviceScopeFactory.CreateScope()
+                : null;
+
+            var activeTenantProvider = execScope?.ServiceProvider.GetService<ITenantProvider>() ?? _tenantProvider;
+            using var activeTenantScope = (!string.IsNullOrEmpty(resolvedTenantKey) && activeTenantProvider != null)
+                ? activeTenantProvider.BeginScope(resolvedTenantKey)
+                : null;
+
+            var activeUserManager = execScope?.ServiceProvider.GetService<UserManager<Profile>>() ?? _userManager;
+            var user = await activeUserManager.FindByEmailAsync(cleanEmail);
+
+            if (user != null && !user.EmailConfirmed)
+            {
+                var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+                await QueueEmailVerificationOtpAsync(user, resolvedTenantKey, activeUserManager, activeDispatcher);
+                return Ok(ApiResponse<object>.SuccessResponse(null, "A fresh 6-digit verification code has been sent to your email address."));
+            }
+
             return await RequestPasswordOtp(request);
         }
 
@@ -1483,7 +1534,41 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
             }
 
-            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            var cleanEmail = request.Email.Trim();
+            string? resolvedTenantKey = _tenantProvider?.CurrentTenant;
+
+            if (string.IsNullOrEmpty(resolvedTenantKey) && _masterCatalogDbContext != null)
+            {
+                var activeTenants = await _masterCatalogDbContext.MasterTenantCatalogs.Where(t => t.IsActive).ToListAsync();
+                if (_serviceScopeFactory != null)
+                {
+                    foreach (var t in activeTenants)
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var scopedTenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+                        using var tScope = scopedTenantProvider.BeginScope(t.TenantKey);
+                        var scopedUserManager = scope.ServiceProvider.GetRequiredService<UserManager<Profile>>();
+                        var foundUser = await scopedUserManager.FindByEmailAsync(cleanEmail);
+                        if (foundUser != null)
+                        {
+                            resolvedTenantKey = t.TenantKey;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            using var execScope = (!string.IsNullOrEmpty(resolvedTenantKey) && _serviceScopeFactory != null)
+                ? _serviceScopeFactory.CreateScope()
+                : null;
+
+            var activeTenantProvider = execScope?.ServiceProvider.GetService<ITenantProvider>() ?? _tenantProvider;
+            using var activeTenantScope = (!string.IsNullOrEmpty(resolvedTenantKey) && activeTenantProvider != null)
+                ? activeTenantProvider.BeginScope(resolvedTenantKey)
+                : null;
+
+            var activeUserManager = execScope?.ServiceProvider.GetService<UserManager<Profile>>() ?? _userManager;
+            var user = await activeUserManager.FindByEmailAsync(cleanEmail);
             if (user == null)
             {
                 return Ok(ApiResponse<object>.SuccessResponse(null, "If an account exists with this email, a 6-digit verification code has been dispatched."));
@@ -1494,7 +1579,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<object>.SuccessResponse(new { alreadyConfirmed = true }, "This email address is already verified."));
             }
 
-            await QueueEmailVerificationOtpAsync(user);
+            var activeDispatcher = execScope?.ServiceProvider.GetService<ICentralNotificationDispatcher>() ?? _notificationDispatcher;
+            await QueueEmailVerificationOtpAsync(user, resolvedTenantKey, activeUserManager, activeDispatcher);
             return Ok(ApiResponse<object>.SuccessResponse(null, "A fresh 6-digit verification code has been sent to your email address."));
         }
 
@@ -1502,23 +1588,35 @@ namespace Ozikol_BCC.Api.Controllers
         /// Generates a 6-digit email verification OTP, stores it with a 15-minute expiry, and queues the verification email.
         /// </summary>
         /// <param name="user">The newly registered or unconfirmed user profile.</param>
-        private async Task QueueEmailVerificationOtpAsync(Profile user)
+        /// <param name="tenantKey">Optional scoped tenant identifier.</param>
+        /// <param name="userManager">Optional scoped user manager instance.</param>
+        /// <param name="dispatcher">Optional scoped central notification dispatcher.</param>
+        private async Task QueueEmailVerificationOtpAsync(
+            Profile user,
+            string? tenantKey = null,
+            UserManager<Profile>? userManager = null,
+            ICentralNotificationDispatcher? dispatcher = null)
         {
+            var targetUserManager = userManager ?? _userManager;
+            var targetDispatcher = dispatcher ?? _notificationDispatcher;
+            var resolvedTenant = !string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : _tenantProvider?.CurrentTenant;
+
             var otpCode = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
             var expiryTicks = DateTime.UtcNow.AddMinutes(15).Ticks;
             var tokenValue = $"{otpCode}:{expiryTicks}";
 
-            await _userManager.SetAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp", tokenValue);
-            await _userManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", tokenValue);
+            await targetUserManager.SetAuthenticationTokenAsync(user, "OzikolEmailVerify", "EmailVerificationOtp", tokenValue);
+            await targetUserManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", tokenValue);
 
-            if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(user.Email))
+            if (targetDispatcher != null && !string.IsNullOrWhiteSpace(user.Email))
             {
-                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                await targetDispatcher.DispatchAsync(new NotificationDispatchPayload
                 {
                     TargetType = NotificationDispatchTarget.SingleUser,
                     TargetUserId = user.Id,
                     RecipientEmail = user.Email,
                     RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
+                    TenantKey = resolvedTenant,
                     Title = "Verify Your Email Address — 6-Digit Code",
                     Message = $"Your 6-digit email verification code is {otpCode}. Valid for 15 minutes.",
                     EmailSubject = "Verify Your Email Address — 6-Digit Code",
