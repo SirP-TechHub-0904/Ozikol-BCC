@@ -718,19 +718,23 @@ interface YearMonthGrid {
         <!-- 2. Google-Calendar-Style Master Navigation & View Toolbar -->
         <div class="calendar-toolbar-card">
           <div class="cal-nav-left">
-            <button type="button" class="btn-today" (click)="goToToday()">Today</button>
-            <div class="nav-arrows">
-              <button type="button" class="nav-icon-btn" (click)="navigatePeriod(-1)" title="Previous">
-                <span class="material-symbols-outlined">chevron_left</span>
-              </button>
-              <button type="button" class="nav-icon-btn" (click)="navigatePeriod(1)" title="Next">
-                <span class="material-symbols-outlined">chevron_right</span>
-              </button>
+            <div class="period-title-group">
+              <h2 class="period-heading">{{ currentPeriodHeading }}</h2>
             </div>
-            <h2 class="period-heading">{{ currentPeriodHeading }}</h2>
+            <div class="cal-nav-controls">
+              <button type="button" class="btn-today" (click)="goToToday()">Today</button>
+              <div class="nav-arrows">
+                <button type="button" class="nav-icon-btn" (click)="navigatePeriod(-1)" title="Previous">
+                  <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button type="button" class="nav-icon-btn" (click)="navigatePeriod(1)" title="Next">
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+              </div>
+            </div>
 
-            <!-- Direct Month & Year Jump Pickers -->
-            <div class="month-year-pickers">
+            <!-- Direct Month & Year Jump Pickers (Desktop only) -->
+            <div class="month-year-pickers desktop-only">
               <select class="cal-picker-select" [ngModel]="currentCalendarDate.getMonth()" (ngModelChange)="onSelectMonth($event)">
                 <option *ngFor="let m of monthNames; let idx = index" [ngValue]="idx">{{ m }}</option>
               </select>
@@ -787,8 +791,8 @@ interface YearMonthGrid {
               </button>
             </div>
 
-            <!-- Fast Action Banner -->
-            <div class="cal-action-banner">
+            <!-- Fast Action Banner (Desktop only) -->
+            <div class="cal-action-banner desktop-only">
               <span class="material-symbols-outlined text-primary">info</span>
               <span>Not on rota today? Clock in if on duty:</span>
               <a routerLink="/attendance/workspace/clock" class="btn-clockin-mini" title="Instant Duty Clock-In">
@@ -802,24 +806,24 @@ interface YearMonthGrid {
         <!-- 3. Color Legend Strip -->
         <div class="calendar-legend-bar">
           <div class="legend-group">
-            <span class="legend-title">Day Indicator Key:</span>
+            <span class="legend-title">Day Indicators:</span>
             <span class="legend-swatch upcoming-swatch">
-              <span class="swatch-dot"></span> Upcoming Day with Shifts
+              <span class="swatch-dot"></span> Upcoming
             </span>
             <span class="legend-swatch today-swatch">
-              <span class="swatch-dot"></span> Today / Current Day
+              <span class="swatch-dot"></span> Today
             </span>
             <span class="legend-swatch past-swatch">
-              <span class="swatch-dot"></span> Past Day with Shifts
+              <span class="swatch-dot"></span> Past
             </span>
           </div>
 
           <div class="legend-group">
-            <span class="legend-title">Daily Metric Badges:</span>
+            <span class="legend-title">Badges:</span>
             <span class="metric-pill pill-blue">Shifts</span>
-            <span class="metric-pill pill-green">Active Now</span>
-            <span class="metric-pill pill-purple">Excused / Leave</span>
-            <span class="metric-pill pill-yellow">Swap Offered</span>
+            <span class="metric-pill pill-green">Active</span>
+            <span class="metric-pill pill-purple">Excused</span>
+            <span class="metric-pill pill-yellow">Swap</span>
           </div>
         </div>
 
@@ -2965,6 +2969,16 @@ interface YearMonthGrid {
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+    }
+    .cal-nav-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .period-title-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
     .btn-today {
       height: 34px;
@@ -5655,6 +5669,122 @@ interface YearMonthGrid {
         padding: 2px 6px !important;
         font-size: 9.5px !important;
         border-radius: 4px !important;
+      }
+
+      /* Calendar Toolbar & Navigation Mobile Optimization */
+      .calendar-toolbar-card {
+        padding: 10px 12px !important;
+        border-radius: 12px !important;
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+      }
+      .cal-nav-left {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+      }
+      .period-title-group {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+      }
+      .period-heading {
+        font-size: 15.5px !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .cal-nav-controls {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+      }
+      .btn-today {
+        height: 28px !important;
+        padding: 0 10px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important;
+      }
+      .nav-arrows {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 3px !important;
+      }
+      .nav-icon-btn {
+        width: 28px !important;
+        height: 28px !important;
+      }
+      .nav-icon-btn .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .cal-nav-right {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+      }
+      .cal-view-switcher {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 2px !important;
+        padding: 2px !important;
+        border-radius: 8px !important;
+        box-sizing: border-box !important;
+      }
+      .cal-view-btn {
+        justify-content: center !important;
+        height: 30px !important;
+        padding: 0 4px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important;
+        gap: 3px !important;
+      }
+      .cal-view-btn .material-symbols-outlined {
+        font-size: 14px !important;
+      }
+      .desktop-only {
+        display: none !important;
+      }
+      .calendar-legend-bar {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        padding: 6px 10px !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+        border-radius: 8px !important;
+        background: #f8fafc !important;
+      }
+      .calendar-legend-bar::-webkit-scrollbar { display: none !important; }
+      .legend-group {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 5px !important;
+        flex-shrink: 0 !important;
+      }
+      .legend-title {
+        font-size: 9.5px !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        white-space: nowrap !important;
+      }
+      .legend-swatch, .metric-pill {
+        font-size: 9px !important;
+        padding: 2px 5px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
       }
       .shifts-card-body {
         padding: 14px 16px !important;
