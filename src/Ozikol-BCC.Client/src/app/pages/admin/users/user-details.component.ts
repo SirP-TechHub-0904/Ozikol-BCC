@@ -240,69 +240,91 @@ import { TranslationService } from '../../../core/services/translation.service';
             <div class="card-header bg-danger-light">
               <span class="material-symbols-outlined text-danger">warning</span>
               <div>
-                <h3 class="text-danger">{{ 'user_details.danger_title' | translate:'Account Access & Danger Zone' }}</h3>
-                <p>{{ 'user_details.danger_subtitle' | translate:'Restrict or permanently remove member account' }}</p>
+                <h3 class="text-danger">{{ 'user_details.danger_title' | translate:'Administrative Actions & Danger Zone' }}</h3>
+                <p>{{ 'user_details.danger_subtitle' | translate:'Administrative account status overrides and deletion actions' }}</p>
               </div>
             </div>
             <div class="card-body danger-actions">
-              <!-- Row 1: Access State (Active, Suspended, or Pending) -->
-              <div class="danger-row" *ngIf="user.userStatus === 'Active'">
-                <div class="danger-row-info">
-                  <strong>{{ 'user_details.suspend_account' | translate:'Suspend Account' }}</strong>
-                  <p>{{ 'user_details.suspend_desc' | translate:'Temporarily revoke workspace access' }}</p>
+              <!-- Tile 1: Access State (Active, Suspended, or Pending) -->
+              <div class="danger-tile">
+                <div class="danger-tile-header">
+                  <div class="tile-status-icon" [ngClass]="user.userStatus === 'Active' ? 'status-icon-active' : (user.userStatus === 'Suspended' ? 'status-icon-suspended' : 'status-icon-pending')">
+                    <span class="material-symbols-outlined">
+                      {{ user.userStatus === 'Active' ? 'verified_user' : (user.userStatus === 'Suspended' ? 'block' : 'hourglass_top') }}
+                    </span>
+                  </div>
+                  <div class="tile-meta">
+                    <div class="tile-headline">
+                      <strong class="tile-title">
+                        {{ user.userStatus === 'Active' ? ('user_details.active_workspace_access' | translate:'Active Workspace Access') : (user.userStatus === 'Suspended' ? ('user_details.account_suspended' | translate:'Account Suspended') : ('user_details.pending_account' | translate:'Pending Account Verification')) }}
+                      </strong>
+                      <span class="tile-badge" [ngClass]="user.userStatus === 'Active' ? 'badge-pill-active' : (user.userStatus === 'Suspended' ? 'badge-pill-suspended' : 'badge-pill-pending')">
+                        {{ user.userStatus || 'Pending' }}
+                      </span>
+                    </div>
+                    <p class="tile-subtitle">
+                      {{ user.userStatus === 'Active' ? ('user_details.suspend_desc' | translate:'Member has active sign-in access. You can temporarily suspend this account.') : (user.userStatus === 'Suspended' ? ('user_details.reactivate_desc' | translate:'Account is locked. Restore full access to member workspace.') : ('user_details.pending_desc' | translate:'Account is awaiting verification. You can activate or suspend.')) }}
+                    </p>
+                  </div>
                 </div>
-                <div class="danger-actions-group">
-                  <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('suspend')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">block</span>
-                    <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
+
+                <div class="tile-action-bar">
+                  <!-- Active State Action -->
+                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-action-tile btn-warning-tile" (click)="toggleAccountStatus('suspend')">
+                    <span class="material-symbols-outlined">block</span>
+                    <span>{{ 'user_details.suspend' | translate:'Suspend Account' }}</span>
                   </button>
+
+                  <!-- Suspended State Action -->
+                  <button *ngIf="user.userStatus === 'Suspended'" type="button" class="btn btn-action-tile btn-success-tile" (click)="toggleAccountStatus('activate')">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>{{ 'user_details.reactivate' | translate:'Reactivate Account' }}</span>
+                  </button>
+
+                  <!-- Pending State Actions -->
+                  <div *ngIf="user.userStatus !== 'Active' && user.userStatus !== 'Suspended'" class="tile-button-grid">
+                    <button type="button" class="btn btn-action-tile btn-success-tile" (click)="toggleAccountStatus('activate')">
+                      <span class="material-symbols-outlined">check</span>
+                      <span>{{ 'user_details.activate' | translate:'Activate' }}</span>
+                    </button>
+                    <button type="button" class="btn btn-action-tile btn-warning-tile" (click)="toggleAccountStatus('suspend')">
+                      <span class="material-symbols-outlined">block</span>
+                      <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div class="danger-row" *ngIf="user.userStatus === 'Suspended'">
-                <div class="danger-row-info">
-                  <strong>{{ 'user_details.reactivate_account' | translate:'Reactivate Account' }}</strong>
-                  <p>{{ 'user_details.reactivate_desc' | translate:'Restore full access to member portal' }}</p>
+              <!-- Tile 2: Permanent Member Deletion & Soft-Delete Archiving -->
+              <div class="danger-tile danger-tile-destructive">
+                <div class="danger-tile-header">
+                  <div class="tile-status-icon status-icon-destructive">
+                    <span class="material-symbols-outlined">person_remove</span>
+                  </div>
+                  <div class="tile-meta">
+                    <div class="tile-headline">
+                      <strong class="tile-title text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
+                      <span class="tile-badge badge-pill-danger">{{ 'user_details.permanent_badge' | translate:'Permanent' }}</span>
+                    </div>
+                    <p class="tile-subtitle">
+                      {{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : (user.userStatus === 'Active' ? ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') : ('user_details.delete_desc_pending' | translate:'Unverified pending registration. Ready for cancellation and deletion.')) }}
+                    </p>
+                  </div>
                 </div>
-                <div class="danger-actions-group">
-                  <button type="button" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;" (click)="toggleAccountStatus('activate')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
-                    <span>{{ 'user_details.reactivate' | translate:'Reactivate' }}</span>
-                  </button>
-                </div>
-              </div>
 
-              <div class="danger-row" *ngIf="user.userStatus !== 'Active' && user.userStatus !== 'Suspended'">
-                <div class="danger-row-info">
-                  <strong>{{ 'user_details.pending_account' | translate:'Pending Account' }}</strong>
-                  <p>{{ 'user_details.pending_desc' | translate:'Account is awaiting verification or activation' }}</p>
-                </div>
-                <div class="danger-actions-group">
-                  <button type="button" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;" (click)="toggleAccountStatus('activate')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">check</span>
-                    <span>{{ 'user_details.activate' | translate:'Activate' }}</span>
-                  </button>
-                  <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fca5a5;" (click)="toggleAccountStatus('suspend')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">block</span>
-                    <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Row 2: Delete Member Account -->
-              <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
-                <div class="danger-row-info">
-                  <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
-                  <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : (user.userStatus === 'Active' ? ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') : ('user_details.delete_desc_pending' | translate:'Unverified pending registration. Ready for cancellation and deletion.')) }}</p>
-                </div>
-                <div class="danger-actions-group">
-                  <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">person_remove</span>
-                    <span>{{ 'user_details.delete_user' | translate:'Delete User' }}</span>
+                <div class="tile-action-bar">
+                  <!-- If user is Suspended or Pending: Proceed to delete console -->
+                  <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-action-tile btn-danger-tile">
+                    <span class="material-symbols-outlined">delete_forever</span>
+                    <span>{{ 'user_details.delete_user' | translate:'Delete Member Account' }}</span>
+                    <span class="material-symbols-outlined action-chevron">arrow_forward</span>
                   </a>
-                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-outline-danger btn-sm" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
-                    <span class="material-symbols-outlined fs-6">block</span>
-                    <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
+
+                  <!-- If user is Active: Suspend first -->
+                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-action-tile btn-outline-danger-tile" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
+                    <span class="material-symbols-outlined">lock_reset</span>
+                    <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete Account' }}</span>
+                    <span class="material-symbols-outlined action-chevron">arrow_forward</span>
                   </button>
                 </div>
               </div>
@@ -615,16 +637,206 @@ import { TranslationService } from '../../../core/services/translation.service';
     .btn-bypass-verify .material-symbols-outlined { font-size: 14px; }
     .otp-modal-footer { padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #fafbfc; display: flex; justify-content: flex-end; gap: 10px; }
 
-    /* Danger */
+    /* Danger Zone Re-architecture */
     .border-danger { border-color: #fecaca; }
     .bg-danger-light { background: #fff5f5; }
     .text-danger { color: #dc2626; }
-    .danger-actions { display: flex; flex-direction: column; gap: 14px; }
-    .danger-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-    .danger-row-info { flex: 1 1 auto; min-width: 0; }
-    .danger-row strong { font-size: 13px; display: block; line-height: 1.3; }
-    .danger-row p { font-size: 11.5px; color: #64748b; margin: 3px 0 0; line-height: 1.4; }
-    .danger-actions-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .danger-actions { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; }
+
+    .danger-tile {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .danger-tile:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .danger-tile-destructive {
+      background: #fff8f8;
+      border-color: #fecaca;
+    }
+    .danger-tile-destructive:hover {
+      border-color: #f87171;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+    }
+
+    .danger-tile-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .tile-status-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tile-status-icon .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .status-icon-active {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .status-icon-suspended {
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .status-icon-pending {
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .status-icon-destructive {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+
+    .tile-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .tile-headline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tile-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .tile-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-pill-active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge-pill-suspended {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge-pill-pending {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .badge-pill-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .tile-subtitle {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 4px 0 0;
+      line-height: 1.4;
+    }
+
+    .tile-action-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tile-button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-action-tile {
+      width: 100%;
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap !important;
+      transition: all 0.15s ease-in-out;
+      box-sizing: border-box;
+    }
+    .btn-action-tile .action-chevron {
+      margin-left: auto;
+      font-size: 16px;
+      opacity: 0.7;
+      transition: transform 0.15s ease;
+    }
+    .btn-action-tile:hover .action-chevron {
+      transform: translateX(3px);
+      opacity: 1;
+    }
+
+    .btn-warning-tile {
+      background: #ffffff;
+      border: 1.5px solid #fcd34d;
+      color: #b45309;
+    }
+    .btn-warning-tile:hover {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .btn-success-tile {
+      background: #ffffff;
+      border: 1.5px solid #86efac;
+      color: #15803d;
+    }
+    .btn-success-tile:hover {
+      background: #f0fdf4;
+      border-color: #22c55e;
+      color: #166534;
+    }
+
+    .btn-danger-tile {
+      background: #dc2626 !important;
+      border: 1.5px solid #b91c1c !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    .btn-danger-tile:hover {
+      background: #b91c1c !important;
+      box-shadow: 0 3px 6px rgba(220, 38, 38, 0.3);
+    }
+    .btn-danger-tile span, .btn-danger-tile .material-symbols-outlined {
+      color: #ffffff !important;
+    }
+
+    .btn-outline-danger-tile {
+      background: #ffffff;
+      border: 1.5px solid #fca5a5;
+      color: #dc2626;
+    }
+    .btn-outline-danger-tile:hover {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
 
     /* Mini Table */
     .table-responsive { overflow-x: auto; }
