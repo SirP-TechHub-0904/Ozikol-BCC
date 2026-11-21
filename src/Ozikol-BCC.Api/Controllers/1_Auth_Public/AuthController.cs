@@ -262,9 +262,9 @@ namespace Ozikol_BCC.Api.Controllers
             var activeDbContext = execScope?.ServiceProvider.GetService<DashboardDbContext>() ?? _dbContext;
 
             var user = await activeUserManager.FindByEmailAsync(model.Email);
-            if (user == null)
+            if (user == null || user.IsDeleted || user.UserStatus == UserStatus.Deleted)
             {
-                _logger.LogWarning("❌ [Login] User not found for email: {Email}", model.Email);
+                _logger.LogWarning("❌ [Login] User not found or archived for email: {Email}", model.Email);
 
                 // Audit unknown-email login attempt as Suspicious without leaking email existence to caller
                 if (activeDbContext != null)
@@ -286,6 +286,11 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 return Unauthorized(ApiResponse<object>.FailureResponse("Invalid email or password credentials."));
+            }
+
+            if (user.UserStatus == UserStatus.Suspended)
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Your workspace access has been temporarily suspended by administration."));
             }
 
             var passwordValid = await activeUserManager.CheckPasswordAsync(user, model.Password);
