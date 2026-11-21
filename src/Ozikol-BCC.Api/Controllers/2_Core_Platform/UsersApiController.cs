@@ -503,7 +503,11 @@ namespace Ozikol_BCC.Api.Controllers
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings != null && !settings.EnableUserDeletion)
             {
-                return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
+                var isSuperAdmin = User.IsInRole("SuperAdmin");
+                if (!isSuperAdmin)
+                {
+                    return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
+                }
             }
 
             // Look up user including soft-deleted check
@@ -521,8 +525,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("This member account has already been deleted and archived."));
             }
 
-            // Enforce suspend-first requirement
-            if (user.UserStatus != UserStatus.Suspended)
+            // Enforce suspend-first requirement (Active accounts MUST be suspended first to prevent accidental deletion of operational members; Suspended or unverified Pending accounts may be deleted)
+            if (user.UserStatus == UserStatus.Active)
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Member account must be Suspended before it can be deleted. Please suspend the account first in Administrative Actions."));
             }
@@ -554,7 +558,15 @@ namespace Ozikol_BCC.Api.Controllers
                 await _userManager.RemoveFromRolesAsync(user, roles);
             }
 
-            // 5. Apply Soft Delete and permanent lockout
+            // 5. Deactivate associated Workforce Staff Profile if exists
+            var staffProfile = await _dbContext.BcpShiftStaffProfiles.FirstOrDefaultAsync(s => s.UserId == id);
+            if (staffProfile != null)
+            {
+                staffProfile.IsActive = false;
+                staffProfile.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            // 6. Apply Soft Delete and permanent lockout
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             user.UserStatus = UserStatus.Deleted;
@@ -992,7 +1004,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Toggles user account status (Active vs Suspended).
+        /// Toggles user account status (Active, Suspended, etc.).
         /// </summary>
         [HttpPut("{id}/status")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
@@ -1002,22 +1014,38 @@ namespace Ozikol_BCC.Api.Controllers
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
             var oldStatus = user.UserStatus.ToString();
-            user.UserStatus = request.IsActive ? UserStatus.Active : UserStatus.Suspended;
+            if (!string.IsNullOrWhiteSpace(request.Status) && System.Enum.TryParse<UserStatus>(request.Status, true, out var explicitStatus))
+            {
+                user.UserStatus = explicitStatus;
+            }
+            else
+            {
+                user.UserStatus = request.IsActive ? UserStatus.Active : UserStatus.Suspended;
+            }
+
+            // Sync associated Workforce Staff Profile active state if exists
+            var staffProfile = await _dbContext.BcpShiftStaffProfiles.FirstOrDefaultAsync(s => s.UserId == id);
+            if (staffProfile != null)
+            {
+                staffProfile.IsActive = (user.UserStatus == UserStatus.Active);
+                staffProfile.UpdatedUtc = DateTime.UtcNow;
+            }
+
             await _dbContext.SaveChangesAsync();
 
-            bool isSuspension = !request.IsActive;
+            bool isSuspension = (user.UserStatus == UserStatus.Suspended);
             var actionType = isSuspension ? "CRITICAL_STATUS_SUSPEND" : "STATUS_REACTIVATE";
             var desc = isSuspension
                 ? $"[CRITICAL] Account suspended for '{user.FullName}' ({user.Email}) by administration"
                 : $"Account reactivated for '{user.FullName}' ({user.Email}) by administration";
             await LogActivityAsync(actionType, desc, user.Id, user.FullName);
             await NotifyUserAsync(user.Id, "Account Status Updated",
-                request.IsActive
+                user.UserStatus == UserStatus.Active
                     ? "Your account has been reactivated by administration."
                     : "Your account has been temporarily suspended by administration.",
                 "/users/workspace/overview",
-                request.IsActive ? NotificationSeverity.Success : NotificationSeverity.Failed,
-                request.IsActive ? "check_circle" : "block");
+                user.UserStatus == UserStatus.Active ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                user.UserStatus == UserStatus.Active ? "check_circle" : "block");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Account status updated to {user.UserStatus}."));
         }
 
@@ -2510,6 +2538,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class UpdateUserStatusRequest
     {
         public bool IsActive { get; set; }
+        public string? Status { get; set; }
     }
 
     public class AssignCategoryRequest

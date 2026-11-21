@@ -245,25 +245,52 @@ import { TranslationService } from '../../../core/services/translation.service';
               </div>
             </div>
             <div class="card-body danger-actions">
-              <div class="danger-row">
+              <!-- Row 1: Access State (Active, Suspended, or Pending) -->
+              <div class="danger-row" *ngIf="user.userStatus === 'Active'">
                 <div>
-                  <strong>{{ user.userStatus === 'Active' ? ('user_details.suspend_account' | translate:'Suspend Account') : ('user_details.reactivate_account' | translate:'Reactivate Account') }}</strong>
-                  <p>{{ user.userStatus === 'Active' ? ('user_details.suspend_desc' | translate:'Temporarily revoke workspace access') : ('user_details.reactivate_desc' | translate:'Restore full access to member portal') }}</p>
+                  <strong>{{ 'user_details.suspend_account' | translate:'Suspend Account' }}</strong>
+                  <p>{{ 'user_details.suspend_desc' | translate:'Temporarily revoke workspace access' }}</p>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus()">
-                  {{ user.userStatus === 'Active' ? ('user_details.suspend' | translate:'Suspend') : ('user_details.reactivate' | translate:'Reactivate') }}
+                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('suspend')">
+                  {{ 'user_details.suspend' | translate:'Suspend' }}
                 </button>
               </div>
 
+              <div class="danger-row" *ngIf="user.userStatus === 'Suspended'">
+                <div>
+                  <strong>{{ 'user_details.reactivate_account' | translate:'Reactivate Account' }}</strong>
+                  <p>{{ 'user_details.reactivate_desc' | translate:'Restore full access to member portal' }}</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('activate')">
+                  {{ 'user_details.reactivate' | translate:'Reactivate' }}
+                </button>
+              </div>
+
+              <div class="danger-row" *ngIf="user.userStatus !== 'Active' && user.userStatus !== 'Suspended'">
+                <div>
+                  <strong>{{ 'user_details.pending_account' | translate:'Pending Account' }}</strong>
+                  <p>{{ 'user_details.pending_desc' | translate:'Account is awaiting verification or activation' }}</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;" (click)="toggleAccountStatus('activate')">
+                    {{ 'user_details.activate' | translate:'Activate' }}
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fca5a5;" (click)="toggleAccountStatus('suspend')">
+                    {{ 'user_details.suspend' | translate:'Suspend' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Row 2: Delete Member Account -->
               <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
                 <div>
                   <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
-                  <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') }}</p>
+                  <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : (user.userStatus === 'Active' ? ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') : ('user_details.delete_desc_pending' | translate:'Unverified pending registration. Ready for cancellation and deletion.')) }}</p>
                 </div>
-                <a *ngIf="user.userStatus === 'Suspended'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
+                <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
                   {{ 'user_details.delete_user' | translate:'Delete User' }}
                 </a>
-                <button *ngIf="user.userStatus !== 'Suspended'" type="button" class="btn btn-outline-danger btn-sm" (click)="toggleAccountStatus()" title="Suspend account to unlock deletion">
+                <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-outline-danger btn-sm" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
                   <span class="material-symbols-outlined fs-6">block</span>
                   <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
                 </button>
@@ -1120,24 +1147,55 @@ export class UserDetailsComponent implements OnInit {
     });
   }
 
-  async toggleAccountStatus(): Promise<void> {
-    const isSuspending = this.user.userStatus === 'Active';
-    const title = isSuspending ? 'Suspend Member Account' : 'Reactivate Member Account';
-    const message = isSuspending
+  async toggleAccountStatus(targetAction?: 'suspend' | 'activate'): Promise<void> {
+    const isCurrentlySuspended = this.user.userStatus === 'Suspended';
+    const shouldSuspend = targetAction ? (targetAction === 'suspend') : !isCurrentlySuspended;
+
+    const title = shouldSuspend ? 'Suspend Member Account' : 'Reactivate Member Account';
+    const message = shouldSuspend
       ? `Are you sure you want to temporarily suspend access for '${this.user.fullName}'?`
       : `Are you sure you want to restore full workspace access for '${this.user.fullName}'?`;
 
-    const confirmed = await this.toast.confirm(title, message, isSuspending ? 'Suspend Account' : 'Reactivate Account', 'Cancel', isSuspending ? 'warning' : 'info');
+    const confirmed = await this.toast.confirm(
+      title,
+      message,
+      shouldSuspend ? 'Suspend Account' : 'Reactivate Account',
+      'Cancel',
+      shouldSuspend ? 'warning' : 'info'
+    );
     if (!confirmed) return;
 
-    const newStatus = !isSuspending;
-    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: newStatus }).subscribe({
+    const newStatusBool = !shouldSuspend;
+    const newStatusStr = shouldSuspend ? 'Suspended' : 'Active';
+
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: newStatusBool, status: newStatusStr }).subscribe({
       next: () => {
-        this.toast.success(`Account status updated to ${newStatus ? 'Active' : 'Suspended'}.`);
+        this.toast.success(`Account status updated to ${newStatusStr}.`);
         this.loadDossier();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Failed to update status.');
+      }
+    });
+  }
+
+  async suspendAndProceedToDelete(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Suspend Account to Delete',
+      `Before permanently deleting '${this.user.fullName}', organization fintech policies require the account to be suspended. Would you like to suspend access now and proceed to delete confirmation?`,
+      'Suspend & Proceed',
+      'Cancel',
+      'warning'
+    );
+    if (!confirmed) return;
+
+    this.api.put<any>(`UsersApi/${this.userId}/status`, { isActive: false, status: 'Suspended' }).subscribe({
+      next: () => {
+        this.toast.success('Account suspended successfully. Redirecting to delete confirmation...');
+        this.router.navigate(['/users/console/delete', this.userId]);
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Failed to suspend account.');
       }
     });
   }
