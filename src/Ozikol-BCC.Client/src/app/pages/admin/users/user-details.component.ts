@@ -247,53 +247,64 @@ import { TranslationService } from '../../../core/services/translation.service';
             <div class="card-body danger-actions">
               <!-- Row 1: Access State (Active, Suspended, or Pending) -->
               <div class="danger-row" *ngIf="user.userStatus === 'Active'">
-                <div>
+                <div class="danger-row-info">
                   <strong>{{ 'user_details.suspend_account' | translate:'Suspend Account' }}</strong>
                   <p>{{ 'user_details.suspend_desc' | translate:'Temporarily revoke workspace access' }}</p>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('suspend')">
-                  {{ 'user_details.suspend' | translate:'Suspend' }}
-                </button>
+                <div class="danger-actions-group">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('suspend')">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">block</span>
+                    <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
+                  </button>
+                </div>
               </div>
 
               <div class="danger-row" *ngIf="user.userStatus === 'Suspended'">
-                <div>
+                <div class="danger-row-info">
                   <strong>{{ 'user_details.reactivate_account' | translate:'Reactivate Account' }}</strong>
                   <p>{{ 'user_details.reactivate_desc' | translate:'Restore full access to member portal' }}</p>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" (click)="toggleAccountStatus('activate')">
-                  {{ 'user_details.reactivate' | translate:'Reactivate' }}
-                </button>
+                <div class="danger-actions-group">
+                  <button type="button" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;" (click)="toggleAccountStatus('activate')">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                    <span>{{ 'user_details.reactivate' | translate:'Reactivate' }}</span>
+                  </button>
+                </div>
               </div>
 
               <div class="danger-row" *ngIf="user.userStatus !== 'Active' && user.userStatus !== 'Suspended'">
-                <div>
+                <div class="danger-row-info">
                   <strong>{{ 'user_details.pending_account' | translate:'Pending Account' }}</strong>
                   <p>{{ 'user_details.pending_desc' | translate:'Account is awaiting verification or activation' }}</p>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div class="danger-actions-group">
                   <button type="button" class="btn btn-outline btn-sm" style="color: #16a34a; border-color: #86efac;" (click)="toggleAccountStatus('activate')">
-                    {{ 'user_details.activate' | translate:'Activate' }}
+                    <span class="material-symbols-outlined" style="font-size: 15px;">check</span>
+                    <span>{{ 'user_details.activate' | translate:'Activate' }}</span>
                   </button>
                   <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fca5a5;" (click)="toggleAccountStatus('suspend')">
-                    {{ 'user_details.suspend' | translate:'Suspend' }}
+                    <span class="material-symbols-outlined" style="font-size: 15px;">block</span>
+                    <span>{{ 'user_details.suspend' | translate:'Suspend' }}</span>
                   </button>
                 </div>
               </div>
 
               <!-- Row 2: Delete Member Account -->
               <div class="danger-row" style="border-top:1px solid #fee2e2; padding-top:14px;">
-                <div>
+                <div class="danger-row-info">
                   <strong class="text-danger">{{ 'user_details.btn_delete_member' | translate:'Delete Member Account' }}</strong>
                   <p>{{ user.userStatus === 'Suspended' ? ('user_details.delete_desc_ready' | translate:'Account is suspended. Ready for secure archiving & soft deletion.') : (user.userStatus === 'Active' ? ('user_details.delete_desc_requires_suspend' | translate:'Requires account suspension first before deletion.') : ('user_details.delete_desc_pending' | translate:'Unverified pending registration. Ready for cancellation and deletion.')) }}</p>
                 </div>
-                <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
-                  {{ 'user_details.delete_user' | translate:'Delete User' }}
-                </a>
-                <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-outline-danger btn-sm" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
-                  <span class="material-symbols-outlined fs-6">block</span>
-                  <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
-                </button>
+                <div class="danger-actions-group">
+                  <a *ngIf="user.userStatus === 'Suspended' || user.userStatus !== 'Active'" [routerLink]="['/users/console/delete', user.id]" class="btn btn-danger btn-sm">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">person_remove</span>
+                    <span>{{ 'user_details.delete_user' | translate:'Delete User' }}</span>
+                  </a>
+                  <button *ngIf="user.userStatus === 'Active'" type="button" class="btn btn-outline-danger btn-sm" (click)="suspendAndProceedToDelete()" title="Suspend account to unlock deletion">
+                    <span class="material-symbols-outlined fs-6">block</span>
+                    <span>{{ 'user_details.suspend_to_delete' | translate:'Suspend to Delete' }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -608,10 +619,12 @@ import { TranslationService } from '../../../core/services/translation.service';
     .border-danger { border-color: #fecaca; }
     .bg-danger-light { background: #fff5f5; }
     .text-danger { color: #dc2626; }
-    .danger-actions { display: flex; flex-direction: column; gap: 12px; }
-    .danger-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .danger-row strong { font-size: 13px; display: block; }
-    .danger-row p { font-size: 11px; color: #64748b; margin: 2px 0 0; }
+    .danger-actions { display: flex; flex-direction: column; gap: 14px; }
+    .danger-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .danger-row-info { flex: 1 1 auto; min-width: 0; }
+    .danger-row strong { font-size: 13px; display: block; line-height: 1.3; }
+    .danger-row p { font-size: 11.5px; color: #64748b; margin: 3px 0 0; line-height: 1.4; }
+    .danger-actions-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
     /* Mini Table */
     .table-responsive { overflow-x: auto; }
@@ -634,18 +647,21 @@ import { TranslationService } from '../../../core/services/translation.service';
     .log-meta { font-size: 11px; color: #94a3b8; }
     .empty-cell { text-align: center; color: #94a3b8; font-size: 12px; padding: 16px; }
 
-    .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
-    .btn-sm { height: 32px; padding: 0 12px; font-size: 11px; }
+    .btn { height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; white-space: nowrap; flex-shrink: 0; }
+    .btn-sm { height: 32px; padding: 0 14px; font-size: 11.5px; white-space: nowrap; flex-shrink: 0; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
+    .btn-outline-danger { background: #ffffff; border-color: #fca5a5; color: #dc2626; }
+    .btn-outline-danger:hover { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
     .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
     .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
     .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
     .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
     .btn-primary:disabled { background: #0050e5 !important; color: #ffffff !important; opacity: 0.65; cursor: not-allowed; }
     .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
-    .btn-danger { background: #dc2626; color: #ffffff; }
-    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger { background: #dc2626 !important; color: #ffffff !important; border: 1px solid #b91c1c !important; }
+    .btn-danger:hover { background: #b91c1c !important; }
+    .btn-danger span, .btn-danger .material-symbols-outlined { color: #ffffff !important; }
 
     /* Role & Permissions Card */
     .btn-permission-action {
