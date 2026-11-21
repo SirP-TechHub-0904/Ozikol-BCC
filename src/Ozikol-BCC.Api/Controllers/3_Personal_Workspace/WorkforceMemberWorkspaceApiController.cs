@@ -1021,7 +1021,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded.", errorCode: "ERR-2003"));
             }
 
-            var folderTarget = $"tenants/{CurrentTenantKey}/compliance-documents";
+            folderTarget = !string.IsNullOrWhiteSpace(folder) ? folder.Trim() : $"tenants/{CurrentTenantKey}/compliance-documents";
 
             // 1. Primary Cloud Storage: Cloudflare R2 Global Edge CDN
             if (_r2Storage != null)
@@ -1072,7 +1072,7 @@ namespace Ozikol_BCC.Api.Controllers
                     if (isImage)
                     {
                         var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
-                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        if (!string.IsNullOrWhiteSpace(uploadResult.Url))
                         {
                             return Ok(ApiResponse<object>.SuccessResponse(new
                             {
@@ -1087,7 +1087,7 @@ namespace Ozikol_BCC.Api.Controllers
                     else
                     {
                         var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
-                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        if (!string.IsNullOrWhiteSpace(uploadResult.Url))
                         {
                             return Ok(ApiResponse<object>.SuccessResponse(new
                             {
