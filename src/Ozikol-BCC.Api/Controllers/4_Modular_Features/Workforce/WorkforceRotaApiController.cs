@@ -3470,9 +3470,17 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("settings/policies")]
         public async Task<ActionResult<ApiResponse<BcpWorkforcePolicySettingDto>>> GetWorkforcePolicies(CancellationToken ct)
         {
-            var policy = await _db.BcpWorkforcePolicySettings
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+            BcpWorkforcePolicySetting? policy = null;
+            try
+            {
+                policy = await _db.BcpWorkforcePolicySettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Could not load BcpWorkforcePolicySettings (possible pending migration). Serving default operational policies.");
+            }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
 
@@ -3516,8 +3524,16 @@ namespace Ozikol_BCC.Api.Controllers
             [FromBody] UpdateWorkforcePolicyRequest request,
             CancellationToken ct)
         {
-            var policy = await _db.BcpWorkforcePolicySettings
-                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+            BcpWorkforcePolicySetting? policy = null;
+            try
+            {
+                policy = await _db.BcpWorkforcePolicySettings
+                    .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Could not fetch existing BcpWorkforcePolicySettings (pending migration).");
+            }
 
             if (policy == null)
             {
@@ -3559,7 +3575,16 @@ namespace Ozikol_BCC.Api.Controllers
             }
             policy.UpdatedUtc = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync(ct);
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex) when (ex.InnerException?.Message.Contains("EmergencyCategoriesJson") == true || ex.Message.Contains("EmergencyCategoriesJson"))
+            {
+                // Graceful fallback: If migration is pending on the DB, ignore EmergencyCategoriesJson column and save remaining policies
+                _db.Entry(policy).Property(p => p.EmergencyCategoriesJson).IsModified = false;
+                await _db.SaveChangesAsync(ct);
+            }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
 

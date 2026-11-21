@@ -1382,13 +1382,24 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("emergency/categories")]
         public async Task<ActionResult<ApiResponse<object>>> GetEmergencyCategories(CancellationToken ct)
         {
-            var policy = await _db.BcpWorkforcePolicySettings
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+            string? json = null;
+            try
+            {
+                var policy = await _db.BcpWorkforcePolicySettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
 
-            var json = !string.IsNullOrWhiteSpace(policy?.EmergencyCategoriesJson)
-                ? policy.EmergencyCategoriesJson
-                : WorkforceRotaApiController.GetDefaultEmergencyCategoriesJson();
+                json = policy?.EmergencyCategoriesJson;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Could not read EmergencyCategoriesJson from database (pending migration). Using defaults.");
+            }
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                json = WorkforceRotaApiController.GetDefaultEmergencyCategoriesJson();
+            }
 
             try
             {
@@ -1420,7 +1431,7 @@ namespace Ozikol_BCC.Api.Controllers
             // Ensure the shift belongs to current user or attendance record matches current user
             if (!string.Equals(shift.AssignedUserId, CurrentUserId, StringComparison.OrdinalIgnoreCase))
             {
-                var isAttendanceUser = await _db.BcpAttendanceRecords.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
+                var isAttendanceUser = await _db.BcpShiftAttendances.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
                 if (!isAttendanceUser)
                 {
                     return Forbid();
@@ -1455,7 +1466,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
             }
 
-            var siteName = shift.ClientSite?.SiteName ?? shift.SiteName ?? "Assigned Site";
+            var siteName = shift.ClientSite?.SiteName ?? "Assigned Site";
             var postName = shift.PostName ?? "Main Post";
             var categoryName = !string.IsNullOrWhiteSpace(request.CategoryName) ? request.CategoryName.Trim() : "Security Incident";
             var timeUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");

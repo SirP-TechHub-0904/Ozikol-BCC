@@ -88,6 +88,11 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **No Ad-Hoc Runtime Schema Scripts**: Do not embed ad-hoc `ALTER TABLE` or raw DDL statements inside application startup or seeder classes.
 * **Zero Retroactive Migration Editing**: NEVER manually edit already-generated EF Core migration files (`.cs` or `.Designer.cs`) to patch schema drift or bypass discrepancies. Migrations must remain immutable historical records. If schema changes occur, generate a new forward migration or perform an explicit approved reset.
 * **Zero Automated Database Execution**: NEVER execute `dotnet ef database update`, `Update-Database`, or any DDL/DML script against the database. Migration generation (`dotnet ef migrations add`) is permitted and mandatory, but applying migrations is strictly reserved for the user.
+* **Defensive Controller Schema & Pending Migration Fallback (Zero Downtime / No Boot Crashes)**:
+  * Whenever newly added entity columns/properties are queried or updated, API controllers and query handlers MUST implement defensive exception handling (`try-catch` with safe fallback defaults).
+  * If an EF Core migration has been generated but not yet applied by the user (or if rolled back in staging/production), queries attempting to select the unmigrated column (e.g. SQL Server Error `207 Invalid column name`) MUST NOT crash the application or prevent other endpoints from functioning.
+  * **Read Queries**: Catch schema drift exceptions and serve safe in-memory baseline/default values.
+  * **Write Operations (`SaveChangesAsync`)**: Catch missing-column exceptions and detach or mark the unmigrated property as `IsModified = false` so remaining payload fields save successfully without crashing.
 * **Explicit User Migration Notification**: Always inform the user clearly: *"I have generated the EF Core migration `<MigrationName>`. Please update both your local and production database."* Provide the exact command targeting the relevant project (`Ozikol.MasterPersistence.EF.MasterSQL` or `Ozikol-BCC.Persistence.EF.SQL`).
 
 ---
