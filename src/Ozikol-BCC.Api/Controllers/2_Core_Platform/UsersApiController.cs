@@ -545,11 +545,10 @@ namespace Ozikol_BCC.Api.Controllers
 
             var targetUserIds = new List<string> { id };
 
-            // 4. Apply Fintech Soft Delete and permanent lockout
-            // Note: Administrative notes, KPI scores, shift attendance, and financial/transaction records are preserved for regulatory audit integrity.
-            var deleteMarker = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+            var cleanEmailToFree = user.Email?.Trim().ToLowerInvariant();
 
+            // 4. Apply Complete Fintech/GDPR Soft Delete, Anonymization, and Credential Release
+            // Note: Administrative notes, KPI scores, shift attendance, and financial records are preserved for regulatory audit integrity.
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             user.UserStatus = UserStatus.Deleted;
@@ -557,44 +556,57 @@ namespace Ozikol_BCC.Api.Controllers
             user.LockoutEnd = DateTimeOffset.MaxValue;
             user.SecurityStamp = Guid.NewGuid().ToString();
 
-            // Release unique UserNameIndex constraint so the email/username is freed and duplicate collisions are prevented
-            user.UserName = $"deleted_{deleteMarker}_{uniqueSuffix}";
-            user.NormalizedUserName = user.UserName.ToUpperInvariant();
-            if (!string.IsNullOrWhiteSpace(user.NormalizedEmail))
-            {
-                user.NormalizedEmail = $"DELETED_{deleteMarker}_{uniqueSuffix}";
-            }
+            // Completely wipe personal identifiable information (Names, Phone, Registration Form Data)
+            user.FirstName = "Deleted";
+            user.LastName = "Member";
+            user.MiddleName = null;
+            user.Title = null;
+            user.PhoneNumber = null;
+            user.PhoneNumberConfirmed = false;
+            user.AvatarUrl = null;
+            user.CustomAttributesJson = null;
+            user.Designation = "Archived Staff";
+
+            // Completely release unique constraints (UserNameIndex & Email) using the unique user.Id so the original email is immediately freed
+            user.UserName = $"deleted_{user.Id}";
+            user.NormalizedUserName = $"DELETED_{user.Id}".ToUpperInvariant();
+            user.Email = $"deleted_{user.Id}@archived.local";
+            user.NormalizedEmail = user.Email.ToUpperInvariant();
 
             // Defensively clean up any duplicate or orphaned accounts sharing this email (e.g. from previous invitation or seed duplicates)
-            if (!string.IsNullOrWhiteSpace(user.Email))
+            if (!string.IsNullOrWhiteSpace(cleanEmailToFree))
             {
-                var userEmailLower = user.Email.Trim().ToLowerInvariant();
-
                 var duplicateAccounts = await _dbContext.Users.IgnoreQueryFilters()
-                    .Where(u => u.Id != id && u.Email != null && u.Email.ToLower() == userEmailLower)
+                    .Where(u => u.Id != id && u.Email != null && u.Email.ToLower() == cleanEmailToFree)
                     .ToListAsync();
 
                 foreach (var dup in duplicateAccounts)
                 {
                     targetUserIds.Add(dup.Id);
-                    var dupSuffix = Guid.NewGuid().ToString("N")[..8];
                     dup.IsDeleted = true;
                     dup.DeletedAt = DateTime.UtcNow;
                     dup.UserStatus = UserStatus.Deleted;
                     dup.LockoutEnabled = true;
                     dup.LockoutEnd = DateTimeOffset.MaxValue;
                     dup.SecurityStamp = Guid.NewGuid().ToString();
-                    dup.UserName = $"deleted_{deleteMarker}_{dupSuffix}";
-                    dup.NormalizedUserName = dup.UserName.ToUpperInvariant();
-                    if (!string.IsNullOrWhiteSpace(dup.NormalizedEmail))
-                    {
-                        dup.NormalizedEmail = $"DELETED_{deleteMarker}_{dupSuffix}";
-                    }
+                    dup.FirstName = "Deleted";
+                    dup.LastName = "Member";
+                    dup.MiddleName = null;
+                    dup.Title = null;
+                    dup.PhoneNumber = null;
+                    dup.PhoneNumberConfirmed = false;
+                    dup.AvatarUrl = null;
+                    dup.CustomAttributesJson = null;
+                    dup.Designation = "Archived Staff";
+                    dup.UserName = $"deleted_{dup.Id}";
+                    dup.NormalizedUserName = $"DELETED_{dup.Id}".ToUpperInvariant();
+                    dup.Email = $"deleted_{dup.Id}@archived.local";
+                    dup.NormalizedEmail = dup.Email.ToUpperInvariant();
                 }
 
                 // Invalidate any unredeemed invitations matching this user's email so they are never auto-resurrected
                 var pendingInvites = await _dbContext.Invitations
-                    .Where(i => i.Email != null && i.Email.ToLower() == userEmailLower && !i.IsUsed)
+                    .Where(i => i.Email != null && i.Email.ToLower() == cleanEmailToFree && !i.IsUsed)
                     .ToListAsync();
                 foreach (var inv in pendingInvites)
                 {
@@ -653,32 +665,14 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Email is required."));
 
             var cleanEmail = request.Email.Trim().ToLowerInvariant();
-            var normalizedEmail = cleanEmail.ToUpperInvariant();
 
             var existing = await _userManager.FindByEmailAsync(cleanEmail);
-            if (existing != null && !existing.IsDeleted)
+            if (existing != null)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
 
-            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail && !u.IsDeleted);
+            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail);
             if (emailInDb)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
-
-            // Partition any lingering soft-deleted rows that hold this username/email so they never conflict with unique indexes
-            var lingeringOldDeletedRows = await _dbContext.Users.IgnoreQueryFilters()
-                .Where(u => u.IsDeleted && (u.NormalizedUserName == normalizedEmail || u.NormalizedEmail == normalizedEmail || (u.Email != null && u.Email.ToLower() == cleanEmail)))
-                .ToListAsync();
-
-            foreach (var old in lingeringOldDeletedRows)
-            {
-                var suffix = Guid.NewGuid().ToString("N")[..8];
-                old.UserName = $"deleted_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
-                old.NormalizedUserName = old.UserName.ToUpperInvariant();
-                old.NormalizedEmail = $"DELETED_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
-            }
-            if (lingeringOldDeletedRows.Count > 0)
-            {
-                await _dbContext.SaveChangesAsync();
-            }
 
             string? normalizedPhone = null;
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))

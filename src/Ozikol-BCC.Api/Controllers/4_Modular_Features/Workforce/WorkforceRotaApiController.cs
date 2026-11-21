@@ -2481,55 +2481,9 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 user = existingUser;
                 userId = existingUser.Id;
-
-                if (existingUser.IsDeleted)
-                {
-                    // Seamlessly reactivate previously soft-deleted member
-                    existingUser.IsDeleted = false;
-                    existingUser.DeletedAt = null;
-                    existingUser.UserStatus = UserStatus.Active;
-                    existingUser.LockoutEnd = null;
-                    existingUser.LockoutEnabled = false;
-                    existingUser.FirstName = firstName;
-                    existingUser.LastName = lastName;
-                    existingUser.PhoneNumber = request.PhoneNumber?.Trim() ?? existingUser.PhoneNumber;
-                    existingUser.Designation = cleanEnrollJobTitle;
-                    existingUser.UserName = cleanEmail;
-                    existingUser.NormalizedUserName = normalizedEmail;
-                    existingUser.Email = cleanEmail;
-                    existingUser.NormalizedEmail = normalizedEmail;
-                    existingUser.EmailConfirmed = true;
-                    existingUser.SecurityStamp = Guid.NewGuid().ToString();
-                    if (!string.IsNullOrWhiteSpace(request.Password) && _userManager != null)
-                    {
-                        existingUser.PasswordHash = _userManager.PasswordHasher.HashPassword(existingUser, request.Password);
-                    }
-                    if (customAttrs.Count > 0)
-                    {
-                        existingUser.CustomAttributesJson = JsonSerializer.Serialize(customAttrs);
-                    }
-                    await _db.SaveChangesAsync(ct);
-                }
             }
             else
             {
-                // Defensively release any lingering old soft-deleted duplicate rows that share this normalized username/email
-                var lingeringOldRows = await _db.Users.IgnoreQueryFilters()
-                    .Where(u => u.IsDeleted && (u.NormalizedUserName == normalizedEmail || u.NormalizedEmail == normalizedEmail))
-                    .ToListAsync(ct);
-
-                foreach (var old in lingeringOldRows)
-                {
-                    var suffix = Guid.NewGuid().ToString("N")[..8];
-                    old.UserName = $"deleted_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
-                    old.NormalizedUserName = old.UserName.ToUpperInvariant();
-                    old.NormalizedEmail = $"DELETED_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
-                }
-                if (lingeringOldRows.Count > 0)
-                {
-                    await _db.SaveChangesAsync(ct);
-                }
-
                 userId = Guid.CreateVersion7().ToString();
                 var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? GenerateSecureTemporaryPassword() : request.Password;
                 var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, cleanEnrollJobTitle);
