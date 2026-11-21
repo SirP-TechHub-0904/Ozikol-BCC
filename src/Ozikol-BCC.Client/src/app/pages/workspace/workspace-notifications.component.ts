@@ -9,27 +9,27 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="notif-center-container">
-      <!-- Canonical Dashboard Page Header -->
-      <div class="page-header" style="background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
-            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
-            <span>/</span>
-            <span style="color: #0f172a; font-weight: 600;">Notification Center</span>
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span class="current">Notification Center</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">Notification Center</h1>
-            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          <div class="title-row">
+            <h1>Notification Center</h1>
+            <span class="badge-suite">Personal Workspace</span>
           </div>
-          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">View your account activity, security alerts, and workspace broadcast announcements.</p>
+          <p class="subtitle">View your account activity, security alerts, and workspace broadcast announcements.</p>
         </div>
         <div class="header-actions">
-          <button (click)="markAllAsRead()" class="btn-action primary" style="height: 34px; padding: 0 12px; font-size: 12px;" [disabled]="!hasUnread()">
-            <span class="material-symbols-outlined" style="font-size: 16px;">done_all</span>
+          <button (click)="markAllAsRead()" class="btn btn-primary" [disabled]="!hasUnread()">
+            <span class="material-symbols-outlined">done_all</span>
             <span>Mark All as Read</span>
           </button>
-          <button (click)="clearAll()" class="btn-action danger" style="height: 34px; padding: 0 12px; font-size: 12px;" [disabled]="!notifications.length">
-            <span class="material-symbols-outlined" style="font-size: 16px;">delete_sweep</span>
+          <button (click)="clearAll()" class="btn btn-outline" [disabled]="!notifications.length">
+            <span class="material-symbols-outlined">delete_sweep</span>
             <span>Clear History</span>
           </button>
         </div>
