@@ -103,16 +103,16 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <ul class="consequences-list">
             <li>
-              <strong>Credential & Session Invalidation:</strong> All active login tokens, sessions, MFA authenticators, and password credentials will be immediately wiped.
+              <strong>Immediate Credential & Session Invalidation:</strong> All active login tokens, device sessions, and OAuth credentials will be revoked immediately.
             </li>
             <li>
-              <strong>KPI Evaluation & Performance History:</strong> All historical evaluation ratings, score logs, and metric submissions recorded for this member will be permanently detached and purged.
+              <strong>Compliance & Audit Archive:</strong> Under fintech soft-delete standards, financial transactions, shift timesheets, and audit records remain intact for compliance while the profile is sealed.
             </li>
             <li>
-              <strong>User Notes & Administrative Logs:</strong> All confidential administrative notes, warnings, and dossier flags attached to this profile will be erased.
+              <strong>Directory & Workforce Removal:</strong> The member is permanently excluded from active member directories, shift allocations, open bidding, and portal access.
             </li>
             <li>
-              <strong>Irreversible Data Loss:</strong> This member account cannot be recovered or restored after deletion.
+              <strong>Permanent Account Lockout:</strong> This member account is placed under permanent security lockout and cannot be used for portal access.
             </li>
           </ul>
         </div>

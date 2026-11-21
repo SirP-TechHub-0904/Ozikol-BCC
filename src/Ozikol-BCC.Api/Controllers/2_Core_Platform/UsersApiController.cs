@@ -489,11 +489,8 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Safely soft-deletes and archives a member profile.
-        /// Requires the account to be in Suspended state first to guarantee intentional deactivation.
-        /// Automatically revokes active sessions, feature permissions, and marks IsDeleted = true
-        /// so the profile is excluded globally from all queries and counts via the EF Core Global Query Filter
-        /// while preserving historical audit and relational integrity.
+        /// Applies fintech-grade soft-delete and archival to a member account.
+        /// Preserves relational integrity, transaction history, notes, and audit logs while revoking access and marking deleted.
         /// </summary>
         /// <param name="id">The unique identifier of the user to soft-delete.</param>
         /// <returns>Standardized API response confirming soft deletion and archiving.</returns>
@@ -501,13 +498,11 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> DeleteUser(string id)
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
-            if (settings != null && !settings.EnableUserDeletion)
+            var isAuthorizedAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("UserManager") || User.IsInRole("User Manager");
+
+            if (!isAuthorizedAdmin && settings != null && !settings.EnableUserDeletion)
             {
-                var isSuperAdmin = User.IsInRole("SuperAdmin");
-                if (!isSuperAdmin)
-                {
-                    return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
-                }
+                return StatusCode(403, ApiResponse<object>.FailureResponse("User account deletion is currently disabled in System Security Settings. Enable user deletion in Settings to proceed."));
             }
 
             // Look up user including soft-deleted check
@@ -533,32 +528,22 @@ namespace Ozikol_BCC.Api.Controllers
 
             var userName = user.FullName;
 
-            // 1. Clean up transient administrative notes and KPI scores
-            var notes = _dbContext.BcpUserNotes.Where(n => n.ProfileId == id);
-            _dbContext.BcpUserNotes.RemoveRange(notes);
-
-            var kpis = _dbContext.BcpKpiUserScores.Where(k => k.ProfileId == id);
-            _dbContext.BcpKpiUserScores.RemoveRange(kpis);
-
-            // 2. Revoke active device sessions & tokens immediately
-            var deviceSessions = _dbContext.UserDeviceSessions.Where(s => s.ProfileId == id);
-            _dbContext.UserDeviceSessions.RemoveRange(deviceSessions);
-
-            var userDevices = _dbContext.BcpUserDevices.Where(d => d.UserId == id);
-            _dbContext.BcpUserDevices.RemoveRange(userDevices);
-
-            // 3. Revoke all feature-level permission roles
-            var featureRoles = _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == id);
-            _dbContext.BcpUserFeatureRoles.RemoveRange(featureRoles);
-
-            // 4. Strip ASP.NET Identity roles
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Any())
+            // 1. Revoke active device sessions (mark revoked without destroying login/device audit history)
+            var deviceSessions = await _dbContext.UserDeviceSessions.Where(s => s.ProfileId == id && !s.IsRevoked).ToListAsync();
+            foreach (var s in deviceSessions)
             {
-                await _userManager.RemoveFromRolesAsync(user, roles);
+                s.IsRevoked = true;
+                s.RevokedAt = DateTime.UtcNow;
             }
 
-            // 5. Deactivate associated Workforce Staff Profile if exists
+            // 2. Deactivate feature-level roles (mark inactive without breaking permission history)
+            var featureRoles = await _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == id && r.IsActive).ToListAsync();
+            foreach (var r in featureRoles)
+            {
+                r.IsActive = false;
+            }
+
+            // 3. Deactivate associated Workforce Staff Profile if exists (preserves shift/roster transactions)
             var staffProfile = await _dbContext.BcpShiftStaffProfiles.FirstOrDefaultAsync(s => s.UserId == id);
             if (staffProfile != null)
             {
@@ -566,7 +551,8 @@ namespace Ozikol_BCC.Api.Controllers
                 staffProfile.UpdatedUtc = DateTime.UtcNow;
             }
 
-            // 6. Apply Soft Delete and permanent lockout
+            // 4. Apply Fintech Soft Delete and permanent lockout
+            // Note: Administrative notes, KPI scores, shift attendance, and financial/transaction records are preserved for regulatory audit integrity.
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             user.UserStatus = UserStatus.Deleted;
