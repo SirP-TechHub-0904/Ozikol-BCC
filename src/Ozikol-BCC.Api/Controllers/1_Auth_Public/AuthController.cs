@@ -2051,6 +2051,41 @@ namespace Ozikol_BCC.Api.Controllers
                 featureInvitation.IsUsed = true;
             }
 
+            // Ensure Workforce staff roster profile is provisioned for seamless directory visibility
+            if (_dbContext != null)
+            {
+                try
+                {
+                    var existingStaffProfile = await _dbContext.BcpShiftStaffProfiles
+                        .FirstOrDefaultAsync(p => p.UserId == newUser.Id);
+                    if (existingStaffProfile == null)
+                    {
+                        var cleanJobTitle = !string.IsNullOrWhiteSpace(newUser.Designation) && newUser.Designation.ToLowerInvariant() != "undefined"
+                            ? newUser.Designation.Trim()
+                            : "Staff Member";
+
+                        _dbContext.BcpShiftStaffProfiles.Add(new BcpShiftStaffProfile
+                        {
+                            Id = Guid.CreateVersion7(),
+                            TenantKey = _tenantProvider?.CurrentTenant ?? "default",
+                            UserId = newUser.Id,
+                            JobTitle = cleanJobTitle,
+                            StaffTypeName = "Permanent",
+                            WorkingAvailability = "Available",
+                            PreferredWorkingTime = "Any",
+                            IsActive = true,
+                            CreatedUtc = DateTime.UtcNow,
+                            AverageRating = 5.0m,
+                            PunctualityScorePercent = 100
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not auto-provision BcpShiftStaffProfile for newly registered user {UserId}", newUser.Id);
+                }
+            }
+
             // Log activity
             if (_dbContext != null)
             {

@@ -207,8 +207,8 @@ import { ToastService } from '../../../core/services/toast.service';
                 <!-- 2. Job Title & Type -->
                 <td>
                   <div class="role-cell">
-                    <strong class="job-title">{{ m.jobTitle || 'Staff Member' }}</strong>
-                    <span class="staff-type-chip">{{ m.staffTypeName || 'Permanent' }}</span>
+                    <strong class="job-title">{{ (m.jobTitle && m.jobTitle !== 'undefined') ? m.jobTitle : 'Staff Member' }}</strong>
+                    <span class="staff-type-chip">{{ (m.staffTypeName && m.staffTypeName !== 'undefined') ? m.staffTypeName : 'Permanent' }}</span>
                   </div>
                 </td>
 
