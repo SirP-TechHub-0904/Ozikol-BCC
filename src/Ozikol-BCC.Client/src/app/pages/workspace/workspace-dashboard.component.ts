@@ -9,19 +9,20 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="workspace-dashboard-container">
-      <!-- Member Hero Banner -->
-      <section class="member-hero-card">
-        <div class="hero-avatar-wrap">
-          <img *ngIf="userProfile?.avatarUrl" [src]="userProfile.avatarUrl" alt="Avatar" class="hero-avatar-img" />
-          <div *ngIf="!userProfile?.avatarUrl" class="hero-avatar-placeholder">
-            {{ getInitials(userProfile?.fullName || userName) }}
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <span class="root-crumb">Personal Workspace</span>
+            <span class="sep">/</span>
+            <span class="current">Workspace Home</span>
           </div>
-        </div>
-        <div class="hero-info">
-          <div class="hero-badge-row">
-            <span class="member-id-pill" title="Official Member ID">
+          <div class="title-row">
+            <h1>Welcome back, {{ userProfile?.firstName || userName || 'Member' }}!</h1>
+            <span class="badge-suite">SUITE: PERSONAL WORKSPACE</span>
+            <span class="member-id-pill" title="Official Member ID" *ngIf="userProfile?.memberId">
               <span class="material-symbols-outlined">badge</span>
-              {{ userProfile?.memberId || 'CC-2026-0099' }}
+              {{ userProfile.memberId }}
             </span>
             <span class="category-pill" *ngIf="userProfile?.categoryName">
               {{ userProfile.categoryName }}
@@ -31,20 +32,23 @@ import { ApiService } from '../../core/services/api.service';
               Active Member
             </span>
           </div>
-          <h1 class="hero-title">Welcome back, {{ userProfile?.firstName || userName || 'Member' }}!</h1>
-          <p class="hero-sub">{{ userProfile?.designation || 'Member of Organization' }} • {{ userProfile?.email || userEmail }}</p>
+          <p class="subtitle">{{ userProfile?.designation || 'Member of Organization' }} &bull; {{ userProfile?.email || userEmail }}</p>
         </div>
-        <div class="hero-actions">
-          <a routerLink="/users/workspace/profile" class="btn-hero primary">
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadAllData()" title="Refresh workspace data">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
+          <a routerLink="/users/workspace/profile" class="btn btn-outline">
             <span class="material-symbols-outlined">person</span>
             <span>Edit Profile</span>
           </a>
-          <a routerLink="/users/workspace/security" class="btn-hero secondary">
-            <span class="material-symbols-outlined">lock_reset</span>
-            <span>Security</span>
+          <a routerLink="/users/workspace/security" class="btn btn-primary">
+            <span class="material-symbols-outlined">security</span>
+            <span>Security &amp; 2FA</span>
           </a>
         </div>
-      </section>
+      </div>
 
       <!-- 3-Column Personal Telemetry Grid -->
       <div class="workspace-grid">
@@ -299,58 +303,74 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       flex-direction: column;
       gap: 20px;
-    }
-    .member-hero-card {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 28px 32px;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      color: #ffffff;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-    .hero-avatar-wrap {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
-    }
-    .hero-avatar-img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 20px;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
-    .hero-avatar-placeholder {
-      font-size: 26px;
-      font-weight: 800;
-      color: #ffffff;
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
-    .hero-info {
+    .header-left {
       flex: 1;
       min-width: 0;
     }
-    .hero-badge-row {
+    .breadcrumb {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb .root-crumb {
+      color: #0050e5;
+      font-weight: 600;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
     .member-id-pill {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(0, 80, 229, 0.25);
-      border: 1px solid #0050e5;
-      color: #60a5fa;
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.3);
+      color: #0050e5;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -359,9 +379,9 @@ import { ApiService } from '../../core/services/api.service';
     }
     .member-id-pill span { font-size: 14px; }
     .category-pill {
-      background: rgba(168, 85, 247, 0.2);
-      border: 1px solid #a855f7;
-      color: #c084fc;
+      background: rgba(168, 85, 247, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #9333ea;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -371,9 +391,9 @@ import { ApiService } from '../../core/services/api.service';
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid #22c55e;
-      color: #4ade80;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #16a34a;
       padding: 3px 10px;
       border-radius: 20px;
       font-size: 12px;
@@ -388,46 +408,45 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 11px;
       font-weight: 700;
     }
-    .hero-title {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 0 0 4px;
-    }
-    .hero-sub {
-      font-size: 13px;
-      color: #94a3b8;
+    .subtitle {
+      font-size: 13.5px;
+      color: #64748b;
       margin: 0;
     }
-    .hero-actions {
+    .header-actions {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex-shrink: 0;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .btn-hero {
+    .btn {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 6px;
-      padding: 9px 16px;
+      padding: 8px 16px;
       border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
     }
-    .btn-hero.primary {
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
+    .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .btn-primary {
+      background: #0050e5;
+      border: 1px solid #0050e5;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.35);
     }
-    .btn-hero.primary:hover {
-      transform: translateY(-1px);
-    }
-    .btn-hero.secondary {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #cbd5e1;
+    .btn-primary:hover {
+      background: #0040b8;
     }
     .btn-hero.secondary:hover {
       background: rgba(255, 255, 255, 0.15);
@@ -897,6 +916,78 @@ import { ApiService } from '../../core/services/api.service';
     .text-success { color: #16a34a; }
     .qa-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface, #0f172a); }
     .qa-desc { font-size: 11px; color: #64748b; }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .workspace-dashboard-container {
+        gap: 16px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 14px !important;
+      }
+      .breadcrumb {
+        font-size: 11px !important;
+        gap: 4px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .title-row {
+        gap: 8px !important;
+      }
+      .title-row h1 {
+        font-size: 1.25rem !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite, .member-id-pill, .category-pill, .status-pill.active {
+        font-size: 10.5px !important;
+        padding: 2px 8px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+      }
+      .header-actions {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+      .header-actions .btn {
+        flex: 1 1 0 !important;
+        justify-content: center !important;
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+      }
+      .workspace-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .ws-card {
+        padding: 16px 14px !important;
+      }
+      .activity-bars-grid {
+        gap: 8px !important;
+        padding: 12px 0 4px !important;
+      }
+      .bar-track {
+        height: 75px !important;
+      }
+      .kpi-gauge-hero {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 12px !important;
+      }
+      .quick-action-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    }
   `]
 })
 export class WorkspaceDashboardComponent implements OnInit {
@@ -926,6 +1017,10 @@ export class WorkspaceDashboardComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    this.loadAllData();
+  }
+
+  loadAllData(): void {
     this.loadActiveFeatures();
     this.loadProfile();
     this.loadMyKpi();
