@@ -10,38 +10,40 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="kpi-container">
-      <!-- Canonical Dashboard Page Header -->
-      <div class="kpi-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
-            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
-            <span>/</span>
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
             <span>Manage My Account</span>
-            <span>/</span>
-            <span style="color: #0f172a; font-weight: 600;">My Performance &amp; KPI Scorecard</span>
+            <span class="sep">/</span>
+            <span class="current">My Performance &amp; KPI Scorecard</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">My Performance &amp; KPI Scorecard</h1>
-            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          <div class="title-row">
+            <h1>My Performance &amp; KPI Scorecard</h1>
+            <span class="badge-suite">Personal Workspace</span>
           </div>
-          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
+          <p class="subtitle">Review your quarterly evaluations, milestone metrics, and supervisor appraisal feedback.</p>
         </div>
 
         <!-- Period Switcher Selector -->
-        <div class="period-switcher-wrap">
-          <label class="period-label">Evaluation Period:</label>
-          <div class="period-chips">
-            <button
-              *ngFor="let p of periodsList"
-              type="button"
-              class="period-chip-btn"
-              [class.active]="selectedPeriod === p.title"
-              (click)="selectPeriod(p.title)"
-            >
-              <span class="material-symbols-outlined">calendar_today</span>
-              <span>{{ p.title }}</span>
-              <span *ngIf="p.isActive" class="active-dot" title="Current Active Cycle"></span>
-            </button>
+        <div class="header-actions">
+          <div class="period-switcher-wrap">
+            <label class="period-label">Period:</label>
+            <div class="period-chips">
+              <button
+                *ngFor="let p of periodsList"
+                type="button"
+                class="period-chip-btn"
+                [class.active]="selectedPeriod === p.title"
+                (click)="selectPeriod(p.title)"
+              >
+                <span class="material-symbols-outlined">calendar_today</span>
+                <span>{{ p.title }}</span>
+                <span *ngIf="p.isActive" class="active-dot" title="Current Active Cycle"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -169,21 +171,158 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 20px;
     }
-    .kpi-header-row {
+    /* Canonical BCC Page Header */
+    .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      flex-wrap: wrap;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
       gap: 16px;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .breadcrumb::-webkit-scrollbar { display: none; }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb span, .breadcrumb .current {
+      color: #334155;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       margin-bottom: 4px;
+      flex-wrap: wrap;
     }
-    .page-title {
-      font-size: 22px;
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
-      color: var(--md-sys-color-on-surface, #0f172a);
-      margin: 0 0 4px;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: -0.5px;
     }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .kpi-container {
+        gap: 14px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: flex !important;
+      }
+      .period-switcher-wrap {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 6px !important;
+      }
+      .period-chips {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
 
     /* Period Switcher */
     .period-switcher-wrap {

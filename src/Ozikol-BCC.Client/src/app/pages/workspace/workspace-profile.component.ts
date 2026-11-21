@@ -10,29 +10,29 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="profile-container">
-      <!-- Canonical Dashboard Page Header -->
-      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); margin-bottom: 18px;">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
-            <a routerLink="/dashboard/workspace" style="color: #0050e5; text-decoration: none; font-weight: 600;">Personal Workspace</a>
-            <span>/</span>
+      <!-- Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
             <span>Manage My Account</span>
-            <span>/</span>
-            <span style="color: #0f172a; font-weight: 600;">My Profile &amp; Dossier</span>
+            <span class="sep">/</span>
+            <span class="current">My Profile &amp; Dossier</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">My Profile &amp; Dossier</h1>
-            <span style="background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">Personal Workspace</span>
+          <div class="title-row">
+            <h1>My Profile &amp; Dossier</h1>
+            <span class="badge-suite">Personal Workspace</span>
           </div>
-          <p class="page-sub" style="margin: 0; font-size: 13.5px; color: #64748b;">Manage your personal information, security credentials, contact details, and organization dossier.</p>
+          <p class="subtitle">Manage your personal information, security credentials, contact details, and organization dossier.</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <a routerLink="/dashboard/workspace" style="display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12px; font-weight: 600; text-decoration: none;">
-            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+        <div class="header-actions">
+          <a routerLink="/dashboard/workspace" class="btn btn-outline">
+            <span class="material-symbols-outlined">arrow_back</span>
             <span>Workspace Home</span>
           </a>
-          <a routerLink="/users/workspace/security" style="display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #0050e5; background: #0050e5; color: #ffffff; font-size: 12px; font-weight: 600; text-decoration: none;">
-            <span class="material-symbols-outlined" style="font-size: 16px;">security</span>
+          <a routerLink="/users/workspace/security" class="btn btn-primary">
+            <span class="material-symbols-outlined">security</span>
             <span>Security &amp; 2FA</span>
           </a>
         </div>
@@ -483,9 +483,191 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 20px;
     }
-    .page-header { margin-bottom: 4px; }
-    .page-title { font-size: 22px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
-    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+    /* Canonical BCC Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      gap: 16px;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .breadcrumb::-webkit-scrollbar { display: none; }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb span, .breadcrumb .current {
+      color: #334155;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .header-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    .header-actions .btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .header-actions .btn-outline {
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .header-actions .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .header-actions .btn-primary {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .header-actions .btn-primary:hover {
+      background: #003ebd;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+      .profile-container {
+        gap: 14px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+      }
+      .header-actions .btn {
+        flex: 1 1 0 !important;
+        justify-content: center !important;
+        padding: 0 10px !important;
+        font-size: 12px !important;
+        height: 38px !important;
+      }
+    }
 
     /* Global Unverified Alert Banner */
     .global-unverified-alert {
