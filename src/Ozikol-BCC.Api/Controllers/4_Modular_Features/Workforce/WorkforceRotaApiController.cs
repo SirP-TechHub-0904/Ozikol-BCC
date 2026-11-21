@@ -3477,9 +3477,9 @@ namespace Ozikol_BCC.Api.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.LogWarning(ex, "Could not load BcpWorkforcePolicySettings (possible pending migration). Serving default operational policies.");
+                // Defensive fallback: Serve default operational policies if table or columns are unmigrated
             }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
@@ -3530,9 +3530,9 @@ namespace Ozikol_BCC.Api.Controllers
                 policy = await _db.BcpWorkforcePolicySettings
                     .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.LogWarning(ex, "Could not fetch existing BcpWorkforcePolicySettings (pending migration).");
+                // Defensive fallback: If pending migration prevents querying existing settings
             }
 
             if (policy == null)
