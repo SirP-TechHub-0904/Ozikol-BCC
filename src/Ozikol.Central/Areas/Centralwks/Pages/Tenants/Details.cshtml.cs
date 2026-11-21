@@ -692,7 +692,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 {
                     var tBuilder = new SqlConnectionStringBuilder(decryptedTenantConn);
                     if (!string.IsNullOrWhiteSpace(tBuilder.UserID) &&
-                        tBuilder.UserID.StartsWith("oz_usr_", StringComparison.OrdinalIgnoreCase))
+                        (tBuilder.UserID.StartsWith("usr_", StringComparison.OrdinalIgnoreCase) ||
+                         tBuilder.UserID.StartsWith("oz_usr_", StringComparison.OrdinalIgnoreCase)))
                     {
                         dedicatedSqlUser = tBuilder.UserID.Trim();
                     }
@@ -752,16 +753,40 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
+                    // Drop dedicated SQL login as well as any orphan logins matching this tenant key
+                    var safeTenantKeyLiteral = cleanKey.Replace("'", "''");
+                    await using (var dropLoginCmd = masterConn.CreateCommand())
                     {
-                        var safeLoginBracket = dedicatedSqlUser.Replace("]", "]]");
-                        var safeLoginLiteral = dedicatedSqlUser.Replace("'", "''");
-                        await using var dropLoginCmd = masterConn.CreateCommand();
-                        dropLoginCmd.CommandText = $@"
+                        var explicitDropSql = string.Empty;
+                        if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
+                        {
+                            var safeLoginBracket = dedicatedSqlUser.Replace("]", "]]");
+                            var safeLoginLiteral = dedicatedSqlUser.Replace("'", "''");
+                            explicitDropSql = $@"
                             IF EXISTS (SELECT name FROM sys.server_principals WHERE name = N'{safeLoginLiteral}')
                             BEGIN
                                 DROP LOGIN [{safeLoginBracket}];
                             END";
+                        }
+
+                        dropLoginCmd.CommandText = $@"
+                            {explicitDropSql}
+
+                            DECLARE @curLogin NVARCHAR(128);
+                            DECLARE login_cur CURSOR LOCAL FAST_FORWARD FOR 
+                                SELECT name FROM sys.server_principals 
+                                WHERE name LIKE 'usr_' + N'{safeTenantKeyLiteral}' + '_%'
+                                   OR name LIKE 'oz_usr_' + N'{safeTenantKeyLiteral}' + '_%';
+                            OPEN login_cur;
+                            FETCH NEXT FROM login_cur INTO @curLogin;
+                            WHILE @@FETCH_STATUS = 0
+                            BEGIN
+                                EXEC('DROP LOGIN [' + @curLogin + ']');
+                                FETCH NEXT FROM login_cur INTO @curLogin;
+                            END
+                            CLOSE login_cur;
+                            DEALLOCATE login_cur;";
+
                         await dropLoginCmd.ExecuteNonQueryAsync();
                     }
 
