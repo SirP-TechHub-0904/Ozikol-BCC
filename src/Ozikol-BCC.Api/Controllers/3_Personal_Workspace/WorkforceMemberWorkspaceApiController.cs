@@ -2,7 +2,6 @@ using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Application.Services.Cloudinary;
-using Ozikol_BCC.Application.Services.Cloudflare;
 using static Ozikol_BCC.Domain.Enum.Enum;
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,6 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
         private readonly ICloudinaryService? _cloudinaryService;
-        private readonly ICloudflareR2StorageService? _r2Storage;
         private readonly ILogger<WorkforceMemberWorkspaceApiController>? _logger;
 
         /// <summary>
@@ -55,7 +53,6 @@ namespace Ozikol_BCC.Api.Controllers
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ITenantProvider? tenantProvider = null,
             ICloudinaryService? cloudinaryService = null,
-            ICloudflareR2StorageService? r2Storage = null,
             ILogger<WorkforceMemberWorkspaceApiController>? logger = null)
         {
             _db = db;
@@ -63,7 +60,6 @@ namespace Ozikol_BCC.Api.Controllers
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
             _cloudinaryService = cloudinaryService;
-            _r2Storage = r2Storage;
             _logger = logger;
         }
 
@@ -975,7 +971,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Uploads a staff member compliance credential file (SIA license, passport, certificate, right-to-work scan)
-        /// with multi-tier storage resilience: Cloudinary primary -> Cloudflare R2 global edge -> local disk fallback.
+        /// directly to Cloudinary.
         /// </summary>
         [HttpPost("documents/upload-media")]
         [Consumes("multipart/form-data")]
@@ -1021,106 +1017,71 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded.", errorCode: "ERR-2003"));
             }
 
-            // 1. Primary storage: Cloudinary
-            if (_cloudinaryService != null)
+            if (_cloudinaryService == null)
             {
-                try
-                {
-                    var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
-                    string secureUrl;
-                    string publicId;
-
-                    if (isImage)
-                    {
-                        var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget);
-                        secureUrl = uploadResult.Url;
-                        publicId = uploadResult.PublicId;
-                    }
-                    else
-                    {
-                        var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget);
-                        secureUrl = uploadResult.Url;
-                        publicId = uploadResult.PublicId;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(secureUrl))
-                    {
-                        return Ok(ApiResponse<object>.SuccessResponse(new
-                        {
-                            url = secureUrl,
-                            key = publicId,
-                            fileName = file.FileName,
-                            fileSize = file.Length,
-                            contentType = file.ContentType
-                        }, "Compliance document uploaded successfully."));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogWarning(ex, "[Workforce] Cloudinary upload unavailable or failed ({Message}). Attempting Cloudflare R2 fallback.", ex.Message);
-                }
+                return StatusCode(500, ApiResponse<object>.FailureResponse("Cloudinary service is unconfigured.", errorCode: "ERR-5001"));
             }
 
-            // 2. Secondary fallback: Cloudflare R2 Storage
-            if (_r2Storage != null && _r2Storage.IsConfigured())
-            {
-                try
-                {
-                    var tenantSlug = CurrentTenantKey;
-                    await using var stream = file.OpenReadStream();
-                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
-                    var r2Result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, $"tenants/{tenantSlug}/{folderTarget.TrimStart('/')}");
-
-                    if (r2Result.Success && !string.IsNullOrWhiteSpace(r2Result.Url))
-                    {
-                        return Ok(ApiResponse<object>.SuccessResponse(new
-                        {
-                            url = r2Result.Url,
-                            key = r2Result.SafeFileName ?? file.FileName,
-                            fileName = file.FileName,
-                            fileSize = file.Length,
-                            contentType = file.ContentType
-                        }, "Compliance document uploaded successfully."));
-                    }
-                }
-                catch (Exception r2Ex)
-                {
-                    _logger?.LogWarning(r2Ex, "[Workforce] Cloudflare R2 upload fallback failed: {Message}. Proceeding to local storage fallback.", r2Ex.Message);
-                }
-            }
-
-            // 3. Local disk fallback: wwwroot/uploads so uploads never fail
+            // Inspect tenant MisConfigurationSettings for custom Cloudinary credentials if configured
+            string? customCloud = null;
+            string? customKey = null;
+            string? customSecret = null;
             try
             {
-                var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderTarget.Replace('/', Path.DirectorySeparatorChar));
-                Directory.CreateDirectory(uploadsDir);
-
-                var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
-                var filePath = Path.Combine(uploadsDir, safeName);
-
-                await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                if (config?.UseCustomStorage == true &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
                 {
-                    await file.CopyToAsync(fileStream, ct);
+                    customCloud = config.CustomCloudinaryCloudName;
+                    customKey = config.CustomCloudinaryApiKey;
+                    customSecret = config.CustomCloudinaryApiSecret;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[Workforce] Failed to inspect tenant MisConfigurationSettings for custom Cloudinary credentials.");
+            }
+
+            // Direct upload to Cloudinary (No failovers)
+            try
+            {
+                var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
+                string secureUrl;
+                string publicId;
+
+                if (isImage)
+                {
+                    var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                    secureUrl = uploadResult.Url;
+                    publicId = uploadResult.PublicId;
+                }
+                else
+                {
+                    var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                    secureUrl = uploadResult.Url;
+                    publicId = uploadResult.PublicId;
                 }
 
-                var relativeUrl = $"/uploads/{folderTarget.Trim('/')}/{safeName}";
-                var scheme = Request?.Scheme ?? "https";
-                var host = Request?.Host.Value ?? "localhost";
-                var fullUrl = $"{scheme}://{host}{relativeUrl}";
-
-                return Ok(ApiResponse<object>.SuccessResponse(new
+                if (!string.IsNullOrWhiteSpace(secureUrl))
                 {
-                    url = fullUrl,
-                    key = safeName,
-                    fileName = file.FileName,
-                    fileSize = file.Length,
-                    contentType = file.ContentType
-                }, "Compliance document uploaded successfully."));
+                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    {
+                        url = secureUrl,
+                        key = publicId,
+                        fileName = file.FileName,
+                        fileSize = file.Length,
+                        contentType = file.ContentType
+                    }, "Compliance document uploaded successfully to Cloudinary."));
+                }
+
+                return StatusCode(500, ApiResponse<object>.FailureResponse("Cloudinary upload failed: no URL was returned.", errorCode: "ERR-5002"));
             }
-            catch (Exception diskEx)
+            catch (Exception ex)
             {
-                _logger?.LogError(diskEx, "[Workforce] Failed all storage providers for compliance document upload: {Message}", diskEx.Message);
-                return StatusCode(500, ApiResponse<object>.FailureResponse("Failed to store compliance document across all available storage tiers.", errorCode: "ERR-5000"));
+                _logger?.LogError(ex, "[Workforce] Cloudinary upload error: {Message}", ex.Message);
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}", errorCode: "ERR-5000"));
             }
         }
 
