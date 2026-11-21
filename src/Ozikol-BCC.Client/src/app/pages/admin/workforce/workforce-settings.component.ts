@@ -47,6 +47,16 @@ interface JobRoleItem {
   assignedStaffCount: number;
 }
 
+export interface EmergencyCategoryItem {
+  id: string;
+  name: string;
+  icon: string;
+  materialIcon: string;
+  severity: 'Critical' | 'High' | 'Medium';
+  description: string;
+  isActive: boolean;
+}
+
 interface WorkforcePolicies {
   id?: string;
   standardWeeklyHours: number;
@@ -69,6 +79,7 @@ interface WorkforcePolicies {
   requireMedicalAllergies: boolean;
   requireDbsCriminalDisclosure: boolean;
   customOnboardingQuestionsJson?: string;
+  emergencyCategoriesJson?: string;
 }
 
 @Component({
@@ -146,6 +157,14 @@ interface WorkforcePolicies {
             <span class="material-symbols-outlined spin" *ngIf="isSavingPolicies">sync</span>
             {{ isSavingPolicies ? 'Saving...' : 'Save Policies' }}
           </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="activeTab === 'emergency'"
+            (click)="openEmergencyCategoryModal()"
+          >
+            <span class="material-symbols-outlined">add</span> Add Incident Category
+          </button>
         </div>
       </div>
 
@@ -192,6 +211,17 @@ interface WorkforcePolicies {
           <span class="material-symbols-outlined">folder_shared</span>
           <span>Document Categories &amp; Credentials</span>
           <span class="tab-count">{{ documentCategories.length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'emergency'"
+          (click)="activeTab = 'emergency'"
+        >
+          <span class="material-symbols-outlined" style="color: #dc2626;">e911</span>
+          <span>Emergency SOS Protocols</span>
+          <span class="tab-count">{{ emergencyCategories.length }}</span>
         </button>
       </div>
 
@@ -557,6 +587,94 @@ interface WorkforcePolicies {
       </div>
 
       <!-- ========================================================================= -->
+      <!-- TAB 5: EMERGENCY SOS PROTOCOLS & SECURITY INCIDENT TAXONOMY -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'emergency'">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div class="header-bar-left">
+              <span class="material-symbols-outlined" style="color: #dc2626;">e911</span>
+              <div>
+                <h3 class="card-heading">Emergency &amp; Security Incident Protocols</h3>
+                <p class="card-sub">
+                  Dynamic emergency categories for your business. When staff trigger Emergency SOS on duty, these categories appear in real-time.
+                </p>
+              </div>
+            </div>
+            <div class="header-bar-right d-flex gap-2">
+              <button type="button" class="btn btn-outline btn-sm" (click)="resetEmergencyCategoriesToDefault()" title="Restore platform baseline categories">
+                <span class="material-symbols-outlined">restart_alt</span> Reset to Baseline
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="openEmergencyCategoryModal()">
+                <span class="material-symbols-outlined">add</span> Add Incident Category
+              </button>
+            </div>
+          </div>
+
+          <!-- Explanatory Banner -->
+          <div class="alert-box mb-4" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;">
+            <span class="material-symbols-outlined" style="color: #dc2626; font-size: 24px; flex-shrink: 0;">security_update_warning</span>
+            <div style="font-size: 13px; line-height: 1.5; color: #991b1b;">
+              <strong>Multi-Industry Operational Emergency Taxonomies:</strong> Different businesses (corporate security, hospital/care facilities, hospitality, logistics, event stewarding) have unique emergency incident types. Staff on active duty can trigger Emergency SOS from their active shift; doing so immediately broadcasts high-urgency alerts across <strong>SMS, Email, WhatsApp, and Web Push notifications</strong> to administrators and dispatch controllers.
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Icon</th>
+                  <th>Category Name</th>
+                  <th>Severity</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cat of emergencyCategories">
+                  <td>
+                    <span style="font-size: 22px;">{{ cat.icon || '🚨' }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ cat.name }}</strong>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="cat.severity === 'Critical' ? 'status-danger' : (cat.severity === 'High' ? 'status-warning' : 'status-info')">
+                      {{ cat.severity }}
+                    </span>
+                  </td>
+                  <td style="color: #64748b; font-size: 13px; max-width: 320px;">
+                    {{ cat.description }}
+                  </td>
+                  <td>
+                    <button type="button" class="status-toggle-btn" (click)="toggleEmergencyCategory(cat)" [class.active]="cat.isActive" style="background: none; border: none; cursor: pointer; padding: 0;">
+                      <span class="status-badge" [ngClass]="cat.isActive ? 'active' : 'idle'">
+                        {{ cat.isActive ? 'Active' : 'Disabled' }}
+                      </span>
+                    </button>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="action-btn" (click)="openEmergencyCategoryModal(cat)" title="Edit Category">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button type="button" class="action-btn text-danger" (click)="deleteEmergencyCategory(cat.id)" title="Delete Category">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="emergencyCategories.length === 0">
+                  <td colspan="6" class="empty-state-cell">
+                    <p>No emergency incident categories configured. Click "+ Add Incident Category" or "Reset to Baseline".</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
       <!-- MODAL: ADD / EDIT JOB ROLE -->
       <!-- ========================================================================= -->
       <div class="modal-backdrop" *ngIf="showRoleModal" (click)="closeRoleModal()">
@@ -768,6 +886,111 @@ interface WorkforcePolicies {
               <span class="material-symbols-outlined" *ngIf="!isSavingCategory">save</span>
               <span class="material-symbols-outlined spin" *ngIf="isSavingCategory">sync</span>
               {{ isSavingCategory ? 'Saving...' : (isEditingCategory ? 'Update Category' : 'Create Category') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- MODAL: ADD / EDIT EMERGENCY SOS CATEGORY -->
+      <!-- ========================================================================= -->
+      <div class="modal-backdrop" *ngIf="showEmergencyModal" (click)="closeEmergencyCategoryModal()">
+        <div class="modal-card" style="max-width: 520px;" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined" style="color: #dc2626;">e911</span>
+              <div>
+                <h3>{{ isEditingEmergencyCategory ? 'Edit Emergency Category' : 'Add Incident Category' }}</h3>
+                <p class="modal-subtitle">Define emergency classifications for staff SOS panic dispatches.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close" (click)="closeEmergencyCategoryModal()">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-row-dual">
+              <div class="form-group" style="max-width: 120px;">
+                <label class="form-label">Emoji Icon <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control text-center"
+                  style="font-size: 20px;"
+                  [(ngModel)]="emergencyForm.icon"
+                  placeholder="e.g. 🚨"
+                  maxlength="4"
+                  required
+                />
+              </div>
+
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Category Name <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="emergencyForm.name"
+                  placeholder="e.g. Intruder / Unauthorized Access"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Quick Icon Selection</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  *ngFor="let ic of ['🚨', '⚠️', '🩺', '🔥', '💣', '🚪', '⚡', '💧', '☣️']"
+                  class="btn btn-outline btn-sm px-2 py-1"
+                  [style.border-color]="emergencyForm.icon === ic ? '#dc2626' : '#e2e8f0'"
+                  [style.background]="emergencyForm.icon === ic ? '#fee2e2' : '#ffffff'"
+                  (click)="emergencyForm.icon = ic"
+                >
+                  {{ ic }}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row-dual">
+              <div class="form-group">
+                <label class="form-label">Severity Level</label>
+                <select class="form-control" [(ngModel)]="emergencyForm.severity">
+                  <option value="Critical">Critical (Immediate Response)</option>
+                  <option value="High">High (Urgent Escalation)</option>
+                  <option value="Medium">Medium (Prompt Intervention)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <div class="checkbox-row" style="margin-top: 10px;">
+                  <input type="checkbox" id="emActive" [(ngModel)]="emergencyForm.isActive" />
+                  <label for="emActive">Active for staff SOS selection</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description &amp; Operational Instructions</label>
+              <textarea
+                class="form-control"
+                rows="3"
+                [(ngModel)]="emergencyForm.description"
+                placeholder="e.g. Unidentified individual or trespasser trespassing inside secure boundary."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeEmergencyCategoryModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="saveEmergencyCategory()"
+              [disabled]="isSavingEmergencyCategory || !emergencyForm.name?.trim()"
+            >
+              <span class="material-symbols-outlined" *ngIf="!isSavingEmergencyCategory">save</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSavingEmergencyCategory">sync</span>
+              {{ isSavingEmergencyCategory ? 'Saving...' : (isEditingEmergencyCategory ? 'Update Category' : 'Save Category') }}
             </button>
           </div>
         </div>
@@ -1903,11 +2126,26 @@ interface WorkforcePolicies {
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' = 'roles';
+  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' = 'roles';
   isLoading = false;
 
   currencyCode = 'NGN';
   currencySymbol = '₦';
+
+  // Emergency SOS Incident Categories State
+  emergencyCategories: EmergencyCategoryItem[] = [];
+  showEmergencyModal = false;
+  isEditingEmergencyCategory = false;
+  isSavingEmergencyCategory = false;
+  emergencyForm: Partial<EmergencyCategoryItem> = {
+    id: '',
+    name: '',
+    icon: '🚨',
+    materialIcon: 'warning',
+    severity: 'Critical',
+    description: '',
+    isActive: true
+  };
 
   // Job Roles State
   jobRoles: JobRoleItem[] = [];
@@ -2137,6 +2375,16 @@ export class WorkforceSettingsComponent implements OnInit {
       next: (res: any) => {
         if (res && res.data) {
           this.policies = { ...this.policies, ...res.data };
+          if (this.policies.emergencyCategoriesJson) {
+            try {
+              const parsed = JSON.parse(this.policies.emergencyCategoriesJson);
+              this.emergencyCategories = Array.isArray(parsed) && parsed.length > 0 ? parsed : this.getDefaultEmergencyCategories();
+            } catch {
+              this.emergencyCategories = this.getDefaultEmergencyCategories();
+            }
+          } else {
+            this.emergencyCategories = this.getDefaultEmergencyCategories();
+          }
         }
       },
       error: () => {}
@@ -2341,6 +2589,115 @@ export class WorkforceSettingsComponent implements OnInit {
       },
       error: (err: any) => {
         this.toast.error(err?.error?.message || 'Failed to delete category.');
+      }
+    });
+  }
+
+  // --- EMERGENCY SOS PROTOCOLS LOGIC ---
+  getDefaultEmergencyCategories(): EmergencyCategoryItem[] {
+    return [
+      { id: 'cat-intruder', name: 'Intruder / Unauthorized Access', icon: '🚨', materialIcon: 'sensor_occupied', severity: 'Critical', description: 'Unidentified individual or trespasser trespassing inside secure boundary.', isActive: true },
+      { id: 'cat-violence', name: 'Violence / Threat of Assault', icon: '⚠️', materialIcon: 'personal_injury', severity: 'Critical', description: 'Physical altercation, verbal intimidation, or imminent threat of physical assault.', isActive: true },
+      { id: 'cat-medical', name: 'Medical Emergency / Officer Down', icon: '🩺', materialIcon: 'emergency', severity: 'Critical', description: 'Unresponsive person, severe injury, collapse, or medical distress requiring ambulance.', isActive: true },
+      { id: 'cat-fire', name: 'Fire / Chemical / Environmental Hazard', icon: '🔥', materialIcon: 'local_fire_department', severity: 'Critical', description: 'Smoke, active fire outbreak, gas smell, chemical spill, or structural danger.', isActive: true },
+      { id: 'cat-suspicious', name: 'Suspicious Package / Behavior', icon: '💣', materialIcon: 'package_2', severity: 'High', description: 'Unattended bag, anomalous vehicle, or perimeter reconnaissance behavior.', isActive: true },
+      { id: 'cat-burglary', name: 'Forced Entry / Burglary / Theft', icon: '🚪', materialIcon: 'door_sensor', severity: 'High', description: 'Compromised locks, broken windows, alarm activation, or property theft.', isActive: true }
+    ];
+  }
+
+  openEmergencyCategoryModal(cat?: EmergencyCategoryItem): void {
+    if (cat) {
+      this.isEditingEmergencyCategory = true;
+      this.emergencyForm = { ...cat };
+    } else {
+      this.isEditingEmergencyCategory = false;
+      this.emergencyForm = {
+        id: 'cat-' + Math.random().toString(36).substring(2, 9),
+        name: '',
+        icon: '🚨',
+        materialIcon: 'warning',
+        severity: 'Critical',
+        description: '',
+        isActive: true
+      };
+    }
+    this.showEmergencyModal = true;
+  }
+
+  closeEmergencyCategoryModal(): void {
+    this.showEmergencyModal = false;
+  }
+
+  saveEmergencyCategory(): void {
+    if (!this.emergencyForm.name?.trim()) return;
+
+    this.isSavingEmergencyCategory = true;
+    const catItem: EmergencyCategoryItem = {
+      id: this.emergencyForm.id || ('cat-' + Math.random().toString(36).substring(2, 9)),
+      name: this.emergencyForm.name.trim(),
+      icon: this.emergencyForm.icon || '🚨',
+      materialIcon: this.emergencyForm.materialIcon || 'warning',
+      severity: this.emergencyForm.severity || 'Critical',
+      description: this.emergencyForm.description?.trim() || '',
+      isActive: this.emergencyForm.isActive ?? true
+    };
+
+    if (this.isEditingEmergencyCategory) {
+      const idx = this.emergencyCategories.findIndex(c => c.id === catItem.id);
+      if (idx !== -1) {
+        this.emergencyCategories[idx] = catItem;
+      }
+    } else {
+      this.emergencyCategories.push(catItem);
+    }
+
+    this.persistEmergencyCategories('Emergency incident category saved.');
+  }
+
+  toggleEmergencyCategory(cat: EmergencyCategoryItem): void {
+    cat.isActive = !cat.isActive;
+    this.persistEmergencyCategories(`Category '${cat.name}' ${cat.isActive ? 'activated' : 'disabled'}.`);
+  }
+
+  async deleteEmergencyCategory(id: string): Promise<void> {
+    const target = this.emergencyCategories.find(c => c.id === id);
+    const ok = await this.confirmDialog.confirm({
+      title: 'Delete Incident Category?',
+      message: `Are you sure you want to delete category '${target?.name || id}'?`,
+      confirmLabel: 'Delete Category',
+      cancelLabel: 'Cancel',
+      isDestructive: true
+    });
+    if (!ok) return;
+
+    this.emergencyCategories = this.emergencyCategories.filter(c => c.id !== id);
+    this.persistEmergencyCategories('Category deleted successfully.');
+  }
+
+  async resetEmergencyCategoriesToDefault(): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Reset to Baseline Defaults?',
+      message: 'Restore standard baseline emergency categories (Intruder, Violence, Medical, Fire, Suspicious Package, Forced Entry)? Custom additions will be overwritten.',
+      confirmLabel: 'Reset Defaults',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
+
+    this.emergencyCategories = this.getDefaultEmergencyCategories();
+    this.persistEmergencyCategories('Emergency protocols reset to baseline defaults.');
+  }
+
+  private persistEmergencyCategories(successMessage: string): void {
+    this.policies.emergencyCategoriesJson = JSON.stringify(this.emergencyCategories);
+    this.workforceService.updateWorkforcePolicies(this.policies).subscribe({
+      next: () => {
+        this.isSavingEmergencyCategory = false;
+        this.showEmergencyModal = false;
+        this.toast.success(successMessage);
+      },
+      error: (err: any) => {
+        this.isSavingEmergencyCategory = false;
+        this.toast.error(err?.error?.message || 'Failed to persist emergency protocols.');
       }
     });
   }

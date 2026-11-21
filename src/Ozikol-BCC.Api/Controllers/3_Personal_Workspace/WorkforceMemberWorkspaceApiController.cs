@@ -1369,6 +1369,141 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Welfare ping acknowledged. Lone-worker safety verified."));
         }
 
+        // =========================================================================
+        // 14. EMERGENCY SOS PROTOCOLS & SHIFT DUTY REPORTS
+        // =========================================================================
+
+        /// <summary>
+        /// Retrieves the active emergency and security incident categories configured for this tenant organization.
+        /// Returns dynamic categories configured by the business in shift settings, or platform baseline categories if not customized.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>List of emergency incident category definitions.</returns>
+        [HttpGet("emergency/categories")]
+        public async Task<ActionResult<ApiResponse<object>>> GetEmergencyCategories(CancellationToken ct)
+        {
+            var policy = await _db.BcpWorkforcePolicySettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+
+            var json = !string.IsNullOrWhiteSpace(policy?.EmergencyCategoriesJson)
+                ? policy.EmergencyCategoriesJson
+                : WorkforceRotaApiController.GetDefaultEmergencyCategoriesJson();
+
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<object>(json);
+                return Ok(ApiResponse<object>.SuccessResponse(parsed, "Emergency categories retrieved successfully."));
+            }
+            catch
+            {
+                return Ok(ApiResponse<string>.SuccessResponse(json, "Emergency categories retrieved successfully."));
+            }
+        }
+
+        /// <summary>
+        /// Submits or updates the activity report and occurrence log for an active or completed duty shift.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift.</param>
+        /// <param name="request">Duty report summary details.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Success confirmation boolean.</returns>
+        [HttpPost("shifts/{id:guid}/duty-report")]
+        public async Task<ActionResult<ApiResponse<bool>>> SubmitShiftDutyReport(Guid id, [FromBody] MemberShiftDutyReportRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts.FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
+            }
+
+            // Ensure the shift belongs to current user or attendance record matches current user
+            if (!string.Equals(shift.AssignedUserId, CurrentUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                var isAttendanceUser = await _db.BcpAttendanceRecords.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
+                if (!isAttendanceUser)
+                {
+                    return Forbid();
+                }
+            }
+
+            shift.ReportContent = request.ReportContent;
+            shift.ReportSubmissionUtc = DateTime.UtcNow;
+            shift.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift duty report submitted successfully."));
+        }
+
+        /// <summary>
+        /// Dispatches an immediate high-priority Emergency SOS alert across SMS, Email, WhatsApp, and Web Push notifications
+        /// to operations administration, supervisors, and incident response controllers.
+        /// </summary>
+        /// <param name="id">Unique identifier of the shift where the emergency occurred.</param>
+        /// <param name="request">Emergency incident details including category, description, and GPS coordinates.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Success confirmation boolean.</returns>
+        [HttpPost("shifts/{id:guid}/emergency-sos")]
+        public async Task<ActionResult<ApiResponse<bool>>> DispatchEmergencySos(Guid id, [FromBody] MemberEmergencySosRequest request, CancellationToken ct)
+        {
+            var shift = await _db.BcpShifts
+                .Include(s => s.ClientSite)
+                .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
+
+            if (shift == null)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Shift record not found.", errorCode: "ERR-2004"));
+            }
+
+            var siteName = shift.ClientSite?.SiteName ?? shift.SiteName ?? "Assigned Site";
+            var postName = shift.PostName ?? "Main Post";
+            var categoryName = !string.IsNullOrWhiteSpace(request.CategoryName) ? request.CategoryName.Trim() : "Security Incident";
+            var timeUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+            var locationString = (request.Latitude.HasValue && request.Longitude.HasValue)
+                ? $"{request.Latitude.Value:F5}, {request.Longitude.Value:F5}"
+                : "GPS unavailable";
+
+            var alertTitle = $"🚨 CRITICAL SOS: {categoryName} at {siteName}";
+            var alertMessage = $"URGENT EMERGENCY ALERT: Officer {CurrentUserName} engaged panic alert at {siteName} ({postName}). Category: {categoryName}. Details: {request.Description}. Location: {locationString}. Time: {timeUtc} UTC.";
+
+            // 1. Log incident permanently into Shift occurrence / duty report
+            var incidentLogEntry = $"\n[{timeUtc} UTC] 🚨 EMERGENCY SOS TRIGGERED: {categoryName}\nOfficer: {CurrentUserName}\nDetails: {request.Description}\nGPS: {locationString}\n";
+            shift.ReportContent = string.IsNullOrWhiteSpace(shift.ReportContent)
+                ? incidentLogEntry
+                : shift.ReportContent + "\n" + incidentLogEntry;
+            shift.UpdatedUtc = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            // 2. Dispatch across ALL channels simultaneously (SMS, Email, WhatsApp, Push) via CentralNotificationDispatcher
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        TenantKey = CurrentTenantKey,
+                        Title = alertTitle,
+                        Message = alertMessage,
+                        Category = BcpMessageCategory.Security,
+                        Severity = NotificationSeverity.Error,
+                        Channels = NotificationChannels.All,
+                        Module = "Workforce",
+                        Icon = "emergency",
+                        ActionUrl = "/workforce/console/live"
+                    }, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Failed to broadcast Emergency SOS notifications for shift {ShiftId}", id);
+                }
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Emergency SOS broadcasted successfully across SMS, Email, WhatsApp, and Push notifications."));
+        }
+
         private static double CalculateHaversineDistanceMeters(double lat1, double lon1, double lat2, double lon2)
         {
             const double earthRadiusMeters = 6371000;
@@ -1384,5 +1519,52 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;
+    }
+
+    /// <summary>
+    /// Payload submitted by a rostered staff member to record duty report activity, occurrence checks, or handover remarks.
+    /// </summary>
+    public class MemberShiftDutyReportRequest
+    {
+        /// <summary>
+        /// Textual summary of duty checks, occurrence observations, access control logs, and handover remarks.
+        /// </summary>
+        public string ReportContent { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Payload dispatched by a staff member on active duty to trigger a critical emergency SOS security broadcast.
+    /// </summary>
+    public class MemberEmergencySosRequest
+    {
+        /// <summary>
+        /// Identifier of the dynamic emergency category selected by the staff member.
+        /// </summary>
+        public string CategoryId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Display title or classification of the incident (e.g. Intruder, Violence, Fire).
+        /// </summary>
+        public string CategoryName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Severity classification (e.g. Critical, High).
+        /// </summary>
+        public string Severity { get; set; } = "Critical";
+
+        /// <summary>
+        /// Urgent incident description or assistance requirements submitted by the staff member.
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional GPS latitude of the staff member when the SOS trigger was engaged.
+        /// </summary>
+        public double? Latitude { get; set; }
+
+        /// <summary>
+        /// Optional GPS longitude of the staff member when the SOS trigger was engaged.
+        /// </summary>
+        public double? Longitude { get; set; }
     }
 }

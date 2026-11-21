@@ -562,4 +562,24 @@ export class WorkforceService {
   updateMessageTicketStatus(ticketId: string, status: 'Open' | 'Closed'): Observable<any> {
     return this.apiService.put<any>(`workforce/messages/${ticketId}/status`, { status });
   }
+
+  // --- EMERGENCY PROTOCOLS & SHIFT DUTY REPORTS ---
+  getEmergencyCategories(): Observable<any> {
+    return this.apiService.get<any>('workforce/emergency/categories');
+  }
+
+  submitShiftDutyReport(shiftId: string, payload: { reportContent: string }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/duty-report`, payload);
+  }
+
+  transmitEmergencySos(shiftId: string, payload: {
+    categoryId: string;
+    categoryName: string;
+    severity?: string;
+    description: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Observable<any> {
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/emergency-sos`, payload);
+  }
 }

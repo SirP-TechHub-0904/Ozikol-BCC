@@ -1105,6 +1105,25 @@ interface YearMonthGrid {
                     <span class="material-symbols-outlined" style="font-size: 15px;">fingerprint</span>
                     <span>Fast Duty Clock-In</span>
                   </a>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline d-inline-flex align-items-center gap-1"
+                    style="color: #0050e5; border-color: #bfdbfe;"
+                    (click)="openDutyReportModal(s)"
+                    title="Submit Shift Duty Activity Report"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 15px;">assignment</span>
+                    <span>Duty Report</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1 emergency-sos-trigger-btn"
+                    (click)="openEmergencySosModal(s)"
+                    title="Engage Immediate Emergency SOS Security Panic Alert"
+                  >
+                    <span class="material-symbols-outlined pulse-icon" style="font-size: 15px;">e911</span>
+                    <span>Emergency SOS</span>
+                  </button>
                   <button type="button" class="btn btn-sm btn-confirm" *ngIf="!s.isConfirmedByGuard && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'" (click)="confirmShift(s)" [disabled]="isActionLoading || isShiftExpired(s)">
                     <span class="material-symbols-outlined">check_circle</span>
                     <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge Duty' : 'Accept Shift' }}</span>
@@ -1361,6 +1380,29 @@ interface YearMonthGrid {
                       <span class="material-symbols-outlined" style="font-size: 15px;">fingerprint</span>
                       <span>Clock In Fast</span>
                     </a>
+
+                    <!-- Duty Report -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline d-inline-flex align-items-center gap-1"
+                      style="color: #0050e5; border-color: #bfdbfe;"
+                      (click)="openDutyReportModal(s)"
+                      title="Submit Shift Duty Activity Report"
+                    >
+                      <span class="material-symbols-outlined" style="font-size: 15px;">assignment</span>
+                      <span>Duty Report</span>
+                    </button>
+
+                    <!-- Emergency SOS Alert -->
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1 emergency-sos-trigger-btn"
+                      (click)="openEmergencySosModal(s)"
+                      title="Engage Immediate Emergency SOS Security Panic Alert"
+                    >
+                      <span class="material-symbols-outlined pulse-icon" style="font-size: 15px;">e911</span>
+                      <span>Emergency SOS</span>
+                    </button>
 
                     <!-- 1-Tap Confirm / Acknowledge -->
                     <button
@@ -2394,6 +2436,156 @@ interface YearMonthGrid {
           </div>
           <div class="modal-footer-custom">
             <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Got it</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Duty Report Modal -->
+      <div class="modal-backdrop-custom" *ngIf="showDutyReportModal" (click)="closeDutyReportModal()">
+        <div class="modal-card-custom" style="max-width: 600px;" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom">
+            <div class="modal-title-group">
+              <span class="material-symbols-outlined text-primary">assignment</span>
+              <div>
+                <h3>Shift Duty Activity Report</h3>
+                <p class="modal-subtitle">Log routine occurrences, patrol checkpoints, access control events, and shift handover remarks.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="closeDutyReportModal()">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <div class="p-3 mb-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong>{{ activeReportingShift?.facilityName || activeReportingShift?.siteName }}</strong>
+                <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 4px; font-size: 11px;">{{ activeReportingShift?.postName }}</span>
+              </div>
+              <div class="text-muted small mt-1">
+                Shift: {{ activeReportingShift?.shiftCode }} &bull; {{ activeReportingShift?.startsAtUtc | date:'HH:mm' }} &ndash; {{ activeReportingShift?.endsAtUtc | date:'HH:mm' }}
+              </div>
+            </div>
+
+            <div class="form-group mb-1">
+              <label class="form-label fw-bold">Duty Report &amp; Occurrence Observations *</label>
+              <textarea
+                class="form-control"
+                rows="7"
+                [(ngModel)]="dutyReportContent"
+                placeholder="e.g. Conducted perimeter inspection at 20:00, all exterior doors secured. Access control log clear with no unauthorized entries. Handover to relief officer completed."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-outline" (click)="closeDutyReportModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="saveShiftDutyReport()"
+              [disabled]="isSubmittingDutyReport || !dutyReportContent.trim()"
+            >
+              <span class="material-symbols-outlined" *ngIf="!isSubmittingDutyReport" style="font-size: 16px;">check_circle</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSubmittingDutyReport" style="font-size: 16px;">sync</span>
+              <span>{{ isSubmittingDutyReport ? 'Submitting...' : 'Submit Duty Report' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Emergency SOS Security Alert Modal -->
+      <div class="modal-backdrop-custom emergency-sos-backdrop" *ngIf="showEmergencySosModal" (click)="closeEmergencySosModal()">
+        <div class="modal-card-custom emergency-sos-card" style="max-width: 650px;" (click)="$event.stopPropagation()">
+          <div class="modal-header-custom" style="background: #fef2f2; border-bottom: 2px solid #fee2e2;">
+            <div class="modal-title-group">
+              <div class="emergency-badge-pulse">
+                <span class="material-symbols-outlined" style="font-size: 26px; color: #fff;">e911</span>
+              </div>
+              <div>
+                <h3 style="color: #b91c1c; margin: 0; font-size: 1.15rem; font-weight: 700;">EMERGENCY SOS DISPATCH</h3>
+                <p class="modal-subtitle" style="color: #991b1b; margin: 2px 0 0 0;">Immediate high-urgency security alert across SMS, Email, WhatsApp, and Web Push notifications</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-custom" (click)="closeEmergencySosModal()">&times;</button>
+          </div>
+          <div class="modal-body-custom">
+            <!-- Urgent Banner -->
+            <div class="alert-box mb-3" style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+              <span class="material-symbols-outlined" style="color: #dc2626; font-size: 24px; flex-shrink: 0;">crisis_alert</span>
+              <div style="font-size: 12.5px; color: #7f1d1d; line-height: 1.4;">
+                <strong>URGENT SECURITY ESCALATION:</strong> Engaging this alert immediately notifies duty controllers, incident response commanders, and emergency administrators across all communication channels.
+              </div>
+            </div>
+
+            <!-- Site & GPS Status -->
+            <div class="p-2 px-3 mb-3" style="background: #f8fafc; border-radius: 6px; font-size: 12.5px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>Site:</strong> {{ activeSosShift?.facilityName || activeSosShift?.siteName }} ({{ activeSosShift?.postName }})
+              </div>
+              <div>
+                <span *ngIf="sosLatitude && sosLongitude" style="color: #16a34a; font-weight: 600;">
+                  📍 GPS Acquired: {{ sosLatitude | number:'1.4-4' }}, {{ sosLongitude | number:'1.4-4' }}
+                </span>
+                <span *ngIf="!sosLatitude && isAcquiringGps" style="color: #d97706;">
+                  <span class="material-symbols-outlined spin" style="font-size: 12px; vertical-align: middle;">sync</span> Acquiring GPS...
+                </span>
+                <span *ngIf="!sosLatitude && !isAcquiringGps" style="color: #64748b;">
+                  📍 GPS: Offline / Pending
+                </span>
+              </div>
+            </div>
+
+            <!-- Dynamic Emergency Categories -->
+            <div class="form-group mb-3">
+              <label class="form-label fw-bold mb-1">
+                Select Incident Category <span class="text-danger">*</span>
+              </label>
+              <p class="text-muted small mb-2">Category configured by your organization's shift policy:</p>
+
+              <div class="emergency-categories-grid" *ngIf="emergencyCategories.length > 0">
+                <div
+                  *ngFor="let cat of emergencyCategories"
+                  class="emergency-cat-card"
+                  [class.selected]="selectedSosCategory?.id === cat.id"
+                  (click)="selectSosCategory(cat)"
+                >
+                  <div class="ecc-icon">{{ cat.icon || '🚨' }}</div>
+                  <div class="ecc-info">
+                    <div class="ecc-name">{{ cat.name }}</div>
+                    <div class="ecc-desc">{{ cat.description }}</div>
+                  </div>
+                  <span class="ecc-severity" [class.critical]="cat.severity === 'Critical'" [class.high]="cat.severity === 'High'">
+                    {{ cat.severity }}
+                  </span>
+                </div>
+              </div>
+
+              <div *ngIf="emergencyCategories.length === 0" class="p-3 text-center text-muted border rounded small">
+                Loading emergency categories from shift settings...
+              </div>
+            </div>
+
+            <!-- Emergency Description -->
+            <div class="form-group mb-1">
+              <label class="form-label fw-bold">Emergency Situation &amp; Immediate Requirements *</label>
+              <textarea
+                class="form-control"
+                rows="4"
+                [(ngModel)]="sosDescription"
+                placeholder="e.g. Unauthorized individual attempting to breach rear warehouse gate, aggressive behavior, backup requested immediately..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-custom" style="background: #fef2f2; border-top: 1px solid #fee2e2;">
+            <button type="button" class="btn btn-outline" (click)="closeEmergencySosModal()" [disabled]="isTransmittingSos">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-danger d-inline-flex align-items-center gap-2 emergency-sos-trigger-btn"
+              style="padding: 10px 20px; font-size: 14px;"
+              (click)="dispatchEmergencySos()"
+              [disabled]="isTransmittingSos || !selectedSosCategory || !sosDescription.trim()"
+            >
+              <span class="material-symbols-outlined" *ngIf="!isTransmittingSos">e911</span>
+              <span class="material-symbols-outlined spin" *ngIf="isTransmittingSos">sync</span>
+              <strong>{{ isTransmittingSos ? 'Broadcasting Alert...' : '🚨 TRANSMIT EMERGENCY SOS NOW' }}</strong>
+            </button>
           </div>
         </div>
       </div>
@@ -5967,6 +6159,102 @@ interface YearMonthGrid {
     :host-context(.dark-mode) .cal-days-grid { background: #1e293b; }
     :host-context(.dark-mode) .cal-day-cell { border-color: #334155; }
     :host-context(.dark-mode) .cal-day-cell.other-month { background: #0f172a; }
+
+    /* Emergency SOS and Duty Report Styles */
+    .emergency-sos-trigger-btn {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border-color: #b91c1c !important;
+      font-weight: 600 !important;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+      transition: all 0.2s ease;
+    }
+    .emergency-sos-trigger-btn:hover {
+      background: #b91c1c !important;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.35);
+    }
+    .pulse-icon {
+      animation: pulse-sos 1.5s infinite;
+    }
+    @keyframes pulse-sos {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.18); opacity: 0.85; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .emergency-badge-pulse {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #dc2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.3);
+      animation: pulse-sos 1.8s infinite;
+    }
+    .emergency-categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .emergency-cat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.15s ease;
+    }
+    .emergency-cat-card:hover {
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+    .emergency-cat-card.selected {
+      border-color: #dc2626;
+      background: #fef2f2;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25);
+    }
+    .ecc-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .ecc-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .ecc-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .ecc-desc {
+      font-size: 11px;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ecc-severity {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .ecc-severity.critical {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .ecc-severity.high {
+      background: #ffedd5;
+      color: #9a3412;
+    }
   `]
 })
 export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -5974,6 +6262,23 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   canScrollLeft = false;
   canScrollRight = true;
+
+  // Shift Duty Report State
+  showDutyReportModal = false;
+  activeReportingShift: Shift | null = null;
+  dutyReportContent = '';
+  isSubmittingDutyReport = false;
+
+  // Emergency SOS State
+  showEmergencySosModal = false;
+  activeSosShift: Shift | null = null;
+  emergencyCategories: any[] = [];
+  selectedSosCategory: any = null;
+  sosDescription = '';
+  sosLatitude: number | null = null;
+  sosLongitude: number | null = null;
+  isAcquiringGps = false;
+  isTransmittingSos = false;
 
   shifts: Shift[] = [];
   openShifts: Shift[] = [];
@@ -7899,5 +8204,127 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     if (s.isClockedOut) return 'bg-secondary';
     if (s.isConfirmedByGuard) return 'bg-success';
     return 'bg-warning text-dark';
+  }
+
+  // --- DUTY REPORT & OCCURRENCE ACTIONS ---
+  openDutyReportModal(shift: Shift): void {
+    this.activeReportingShift = shift;
+    this.dutyReportContent = shift.reportContent || '';
+    this.showDutyReportModal = true;
+  }
+
+  closeDutyReportModal(): void {
+    this.showDutyReportModal = false;
+    this.activeReportingShift = null;
+    this.dutyReportContent = '';
+  }
+
+  saveShiftDutyReport(): void {
+    if (!this.activeReportingShift || !this.dutyReportContent.trim()) return;
+    this.isSubmittingDutyReport = true;
+    this.workforceService.submitShiftDutyReport(this.activeReportingShift.id, {
+      reportContent: this.dutyReportContent.trim()
+    }).subscribe({
+      next: () => {
+        this.isSubmittingDutyReport = false;
+        if (this.activeReportingShift) {
+          this.activeReportingShift.reportContent = this.dutyReportContent.trim();
+        }
+        this.toast.success('Duty report submitted successfully.');
+        this.closeDutyReportModal();
+      },
+      error: (err: any) => {
+        this.isSubmittingDutyReport = false;
+        this.toast.error(err?.error?.message || 'Failed to submit duty report.');
+      }
+    });
+  }
+
+  // --- EMERGENCY SOS PROTOCOLS ---
+  openEmergencySosModal(shift: Shift): void {
+    this.activeSosShift = shift;
+    this.selectedSosCategory = null;
+    this.sosDescription = '';
+    this.sosLatitude = null;
+    this.sosLongitude = null;
+    this.showEmergencySosModal = true;
+    this.loadEmergencyCategoriesForSos();
+    this.acquireGpsForSos();
+  }
+
+  closeEmergencySosModal(): void {
+    this.showEmergencySosModal = false;
+    this.activeSosShift = null;
+    this.selectedSosCategory = null;
+    this.sosDescription = '';
+  }
+
+  loadEmergencyCategoriesForSos(): void {
+    this.workforceService.getEmergencyCategories().subscribe({
+      next: (res: any) => {
+        const raw = res?.data;
+        if (Array.isArray(raw)) {
+          this.emergencyCategories = raw.filter((c: any) => c.isActive !== false);
+        } else if (typeof raw === 'string') {
+          try {
+            const parsed = JSON.parse(raw);
+            this.emergencyCategories = Array.isArray(parsed) ? parsed.filter((c: any) => c.isActive !== false) : [];
+          } catch {
+            this.emergencyCategories = [];
+          }
+        }
+        if (this.emergencyCategories.length > 0 && !this.selectedSosCategory) {
+          this.selectedSosCategory = this.emergencyCategories[0];
+        }
+      },
+      error: () => {
+        this.emergencyCategories = [];
+      }
+    });
+  }
+
+  acquireGpsForSos(): void {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      this.isAcquiringGps = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.sosLatitude = pos.coords.latitude;
+          this.sosLongitude = pos.coords.longitude;
+          this.isAcquiringGps = false;
+        },
+        () => {
+          this.isAcquiringGps = false;
+        },
+        { enableHighAccuracy: true, timeout: 7000 }
+      );
+    }
+  }
+
+  selectSosCategory(cat: any): void {
+    this.selectedSosCategory = cat;
+  }
+
+  dispatchEmergencySos(): void {
+    if (!this.activeSosShift || !this.selectedSosCategory || !this.sosDescription.trim()) return;
+
+    this.isTransmittingSos = true;
+    this.workforceService.transmitEmergencySos(this.activeSosShift.id, {
+      categoryId: this.selectedSosCategory.id,
+      categoryName: this.selectedSosCategory.name,
+      severity: this.selectedSosCategory.severity || 'Critical',
+      description: this.sosDescription.trim(),
+      latitude: this.sosLatitude,
+      longitude: this.sosLongitude
+    }).subscribe({
+      next: () => {
+        this.isTransmittingSos = false;
+        this.toast.success('Emergency SOS broadcasted across SMS, Email, WhatsApp, and Push notifications.');
+        this.closeEmergencySosModal();
+      },
+      error: (err: any) => {
+        this.isTransmittingSos = false;
+        this.toast.error(err?.error?.message || 'Failed to dispatch Emergency SOS.');
+      }
+    });
   }
 }

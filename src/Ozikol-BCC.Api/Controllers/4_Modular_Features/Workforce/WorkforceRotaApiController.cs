@@ -3499,7 +3499,10 @@ namespace Ozikol_BCC.Api.Controllers
                 RequireDrivingLicense = policy?.RequireDrivingLicense ?? true,
                 RequireMedicalAllergies = policy?.RequireMedicalAllergies ?? true,
                 RequireDbsCriminalDisclosure = policy?.RequireDbsCriminalDisclosure ?? true,
-                CustomQuestionsJson = policy?.CustomQuestionsJson
+                CustomQuestionsJson = policy?.CustomQuestionsJson,
+                EmergencyCategoriesJson = !string.IsNullOrWhiteSpace(policy?.EmergencyCategoriesJson)
+                    ? policy.EmergencyCategoriesJson
+                    : GetDefaultEmergencyCategoriesJson()
             };
 
             return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce policies retrieved successfully."));
@@ -3550,6 +3553,10 @@ namespace Ozikol_BCC.Api.Controllers
             policy.RequireMedicalAllergies = request.RequireMedicalAllergies;
             policy.RequireDbsCriminalDisclosure = request.RequireDbsCriminalDisclosure;
             policy.CustomQuestionsJson = request.CustomQuestionsJson;
+            if (request.EmergencyCategoriesJson != null)
+            {
+                policy.EmergencyCategoriesJson = request.EmergencyCategoriesJson;
+            }
             policy.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -3579,10 +3586,28 @@ namespace Ozikol_BCC.Api.Controllers
                 RequireDrivingLicense = policy.RequireDrivingLicense,
                 RequireMedicalAllergies = policy.RequireMedicalAllergies,
                 RequireDbsCriminalDisclosure = policy.RequireDbsCriminalDisclosure,
-                CustomQuestionsJson = policy.CustomQuestionsJson
+                CustomQuestionsJson = policy.CustomQuestionsJson,
+                EmergencyCategoriesJson = !string.IsNullOrWhiteSpace(policy.EmergencyCategoriesJson)
+                    ? policy.EmergencyCategoriesJson
+                    : GetDefaultEmergencyCategoriesJson()
             };
 
             return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce operational policies updated successfully."));
+        }
+
+        /// <summary>
+        /// Returns the standardized JSON payload of baseline emergency incident categories for organizations that have not yet customized their protocols.
+        /// </summary>
+        public static string GetDefaultEmergencyCategoriesJson()
+        {
+            return @"[
+  { ""id"": ""cat-intruder"", ""name"": ""Intruder / Unauthorized Access"", ""icon"": ""🚨"", ""materialIcon"": ""sensor_occupied"", ""severity"": ""Critical"", ""description"": ""Unidentified individual or trespasser trespassing inside secure boundary."", ""isActive"": true },
+  { ""id"": ""cat-violence"", ""name"": ""Violence / Threat of Assault"", ""icon"": ""⚠️"", ""materialIcon"": ""personal_injury"", ""severity"": ""Critical"", ""description"": ""Physical altercation, verbal intimidation, or imminent threat of physical assault."", ""isActive"": true },
+  { ""id"": ""cat-medical"", ""name"": ""Medical Emergency / Officer Down"", ""icon"": ""🩺"", ""materialIcon"": ""emergency"", ""severity"": ""Critical"", ""description"": ""Unresponsive person, severe injury, collapse, or medical distress requiring ambulance."", ""isActive"": true },
+  { ""id"": ""cat-fire"", ""name"": ""Fire / Chemical / Environmental Hazard"", ""icon"": ""🔥"", ""materialIcon"": ""local_fire_department"", ""severity"": ""Critical"", ""description"": ""Smoke, active fire outbreak, gas smell, chemical spill, or structural danger."", ""isActive"": true },
+  { ""id"": ""cat-suspicious"", ""name"": ""Suspicious Package / Behavior"", ""icon"": ""💣"", ""materialIcon"": ""package_2"", ""severity"": ""High"", ""description"": ""Unattended bag, anomalous vehicle, or perimeter reconnaissance behavior."", ""isActive"": true },
+  { ""id"": ""cat-burglary"", ""name"": ""Forced Entry / Burglary / Theft"", ""icon"": ""🚪"", ""materialIcon"": ""door_sensor"", ""severity"": ""High"", ""description"": ""Compromised locks, broken windows, alarm activation, or property theft."", ""isActive"": true }
+]";
         }
 
         // =========================================================================
@@ -5369,6 +5394,7 @@ namespace Ozikol_BCC.Api.Controllers
         public bool RequireMedicalAllergies { get; set; }
         public bool RequireDbsCriminalDisclosure { get; set; }
         public string? CustomQuestionsJson { get; set; }
+        public string? EmergencyCategoriesJson { get; set; }
     }
 
     public class UpdateWorkforcePolicyRequest
@@ -5393,6 +5419,7 @@ namespace Ozikol_BCC.Api.Controllers
         public bool RequireMedicalAllergies { get; set; } = true;
         public bool RequireDbsCriminalDisclosure { get; set; } = true;
         public string? CustomQuestionsJson { get; set; }
+        public string? EmergencyCategoriesJson { get; set; }
     }
 
     public class ClientOrganizationDto
