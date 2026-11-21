@@ -152,7 +152,7 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
                   (ngModelChange)="onJobRoleSelected($event)"
                 >
                   <option value="">-- Select Job Title --</option>
-                  <option *ngFor="let r of jobRoles" [value]="r.name">{{ r.name }}</option>
+                  <option *ngFor="let r of jobRoles" [value]="r.title || r.name">{{ r.title || r.name }}</option>
                 </select>
                 <div *ngIf="showQuickAddRole" class="inline-create-box">
                   <input type="text" class="form-control" [(ngModel)]="newRoleName" placeholder="e.g. Static Security Guard" />
@@ -374,6 +374,70 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
     .text-green { color: #16a34a; }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    select.form-control { cursor: pointer; }
+    select.form-control option { background: #ffffff; color: #0f172a; }
+
+    /* Dark Mode Theme Support */
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .cms-card,
+    :host-context(.dark-mode) .submit-footer-card {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-mode) .card-header {
+      background: #0f172a !important;
+      border-bottom-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .card-title-group h3 {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .subtitle,
+    :host-context(.dark-mode) .card-subtitle,
+    :host-context(.dark-mode) .field-hint {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .form-label,
+    :host-context(.dark-mode) .checkbox-inline,
+    :host-context(.dark-mode) .footer-note {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .sep {
+      color: #475569 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .current {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .form-control {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .form-control:focus {
+      border-color: #0050e5 !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.25) !important;
+    }
+    :host-context(.dark-mode) select.form-control option {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .btn-outline {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .btn-outline:hover {
+      background: #1e293b !important;
+      border-color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .inhouse-info-banner {
+      background: rgba(0, 80, 229, 0.12) !important;
+      border-color: rgba(0, 80, 229, 0.3) !important;
+      color: #93c5fd !important;
+    }
   `]
 })
 export class WorkforceStaffCreateComponent implements OnInit {
@@ -478,9 +542,12 @@ export class WorkforceStaffCreateComponent implements OnInit {
   }
 
   onJobRoleSelected(roleName: string): void {
-    const found = this.jobRoles.find(r => r.name === roleName);
-    if (found && found.defaultHourlyRate !== undefined) {
-      this.model.defaultHourlyRate = found.defaultHourlyRate;
+    const found = this.jobRoles.find(r => (r.title || r.name) === roleName);
+    if (found) {
+      const rate = found.defaultHourlyRate ?? found.defaultHourlyPayRate;
+      if (rate !== undefined && rate !== null) {
+        this.model.defaultHourlyRate = rate;
+      }
     }
   }
 
@@ -498,12 +565,12 @@ export class WorkforceStaffCreateComponent implements OnInit {
     const name = this.newRoleName.trim();
     if (!name) return;
     this.isCreatingRole = true;
-    this.workforceService.createJobRole({ name, defaultHourlyRate: this.model.defaultHourlyRate || 0, isActive: true }).subscribe({
+    this.workforceService.createJobRole({ title: name, name, defaultHourlyRate: this.model.defaultHourlyRate || 0, isActive: true }).subscribe({
       next: (res: any) => {
         this.isCreatingRole = false;
-        const created = res?.data || { name };
+        const created = res?.data || { title: name, name };
         this.jobRoles.push(created);
-        this.model.jobTitle = created.name || name;
+        this.model.jobTitle = created.title || created.name || name;
         this.newRoleName = '';
         this.showQuickAddRole = false;
         this.toast.success(`Job title "${name}" added.`);
