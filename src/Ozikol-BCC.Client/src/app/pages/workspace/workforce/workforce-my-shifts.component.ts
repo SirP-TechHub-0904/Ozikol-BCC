@@ -1970,7 +1970,7 @@ interface YearMonthGrid {
                     </div>
                     <div class="dropzone-instructions">
                       <strong>Choose a file or click to browse</strong>
-                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Encrypted Vault Storage)</span>
+                      <span>Supports PDF, PNG, JPG, or DOC up to 10MB (Cloudinary Secured)</span>
                     </div>
                   </div>
 
@@ -6550,8 +6550,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const dayShifts = this.shifts.filter(s => {
       if (this.selectedVenueId) {
         const venueMatch = (s.clientSiteId === this.selectedVenueId) ||
-                           ((s as any).siteId === this.selectedVenueId) ||
-                           ((s.facilityName || s.siteName) === this.selectedVenueId);
+          ((s as any).siteId === this.selectedVenueId) ||
+          ((s.facilityName || s.siteName) === this.selectedVenueId);
         if (!venueMatch) return false;
       }
       if (!s.startsAtUtc) return false;
@@ -7769,7 +7769,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
         const url = res?.data?.url || res?.url;
         if (url) {
           this.docForm.fileUrl = url;
-          this.toast.success(`"${file.name}" uploaded successfully!`);
+          this.toast.success(`"${file.name}" uploaded to Cloudinary successfully!`);
         } else {
           this.toast.error('File uploaded, but no URL was returned.');
         }
@@ -7777,7 +7777,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       error: (err: any) => {
         this.isUploadingDoc = false;
         this.uploadedDocFileName = '';
-        this.toast.error(err?.error?.message || 'Failed to upload compliance document.');
+        this.toast.error(err?.error?.message || 'Failed to upload document to Cloudinary.');
       }
     });
   }
