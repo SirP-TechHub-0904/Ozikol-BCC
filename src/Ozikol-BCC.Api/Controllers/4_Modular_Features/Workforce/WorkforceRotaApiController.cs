@@ -1849,6 +1849,62 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         /// <summary>
+        /// Retrieves directory members from User Manager who are eligible to be enrolled into Workforce shifts
+        /// (active/pending members who are not administrators and not already enrolled in workforce).
+        /// </summary>
+        [HttpGet("members/available-users")]
+        public async Task<ActionResult<ApiResponse<List<AvailableWorkforceMemberDto>>>> GetAvailableWorkforceMembers(CancellationToken ct)
+        {
+            var currentTenant = (CurrentTenantKey ?? "default").Trim().ToLowerInvariant();
+
+            // 1. Identify enrolled active staff user IDs in the current tenant
+            var enrolledUserIds = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .Where(p => (p.TenantKey.ToLower() == currentTenant || p.TenantKey == "default" || string.IsNullOrEmpty(p.TenantKey)) && p.IsActive)
+                .Select(p => p.UserId)
+                .ToListAsync(ct);
+            var enrolledSet = enrolledUserIds.ToHashSet();
+
+            // 2. Discover Admin & SuperAdmin user IDs to strictly exclude administrators
+            var adminRoleIds = await _db.Roles
+                .AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            var adminUserIds = await _db.UserRoles
+                .AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+            var adminUserIdSet = adminUserIds.ToHashSet();
+
+            // 3. Query directory users from User Manager
+            var availableUsers = await _db.Users
+                .AsNoTracking()
+                .Where(u => !enrolledSet.Contains(u.Id) &&
+                            !adminUserIdSet.Contains(u.Id) &&
+                            !u.IsDeleted &&
+                            u.UserStatus != UserStatus.Deleted)
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .Select(u => new AvailableWorkforceMemberDto
+                {
+                    UserId = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email ?? string.Empty,
+                    PhoneNumber = u.PhoneNumber,
+                    MemberId = u.MemberId,
+                    AvatarUrl = u.AvatarUrl,
+                    Designation = u.Designation,
+                    UserStatus = u.UserStatus.ToString()
+                })
+                .ToListAsync(ct);
+
+            return Ok(ApiResponse<List<AvailableWorkforceMemberDto>>.SuccessResponse(availableUsers, "Available directory members retrieved successfully."));
+        }
+
+        /// <summary>
         /// Enrolls a staff member into the workforce rota system, configuring their job title,
         /// contracted hours, default hourly rate, and triggers a transactional onboarding email.
         /// </summary>
@@ -1879,12 +1935,12 @@ namespace Ozikol_BCC.Api.Controllers
             var resolvedJobTitle = !string.IsNullOrWhiteSpace(request.JobTitle) && request.JobTitle.Trim().ToLowerInvariant() != "undefined"
                 ? request.JobTitle.Trim()
                 : await ResolveTenantJobRoleAsync(null, ct);
-            var (resolvedStaffTypeId, resolvedStaffTypeName) = await ResolveTenantStaffTypeAsync(null, null, ct);
+            var (resolvedStaffTypeId, resolvedStaffTypeName) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
 
             profile.JobTitle = resolvedJobTitle;
-            profile.StaffTypeId ??= resolvedStaffTypeId;
-            profile.StaffTypeName = !string.IsNullOrWhiteSpace(profile.StaffTypeName) && profile.StaffTypeName.ToLowerInvariant() != "undefined"
-                ? profile.StaffTypeName
+            profile.StaffTypeId = request.StaffTypeId ?? resolvedStaffTypeId;
+            profile.StaffTypeName = !string.IsNullOrWhiteSpace(request.StaffTypeName) && request.StaffTypeName.ToLowerInvariant() != "undefined"
+                ? request.StaffTypeName.Trim()
                 : resolvedStaffTypeName;
             profile.DefaultHourlyRate = request.DefaultHourlyRate;
             profile.ContractedWeeklyHours = request.ContractedWeeklyHours;
@@ -5315,10 +5371,24 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FullName { get; set; }
         public string? PhoneNumber { get; set; }
         public string? JobTitle { get; set; }
+        public Guid? StaffTypeId { get; set; }
+        public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
         public string? WorkingAvailability { get; set; }
+    }
+
+    public class AvailableWorkforceMemberDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? MemberId { get; set; }
+        public string? AvatarUrl { get; set; }
+        public string? Designation { get; set; }
+        public string UserStatus { get; set; } = "Active";
     }
 
     public class StaffMemberDto

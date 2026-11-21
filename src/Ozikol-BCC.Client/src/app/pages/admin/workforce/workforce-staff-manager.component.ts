@@ -45,6 +45,10 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">mail</span>
             <span>Invite to Register</span>
           </a>
+          <button type="button" class="btn btn-outline-blue" (click)="openEnrollModal()" title="Enroll an existing user from the directory into shifts">
+            <span class="material-symbols-outlined">how_to_reg</span>
+            <span>Enroll Existing Member</span>
+          </button>
           <a routerLink="/workforce/console/staff/create" class="btn btn-primary" title="Register staff member in-house and email them a password setup link">
             <span class="material-symbols-outlined">person_add</span>
             <span>Full Staff Registration</span>
@@ -379,6 +383,158 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
       </div>
+
+      <!-- 7. ENROLL EXISTING MEMBER MODAL -->
+      <div class="modal-backdrop" *ngIf="showEnrollModal" (click)="closeEnrollModal()">
+        <div class="modal-card modal-enroll-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="header-title-group">
+              <span class="material-symbols-outlined modal-head-icon">how_to_reg</span>
+              <div>
+                <h3>Enroll Existing Member</h3>
+                <p class="modal-head-sub">Select an existing directory user from User Manager to enroll into workforce shifts</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-round" (click)="closeEnrollModal()">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="modal-body enroll-modal-body">
+            <!-- Loading Available Users State -->
+            <div *ngIf="isLoadingAvailableUsers" class="enroll-loading-state">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              <span>Loading unenrolled directory members...</span>
+            </div>
+
+            <!-- No Available Users Notice -->
+            <div *ngIf="!isLoadingAvailableUsers && availableUsers.length === 0" class="alert-info-box">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>All directory members are already enrolled</strong>
+                <p>There are currently no unenrolled directory members eligible for workforce shifts.</p>
+              </div>
+            </div>
+
+            <div *ngIf="!isLoadingAvailableUsers && availableUsers.length > 0" class="enroll-form">
+              <!-- Member Selector -->
+              <div class="form-group">
+                <label class="form-label required">Select Directory Member</label>
+                <select
+                  class="form-select"
+                  [(ngModel)]="selectedUserId"
+                  (ngModelChange)="onUserSelected($event)"
+                >
+                  <option value="" disabled>-- Choose a member from directory --</option>
+                  <option *ngFor="let u of availableUsers" [value]="u.userId">
+                    {{ u.fullName }} ({{ u.email }}) {{ u.memberId ? '[' + u.memberId + ']' : '' }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Selected User Card Preview -->
+              <div *ngIf="selectedUser" class="selected-user-card">
+                <div class="selected-avatar">
+                  {{ getInitials(selectedUser.fullName) }}
+                </div>
+                <div class="selected-meta">
+                  <strong>{{ selectedUser.fullName }}</strong>
+                  <span class="selected-sub">{{ selectedUser.email }} • {{ selectedUser.phoneNumber || 'No phone' }}</span>
+                  <span class="selected-badge" *ngIf="selectedUser.memberId">ID: {{ selectedUser.memberId }}</span>
+                </div>
+              </div>
+
+              <!-- Operational Workforce Fields Grid -->
+              <div class="form-grid-2">
+                <!-- Job Role Selection -->
+                <div class="form-group">
+                  <label class="form-label required">Assigned Job Role</label>
+                  <select class="form-select" [(ngModel)]="enrollForm.jobTitle">
+                    <option value="" disabled>-- Select Job Role --</option>
+                    <option *ngFor="let r of jobRoles" [value]="r.title">{{ r.title }}</option>
+                    <option *ngIf="jobRoles.length === 0" value="Static Security Guard">Static Security Guard</option>
+                    <option *ngIf="jobRoles.length === 0" value="Door Supervisor">Door Supervisor</option>
+                    <option *ngIf="jobRoles.length === 0" value="CCTV Operator">CCTV Operator</option>
+                  </select>
+                </div>
+
+                <!-- Employment / Staff Type -->
+                <div class="form-group">
+                  <label class="form-label required">Employment Classification</label>
+                  <select
+                    class="form-select"
+                    [(ngModel)]="enrollForm.staffTypeId"
+                    (ngModelChange)="onStaffTypeChange($event)"
+                  >
+                    <option value="" disabled>-- Select Staff Type --</option>
+                    <option *ngFor="let t of staffTypes" [value]="t.id">{{ t.name }}</option>
+                    <option *ngIf="staffTypes.length === 0" value="">Permanent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <!-- Hourly Pay Rate -->
+                <div class="form-group">
+                  <label class="form-label">Default Hourly Rate ({{ currencySymbol }})</label>
+                  <div class="input-with-prefix">
+                    <span class="input-prefix">{{ currencySymbol }}</span>
+                    <input
+                      type="number"
+                      step="0.50"
+                      min="0"
+                      class="form-input has-prefix"
+                      [(ngModel)]="enrollForm.defaultHourlyRate"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <!-- Contracted Weekly Hours -->
+                <div class="form-group">
+                  <label class="form-label">Contracted Weekly Hours</label>
+                  <div class="input-with-suffix">
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="168"
+                      class="form-input has-suffix"
+                      [(ngModel)]="enrollForm.contractedWeeklyHours"
+                      placeholder="40"
+                    />
+                    <span class="input-suffix">hrs/wk</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Working Availability -->
+              <div class="form-group">
+                <label class="form-label">Initial Working Availability</label>
+                <select class="form-select" [(ngModel)]="enrollForm.workingAvailability">
+                  <option value="Available">Available (Ready for Shifts)</option>
+                  <option value="Pending Onboarding">Pending Onboarding</option>
+                  <option value="Restricted">Restricted / Limited</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeEnrollModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="!selectedUserId || isSubmittingEnroll"
+              (click)="submitEnrollMember()"
+            >
+              <span class="material-symbols-outlined" *ngIf="!isSubmittingEnroll">how_to_reg</span>
+              <span class="material-symbols-outlined spin" *ngIf="isSubmittingEnroll">progress_activity</span>
+              <span>{{ isSubmittingEnroll ? 'Enrolling...' : 'Enroll Member into Shifts' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -511,6 +667,37 @@ import { ToastService } from '../../../core/services/toast.service';
     .modal-body { padding: 20px 22px; font-size: 13.5px; color: #334155; line-height: 1.55; }
     .modal-footer { padding: 14px 22px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
 
+    /* Enroll Existing Member Modal */
+    .modal-enroll-card { max-width: 540px; }
+    .header-title-group { display: flex; align-items: center; gap: 12px; }
+    .modal-head-icon { font-size: 26px; color: #0050e5; background: #eff6ff; padding: 6px; border-radius: 8px; }
+    .modal-head-sub { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+    .btn-close-round { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+    .btn-close-round:hover { color: #0f172a; background: #f1f5f9; }
+    .enroll-modal-body { display: flex; flex-direction: column; gap: 16px; }
+    .enroll-loading-state { padding: 32px 16px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-size: 13px; }
+    .alert-info-box { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e40af; font-size: 12.5px; }
+    .alert-info-box p { margin: 2px 0 0; font-size: 11.5px; }
+    .enroll-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 700; color: #334155; }
+    .form-label.required::after { content: ' *'; color: #dc2626; }
+    .form-select, .form-input { height: 40px; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; color: #0f172a; background: #ffffff; outline: none; transition: all 0.15s ease; box-sizing: border-box; width: 100%; }
+    .form-select:focus, .form-input:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12); }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .form-grid-2 { grid-template-columns: 1fr; } }
+    .selected-user-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .selected-avatar { width: 36px; height: 36px; border-radius: 50%; background: #eff6ff; color: #0050e5; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; border: 1px solid #bfdbfe; flex-shrink: 0; }
+    .selected-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .selected-meta strong { font-size: 13px; color: #0f172a; }
+    .selected-sub { font-size: 11.5px; color: #64748b; }
+    .selected-badge { font-size: 10.5px; font-weight: 700; color: #0050e5; background: #eff6ff; padding: 1px 6px; border-radius: 4px; display: inline-block; width: fit-content; }
+    .input-with-prefix, .input-with-suffix { position: relative; display: flex; align-items: center; width: 100%; }
+    .input-prefix { position: absolute; left: 12px; font-weight: 700; color: #64748b; font-size: 13px; pointer-events: none; }
+    .input-suffix { position: absolute; right: 12px; font-weight: 600; color: #64748b; font-size: 12px; pointer-events: none; }
+    .form-input.has-prefix { padding-left: 28px; }
+    .form-input.has-suffix { padding-right: 56px; }
+
     .sn-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; font-family: monospace; }
 
     .pagination-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 1px solid #f1f5f9; background: #fafbfc; flex-wrap: wrap; }
@@ -571,6 +758,26 @@ export class WorkforceStaffManagerComponent implements OnInit {
   typeFilter = '';
   availabilityFilter = '';
   showInfoModal = false;
+
+  // Enroll Existing Member Modal State
+  showEnrollModal = false;
+  isLoadingAvailableUsers = false;
+  isSubmittingEnroll = false;
+  availableUsers: any[] = [];
+  selectedUserId = '';
+  selectedUser: any = null;
+  jobRoles: any[] = [];
+  staffTypes: any[] = [];
+
+  enrollForm = {
+    jobTitle: '',
+    staffTypeId: '',
+    staffTypeName: '',
+    defaultHourlyRate: null as number | null,
+    contractedWeeklyHours: 40,
+    workingAvailability: 'Available',
+    preferredWorkingTime: 'Any'
+  };
 
   pageSizeOptions: { label: string; value: number | 'all' }[] = [
     { label: '10', value: 10 },
@@ -808,6 +1015,115 @@ export class WorkforceStaffManagerComponent implements OnInit {
         (m.jobTitle || '').toLowerCase().includes(q) ||
         (m.staffTypeName || '').toLowerCase().includes(q)
       );
+    });
+  }
+
+  openEnrollModal(): void {
+    this.showEnrollModal = true;
+    this.selectedUserId = '';
+    this.selectedUser = null;
+    this.enrollForm = {
+      jobTitle: '',
+      staffTypeId: '',
+      staffTypeName: '',
+      defaultHourlyRate: null,
+      contractedWeeklyHours: 40,
+      workingAvailability: 'Available',
+      preferredWorkingTime: 'Any'
+    };
+    this.loadEnrollmentOptions();
+  }
+
+  closeEnrollModal(): void {
+    this.showEnrollModal = false;
+  }
+
+  loadEnrollmentOptions(): void {
+    this.isLoadingAvailableUsers = true;
+    this.workforceService.getAvailableUsers().subscribe({
+      next: (res: any) => {
+        this.isLoadingAvailableUsers = false;
+        this.availableUsers = Array.isArray(res?.data) ? res.data : [];
+      },
+      error: () => {
+        this.isLoadingAvailableUsers = false;
+        this.toast.error('Could not load available directory members.');
+      }
+    });
+
+    if (this.jobRoles.length === 0) {
+      this.workforceService.getJobRoles().subscribe({
+        next: (res: any) => {
+          this.jobRoles = Array.isArray(res?.data) ? res.data : [];
+          if (!this.enrollForm.jobTitle && this.jobRoles.length > 0) {
+            this.enrollForm.jobTitle = this.jobRoles[0].title;
+          }
+        },
+        error: () => {}
+      });
+    }
+
+    if (this.staffTypes.length === 0) {
+      this.workforceService.getStaffTypes().subscribe({
+        next: (res: any) => {
+          this.staffTypes = Array.isArray(res?.data) ? res.data : [];
+          if (!this.enrollForm.staffTypeId && this.staffTypes.length > 0) {
+            this.enrollForm.staffTypeId = this.staffTypes[0].id;
+            this.enrollForm.staffTypeName = this.staffTypes[0].name;
+          }
+        },
+        error: () => {}
+      });
+    }
+  }
+
+  onUserSelected(userId: string): void {
+    this.selectedUserId = userId;
+    this.selectedUser = this.availableUsers.find(u => u.userId === userId) || null;
+    if (this.selectedUser?.designation && !this.enrollForm.jobTitle) {
+      this.enrollForm.jobTitle = this.selectedUser.designation;
+    }
+  }
+
+  onStaffTypeChange(typeId: string): void {
+    const found = this.staffTypes.find(t => t.id === typeId);
+    if (found) {
+      this.enrollForm.staffTypeName = found.name;
+    }
+  }
+
+  submitEnrollMember(): void {
+    if (!this.selectedUserId) {
+      this.toast.warning('Please select a directory member to enroll.');
+      return;
+    }
+
+    this.isSubmittingEnroll = true;
+    const payload = {
+      userId: this.selectedUserId,
+      fullName: this.selectedUser?.fullName,
+      email: this.selectedUser?.email,
+      phoneNumber: this.selectedUser?.phoneNumber,
+      jobTitle: this.enrollForm.jobTitle || 'Staff Member',
+      staffTypeId: this.enrollForm.staffTypeId || null,
+      staffTypeName: this.enrollForm.staffTypeName || 'Permanent',
+      defaultHourlyRate: this.enrollForm.defaultHourlyRate ?? 0,
+      contractedWeeklyHours: this.enrollForm.contractedWeeklyHours ?? 40,
+      workingAvailability: this.enrollForm.workingAvailability || 'Available',
+      preferredWorkingTime: this.enrollForm.preferredWorkingTime || 'Any'
+    };
+
+    this.workforceService.enrollMember(payload).subscribe({
+      next: () => {
+        this.isSubmittingEnroll = false;
+        this.toast.success(`'${this.selectedUser?.fullName || 'Member'}' enrolled into Workforce Shifts successfully!`);
+        this.closeEnrollModal();
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.isSubmittingEnroll = false;
+        this.toast.error(err?.error?.message || 'Failed to enroll member into shifts.');
+      }
     });
   }
 
