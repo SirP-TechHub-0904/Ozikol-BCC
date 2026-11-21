@@ -653,13 +653,32 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Email is required."));
 
             var cleanEmail = request.Email.Trim().ToLowerInvariant();
+            var normalizedEmail = cleanEmail.ToUpperInvariant();
+
             var existing = await _userManager.FindByEmailAsync(cleanEmail);
-            if (existing != null)
+            if (existing != null && !existing.IsDeleted)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
 
-            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail);
+            var emailInDb = await _dbContext.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == cleanEmail && !u.IsDeleted);
             if (emailInDb)
                 return BadRequest(ApiResponse<object>.FailureResponse("A user with this email address already exists."));
+
+            // Partition any lingering soft-deleted rows that hold this username/email so they never conflict with unique indexes
+            var lingeringOldDeletedRows = await _dbContext.Users.IgnoreQueryFilters()
+                .Where(u => u.IsDeleted && (u.NormalizedUserName == normalizedEmail || u.NormalizedEmail == normalizedEmail || (u.Email != null && u.Email.ToLower() == cleanEmail)))
+                .ToListAsync();
+
+            foreach (var old in lingeringOldDeletedRows)
+            {
+                var suffix = Guid.NewGuid().ToString("N")[..8];
+                old.UserName = $"deleted_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
+                old.NormalizedUserName = old.UserName.ToUpperInvariant();
+                old.NormalizedEmail = $"DELETED_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
+            }
+            if (lingeringOldDeletedRows.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
 
             string? normalizedPhone = null;
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))

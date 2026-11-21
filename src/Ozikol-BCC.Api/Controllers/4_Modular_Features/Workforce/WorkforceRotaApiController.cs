@@ -2412,17 +2412,46 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var cleanEmail = email.Trim().ToLowerInvariant();
+            var normalizedEmail = cleanEmail.ToUpperInvariant();
+
+            // Look up existing user across all records (including soft-deleted)
+            var existingUser = await _db.Users.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => (u.Email != null && u.Email.ToLower() == cleanEmail) || u.NormalizedUserName == normalizedEmail, ct);
+
             Profile? user = null;
-            if (_userManager != null)
+            string userId;
+
+            // Prepare custom attributes dictionary
+            var customAttrs = new Dictionary<string, object>();
+            if (request.CustomAttributes != null)
             {
-                user = await _userManager.FindByEmailAsync(email);
+                foreach (var kv in request.CustomAttributes)
+                {
+                    customAttrs[kv.Key] = kv.Value;
+                }
             }
-            else
+            if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
             {
-                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+                customAttrs["emergencyContact"] = new
+                {
+                    name = request.EmergencyContactName?.Trim(),
+                    relationship = request.EmergencyContactRelationship?.Trim(),
+                    phone = request.EmergencyContactPhone?.Trim()
+                };
+            }
+            if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
+            {
+                customAttrs["bankDetails"] = new
+                {
+                    bankName = request.BankName?.Trim(),
+                    accountHolder = request.AccountHolderName?.Trim() ?? fullName,
+                    sortCode = request.SortCode?.Trim(),
+                    accountNumber = request.AccountNumber?.Trim(),
+                    nationalInsurance = request.NationalInsuranceNumber?.Trim()
+                };
             }
 
-            string userId;
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
                 var phone = request.PhoneNumber.Trim();
@@ -2434,7 +2463,7 @@ namespace Ozikol_BCC.Api.Controllers
                     (u.PhoneNumber == phone ||
                      u.PhoneNumber == normalizedPhone ||
                      (sigDigits.Length >= 8 && u.PhoneNumber.EndsWith(sigDigits)))
-                    && (user == null || u.Id != user.Id), ct);
+                    && (existingUser == null || u.Id != existingUser.Id), ct);
 
                 if (phoneExists)
                 {
@@ -2448,46 +2477,68 @@ namespace Ozikol_BCC.Api.Controllers
             var cleanEnrollJobTitle = await ResolveTenantJobRoleAsync(request.JobTitle, ct);
             var (resolvedStaffTypeId, cleanEnrollStaffType) = await ResolveTenantStaffTypeAsync(request.StaffTypeId, request.StaffTypeName, ct);
 
-            if (user == null)
+            if (existingUser != null)
             {
+                user = existingUser;
+                userId = existingUser.Id;
+
+                if (existingUser.IsDeleted)
+                {
+                    // Seamlessly reactivate previously soft-deleted member
+                    existingUser.IsDeleted = false;
+                    existingUser.DeletedAt = null;
+                    existingUser.UserStatus = UserStatus.Active;
+                    existingUser.LockoutEnd = null;
+                    existingUser.LockoutEnabled = false;
+                    existingUser.FirstName = firstName;
+                    existingUser.LastName = lastName;
+                    existingUser.PhoneNumber = request.PhoneNumber?.Trim() ?? existingUser.PhoneNumber;
+                    existingUser.Designation = cleanEnrollJobTitle;
+                    existingUser.UserName = cleanEmail;
+                    existingUser.NormalizedUserName = normalizedEmail;
+                    existingUser.Email = cleanEmail;
+                    existingUser.NormalizedEmail = normalizedEmail;
+                    existingUser.EmailConfirmed = true;
+                    existingUser.SecurityStamp = Guid.NewGuid().ToString();
+                    if (!string.IsNullOrWhiteSpace(request.Password) && _userManager != null)
+                    {
+                        existingUser.PasswordHash = _userManager.PasswordHasher.HashPassword(existingUser, request.Password);
+                    }
+                    if (customAttrs.Count > 0)
+                    {
+                        existingUser.CustomAttributesJson = JsonSerializer.Serialize(customAttrs);
+                    }
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+            else
+            {
+                // Defensively release any lingering old soft-deleted duplicate rows that share this normalized username/email
+                var lingeringOldRows = await _db.Users.IgnoreQueryFilters()
+                    .Where(u => u.IsDeleted && (u.NormalizedUserName == normalizedEmail || u.NormalizedEmail == normalizedEmail))
+                    .ToListAsync(ct);
+
+                foreach (var old in lingeringOldRows)
+                {
+                    var suffix = Guid.NewGuid().ToString("N")[..8];
+                    old.UserName = $"deleted_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
+                    old.NormalizedUserName = old.UserName.ToUpperInvariant();
+                    old.NormalizedEmail = $"DELETED_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{suffix}";
+                }
+                if (lingeringOldRows.Count > 0)
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+
                 userId = Guid.CreateVersion7().ToString();
                 var tempPassword = string.IsNullOrWhiteSpace(request.Password) ? GenerateSecureTemporaryPassword() : request.Password;
                 var memberId = await GenerateTenantMemberIdAsync(firstName, lastName, cleanEnrollJobTitle);
 
-                var customAttrs = new Dictionary<string, object>();
-                if (request.CustomAttributes != null)
-                {
-                    foreach (var kv in request.CustomAttributes)
-                    {
-                        customAttrs[kv.Key] = kv.Value;
-                    }
-                }
-                if (!string.IsNullOrWhiteSpace(request.EmergencyContactName) || !string.IsNullOrWhiteSpace(request.EmergencyContactPhone))
-                {
-                    customAttrs["emergencyContact"] = new
-                    {
-                        name = request.EmergencyContactName?.Trim(),
-                        relationship = request.EmergencyContactRelationship?.Trim(),
-                        phone = request.EmergencyContactPhone?.Trim()
-                    };
-                }
-                if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
-                {
-                    customAttrs["bankDetails"] = new
-                    {
-                        bankName = request.BankName?.Trim(),
-                        accountHolder = request.AccountHolderName?.Trim() ?? fullName,
-                        sortCode = request.SortCode?.Trim(),
-                        accountNumber = request.AccountNumber?.Trim(),
-                        nationalInsurance = request.NationalInsuranceNumber?.Trim()
-                    };
-                }
-
                 user = new Profile
                 {
                     Id = userId,
-                    UserName = email,
-                    Email = email,
+                    UserName = cleanEmail,
+                    Email = cleanEmail,
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = request.PhoneNumber?.Trim(),
@@ -2514,10 +2565,6 @@ namespace Ozikol_BCC.Api.Controllers
                     _db.Users.Add(user);
                     await _db.SaveChangesAsync(ct);
                 }
-            }
-            else
-            {
-                userId = user.Id;
             }
 
             // Provision or update BcpShiftStaffProfile
