@@ -61,7 +61,7 @@ export interface SuiteInfoDetail {
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
       <div class="sidebar-header">
-        <a routerLink="/admin/dashboard" class="brand-logo ozikol-brand-logo" [title]="brandName">
+        <a [routerLink]="homeRoute" class="brand-logo ozikol-brand-logo" [title]="brandName">
           <img [src]="brandLogoUrl" [alt]="brandName" class="brand-logo-img" *ngIf="brandLogoUrl">
           <span *ngIf="!brandLogoUrl" class="brand-logo-text">{{ brandName || 'Workspace' }}</span>
         </a>
@@ -1516,7 +1516,7 @@ export interface SuiteInfoDetail {
       <!-- Standardized Topbar from Materialdesignui -->
       <header id="topbar">
         <div class="topbar-left">
-          <a routerLink="/admin/dashboard" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
+          <a [routerLink]="homeRoute" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
             <img [src]="brandIconUrl" [alt]="brandName" class="topbar-brand-img">
           </a>
           <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" [title]="'adm.toggle_navigation' | translate:'Toggle Navigation'">
@@ -1529,53 +1529,6 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="topbar-right">
-          <!-- Multi-Workspace Switcher Dropdown Trigger (Admin Console only) -->
-          <div class="workspace-switcher-wrapper" *ngIf="isAdmin && enrolledWorkspaces.length > 0">
-            <button type="button" class="topbar-action-btn workspace-badge-btn" (click)="toggleDropdown('workspaces', $event)" [title]="'Current: ' + (brandName || tenantKey) + ' (Switch Organization)'">
-              <span class="material-symbols-outlined">domain</span>
-              <span class="workspace-short-pill" *ngIf="enrolledWorkspaces.length > 1">{{ enrolledWorkspaces.length }}</span>
-            </button>
-            <div class="workspace-switch-dropdown" *ngIf="activeDropdown === 'workspaces'">
-              <div class="dropdown-header">
-                <span>{{ 'adm.switch_organization' | translate:'Switch Organization' }}</span>
-                <span class="badge-pill" style="background: #10b981;">{{ activeWorkspacesCount }} Active</span>
-              </div>
-              <div class="workspace-list">
-                <div 
-                  *ngFor="let ws of enrolledWorkspaces" 
-                  class="workspace-item" 
-                  [class.current]="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()"
-                  (click)="onSelectWorkspace(ws)"
-                >
-                  <div class="ws-item-avatar">
-                    <img *ngIf="ws.brandIconUrl || ws.brandLogoUrl" [src]="ws.brandIconUrl || ws.brandLogoUrl" class="ws-avatar-img" />
-                    <span *ngIf="!ws.brandIconUrl && !ws.brandLogoUrl" class="material-symbols-outlined">domain</span>
-                  </div>
-                  <div class="ws-item-info">
-                    <div class="ws-item-name">{{ ws.organizationName || ws.tenantKey }}</div>
-                    <div class="ws-item-sub">
-                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">{{ 'adm.current' | translate:'Current' }}</span>
-                      <span *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken" class="ws-active-tag">● Logged In</span>
-                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">{{ 'adm.signed_out' | translate:'Signed Out' }}</span>
-                      <span class="ws-item-email" *ngIf="ws.userEmail">&bull; {{ ws.userEmail }}</span>
-                    </div>
-                  </div>
-                  <div class="ws-item-action">
-                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()">check</span>
-                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken">swap_horiz</span>
-                    <span class="material-symbols-outlined" *ngIf="!ws.authToken">login</span>
-                  </div>
-                </div>
-              </div>
-              <div class="dropdown-footer" style="padding: 8px 12px; border-top: 1px solid var(--md-sys-color-outline); display: flex; justify-content: space-between; align-items: center;">
-                <a routerLink="/auth/login" (click)="closeDropdowns()" class="view-all-link" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #0050e5; text-decoration: none; font-weight: 600;">
-                  <span class="material-symbols-outlined" style="font-size: 16px;">add_business</span>
-                  Connect Another Workspace
-                </a>
-              </div>
-            </div>
-          </div>
-
           <!-- Central Pattern Multi-Language Switcher Component -->
           <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
             <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" [attr.aria-label]="'adm.select_language' | translate:'Select Language'" [title]="'Select Language (' + currentLangOption.name + ')'">
@@ -1759,7 +1712,7 @@ export interface SuiteInfoDetail {
       </header>
 
       <!-- Push Notification Opt-In Modal Popup (Triggers after 12s of login if permission is default) -->
-      <div class="push-optin-backdrop" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'" (click)="dismissPushBanner()">
+      <div class="push-optin-backdrop" *ngIf="showPushBannerPrompt && pushNotificationStatus === 'default'">
         <div class="push-optin-card" (click)="$event.stopPropagation()">
           <div class="poc-header">
             <div class="poc-icon-wrap">
@@ -2111,6 +2064,7 @@ export interface SuiteInfoDetail {
       .bcp-page-shell,
       .bcp-page-shell.is-workspace-mode {
         padding: 14px 12px !important;
+        overflow-x: hidden !important;
       }
       .sidebar-close-btn {
         display: flex !important;
@@ -2194,6 +2148,7 @@ export interface SuiteInfoDetail {
       height: 100%;
       max-height: 100%;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 24px;
       min-width: 0;
       box-sizing: border-box;
@@ -4064,6 +4019,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     return canAccessConsole(this.userRoles);
   }
 
+  /// <summary>
+  /// Dynamically resolves the appropriate home route based on user privileges and active shell mode.
+  /// Administrators in console mode route to '/admin/dashboard', while members and workspace sessions route to '/dashboard/workspace'.
+  /// </summary>
+  get homeRoute(): string {
+    return this.isAdmin && this.isConsoleActive ? '/admin/dashboard' : '/dashboard/workspace';
+  }
+
   get isGlobalAdmin(): boolean {
     return isGlobalAdmin(this.userRoles);
   }
@@ -4509,10 +4472,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   public showPushBannerPrompt = false;
 
   /// <summary>
-  /// Dismisses the push notification opt-in prompt for the current session.
+  /// Dismisses the push notification opt-in prompt and stores the preference permanently in localStorage so it never disturbs again.
   /// </summary>
   public dismissPushBanner(): void {
     this.showPushBannerPrompt = false;
+    localStorage.setItem('push_prompt_dismissed', 'true');
     sessionStorage.setItem('push_prompt_dismissed', 'true');
   }
 
@@ -4521,6 +4485,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   /// </summary>
   public async acceptPushBanner(): Promise<void> {
     this.showPushBannerPrompt = false;
+    localStorage.setItem('push_prompt_dismissed', 'true');
     sessionStorage.setItem('push_prompt_dismissed', 'true');
     await this.triggerEnablePushNotifications();
   }
@@ -4528,6 +4493,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   /// <summary>
   /// Displays the interactive push notification opt-in popup modal after 12 seconds of session load.
   /// Direct user click on "Enable Notifications" provides the trusted user gesture required by modern browsers.
+  /// Checks localStorage first so users who clicked "Maybe Later" are never disturbed again.
   /// </summary>
   private schedulePushNotificationSoftPrompt(): void {
     if (typeof window === 'undefined') return;
@@ -4535,9 +4501,16 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     // If notifications are already active or granted, no prompt is needed
     if (this.pushNotificationStatus === 'granted') return;
 
+    // If user previously chose "Maybe Later" or dismissed, do not disturb again
+    if (localStorage.getItem('push_prompt_dismissed') === 'true' || sessionStorage.getItem('push_prompt_dismissed') === 'true') {
+      return;
+    }
+
     // Trigger the opt-in popup exactly 12 seconds after login as requested
     setTimeout(() => {
-      if (this.pushNotificationStatus === 'default') {
+      if (this.pushNotificationStatus === 'default' &&
+          localStorage.getItem('push_prompt_dismissed') !== 'true' &&
+          sessionStorage.getItem('push_prompt_dismissed') !== 'true') {
         this.showPushBannerPrompt = true;
         this.cdr.markForCheck();
       }

@@ -28,9 +28,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Client Sites &amp; Geofences</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Site &amp; Geofence Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Manage operating customer sites, GPS geofence zones, and Site Assignment Instructions (SIs).</p>
@@ -1159,7 +1156,7 @@ export class WorkforceSitesComponent implements OnInit {
   constructor(
     private readonly workforceService: WorkforceService,
     private readonly toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadSites();
@@ -1173,7 +1170,7 @@ export class WorkforceSitesComponent implements OnInit {
           this.documentCategories = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 

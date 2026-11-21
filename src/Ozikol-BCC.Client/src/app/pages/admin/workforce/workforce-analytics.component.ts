@@ -28,9 +28,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Workforce Analytics &amp; Staff Directory</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Workforce Intelligence Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Graphical fulfillment trends, labor spend, punctuality ratings, and staff roster management.</p>

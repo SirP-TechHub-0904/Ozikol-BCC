@@ -107,7 +107,7 @@ import { ApiService } from '../../core/services/api.service';
                 </div>
               </div>
             </div>
-            <div *ngIf="kpiMetrics.length === 0" style="padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center; font-size: 12px; color: #64748b;">
+            <div *ngIf="kpiMetrics.length === 0" class="kpi-empty-box">
               No individual KPI metrics have been scored for your account yet.
             </div>
           </div>
@@ -339,6 +339,7 @@ import { ApiService } from '../../core/services/api.service';
     }
     .breadcrumb .sep { color: #cbd5e1; }
     .breadcrumb .current { color: #334155; font-weight: 600; }
+    .breadcrumb .current { color: var(--md-sys-color-on-surface, #334155); font-weight: 600; }
     .title-row {
       display: flex;
       align-items: center;
@@ -350,6 +351,7 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 26px;
       font-weight: 800;
       color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       margin: 0;
       letter-spacing: -0.5px;
     }
@@ -411,6 +413,7 @@ import { ApiService } from '../../core/services/api.service';
     .subtitle {
       font-size: 13.5px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       margin: 0;
     }
     .header-actions {
@@ -435,9 +438,13 @@ import { ApiService } from '../../core/services/api.service';
       background: #ffffff;
       border: 1px solid #cbd5e1;
       color: #334155;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid var(--md-sys-color-outline, #cbd5e1);
+      color: var(--md-sys-color-on-surface, #334155);
     }
     .btn-outline:hover {
       background: #f8fafc;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
       border-color: #94a3b8;
     }
     .btn-primary {
@@ -513,6 +520,7 @@ import { ApiService } from '../../core/services/api.service';
     .donut-bg {
       fill: none;
       stroke: #e2e8f0;
+      stroke: var(--md-sys-color-outline, #e2e8f0);
     }
     .donut-progress {
       fill: none;
@@ -533,6 +541,7 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 17px;
       font-weight: 900;
       color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       line-height: 1.1;
     }
     .donut-grade-pill {
@@ -560,6 +569,8 @@ import { ApiService } from '../../core/services/api.service';
     .score-status span.material-symbols-outlined { font-size: 16px; }
     .score-eval-count { font-size: 12px; color: #64748b; margin: 4px 0 2px; }
     .kpi-target-indicator { font-size: 11.5px; color: #475569; }
+    .score-eval-count { font-size: 12px; color: var(--md-sys-color-on-surface-variant, #64748b); margin: 4px 0 2px; }
+    .kpi-target-indicator { font-size: 11.5px; color: var(--md-sys-color-on-surface-variant, #475569); }
 
     /* Metric Horizontal Bars */
     .metrics-bars-wrap {
@@ -567,6 +578,7 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       gap: 10px;
       border-top: 1px solid #f1f5f9;
+      border-top: 1px solid var(--md-sys-color-outline, #f1f5f9);
       padding-top: 12px;
     }
     .metric-bar-item { display: flex; flex-direction: column; gap: 4px; }
@@ -576,12 +588,15 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 12px;
       font-weight: 600;
       color: #334155;
+      color: var(--md-sys-color-on-surface-variant, #334155);
     }
     .metric-bar-val { font-weight: 700; color: #0f172a; }
+    .metric-bar-val { font-weight: 700; color: var(--md-sys-color-on-surface, #0f172a); }
     .metric-progress-track {
       width: 100%;
       height: 7px;
       background: #f1f5f9;
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       border-radius: 10px;
       overflow: hidden;
     }
@@ -611,6 +626,7 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 6px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .icon-mini { font-size: 16px; color: #94a3b8; }
     .meta-value { color: var(--md-sys-color-on-surface, #0f172a); }
@@ -643,6 +659,7 @@ import { ApiService } from '../../core/services/api.service';
       font-size: 12px;
       font-weight: 700;
       color: #334155;
+      color: var(--md-sys-color-on-surface, #334155);
       margin-bottom: 6px;
     }
 
@@ -652,6 +669,8 @@ import { ApiService } from '../../core/services/api.service';
       font-weight: 700;
       color: #64748b;
       background: #f1f5f9;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       padding: 2px 8px;
       border-radius: 12px;
     }
@@ -672,6 +691,7 @@ import { ApiService } from '../../core/services/api.service';
       max-width: 32px;
       height: 90px;
       background: #f1f5f9;
+      background: var(--md-sys-color-surface-variant, #f1f5f9);
       border-radius: 8px;
       display: flex;
       align-items: flex-end;
@@ -690,6 +710,8 @@ import { ApiService } from '../../core/services/api.service';
     }
     .day-label { font-size: 11px; font-weight: 700; color: #64748b; }
     .day-count { font-size: 10px; color: #94a3b8; }
+    .day-label { font-size: 11px; font-weight: 700; color: var(--md-sys-color-on-surface-variant, #64748b); }
+    .day-count { font-size: 10px; color: var(--md-sys-color-on-surface-variant, #94a3b8); }
 
     /* Connected Devices Card */
     .devices-list {
@@ -709,6 +731,7 @@ import { ApiService } from '../../core/services/api.service';
     }
     .device-row:hover {
       background: #f1f5f9;
+      background: var(--md-sys-color-surface, #f1f5f9);
       border-color: #cbd5e1;
     }
     .device-icon-wrap {
@@ -718,6 +741,9 @@ import { ApiService } from '../../core/services/api.service';
       background: #ffffff;
       border: 1px solid #e2e8f0;
       color: #64748b;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -768,6 +794,7 @@ import { ApiService } from '../../core/services/api.service';
       gap: 5px;
       font-size: 11px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -784,6 +811,7 @@ import { ApiService } from '../../core/services/api.service';
       text-align: center;
       padding: 24px 12px;
       color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .empty-sec-icon {
       font-size: 36px;
@@ -793,12 +821,14 @@ import { ApiService } from '../../core/services/api.service';
     .devices-empty h4 {
       margin: 0 0 4px;
       color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       font-size: 13.5px;
       font-weight: 700;
     }
     .devices-empty p {
       margin: 0;
       font-size: 11.5px;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
     }
     .devices-footer-pill {
       display: flex;
@@ -845,32 +875,124 @@ import { ApiService } from '../../core/services/api.service';
     .manage-sec-btn .material-symbols-outlined {
       font-size: 14px;
     }
+    .kpi-empty-box {
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
+      border: 1px dashed var(--md-sys-color-outline, #cbd5e1);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      color: var(--md-sys-color-on-surface-variant, #64748b);
+    }
 
-    /* Dark Mode Adjustments */
+    /* Comprehensive Dark Mode Theme Support */
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .ws-card {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-mode) .title-row h1,
+    :host-context(.dark-mode) .card-title,
+    :host-context(.dark-mode) .meta-value,
+    :host-context(.dark-mode) .donut-score {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .subtitle,
+    :host-context(.dark-mode) .score-eval-count,
+    :host-context(.dark-mode) .kpi-target-indicator,
+    :host-context(.dark-mode) .meta-label,
+    :host-context(.dark-mode) .device-sub-row,
+    :host-context(.dark-mode) .qa-desc {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .sep {
+      color: #475569 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .current {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .btn-outline {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .btn-outline:hover {
+      background: #1e293b !important;
+      border-color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .card-head {
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    :host-context(.dark-mode) .kpi-empty-box {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .donut-bg {
+      stroke: #334155 !important;
+    }
+    :host-context(.dark-mode) .metrics-bars-wrap {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    :host-context(.dark-mode) .metric-bar-label {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .metric-bar-val {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .metric-progress-track {
+      background: #0f172a !important;
+    }
+    :host-context(.dark-mode) .meta-list li {
+      border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    :host-context(.dark-mode) .p-comp-head {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .p-comp-head strong {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .qa-item {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .qa-item:hover {
+      border-color: #0050e5 !important;
+      background: #1e293b !important;
+    }
+    :host-context(.dark-mode) .qa-title {
+      color: #f8fafc !important;
+    }
     :host-context(.dark-mode) .device-row {
-      background: #0f172a;
-      border-color: rgba(255,255,255,0.08);
+      background: #0f172a !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
     }
     :host-context(.dark-mode) .device-icon-wrap {
-      background: #1e293b;
-      border-color: rgba(255,255,255,0.1);
-      color: #cbd5e1;
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #cbd5e1 !important;
     }
     :host-context(.dark-mode) .device-icon-wrap.current-device {
-      background: rgba(0, 80, 229, 0.2);
-      border-color: #0050e5;
-      color: #6ea2ff;
+      background: rgba(0, 80, 229, 0.2) !important;
+      border-color: #0050e5 !important;
+      color: #6ea2ff !important;
     }
     :host-context(.dark-mode) .device-name {
-      color: #f8fafc;
+      color: #f8fafc !important;
     }
     :host-context(.dark-mode) .devices-footer-pill {
-      border-top-color: rgba(255,255,255,0.08);
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
     }
     :host-context(.dark-mode) .manage-sec-btn {
-      background: rgba(0, 80, 229, 0.2);
-      border-color: rgba(0, 80, 229, 0.4);
-      color: #6ea2ff;
+      background: rgba(0, 80, 229, 0.2) !important;
+      border-color: rgba(0, 80, 229, 0.4) !important;
+      color: #6ea2ff !important;
     }
 
     /* Quick Actions */
@@ -916,6 +1038,7 @@ import { ApiService } from '../../core/services/api.service';
     .text-success { color: #16a34a; }
     .qa-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface, #0f172a); }
     .qa-desc { font-size: 11px; color: #64748b; }
+    .qa-desc { font-size: 11px; color: var(--md-sys-color-on-surface-variant, #64748b); }
 
     /* Mobile Responsive Optimizations */
     @media (max-width: 768px) {
@@ -1014,7 +1137,7 @@ export class WorkspaceDashboardComponent implements OnInit {
     { day: 'Sun', activityCount: 0, percentage: 4 }
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   ngOnInit(): void {
     this.loadAllData();

@@ -48,9 +48,6 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
             </div>
             <div class="cv-title-row">
               <h1>{{ details.committee?.name }}</h1>
-              <button type="button" class="cv-info-btn" (click)="openInfo()">
-                <span class="material-symbols-outlined">info</span>
-              </button>
             </div>
             <p class="cv-desc">{{ details.committee?.description || details.committee?.missionStatement }}</p>
             <div class="cv-schedule-row">

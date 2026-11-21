@@ -17,11 +17,11 @@ import { ToastService } from '../../../core/services/toast.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="bcp-page-container">
-      <!-- 1. Canonical Dashboard Page Header -->
+      <!-- 1. Canonical BCC Page Header -->
       <div class="page-header">
         <div class="header-left">
           <div class="breadcrumb">
-            <a routerLink="/dashboard/workspace">My Workspace</a>
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
             <span class="sep">/</span>
             <a routerLink="/workforce/workspace/my-shifts">Shift &amp; Rota</a>
             <span class="sep">/</span>
@@ -29,7 +29,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Messages &amp; Admin Support Desk</h1>
-            <span class="badge-suite">Workforce Workspace</span>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">
             Direct communication channel with duty supervisors and administrators. Tickets automatically archive after 48 hours of inactivity.
@@ -40,14 +40,44 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
-          <a routerLink="/workforce/workspace/my-shifts" class="btn btn-outline">
-            <span class="material-symbols-outlined">calendar_month</span>
-            <span>My Shifts</span>
-          </a>
-          <button type="button" class="btn btn-primary" (click)="openRaiseTopicModal()">
+          <button type="button" class="btn btn-outline" (click)="openRaiseTopicModal()">
             <span class="material-symbols-outlined">add_comment</span>
-            <span>Raise New Topic</span>
+            <span>Raise Topic</span>
           </button>
+          <a routerLink="/attendance/workspace/clock" class="btn btn-primary">
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>Duty Clock-In</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 2. Sub-Nav Pill Tabs (Touch Responsive with Visual Scroll Cues) -->
+      <div class="subnav-scroll-wrapper">
+        <div class="bcp-subnav-tabs">
+          <a routerLink="/workforce/workspace/analytics" class="subnav-tab">
+            <span class="material-symbols-outlined">analytics</span> Shift Analytics
+          </a>
+          <a routerLink="/workforce/workspace/my-shifts" class="subnav-tab">
+            <span class="material-symbols-outlined">calendar_month</span> My Schedule &amp; Rota
+          </a>
+          <a routerLink="/workforce/workspace/open-shifts" class="subnav-tab">
+            <span class="material-symbols-outlined">work_outline</span> Open Shifts &amp; Swaps
+          </a>
+          <a routerLink="/workforce/workspace/timesheets" class="subnav-tab">
+            <span class="material-symbols-outlined">description</span> Timesheets &amp; Pay
+          </a>
+          <a routerLink="/workforce/workspace/leave" class="subnav-tab">
+            <span class="material-symbols-outlined">flight_takeoff</span> Time Off &amp; Availability
+          </a>
+          <a routerLink="/workforce/workspace/documents" class="subnav-tab">
+            <span class="material-symbols-outlined">folder_shared</span> Compliance &amp; Documents
+          </a>
+          <a routerLink="/workforce/workspace/reminders" class="subnav-tab">
+            <span class="material-symbols-outlined">notifications_active</span> Reminders
+          </a>
+          <a routerLink="/workforce/workspace/messages" class="subnav-tab active">
+            <span class="material-symbols-outlined">forum</span> Messages &amp; Support
+          </a>
         </div>
       </div>
 
@@ -358,17 +388,140 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    .bcp-page-container { display: flex; flex-direction: column; gap: 18px; padding: 0 4px 40px 4px; width: 100%; box-sizing: border-box; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; background: #ffffff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); }
-    .header-left { display: flex; flex-direction: column; gap: 6px; }
-    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .breadcrumb .current { color: #0f172a; font-weight: 600; }
-    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
-    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
-    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
-    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .bcp-page-container {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 0 4px 40px 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* 1. Canonical BCC Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: var(--md-sys-color-surface, #ffffff);
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb a {
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .title-row h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+
+    /* 2. Sub-Nav Pill Tabs (Touch Responsive) */
+    .subnav-scroll-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .bcp-subnav-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 4px 10px 4px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: #0050e5 #f1f5f9;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar {
+      height: 5px;
+      display: block;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 6px;
+      margin: 0 4px;
+    }
+    .bcp-subnav-tabs::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #0050e5, #3b82f6);
+      border-radius: 6px;
+    }
+    .subnav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .subnav-tab:hover {
+      background: #f8fafc;
+      border-color: #0050e5;
+      color: #0050e5;
+      transform: translateY(-1px);
+    }
+    .subnav-tab.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 4px 12px rgba(0,80,229,0.3);
+    }
+    .subnav-tab .material-symbols-outlined { font-size: 18px; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; white-space: nowrap; flex-shrink: 0; cursor: pointer; text-decoration: none; border: 1px solid transparent; transition: all 0.15s ease; }
     .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
@@ -609,6 +762,111 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Responsive Mobile Layout (iPhone 16 / 393px viewport) */
+    @media (max-width: 768px) {
+      .bcp-page-container {
+        padding: 0 0 24px 0 !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 14px !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+      }
+      .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 6px 4px !important;
+        font-size: 10.5px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        height: 34px !important;
+      }
+      .header-actions .btn .material-symbols-outlined {
+        font-size: 14px !important;
+      }
+      .subnav-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .bcp-subnav-tabs {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 2px 4px 8px 4px !important;
+      }
+      .subnav-tab {
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        border-radius: 9px !important;
+        gap: 5px !important;
+      }
+      .subnav-tab .material-symbols-outlined {
+        font-size: 15px !important;
+      }
+    }
   `]
 })
 export class WorkforceMyMessagesComponent implements OnInit {
@@ -665,7 +923,7 @@ export class WorkforceMyMessagesComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        this.toast.error('Failed to load your message topics.');
+        this.tickets = [];
       }
     });
   }

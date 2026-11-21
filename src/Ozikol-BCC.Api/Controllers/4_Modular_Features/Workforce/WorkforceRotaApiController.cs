@@ -4461,6 +4461,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpGet("my-messages")]
         [HttpGet("rota/my-messages")]
+        [AllowMemberAccess]
         public async Task<ActionResult<ApiResponse<List<WorkforceMessageTicketDto>>>> GetMyWorkforceMessages(CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(CurrentUserId))
@@ -4477,6 +4478,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPost("messages")]
         [HttpPost("rota/messages")]
+        [AllowMemberAccess]
         public async Task<ActionResult<ApiResponse<WorkforceMessageTicketDto>>> CreateWorkforceMessageTicket(
             [FromBody] CreateWorkforceMessageTicketRequest request,
             CancellationToken ct)
@@ -4606,6 +4608,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPost("messages/{ticketId:guid}/reply")]
         [HttpPost("rota/messages/{ticketId:guid}/reply")]
+        [AllowMemberAccess]
         public async Task<ActionResult<ApiResponse<WorkforceMessageTicketDto>>> ReplyToWorkforceMessageTicket(
             Guid ticketId,
             [FromBody] ReplyWorkforceMessageTicketRequest request,

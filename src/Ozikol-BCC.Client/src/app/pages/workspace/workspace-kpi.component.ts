@@ -16,8 +16,6 @@ import { ApiService } from '../../core/services/api.service';
           <div class="breadcrumb">
             <a routerLink="/dashboard/workspace">Personal Workspace</a>
             <span class="sep">/</span>
-            <span>Manage My Account</span>
-            <span class="sep">/</span>
             <span class="current">My Performance &amp; KPI Scorecard</span>
           </div>
           <div class="title-row">
@@ -166,10 +164,20 @@ import { ApiService } from '../../core/services/api.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .kpi-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
     /* Canonical BCC Page Header */
     .page-header {
@@ -211,7 +219,7 @@ import { ApiService } from '../../core/services/api.service';
     }
     .breadcrumb .sep { color: #cbd5e1; }
     .breadcrumb span, .breadcrumb .current {
-      color: #334155;
+      color: var(--md-sys-color-on-surface, #334155);
       font-weight: 600;
       white-space: nowrap;
     }
@@ -225,7 +233,7 @@ import { ApiService } from '../../core/services/api.service';
     .title-row h1 {
       font-size: 26px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       margin: 0;
       letter-spacing: -0.5px;
     }
@@ -484,7 +492,7 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 8px;
     }
-    .trend-title h3 { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
+    .trend-title h3 { font-size: 15px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0; }
     .trend-title span { font-size: 20px; }
     .growth-pill {
       font-size: 11.5px;
@@ -530,7 +538,7 @@ import { ApiService } from '../../core/services/api.service';
       width: 38px;
       font-size: 12px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       text-align: right;
     }
 
@@ -559,7 +567,7 @@ import { ApiService } from '../../core/services/api.service';
     .card-title {
       font-size: 16px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       margin: 0;
     }
     .badge-count {

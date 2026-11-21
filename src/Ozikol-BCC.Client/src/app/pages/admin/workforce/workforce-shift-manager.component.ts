@@ -32,9 +32,6 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
           </div>
           <div class="title-row">
             <h1>Shift Manager</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Shift Manager Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">

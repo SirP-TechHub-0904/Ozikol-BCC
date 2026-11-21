@@ -2,6 +2,7 @@ using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Application.Services.Cloudflare;
 using static Ozikol_BCC.Domain.Enum.Enum;
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext? _master;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ICloudflareR2StorageService? _r2Storage;
         private readonly ICloudinaryService? _cloudinaryService;
         private readonly ILogger<WorkforceMemberWorkspaceApiController>? _logger;
 
@@ -52,6 +54,7 @@ namespace Ozikol_BCC.Api.Controllers
             MasterCatalogDbContext? master = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             ITenantProvider? tenantProvider = null,
+            ICloudflareR2StorageService? r2Storage = null,
             ICloudinaryService? cloudinaryService = null,
             ILogger<WorkforceMemberWorkspaceApiController>? logger = null)
         {
@@ -59,6 +62,7 @@ namespace Ozikol_BCC.Api.Controllers
             _master = master;
             _notificationDispatcher = notificationDispatcher;
             _tenantProvider = tenantProvider;
+            _r2Storage = r2Storage;
             _cloudinaryService = cloudinaryService;
             _logger = logger;
         }
@@ -1017,72 +1021,94 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("File name contains suspicious patterns and cannot be uploaded.", errorCode: "ERR-2003"));
             }
 
-            if (_cloudinaryService == null)
-            {
-                return StatusCode(500, ApiResponse<object>.FailureResponse("Cloudinary service is unconfigured.", errorCode: "ERR-5001"));
-            }
+            var folderTarget = $"tenants/{CurrentTenantKey}/compliance-documents";
 
-            // Inspect tenant MisConfigurationSettings for custom Cloudinary credentials if configured
-            string? customCloud = null;
-            string? customKey = null;
-            string? customSecret = null;
-            try
+            // 1. Primary Cloud Storage: Cloudflare R2 Global Edge CDN
+            if (_r2Storage != null)
             {
-                var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
-                if (config?.UseCustomStorage == true &&
-                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
-                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
-                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                try
                 {
-                    customCloud = config.CustomCloudinaryCloudName;
-                    customKey = config.CustomCloudinaryApiKey;
-                    customSecret = config.CustomCloudinaryApiSecret;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "[Workforce] Failed to inspect tenant MisConfigurationSettings for custom Cloudinary credentials.");
-            }
-
-            // Direct upload to Cloudinary (No failovers)
-            try
-            {
-                var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
-                string secureUrl;
-                string publicId;
-
-                if (isImage)
-                {
-                    var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
-                    secureUrl = uploadResult.Url;
-                    publicId = uploadResult.PublicId;
-                }
-                else
-                {
-                    var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
-                    secureUrl = uploadResult.Url;
-                    publicId = uploadResult.PublicId;
-                }
-
-                if (!string.IsNullOrWhiteSpace(secureUrl))
-                {
-                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    await using var stream = file.OpenReadStream();
+                    var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                    var r2Result = await _r2Storage.UploadAssetAsync(stream, file.FileName, contentType, folderTarget);
+                    if (r2Result.Success && !string.IsNullOrWhiteSpace(r2Result.Url))
                     {
-                        url = secureUrl,
-                        key = publicId,
-                        fileName = file.FileName,
-                        fileSize = file.Length,
-                        contentType = file.ContentType
-                    }, "Compliance document uploaded successfully to Cloudinary."));
+                        return Ok(ApiResponse<object>.SuccessResponse(new
+                        {
+                            url = r2Result.Url,
+                            key = r2Result.Key ?? r2Result.SafeFileName ?? file.FileName,
+                            fileName = file.FileName,
+                            fileSize = file.Length,
+                            contentType = file.ContentType
+                        }, "Compliance document uploaded successfully to Cloudflare CDN."));
+                    }
                 }
+                catch (Exception r2Ex)
+                {
+                    _logger?.LogWarning(r2Ex, "[Workforce] Cloudflare R2 upload attempt encountered an issue: {Message}. Trying secondary cloud provider.", r2Ex.Message);
+                }
+            }
 
-                return StatusCode(500, ApiResponse<object>.FailureResponse("Cloudinary upload failed: no URL was returned.", errorCode: "ERR-5002"));
-            }
-            catch (Exception ex)
+            // 2. Secondary Cloud Storage: Cloudinary
+            if (_cloudinaryService != null)
             {
-                _logger?.LogError(ex, "[Workforce] Cloudinary upload error: {Message}", ex.Message);
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}", errorCode: "ERR-5000"));
+                try
+                {
+                    string? customCloud = null;
+                    string? customKey = null;
+                    string? customSecret = null;
+                    var config = await _db.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (config?.UseCustomStorage == true &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                        !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                    {
+                        customCloud = config.CustomCloudinaryCloudName;
+                        customKey = config.CustomCloudinaryApiKey;
+                        customSecret = config.CustomCloudinaryApiSecret;
+                    }
+
+                    var isImage = new[] { "PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG", "HEIC" }.Contains(normalizedExt);
+                    if (isImage)
+                    {
+                        var uploadResult = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        {
+                            return Ok(ApiResponse<object>.SuccessResponse(new
+                            {
+                                url = uploadResult.Url,
+                                key = uploadResult.PublicId,
+                                fileName = file.FileName,
+                                fileSize = file.Length,
+                                contentType = file.ContentType
+                            }, "Compliance document uploaded successfully."));
+                        }
+                    }
+                    else
+                    {
+                        var uploadResult = await _cloudinaryService.UploadRawDocumentWithPublicIdAsync(file, folderTarget, customCloud, customKey, customSecret);
+                        if (!string.IsNullOrWhiteSpace(uploadResult?.Url))
+                        {
+                            return Ok(ApiResponse<object>.SuccessResponse(new
+                            {
+                                url = uploadResult.Url,
+                                key = uploadResult.PublicId,
+                                fileName = file.FileName,
+                                fileSize = file.Length,
+                                contentType = file.ContentType
+                            }, "Compliance document uploaded successfully."));
+                        }
+                    }
+                }
+                catch (Exception cloudEx)
+                {
+                    _logger?.LogWarning(cloudEx, "[Workforce] Cloudinary storage attempt encountered an issue: {Message}", cloudEx.Message);
+                }
             }
+
+            // Zero local disk storage fallback - strictly return error if cloud CDN is unavailable
+            _logger?.LogError("[Workforce] All cloud storage options (Cloudflare R2 CDN and Cloudinary) are unavailable for file {FileName}.", file.FileName);
+            return StatusCode(500, ApiResponse<object>.FailureResponse("Cloud storage service is currently unavailable. Please verify Cloudflare CDN credentials and try again.", errorCode: "ERR-STORAGE-UNAVAILABLE"));
         }
 
         // =========================================================================

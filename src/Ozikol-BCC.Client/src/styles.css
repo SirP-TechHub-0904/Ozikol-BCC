@@ -3189,23 +3189,264 @@ body.sidebar-closed .topbar-brand-logo {
   background: #003ebd;
 }
 
-/* Dark Mode Overrides */
-body.dark-mode .page-header {
-  background: var(--md-sys-color-surface, #1e293b);
-  border-color: var(--md-sys-color-outline, #334155);
+/* =========================================================================
+   Universal Dark Mode Theme Overrides (Zero Black Text Guarantee)
+   ========================================================================= */
+body.dark-mode {
+  background-color: #0b1329 !important;
+  color: #f8fafc !important;
 }
-body.dark-mode .breadcrumb span:not(.sep),
-body.dark-mode .breadcrumb .current {
-  color: #cbd5e1;
-}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
 body.dark-mode .title-row h1,
-body.dark-mode .title-row .page-title {
-  color: #f8fafc;
+body.dark-mode .title-row .page-title,
+body.dark-mode .page-title,
+body.dark-mode .card-title,
+body.dark-mode .section-title,
+body.dark-mode .modal-title,
+body.dark-mode .donut-score,
+body.dark-mode .metric-bar-val,
+body.dark-mode .meta-value,
+body.dark-mode .device-name,
+body.dark-mode .qa-title,
+body.dark-mode strong,
+body.dark-mode b,
+body.dark-mode th,
+body.dark-mode .table-header,
+body.dark-mode .nav-link-content span {
+  color: #f8fafc !important;
 }
+
+body.dark-mode .subtitle,
+body.dark-mode .page-sub,
+body.dark-mode .card-desc,
+body.dark-mode .section-desc,
+body.dark-mode .text-muted,
+body.dark-mode .score-eval-count,
+body.dark-mode .kpi-target-indicator,
+body.dark-mode .meta-label,
+body.dark-mode .device-sub-row,
+body.dark-mode .qa-desc,
+body.dark-mode .day-label,
+body.dark-mode .day-count,
+body.dark-mode .metric-bar-label,
+body.dark-mode .breadcrumb span:not(.root-crumb):not(.sep),
+body.dark-mode .breadcrumb .current {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .breadcrumb .root-crumb {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .breadcrumb .sep {
+  color: #475569 !important;
+}
+
+body.dark-mode .page-header,
+body.dark-mode .ws-card,
+body.dark-mode .section-card,
+body.dark-mode .panel-card,
+body.dark-mode .profile-complete-box,
+body.dark-mode .devices-footer-pill {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.dark-mode .card-head {
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .kpi-empty-box {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .btn-outline,
 body.dark-mode .header-actions .btn-outline {
-  background: #1e293b;
-  color: #e2e8f0;
-  border-color: #334155;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .btn-outline:hover,
+body.dark-mode .header-actions .btn-outline:hover {
+  background: #1e293b !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .donut-bg {
+  stroke: #334155 !important;
+}
+
+body.dark-mode .bar-track,
+body.dark-mode .metric-progress-track {
+  background: #0f172a !important;
+}
+
+body.dark-mode .device-row {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .device-icon-wrap {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .qa-item {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .qa-item:hover {
+  background: #1e293b !important;
+  border-color: #0050e5 !important;
+}
+
+/* Workforce & Rota Calendar Dark Mode Full Coverage */
+body.dark-mode .month-grid-header {
+  background: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+}
+body.dark-mode .weekday-col {
+  color: #94a3b8 !important;
+  border-right: 1px solid #334155 !important;
+}
+body.dark-mode .month-day-cell {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-right: 1px solid #334155 !important;
+  border-bottom: 1px solid #334155 !important;
+}
+body.dark-mode .day-num-circle {
+  color: #f8fafc !important;
+}
+body.dark-mode .month-abbr {
+  color: #94a3b8 !important;
+}
+body.dark-mode .month-day-cell:hover {
+  box-shadow: inset 0 0 0 2px #60a5fa !important;
+}
+body.dark-mode .month-day-cell.other-month {
+  background: #0f172a !important;
+  color: #64748b !important;
+  opacity: 0.6 !important;
+}
+body.dark-mode .month-day-cell.day-today {
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e293b 100%) !important;
+  border: 2px solid #60a5fa !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .month-day-cell.day-upcoming-shifts {
+  background: linear-gradient(180deg, rgba(22, 163, 74, 0.25) 0%, #1e293b 100%) !important;
+  border-color: #16a34a !important;
+  color: #86efac !important;
+}
+body.dark-mode .month-day-cell.day-past-shifts {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+/* Day Inspector Card / Drawer Dark Mode */
+body.dark-mode .day-inspector-card {
+  background: #1e293b !important;
+  border: 1.5px solid #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+body.dark-mode .inspector-header {
+  background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%) !important;
+  border-bottom: 1px solid #334155 !important;
+}
+body.dark-mode .inspector-heading-row h3 {
+  color: #f8fafc !important;
+}
+body.dark-mode .inspector-sub {
+  color: #94a3b8 !important;
+}
+body.dark-mode .btn-close-circle {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+body.dark-mode .btn-close-circle:hover {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .inspector-actions-strip {
+  background: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+}
+body.dark-mode .inspector-metrics-strip {
+  background: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+}
+body.dark-mode .insp-stat {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+body.dark-mode .insp-stat strong {
+  color: #f8fafc !important;
+}
+body.dark-mode .insp-stat span {
+  color: #94a3b8 !important;
+}
+body.dark-mode .inspector-section {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+body.dark-mode .sec-title h4 {
+  color: #f8fafc !important;
+}
+body.dark-mode .sec-empty {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .sec-empty strong {
+  color: #f8fafc !important;
+}
+body.dark-mode .day-shift-card {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .day-shift-card.card-upcoming {
+  background: linear-gradient(180deg, rgba(22, 163, 74, 0.2) 0%, #0f172a 100%) !important;
+  border-color: #16a34a !important;
+}
+body.dark-mode .dsc-venue {
+  color: #f8fafc !important;
+}
+body.dark-mode .dsc-time,
+body.dark-mode .dsc-staff {
+  color: #cbd5e1 !important;
+}
+
+/* Calendar Summary Footer */
+body.dark-mode .calendar-summary-footer {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .summary-item {
+  color: #94a3b8 !important;
+}
+body.dark-mode .summary-item strong {
+  color: #f8fafc !important;
 }
 
 /* Mobile Media Queries (iPhone 16, <= 768px) */

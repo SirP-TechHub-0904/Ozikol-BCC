@@ -115,8 +115,13 @@ namespace Ozikol_BCC.Api.Authorization
             }
 
             // If Member personal workspace access is explicitly allowed for this controller/action,
+            // or if the action carries [AllowMemberAccess] or an action-level [RequireFeature(..., allowMemberAccess: true)],
             // any authenticated member of the subscribed tenant workspace is authorized.
-            if (_allowMemberAccess)
+            var isMemberAccessPermitted = _allowMemberAccess
+                || context.ActionDescriptor.EndpointMetadata.OfType<AllowMemberAccessAttribute>().Any()
+                || context.ActionDescriptor.EndpointMetadata.OfType<RequireFeatureAttribute>().Any(a => a.AllowMemberAccess);
+
+            if (isMemberAccessPermitted)
             {
                 await next();
                 return;

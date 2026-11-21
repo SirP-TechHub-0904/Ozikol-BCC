@@ -30,9 +30,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="title-row">
             <h1>Staff Manager</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Staff Manager Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">

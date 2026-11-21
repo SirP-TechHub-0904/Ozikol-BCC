@@ -100,14 +100,6 @@ interface WorkforcePolicies {
           </nav>
           <div class="title-row">
             <h1 class="page-title">Workforce &amp; Shift Settings</h1>
-            <button
-              type="button"
-              class="info-badge-btn"
-              (click)="showInfoModal = true"
-              title="Click to view explanation and policy rules"
-            >
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="suite-pill">SUITE: WORKFORCE &amp; SHIFTS</span>
           </div>
           <p class="page-subtitle">

@@ -29,9 +29,6 @@ import { MasterHelpService } from '../../../core/services/master-help.service';
           </div>
           <div class="title-row">
             <h1>Duty Clock &amp; Geofence</h1>
-            <button type="button" class="info-trigger-btn" (click)="openHelp()" title="View Duty Clock Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">Live GPS geofence verification, biometric authentication, and facial audit for shift attendance.</p>
@@ -69,6 +66,18 @@ import { MasterHelpService } from '../../../core/services/master-help.service';
         <a routerLink="/workforce/workspace/leave" class="subnav-tab">
           <span class="material-symbols-outlined">flight_takeoff</span>
           <span>Time Off &amp; Leave</span>
+        </a>
+        <a routerLink="/workforce/workspace/documents" class="subnav-tab">
+          <span class="material-symbols-outlined">folder_shared</span>
+          <span>Compliance &amp; Documents</span>
+        </a>
+        <a routerLink="/workforce/workspace/reminders" class="subnav-tab">
+          <span class="material-symbols-outlined">notifications_active</span>
+          <span>Reminders</span>
+        </a>
+        <a routerLink="/workforce/workspace/messages" class="subnav-tab">
+          <span class="material-symbols-outlined">forum</span>
+          <span>Messages &amp; Support</span>
         </a>
         <a routerLink="/attendance/workspace/clock" class="subnav-tab active">
           <span class="material-symbols-outlined">fingerprint</span>

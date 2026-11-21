@@ -33,14 +33,6 @@ import { ToastService } from '../../../core/services/toast.service';
               <span class="live-text">LIVE TELEMETRY</span>
             </div>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
-            <button
-              type="button"
-              class="info-badge-btn"
-              (click)="showInfoModal = true"
-              title="Click for Live Attendance & Geofence telemetry guide"
-            >
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="subtitle">
             Real-time telemetry of on-duty personnel, GPS geofence compliance, and lone worker safety check-calls.

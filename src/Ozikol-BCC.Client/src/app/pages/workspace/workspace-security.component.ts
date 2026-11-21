@@ -18,8 +18,6 @@ import { OneSignalService } from '../../core/services/onesignal.service';
           <div class="breadcrumb">
             <a routerLink="/dashboard/workspace">Personal Workspace</a>
             <span class="sep">/</span>
-            <span>Manage My Account</span>
-            <span class="sep">/</span>
             <span class="current">Security &amp; Credentials</span>
           </div>
           <div class="title-row">
@@ -372,7 +370,21 @@ import { OneSignalService } from '../../core/services/onesignal.service';
     </div>
   `,
   styles: [`
-    .security-container { display: flex; flex-direction: column; gap: 20px; }
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .security-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
     /* Canonical BCC Page Header */
     .page-header {
       display: flex;
@@ -413,7 +425,7 @@ import { OneSignalService } from '../../core/services/onesignal.service';
     }
     .breadcrumb .sep { color: #cbd5e1; }
     .breadcrumb span, .breadcrumb .current {
-      color: #334155;
+      color: var(--md-sys-color-on-surface, #334155);
       font-weight: 600;
       white-space: nowrap;
     }
@@ -427,7 +439,7 @@ import { OneSignalService } from '../../core/services/onesignal.service';
     .title-row h1 {
       font-size: 26px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--md-sys-color-on-surface, #0f172a);
       margin: 0;
       letter-spacing: -0.5px;
     }
@@ -492,87 +504,30 @@ import { OneSignalService } from '../../core/services/onesignal.service';
       background: #003ebd;
     }
 
-    /* Mobile Responsive Optimizations */
-    @media (max-width: 768px) {
-      .security-container {
-        gap: 14px;
-      }
-      .page-header {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        padding: 16px !important;
-        gap: 12px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-      }
-      .breadcrumb {
-        display: flex !important;
-        align-items: center !important;
-        flex-wrap: nowrap !important;
-        gap: 4px !important;
-        font-size: 10.5px !important;
-        white-space: nowrap !important;
-        overflow-x: auto !important;
-        scrollbar-width: none !important;
-        margin-bottom: 4px !important;
-        line-height: 1.2 !important;
-      }
-      .breadcrumb::-webkit-scrollbar { display: none !important; }
-      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
-        font-size: 10.5px !important;
-        white-space: nowrap !important;
-      }
-      .header-left {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-      }
-      .title-row {
-        gap: 8px !important;
-        margin-bottom: 4px !important;
-        flex-wrap: wrap !important;
-      }
-      .title-row h1 {
-        font-size: 18px !important;
-        line-height: 1.25 !important;
-      }
-      .badge-suite {
-        font-size: 9.5px !important;
-        padding: 2px 7px !important;
-      }
-      .subtitle {
-        font-size: 12px !important;
-        line-height: 1.35 !important;
-      }
-      .header-actions {
-        width: 100% !important;
-        display: flex !important;
-        gap: 8px !important;
-      }
-      .header-actions .btn {
-        flex: 1 1 0 !important;
-        justify-content: center !important;
-        padding: 0 10px !important;
-        font-size: 12px !important;
-        height: 38px !important;
-      }
-    }
-    
     .security-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 24px;
       align-items: start;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     @media (max-width: 860px) {
-      .security-grid { grid-template-columns: 1fr; }
+      .security-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+      }
     }
 
     .sec-column {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
 
     .sec-card {
@@ -581,6 +536,10 @@ import { OneSignalService } from '../../core/services/onesignal.service';
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .card-head {
       display: flex;
@@ -887,6 +846,126 @@ import { OneSignalService } from '../../core/services/onesignal.service';
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Authoritative Mobile Responsive Rules (iPhone 16 / 393px Viewport) */
+    @media (max-width: 768px) {
+      .security-container {
+        padding: 0 0 20px 0 !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 14px !important;
+      }
+      .breadcrumb {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+      }
+      .breadcrumb::-webkit-scrollbar { display: none !important; }
+      .breadcrumb a, .breadcrumb span, .breadcrumb .current, .breadcrumb .sep {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+      }
+      .header-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row {
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+        flex-wrap: wrap !important;
+      }
+      .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .badge-suite {
+        font-size: 9.5px !important;
+        padding: 2px 7px !important;
+      }
+      .subtitle {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+      }
+      .header-actions {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+      }
+      .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        height: 36px !important;
+        box-sizing: border-box !important;
+      }
+      .security-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 14px !important;
+        width: 100% !important;
+      }
+      .sec-card {
+        padding: 16px 14px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .card-head {
+        margin-bottom: 14px !important;
+        padding-bottom: 10px !important;
+      }
+      .head-title h3 {
+        font-size: 15px !important;
+      }
+      .card-desc {
+        font-size: 12px !important;
+        margin-bottom: 14px !important;
+      }
+      .form-input {
+        height: 38px !important;
+        font-size: 13px !important;
+        padding: 0 12px !important;
+      }
+      .btn-primary, .btn-secondary, .btn-danger {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 40px !important;
+      }
+      .twofa-status-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 12px 14px !important;
+        gap: 10px !important;
+      }
+      .sessions-table {
+        display: block !important;
+        overflow-x: auto !important;
+        width: 100% !important;
+      }
     }
   `]
 })

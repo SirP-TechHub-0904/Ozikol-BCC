@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -83,69 +83,111 @@ interface AccountSummary {
   imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="account-container">
-      <!-- Page Header -->
-      <div class="account-header">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
         <div class="header-left">
-          <div class="header-icon-wrap">
-            <span class="material-symbols-outlined header-icon">manage_accounts</span>
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <span>Identity &amp; Security</span>
+            <span class="sep">/</span>
+            <span class="current">{{ getTabTitle() }}</span>
           </div>
-          <div>
-            <h1 class="page-title">{{ 'account.title' | translate }}</h1>
-            <p class="page-sub">{{ 'account.subtitle' | translate }}</p>
+          <div class="title-row">
+            <h1>Account &amp; Security Management</h1>
+            <span class="badge-suite">Suite: Identity &amp; Access</span>
           </div>
+          <p class="subtitle">{{ 'account.subtitle' | translate }}</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadAccountSummary()">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <div class="tab-navigation-bar">
+      <!-- Navigation Tabs (Touch Responsive with Visual Scroll Cues & Arrows) -->
+      <div class="subnav-scroll-wrapper">
         <button
           type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'password'"
-          (click)="selectTab('password')">
-          <span class="material-symbols-outlined tab-icon">key</span>
-          <span>{{ 'account.tab_password' | translate }}</span>
+          class="subnav-arrow-btn left"
+          *ngIf="canScrollLeft"
+          (click)="scrollTabs(-1)"
+          aria-label="Scroll tabs left">
+          <span class="material-symbols-outlined">chevron_left</span>
         </button>
+
+        <div
+          class="tab-navigation-bar"
+          #subnavTabs
+          (scroll)="checkScrollArrows()">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'password'"
+            (click)="selectTab('password')">
+            <span class="material-symbols-outlined tab-icon">key</span>
+            <span>{{ 'account.tab_password' | translate }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === '2fa'"
+            (click)="selectTab('2fa')">
+            <span class="material-symbols-outlined tab-icon">shield_lock</span>
+            <span>{{ 'account.tab_2fa' | translate }}</span>
+            <span class="tab-badge" [class.badge-good]="mfaEnabled" [class.badge-warn]="!mfaEnabled">
+              {{ mfaEnabled ? ('account.status_enforced' | translate) : ('account.status_disabled' | translate) }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'devices'"
+            (click)="selectTab('devices')">
+            <span class="material-symbols-outlined tab-icon">devices</span>
+            <span>{{ 'account.tab_devices' | translate }}</span>
+            <span class="tab-counter" *ngIf="sessions.length > 0">{{ sessions.length }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'activity'"
+            (click)="selectTab('activity')">
+            <span class="material-symbols-outlined tab-icon">history</span>
+            <span>{{ 'account.tab_activity' | translate }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'roles'"
+            (click)="selectTab('roles')">
+            <span class="material-symbols-outlined tab-icon">verified_user</span>
+            <span>{{ 'account.tab_roles' | translate }}</span>
+          </button>
+        </div>
 
         <button
           type="button"
-          class="tab-btn"
-          [class.active]="activeTab === '2fa'"
-          (click)="selectTab('2fa')">
-          <span class="material-symbols-outlined tab-icon">shield_lock</span>
-          <span>{{ 'account.tab_2fa' | translate }}</span>
-          <span class="tab-badge" [class.badge-good]="mfaEnabled" [class.badge-warn]="!mfaEnabled">
-            {{ mfaEnabled ? ('account.status_enforced' | translate) : ('account.status_disabled' | translate) }}
-          </span>
+          class="subnav-arrow-btn right"
+          *ngIf="canScrollRight"
+          (click)="scrollTabs(1)"
+          aria-label="Scroll tabs right">
+          <span class="material-symbols-outlined">chevron_right</span>
         </button>
 
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'devices'"
-          (click)="selectTab('devices')">
-          <span class="material-symbols-outlined tab-icon">devices</span>
-          <span>{{ 'account.tab_devices' | translate }}</span>
-          <span class="tab-counter" *ngIf="sessions.length > 0">{{ sessions.length }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'activity'"
-          (click)="selectTab('activity')">
-          <span class="material-symbols-outlined tab-icon">history</span>
-          <span>{{ 'account.tab_activity' | translate }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'roles'"
-          (click)="selectTab('roles')">
-          <span class="material-symbols-outlined tab-icon">verified_user</span>
-          <span>{{ 'account.tab_roles' | translate }}</span>
-        </button>
+        <!-- Visual Scroll Cue on Mobile/Desktop -->
+        <div class="scroll-edge-glow right" *ngIf="canScrollRight" (click)="scrollTabs(1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_right</span>
+        </div>
+        <div class="scroll-edge-glow left" *ngIf="canScrollLeft" (click)="scrollTabs(-1)">
+          <span class="material-symbols-outlined scroll-cue-chevron">chevron_left</span>
+        </div>
       </div>
 
       <!-- Tab Content Area -->
@@ -160,9 +202,6 @@ interface AccountSummary {
                 <h2 class="card-title">{{ 'nav.change_password' | translate }}</h2>
                 <p class="card-desc">Update your administrator password regularly to maintain workspace security.</p>
               </div>
-            </div>
-            <div class="info-tooltip-badge" title="Password must contain at least 8 characters with upper, lower, numbers, and symbols.">
-              <span class="material-symbols-outlined">info</span>
             </div>
           </div>
 
@@ -450,39 +489,43 @@ interface AccountSummary {
 
             <div class="devices-grid" *ngIf="sessions.length > 0">
               <div class="device-card" *ngFor="let s of sessions" [class.current-device]="s.isCurrent">
-                <div class="device-icon-wrap" [class.trusted-wrap]="s.isTrusted">
-                  <span class="material-symbols-outlined">{{ s.icon || getDeviceIcon(s.rawDevice || s.device) }}</span>
-                </div>
-                <div class="device-info">
-                  <div class="device-name-row">
-                    <span class="device-name">{{ s.device || formatDeviceTitle(s.rawDevice || s.device) }}</span>
-                    <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
-                    <span class="badge-activity" [class.badge-active]="isSessionActive(s)" [class.badge-idle]="!isSessionActive(s)">
-                      <span class="activity-dot"></span>
-                      <span>{{ (isSessionActive(s) ? 'account.active_now' : 'account.idle') | translate }}</span>
-                    </span>
-                    <span class="badge-trusted" *ngIf="s.isTrusted" title="2FA verification bypassed on this trusted device">
-                      <span class="material-symbols-outlined">verified_user</span>
-                      <span>Trusted Device</span>
-                    </span>
+                <div class="device-card-main">
+                  <div class="device-icon-wrap" [class.trusted-wrap]="s.isTrusted">
+                    <span class="material-symbols-outlined">{{ s.icon || getDeviceIcon(s.rawDevice || s.device) }}</span>
                   </div>
-                  <div class="device-meta-row">
-                    <span class="meta-tag">
-                      <span class="material-symbols-outlined meta-sub-icon">{{ getDeviceSubIcon(s.rawDevice || s.device) }}</span>
-                      {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
-                    </span>
-                    <span class="meta-tag">
-                      <span class="material-symbols-outlined meta-sub-icon">router</span>
-                      {{ formatIpAddress(s.ipAddress) }}
-                    </span>
-                    <span class="meta-tag" *ngIf="s.createdAt" [title]="'account.logged_in_since' | translate">
-                      <span class="material-symbols-outlined meta-sub-icon">login</span>
-                      {{ 'account.logged_in_since' | translate }}: {{ formatExactDateTime(s.createdAt) }}
-                    </span>
-                    <span class="meta-tag" [title]="'account.last_active' | translate">
-                      <span class="material-symbols-outlined meta-sub-icon">schedule</span>
-                      {{ 'account.last_active' | translate }}: {{ formatExactDateTime(s.lastActive) }}
-                    </span>
+                  <div class="device-info">
+                    <div class="device-name-row">
+                      <span class="device-name">{{ s.device || formatDeviceTitle(s.rawDevice || s.device) }}</span>
+                      <div class="device-badges-wrap">
+                        <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
+                        <span class="badge-activity" [class.badge-active]="isSessionActive(s)" [class.badge-idle]="!isSessionActive(s)">
+                          <span class="activity-dot"></span>
+                          <span>{{ (isSessionActive(s) ? 'account.active_now' : 'account.idle') | translate }}</span>
+                        </span>
+                        <span class="badge-trusted" *ngIf="s.isTrusted" title="2FA verification bypassed on this trusted device">
+                          <span class="material-symbols-outlined">verified_user</span>
+                          <span>Trusted Device</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="device-meta-row">
+                      <span class="meta-tag">
+                        <span class="material-symbols-outlined meta-sub-icon">{{ getDeviceSubIcon(s.rawDevice || s.device) }}</span>
+                        {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
+                      </span>
+                      <span class="meta-tag">
+                        <span class="material-symbols-outlined meta-sub-icon">router</span>
+                        {{ formatIpAddress(s.ipAddress) }}
+                      </span>
+                      <span class="meta-tag" *ngIf="s.createdAt" [title]="'account.logged_in_since' | translate">
+                        <span class="material-symbols-outlined meta-sub-icon">login</span>
+                        {{ 'account.logged_in_since' | translate }}: {{ formatExactDateTime(s.createdAt) }}
+                      </span>
+                      <span class="meta-tag" [title]="'account.last_active' | translate">
+                        <span class="material-symbols-outlined meta-sub-icon">schedule</span>
+                        {{ 'account.last_active' | translate }}: {{ formatExactDateTime(s.lastActive) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div class="device-actions" *ngIf="!s.isCurrent">
@@ -669,6 +712,12 @@ interface AccountSummary {
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .account-container {
       padding: 0;
       width: 100%;
@@ -680,45 +729,90 @@ interface AccountSummary {
       gap: 20px;
     }
 
-    .account-header {
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #ffffff;
-      padding: 20px 24px;
-      border-radius: 14px;
+      padding: 24px 28px;
+      border-radius: 16px;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      gap: 16px;
+      flex-wrap: wrap;
     }
     .header-left {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
     }
-    .header-icon-wrap {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: rgba(0, 80, 229, 0.08);
+    .breadcrumb {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .breadcrumb a {
       color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
     }
-    .header-icon {
-      font-size: 28px;
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #334155; font-weight: 600; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
     }
-    .page-title {
-      font-size: 20px;
+    .title-row h1 {
+      font-size: 26px;
       font-weight: 800;
       color: #0f172a;
       margin: 0;
+      letter-spacing: -0.5px;
     }
-    .page-sub {
+    .badge-suite {
+      font-size: 11px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #0050e5;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #bfdbfe;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .subtitle { color: #64748b; font-size: 14px; margin: 0; line-height: 1.4; }
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+    .header-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 10px;
       font-size: 13px;
-      color: #64748b;
-      margin: 2px 0 0 0;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
     }
+    .header-actions .btn-outline {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+    .header-actions .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .header-actions .btn .material-symbols-outlined { font-size: 18px; }
     .user-pill {
       display: flex;
       align-items: center;
@@ -760,40 +854,177 @@ interface AccountSummary {
       color: #64748b;
     }
 
-    /* Tab navigation */
+    /* Tab navigation with Touch-Responsive Scroll Wrapper */
+    .subnav-scroll-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
     .tab-navigation-bar {
       display: flex;
-      gap: 8px;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 2px;
+      gap: 10px;
+      padding: 6px 4px 10px 4px;
       overflow-x: auto;
+      overflow-y: hidden;
+      width: 100%;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      scrollbar-color: #0050e5 #f1f5f9;
+    }
+    .tab-navigation-bar::-webkit-scrollbar {
+      height: 4px;
+      display: block;
+    }
+    .tab-navigation-bar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .tab-navigation-bar::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #0050e5, #3b82f6);
+      border-radius: 4px;
     }
     .tab-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 10px 18px;
-      border: none;
-      background: transparent;
-      color: #64748b;
-      font-size: 13.5px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -4px;
-      transition: all 0.2s ease;
       white-space: nowrap;
+      flex-shrink: 0;
+      scroll-snap-align: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      outline: none !important;
+      user-select: none;
     }
     .tab-btn:hover {
+      background: #f8fafc;
+      border-color: #0050e5;
       color: #0050e5;
+      transform: translateY(-1px);
+    }
+    .tab-btn:focus,
+    .tab-btn:active {
+      outline: none !important;
+      box-shadow: none;
     }
     .tab-btn.active {
-      color: #0050e5;
-      border-bottom-color: #0050e5;
-      font-weight: 700;
+      background: #0050e5 !important;
+      color: #ffffff !important;
+      border-color: #0050e5 !important;
+      box-shadow: 0 4px 12px rgba(0,80,229,0.3) !important;
+    }
+    .tab-btn.active .tab-icon {
+      color: #ffffff !important;
+    }
+    .tab-btn.active .tab-badge {
+      background: #ffffff !important;
+      color: #0050e5 !important;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+    .tab-btn.active .tab-counter {
+      background: #ffffff !important;
+      color: #0050e5 !important;
     }
     .tab-icon {
-      font-size: 19px;
+      font-size: 18px;
+    }
+    .tab-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge-good {
+      background: rgba(22, 163, 74, 0.12);
+      color: #16a34a;
+    }
+    .badge-warn {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    /* Scroll Arrow Buttons & Edge Glow */
+    .subnav-arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-60%);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #0050e5;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+    .subnav-arrow-btn:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .subnav-arrow-btn.left { left: -4px; }
+    .subnav-arrow-btn.right { right: -4px; }
+
+    .scroll-edge-glow {
+      position: absolute;
+      top: 0;
+      bottom: 10px;
+      width: 48px;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      cursor: pointer;
+      z-index: 8;
+    }
+    .scroll-edge-glow.left {
+      left: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%);
+      justify-content: flex-start;
+      padding-left: 4px;
+    }
+    .scroll-edge-glow.right {
+      right: 0;
+      background: linear-gradient(270deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 100%);
+      justify-content: flex-end;
+      padding-right: 4px;
+    }
+    .scroll-cue-chevron {
+      font-size: 18px;
+      color: #0050e5;
+      background: #eff6ff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      opacity: 0.85;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.2);
+      animation: pulseChevron 1.8s infinite;
+    }
+    @keyframes pulseChevron {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
     }
     .tab-badge {
       font-size: 10.5px;
@@ -1126,47 +1357,80 @@ interface AccountSummary {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 16px;
+      padding: 12px;
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 12px;
       width: fit-content;
+      max-width: 100%;
       margin: 12px auto;
+      box-sizing: border-box;
     }
     .qr-code-img {
-      width: 180px;
-      height: 180px;
+      width: 170px;
+      height: 170px;
+      max-width: 100%;
+      object-fit: contain;
+      display: block;
     }
     .secret-key-box {
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       gap: 8px;
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      color: #0f172a;
+      max-width: 100%;
+      box-sizing: border-box;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     .secret-key-box:hover {
       background: #e2e8f0;
+      border-color: #0050e5;
+    }
+    .secret-key-box code {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #0f172a;
+      word-break: break-all;
+      overflow-wrap: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      flex: 1;
+      min-width: 0;
+    }
+    .secret-key-box .copy-icon {
+      font-size: 19px;
+      color: #0050e5;
+      flex-shrink: 0;
     }
     .code-input-field {
       text-align: center;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: 6px;
-      padding: 10px;
+      padding: 8px 12px;
+      height: 44px;
+      border-radius: 8px;
+      box-sizing: border-box;
     }
     .challenge-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .challenge-actions button {
+      height: 40px;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
     }
 
     .mfa-verified-step {
@@ -1216,35 +1480,51 @@ interface AccountSummary {
     .devices-grid {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
+      width: 100%;
     }
     .device-card {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
       padding: 16px 20px;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
+      border-radius: 14px;
       background: #ffffff;
       transition: all 0.2s;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
     }
     .device-card:hover {
       border-color: #cbd5e1;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     }
     .device-card.current-device {
       border-color: #0050e5;
       background: rgba(0, 80, 229, 0.02);
     }
+    .device-card-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      width: 100%;
+      min-width: 0;
+    }
     .device-icon-wrap {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
       background: #f1f5f9;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #334155;
+      flex-shrink: 0;
+    }
+    .device-icon-wrap .material-symbols-outlined {
+      font-size: 22px;
     }
     .device-card.current-device .device-icon-wrap {
       background: rgba(0, 80, 229, 0.1);
@@ -1252,19 +1532,31 @@ interface AccountSummary {
     }
     .device-info {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
     .device-name-row {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      width: 100%;
     }
     .device-name {
-      font-size: 14px;
+      font-size: 14.5px;
       font-weight: 700;
       color: #0f172a;
+      line-height: 1.35;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+    .device-badges-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .badge-current {
       font-size: 10.5px;
@@ -1332,6 +1624,13 @@ interface AccountSummary {
     }
     .meta-sub-icon {
       font-size: 14px;
+    }
+    .device-actions {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #f1f5f9;
     }
     .btn-revoke {
       display: inline-flex;
@@ -1687,9 +1986,420 @@ interface AccountSummary {
     }
     .text-primary { color: #0050e5; }
     .text-green { color: #16a34a; }
+
+    /* Mobile Responsive Rules (iPhone 16 / 393px Viewport) */
+    @media (max-width: 768px) {
+      .account-container {
+        padding: 0 0 20px 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        margin-bottom: 12px !important;
+        padding: 0 !important;
+      }
+      .page-header .header-left {
+        width: 100% !important;
+      }
+      .page-header .title-row {
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+      }
+      .page-header .title-row h1 {
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+      }
+      .page-header .header-actions {
+        width: 100% !important;
+      }
+      .page-header .header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .subnav-scroll-wrapper {
+        margin-bottom: 14px !important;
+      }
+      .tab-btn {
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+        gap: 6px !important;
+      }
+      .tab-icon {
+        font-size: 16px !important;
+      }
+      .card-section {
+        padding: 16px 14px !important;
+        border-radius: 12px !important;
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+      .section-card-head {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .card-title-group {
+        width: 100% !important;
+      }
+      .card-title {
+        font-size: 15px !important;
+      }
+      .card-desc {
+        font-size: 11.5px !important;
+      }
+      .head-actions-wrap {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .btn-danger-outline {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .device-card {
+        padding: 12px !important;
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+      }
+      .device-card-main {
+        gap: 10px !important;
+      }
+      .device-name {
+        font-size: 13.5px !important;
+        word-break: break-word !important;
+      }
+      .device-meta-row {
+        gap: 6px !important;
+      }
+      .device-actions {
+        width: 100% !important;
+        margin-top: 10px !important;
+      }
+      .btn-revoke {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .retention-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 12px 14px !important;
+      }
+      .retention-info {
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .retention-title {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+      }
+      .retention-sub {
+        font-size: 11px !important;
+        margin-top: 4px !important;
+      }
+      .btn-contact-admin {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      .account-table {
+        min-width: 580px !important;
+      }
+      .pagination-footer {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .pagination-controls {
+        width: 100% !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+      }
+      .qr-container {
+        padding: 8px !important;
+        margin: 10px auto !important;
+      }
+      .qr-code-img {
+        width: 150px !important;
+        height: 150px !important;
+      }
+      .secret-key-box {
+        padding: 8px 12px !important;
+      }
+      .secret-key-box code {
+        font-size: 11.5px !important;
+        letter-spacing: 0.2px !important;
+      }
+      .code-input-field {
+        font-size: 18px !important;
+        letter-spacing: 4px !important;
+        height: 40px !important;
+      }
+      .challenge-actions {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+      .challenge-actions button {
+        height: 38px !important;
+        font-size: 12px !important;
+      }
+      .form-input {
+        height: 38px !important;
+        font-size: 13px !important;
+      }
+      .account-form .form-group {
+        margin-bottom: 10px !important;
+      }
+      .account-form label {
+        font-size: 11.5px !important;
+        margin-bottom: 4px !important;
+      }
+      .privileges-note {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+      }
+    }
+
+    /* Comprehensive Dark Mode Theme Support */
+    :host-context(.dark-mode) .account-container {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .page-header,
+    :host-context(.dark-mode) .card-section {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-mode) .page-header .title-row h1,
+    :host-context(.dark-mode) .card-title,
+    :host-context(.dark-mode) .section-card-head h2 {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .subtitle,
+    :host-context(.dark-mode) .card-desc,
+    :host-context(.dark-mode) .account-form label,
+    :host-context(.dark-mode) .breadcrumb .sep {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb a {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .breadcrumb .current {
+      color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .btn-outline,
+    :host-context(.dark-mode) .header-actions .btn.btn-outline {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .btn-outline:hover,
+    :host-context(.dark-mode) .header-actions .btn.btn-outline:hover {
+      background: #1e293b !important;
+      border-color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .scroll-edge-glow.left {
+      background: linear-gradient(90deg, #0b1329 0%, rgba(11, 19, 41, 0) 100%) !important;
+    }
+    :host-context(.dark-mode) .scroll-edge-glow.right {
+      background: linear-gradient(270deg, #0b1329 0%, rgba(11, 19, 41, 0) 100%) !important;
+    }
+    :host-context(.dark-mode) .subnav-arrow-btn {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .subnav-arrow-btn:hover {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+    }
+    :host-context(.dark-mode) .tab-btn {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .tab-btn:hover {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .tab-btn.active {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+      border-color: #0050e5 !important;
+    }
+    :host-context(.dark-mode) .form-input,
+    :host-context(.dark-mode) .password-input-wrap input {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .form-input:focus,
+    :host-context(.dark-mode) .password-input-wrap input:focus {
+      border-color: #0050e5 !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.25) !important;
+    }
+    :host-context(.dark-mode) .eye-btn {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .password-requirements {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .requirements-title {
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .rule-pill {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .rule-pill.valid {
+      background: rgba(22, 163, 74, 0.15) !important;
+      border-color: rgba(22, 163, 74, 0.3) !important;
+      color: #4ade80 !important;
+    }
+    :host-context(.dark-mode) .device-card {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .device-card.is-current {
+      background: rgba(0, 80, 229, 0.08) !important;
+      border-color: #0050e5 !important;
+    }
+    :host-context(.dark-mode) .device-name {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .device-icon-wrap {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .device-meta-row,
+    :host-context(.dark-mode) .meta-tag {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .btn-revoke {
+      background: rgba(239, 68, 68, 0.1) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #f87171 !important;
+    }
+    :host-context(.dark-mode) .btn-revoke:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    :host-context(.dark-mode) .btn-danger-outline {
+      background: rgba(239, 68, 68, 0.1) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #f87171 !important;
+    }
+    :host-context(.dark-mode) .btn-danger-outline:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    :host-context(.dark-mode) .secret-key-box {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .secret-key-box code {
+      color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .code-input-field {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #60a5fa !important;
+    }
+    :host-context(.dark-mode) .retention-banner {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .retention-title {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .retention-sub {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .btn-contact-admin {
+      background: rgba(0, 80, 229, 0.2) !important;
+      border-color: rgba(96, 165, 250, 0.4) !important;
+      color: #93c5fd !important;
+    }
+    :host-context(.dark-mode) .account-table th {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .account-table td {
+      border-color: rgba(255, 255, 255, 0.06) !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .account-table code {
+      background: #0f172a !important;
+      color: #93c5fd !important;
+      border: 1px solid #334155 !important;
+    }
+    :host-context(.dark-mode) .pagination-footer {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .page-size-selector select {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .page-btn {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .page-btn.active {
+      background: #0050e5 !important;
+      color: #ffffff !important;
+      border-color: #0050e5 !important;
+    }
+    :host-context(.dark-mode) .role-badge-card {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) .role-title {
+      color: #f8fafc !important;
+    }
+    :host-context(.dark-mode) .role-desc {
+      color: #94a3b8 !important;
+    }
+    :host-context(.dark-mode) .privileges-note {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    :host-context(.dark-mode) .btn-secondary {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
   `]
 })
-export class IdentityAccountComponent implements OnInit, OnDestroy {
+export class IdentityAccountComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('subnavTabs') subnavTabsRef!: ElementRef;
+
+  canScrollLeft = false;
+  canScrollRight = false;
+
   /** Active selected tab key: 'password' | '2fa' | 'devices' | 'activity' | 'roles' */
   activeTab: string = 'password';
 
@@ -1757,6 +2467,10 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
       const tabParam = params['tab'];
       if (tabParam && ['password', '2fa', 'devices', 'activity', 'roles'].includes(tabParam)) {
         this.activeTab = tabParam;
+        setTimeout(() => {
+          this.checkScrollArrows();
+          this.scrollActiveTabIntoView();
+        }, 100);
       }
     });
 
@@ -1785,9 +2499,58 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+    }, 150);
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.checkScrollArrows();
+  }
+
+  checkScrollArrows(): void {
+    if (!this.subnavTabsRef) return;
+    const el = this.subnavTabsRef.nativeElement;
+    this.canScrollLeft = el.scrollLeft > 4;
+    this.canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+  }
+
+  scrollTabs(direction: number): void {
+    if (!this.subnavTabsRef) return;
+    const el = this.subnavTabsRef.nativeElement;
+    el.scrollBy({ left: 200 * direction, behavior: 'smooth' });
+    setTimeout(() => this.checkScrollArrows(), 250);
+  }
+
+  scrollActiveTabIntoView(): void {
+    if (!this.subnavTabsRef) return;
+    const el = this.subnavTabsRef.nativeElement as HTMLElement;
+    const activeEl = el.querySelector('.tab-btn.active') as HTMLElement;
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }
+
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.signalRSub?.unsubscribe();
+  }
+
+  /**
+   * Returns human-readable label for the current active tab in breadcrumbs.
+   */
+  getTabTitle(): string {
+    switch (this.activeTab) {
+      case 'password': return 'Change Password';
+      case '2fa': return 'Two-Factor Authentication';
+      case 'devices': return 'Active Devices';
+      case 'activity': return 'Login Activity';
+      case 'roles': return 'Assigned Roles';
+      default: return 'Account Management';
+    }
   }
 
   /**
@@ -1795,12 +2558,20 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    * @param tab Target tab identifier.
    */
   selectTab(tab: string): void {
+    // If user was in the middle of 2FA setup challenge, reset back to clean state
+    if (this.setupStep === 'setup') {
+      this.cancelMfaSetup();
+    }
     this.activeTab = tab;
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { tab },
       queryParamsHandling: 'merge'
     });
+    setTimeout(() => {
+      this.checkScrollArrows();
+      this.scrollActiveTabIntoView();
+    }, 50);
   }
 
   /**

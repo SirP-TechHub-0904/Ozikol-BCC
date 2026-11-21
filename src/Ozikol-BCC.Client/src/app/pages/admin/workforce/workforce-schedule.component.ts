@@ -64,9 +64,6 @@ interface YearMonthGrid {
           </div>
           <div class="title-row">
             <h1>Rota Calendar</h1>
-            <button type="button" class="info-trigger-btn" (click)="showInfoModal = true" title="Rota Calendar Guide">
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">

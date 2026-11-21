@@ -30,9 +30,6 @@ import { CommitteesUxHelpersComponent } from '../../../shared/components/committ
           <span class="rc-eyebrow">{{ 'committees.eyebrow' | translate:'PEOPLE & COMMUNITY' }}</span>
           <div class="rc-title-row">
             <h1>{{ 'committees.compose_report' | translate:'Compose Meeting Report' }}</h1>
-            <button type="button" class="rc-info-btn" (click)="openInfo()">
-              <span class="material-symbols-outlined">info</span>
-            </button>
           </div>
           <p class="rc-subtitle">
             Type structured minutes, record 1-tap attendance roll-call, upload files, or connect Google Docs, Sheets &amp; Cloud Notebooks.

@@ -64,14 +64,6 @@ interface StaffMember {
           </div>
           <div class="title-row">
             <h1>{{ isEditMode ? ('Edit Shift: ' + shiftCode) : 'Create Work Schedule &amp; Assignment' }}</h1>
-            <button
-              type="button"
-              class="info-badge-btn"
-              (click)="showInfoModal = true"
-              title="Click to view work schedule patterns and guide"
-            >
-              <span class="material-symbols-outlined">info</span>
-            </button>
             <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
           </div>
           <p class="subtitle">
