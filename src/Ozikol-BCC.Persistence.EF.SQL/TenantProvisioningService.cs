@@ -432,7 +432,7 @@ END";
                                         <div style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;"">
                                             <h2 style=""color: #0050E5; margin: 0 0 10px 0;"">{safeOrg} — Email Service Active</h2>
                                             <p style=""color: #334155; font-size: 14px; line-height: 1.6;"">
-                                                Your dedicated workspace notification mailbox (<strong>{safeSender}</strong>) has been automatically provisioned and authenticated with SPF, DKIM, and DMARC.
+                                                Your dedicated workspace notification mailbox (<strong>{safeSender}</strong>) has been automatically provisioned and activated.
                                             </p>
                                             <p style=""color: #475569; font-size: 13.5px; line-height: 1.6; margin-bottom: 0;"">
                                                 Registration verification codes, member onboarding emails, and password resets for <strong>{safeOrg}</strong> are now live.

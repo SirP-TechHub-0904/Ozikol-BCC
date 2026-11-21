@@ -1381,7 +1381,7 @@ namespace Ozikol_BCC.Api.Controllers
                 smtpHost = config.SmtpHost,
                 smtpPort = config.SmtpPort,
                 dkimTxt
-            }, "Your email service and DNS authentication (MX, SPF, DKIM, DMARC) have been activated."));
+            }, "Your notification email service has been activated."));
         }
 
         /// <summary>

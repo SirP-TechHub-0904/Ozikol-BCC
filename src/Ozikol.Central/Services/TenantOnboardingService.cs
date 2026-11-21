@@ -560,7 +560,11 @@ public class TenantOnboardingService : ITenantOnboardingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to onboard tenant [{TenantKey}]", cleanKey);
+            _logger.LogError(ex, "Failed to onboard tenant [{TenantKey}] - initiating automated compensating rollback", cleanKey);
+
+            // Automated Compensating Rollback: Clean up partially created physical database, SQL login, and catalog records
+            await RollbackFailedOnboardingAsync(masterConnStr, dbName, sqlUsername, cleanKey);
+
             var detailedMsg = ex.InnerException != null
                 ? $"{ex.Message} -> {ex.InnerException.Message}"
                 : ex.Message;
@@ -572,6 +576,71 @@ public class TenantOnboardingService : ITenantOnboardingService
                 Message = $"Onboarding failed: {detailedMsg}",
                 ErrorDetail = ex.ToString()
             };
+        }
+    }
+
+    /// <summary>
+    /// Executes automated compensating rollback if tenant provisioning encounters a fatal failure mid-pipeline.
+    /// Purges any partially created physical database and server-level SQL login, and removes any staged catalog records.
+    /// </summary>
+    private async Task RollbackFailedOnboardingAsync(string masterConnStr, string dbName, string sqlUsername, string tenantKey)
+    {
+        try
+        {
+            var masterBuilder = new SqlConnectionStringBuilder(masterConnStr)
+            {
+                InitialCatalog = "master",
+                ConnectTimeout = 15
+            };
+
+            await using var connection = new SqlConnection(masterBuilder.ConnectionString);
+            await connection.OpenAsync();
+
+            // 1. Drop partially created database
+            if (!string.IsNullOrWhiteSpace(dbName))
+            {
+                var safeDbBracket = dbName.Replace("]", "]]");
+                var safeDbLiteral = dbName.Replace("'", "''");
+                await using var dropDbCmd = connection.CreateCommand();
+                dropDbCmd.CommandTimeout = 30;
+                dropDbCmd.CommandText = $@"
+                    IF EXISTS (SELECT name FROM sys.databases WHERE name = N'{safeDbLiteral}')
+                    BEGIN
+                        ALTER DATABASE [{safeDbBracket}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                        DROP DATABASE [{safeDbBracket}];
+                    END;";
+                await dropDbCmd.ExecuteNonQueryAsync();
+            }
+
+            // 2. Drop partially created SQL login
+            if (!string.IsNullOrWhiteSpace(sqlUsername))
+            {
+                var safeLoginBracket = sqlUsername.Replace("]", "]]");
+                var safeLoginLiteral = sqlUsername.Replace("'", "''");
+                await using var dropLoginCmd = connection.CreateCommand();
+                dropLoginCmd.CommandText = $@"
+                    IF EXISTS (SELECT name FROM sys.server_principals WHERE name = N'{safeLoginLiteral}')
+                    BEGIN
+                        DROP LOGIN [{safeLoginBracket}];
+                    END;";
+                await dropLoginCmd.ExecuteNonQueryAsync();
+            }
+
+            // 3. Remove any staged Master Catalog record for this tenant key
+            var stagedCatalog = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
+            if (stagedCatalog != null)
+            {
+                _masterCatalogDbContext.MasterTenantCatalogs.Remove(stagedCatalog);
+                await _masterCatalogDbContext.SaveChangesAsync();
+            }
+
+            _logger.LogInformation("🛡️ Successfully rolled back partial database '{DbName}' and login '{SqlUser}' for failed tenant onboarding [{TenantKey}]",
+                dbName, sqlUsername, tenantKey);
+        }
+        catch (Exception rollbackEx)
+        {
+            _logger.LogError(rollbackEx, "⚠️ Warning: Failed to completely roll back partial resources for tenant [{TenantKey}]", tenantKey);
         }
     }
 

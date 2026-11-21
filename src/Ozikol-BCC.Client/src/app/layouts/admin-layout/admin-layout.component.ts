@@ -1952,9 +1952,8 @@ export interface SuiteInfoDetail {
         </p>
 
         <div class="oz-lang-modal-actions" style="justify-content: center;">
-          <button type="button" class="btn-lang-modal-confirm" style="min-width: 160px; justify-content: center;" [disabled]="isProvisioningEmail" (click)="activateTenantMailcow()">
-            <span class="material-symbols-outlined" *ngIf="isProvisioningEmail">hourglass_top</span>
-            <span>{{ isProvisioningEmail ? 'Activating...' : 'OK' }}</span>
+          <button type="button" class="btn-lang-modal-confirm" style="min-width: 160px; justify-content: center;" (click)="dismissEmailSetupModal()">
+            <span>OK</span>
           </button>
         </div>
       </div>
@@ -6072,7 +6071,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
    */
   checkEmailServiceSetupStatus(): void {
     if (!this.isAdmin) return;
-    if (sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') return;
+    if (localStorage.getItem('bcp_email_setup_modal_acknowledged') === 'true' ||
+        sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') {
+      return;
+    }
 
     this.api.get<any>('SettingsApi/email-setup-status').subscribe({
       next: (res) => {
@@ -6120,6 +6122,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   dismissEmailSetupModal(): void {
     this.showEmailSetupModal = false;
     sessionStorage.setItem('bcp_email_setup_modal_dismissed', 'true');
+    localStorage.setItem('bcp_email_setup_modal_acknowledged', 'true');
   }
 
   ngOnDestroy(): void {
