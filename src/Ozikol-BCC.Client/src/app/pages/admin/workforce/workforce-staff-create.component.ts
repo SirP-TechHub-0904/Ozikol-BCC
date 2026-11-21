@@ -152,7 +152,7 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
                   (ngModelChange)="onJobRoleSelected($event)"
                 >
                   <option value="">-- Select Job Title --</option>
-                  <option *ngFor="let r of jobRoles" [value]="r.title || r.name">{{ r.title || r.name }}</option>
+                  <option *ngFor="let r of jobRoles" [value]="r.title || r.name">{{ (r.title || r.name) }}{{ r.code ? ' (' + r.code + ')' : '' }}</option>
                 </select>
                 <div *ngIf="showQuickAddRole" class="inline-create-box">
                   <input type="text" class="form-control" [(ngModel)]="newRoleName" placeholder="e.g. Static Security Guard" />
@@ -375,65 +375,91 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    select.form-control { cursor: pointer; }
-    select.form-control option { background: #ffffff; color: #0f172a; }
+    select.form-control { cursor: pointer; color: #0f172a !important; background-color: #ffffff !important; }
+    select.form-control option { background: #ffffff !important; color: #0f172a !important; }
 
     /* Dark Mode Theme Support */
     :host-context(.dark-mode) .page-header,
+    body.dark-mode .page-header,
     :host-context(.dark-mode) .cms-card,
-    :host-context(.dark-mode) .submit-footer-card {
+    body.dark-mode .cms-card,
+    :host-context(.dark-mode) .submit-footer-card,
+    body.dark-mode .submit-footer-card {
       background: #1e293b !important;
       border-color: #334155 !important;
       color: #f8fafc !important;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
     }
-    :host-context(.dark-mode) .card-header {
+    :host-context(.dark-mode) .card-header,
+    body.dark-mode .card-header {
       background: #0f172a !important;
       border-bottom-color: #334155 !important;
     }
     :host-context(.dark-mode) .title-row h1,
-    :host-context(.dark-mode) .card-title-group h3 {
+    body.dark-mode .title-row h1,
+    :host-context(.dark-mode) .card-title-group h3,
+    body.dark-mode .card-title-group h3 {
       color: #f8fafc !important;
     }
     :host-context(.dark-mode) .subtitle,
+    body.dark-mode .subtitle,
     :host-context(.dark-mode) .card-subtitle,
-    :host-context(.dark-mode) .field-hint {
+    body.dark-mode .card-subtitle,
+    :host-context(.dark-mode) .field-hint,
+    body.dark-mode .field-hint {
       color: #94a3b8 !important;
     }
     :host-context(.dark-mode) .form-label,
+    body.dark-mode .form-label,
     :host-context(.dark-mode) .checkbox-inline,
-    :host-context(.dark-mode) .footer-note {
+    body.dark-mode .checkbox-inline,
+    :host-context(.dark-mode) .footer-note,
+    body.dark-mode .footer-note {
       color: #cbd5e1 !important;
     }
-    :host-context(.dark-mode) .breadcrumb .sep {
+    :host-context(.dark-mode) .breadcrumb .sep,
+    body.dark-mode .breadcrumb .sep {
       color: #475569 !important;
     }
-    :host-context(.dark-mode) .breadcrumb .current {
+    :host-context(.dark-mode) .breadcrumb .current,
+    body.dark-mode .breadcrumb .current {
       color: #cbd5e1 !important;
     }
-    :host-context(.dark-mode) .form-control {
+    :host-context(.dark-mode) .form-control,
+    body.dark-mode .form-control {
       background: #0f172a !important;
       color: #f8fafc !important;
       border-color: #334155 !important;
     }
-    :host-context(.dark-mode) .form-control:focus {
+    :host-context(.dark-mode) .form-control:focus,
+    body.dark-mode .form-control:focus {
       border-color: #0050e5 !important;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.25) !important;
     }
-    :host-context(.dark-mode) select.form-control option {
-      background: #1e293b !important;
+    :host-context(.dark-mode) select.form-control,
+    body.dark-mode select.form-control {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    :host-context(.dark-mode) select.form-control option,
+    body.dark-mode select.form-control option {
+      background-color: #1e293b !important;
       color: #f8fafc !important;
     }
-    :host-context(.dark-mode) .btn-outline {
+    :host-context(.dark-mode) .btn-outline,
+    body.dark-mode .btn-outline {
       background: #0f172a !important;
       color: #f8fafc !important;
       border-color: #334155 !important;
     }
-    :host-context(.dark-mode) .btn-outline:hover {
+    :host-context(.dark-mode) .btn-outline:hover,
+    body.dark-mode .btn-outline:hover {
       background: #1e293b !important;
       border-color: #60a5fa !important;
     }
-    :host-context(.dark-mode) .inhouse-info-banner {
+    :host-context(.dark-mode) .inhouse-info-banner,
+    body.dark-mode .inhouse-info-banner {
       background: rgba(0, 80, 229, 0.12) !important;
       border-color: rgba(0, 80, 229, 0.3) !important;
       color: #93c5fd !important;
@@ -499,16 +525,24 @@ export class WorkforceStaffCreateComponent implements OnInit {
 
     this.workforceService.getJobRoles().subscribe({
       next: (res: any) => {
-        this.jobRoles = Array.isArray(res?.data) ? res.data : [];
+        this.jobRoles = (Array.isArray(res?.data) ? res.data : []).filter(
+          (r: any) => (r.title || r.name) && (r.title || r.name).toLowerCase() !== 'undefined'
+        );
       },
-      error: () => {}
+      error: () => {
+        this.jobRoles = [];
+      }
     });
 
     this.workforceService.getStaffTypes().subscribe({
       next: (res: any) => {
-        this.staffTypes = Array.isArray(res?.data) ? res.data : [];
+        this.staffTypes = (Array.isArray(res?.data) ? res.data : []).filter(
+          (t: any) => t.name && t.name.toLowerCase() !== 'undefined'
+        );
       },
-      error: () => {}
+      error: () => {
+        this.staffTypes = [];
+      }
     });
   }
 
@@ -632,14 +666,21 @@ export class WorkforceStaffCreateComponent implements OnInit {
     }
 
     this.isSubmitting = true;
+    const cleanJobTitle = (this.model.jobTitle && this.model.jobTitle.trim() !== '' && this.model.jobTitle !== 'undefined')
+      ? this.model.jobTitle.trim()
+      : null;
+    const cleanStaffType = (this.model.staffTypeName && this.model.staffTypeName.trim() !== '' && this.model.staffTypeName !== 'undefined')
+      ? this.model.staffTypeName.trim()
+      : null;
+
     const payload = {
       firstName: this.model.firstName.trim(),
       lastName: this.model.lastName.trim(),
       email: this.model.email.trim(),
       phoneNumber: this.model.phoneNumber.trim(),
-      jobTitle: this.model.jobTitle || 'Staff Member',
+      jobTitle: cleanJobTitle,
       staffTypeId: this.model.staffTypeId || null,
-      staffTypeName: this.model.staffTypeName || 'Permanent',
+      staffTypeName: cleanStaffType,
       defaultHourlyRate: this.model.defaultHourlyRate || 0,
       contractedWeeklyHours: this.model.contractedWeeklyHours || 0,
       preferredWorkingTime: this.model.preferredWorkingTime || 'Any',

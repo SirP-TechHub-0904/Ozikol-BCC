@@ -2060,18 +2060,32 @@ namespace Ozikol_BCC.Api.Controllers
                         .FirstOrDefaultAsync(p => p.UserId == newUser.Id);
                     if (existingStaffProfile == null)
                     {
+                        var tenantKey = _tenantProvider?.CurrentTenant ?? "default";
+                        var tenantJobRole = await _dbContext.BcpJobRoles.AsNoTracking()
+                            .Where(r => (r.TenantKey == tenantKey || r.TenantKey == "default") && r.IsActive)
+                            .OrderBy(r => r.SortOrder)
+                            .FirstOrDefaultAsync();
+
+                        var tenantStaffType = await _dbContext.BcpStaffTypes.AsNoTracking()
+                            .Where(t => t.TenantKey == tenantKey || t.TenantKey == "default")
+                            .OrderBy(t => t.Name)
+                            .FirstOrDefaultAsync();
+
                         var cleanJobTitle = !string.IsNullOrWhiteSpace(newUser.Designation) && newUser.Designation.ToLowerInvariant() != "undefined"
                             ? newUser.Designation.Trim()
-                            : "Staff Member";
+                            : (tenantJobRole?.Title ?? string.Empty);
+
+                        var cleanStaffTypeName = tenantStaffType?.Name ?? string.Empty;
 
                         _dbContext.BcpShiftStaffProfiles.Add(new BcpShiftStaffProfile
                         {
                             Id = Guid.CreateVersion7(),
-                            TenantKey = _tenantProvider?.CurrentTenant ?? "default",
+                            TenantKey = tenantKey,
                             UserId = newUser.Id,
                             JobTitle = cleanJobTitle,
-                            StaffTypeName = "Permanent",
-                            WorkingAvailability = "Available",
+                            StaffTypeId = tenantStaffType?.Id,
+                            StaffTypeName = cleanStaffTypeName,
+                            WorkingAvailability = newUser.UserStatus == UserStatus.Pending ? "Pending Onboarding" : "Available",
                             PreferredWorkingTime = "Any",
                             IsActive = true,
                             CreatedUtc = DateTime.UtcNow,

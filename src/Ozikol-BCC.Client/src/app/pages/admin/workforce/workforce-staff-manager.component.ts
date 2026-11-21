@@ -125,6 +125,7 @@ import { ToastService } from '../../../core/services/toast.service';
               <option value="">All Availability</option>
               <option value="Available">Available (Full)</option>
               <option value="Restricted">Partial / Restricted</option>
+              <option value="Pending">Pending Onboarding</option>
             </select>
 
             <button
@@ -223,7 +224,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <!-- 4. Shift Preference & Availability -->
                 <td>
                   <div class="avail-cell">
-                    <span class="avail-pill" [ngClass]="isAvailable(m) ? 'avail-green' : 'avail-amber'">
+                    <span class="avail-pill" [ngClass]="isPending(m) ? 'avail-amber' : (isAvailable(m) ? 'avail-green' : 'avail-gray')">
                       {{ m.workingAvailability || 'Available' }}
                     </span>
                     <span class="pref-text">Pref: {{ m.preferredWorkingTime || 'Any Shift' }}</span>
@@ -406,7 +407,27 @@ import { ToastService } from '../../../core/services/toast.service';
     .avail-pill { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
     .avail-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .avail-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .avail-gray { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
     .pref-text { font-size: 11.5px; color: #64748b; }
+
+    :host-context(.dark-mode) .avail-green,
+    body.dark-mode .avail-green {
+      background: rgba(22, 163, 74, 0.2) !important;
+      color: #86efac !important;
+      border-color: rgba(22, 163, 74, 0.4) !important;
+    }
+    :host-context(.dark-mode) .avail-amber,
+    body.dark-mode .avail-amber {
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #fcd34d !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    :host-context(.dark-mode) .avail-gray,
+    body.dark-mode .avail-gray {
+      background: rgba(100, 116, 139, 0.2) !important;
+      color: #cbd5e1 !important;
+      border-color: rgba(100, 116, 139, 0.4) !important;
+    }
 
     .perf-cell { display: flex; flex-direction: column; gap: 2px; }
     .shifts-count { font-weight: 700; color: #0f172a; }
@@ -620,8 +641,22 @@ export class WorkforceStaffManagerComponent implements OnInit {
   }
 
   isAvailable(m: any): boolean {
-    const av = (m?.workingAvailability || 'Available').toLowerCase();
-    return av.includes('available') && !av.includes('unavailable') && !av.includes('partial');
+    const av = (m?.workingAvailability || '').toLowerCase();
+    return av.includes('available') && !av.includes('unavailable') && !av.includes('partial') && !av.includes('pending');
+  }
+
+  isPending(m: any): boolean {
+    const av = (m?.workingAvailability || '').toLowerCase();
+    return av.includes('pending');
+  }
+
+  isRestricted(m: any): boolean {
+    const av = (m?.workingAvailability || '').toLowerCase();
+    return (av.includes('partial') || av.includes('unavailable') || av.includes('leave')) && !av.includes('pending');
+  }
+
+  get pendingCount(): number {
+    return this.members.filter(m => this.isPending(m)).length;
   }
 
   toggleAvailability(mode: string): void {
@@ -641,7 +676,8 @@ export class WorkforceStaffManagerComponent implements OnInit {
       if (this.roleFilter && m.jobTitle !== this.roleFilter) return false;
       if (this.typeFilter && m.staffTypeName !== this.typeFilter) return false;
       if (this.availabilityFilter === 'Available' && !this.isAvailable(m)) return false;
-      if (this.availabilityFilter === 'Restricted' && this.isAvailable(m)) return false;
+      if (this.availabilityFilter === 'Restricted' && !this.isRestricted(m)) return false;
+      if (this.availabilityFilter === 'Pending' && !this.isPending(m)) return false;
       if (!q) return true;
       return (
         (m.fullName || '').toLowerCase().includes(q) ||
