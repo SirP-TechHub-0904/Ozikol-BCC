@@ -228,22 +228,29 @@ namespace Ozikol_BCC.Api.Authorization
 
                 if (_notificationDispatcher != null)
                 {
-                    var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"), httpContext.RequestAborted);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    // Find the primary administrator by ID or email — never broadcast security alerts
+                    var adminUser = await _dbContext.Users.AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Id != userId, httpContext.RequestAborted);
+
+                    if (adminUser != null)
                     {
-                        TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = superAdminUser?.Id,
-                        TenantKey = tenantKey,
-                        Title = "Security Alert: Feature Access Blocked",
-                        Message = $"User '{email}' was blocked attempting to access feature '{_featureCode}' ({attemptedPath}).",
-                        Severity = NotificationSeverity.Warning,
-                        Channels = NotificationChannels.InApp,
-                        ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
-                        Module = "Security",
-                        Icon = "security_update_warning",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.High
-                    });
+                        var featureTitle = ResolveFeatureTitle(_featureCode);
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = adminUser.Id,
+                            TenantKey = tenantKey,
+                            Title = $"Security Alert: {featureTitle} Access Blocked",
+                            Message = $"User '{email}' was blocked attempting to access {featureTitle} without operational authority.",
+                            Severity = NotificationSeverity.Warning,
+                            Channels = NotificationChannels.InApp,
+                            ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
+                            Module = "Security",
+                            Icon = "security_update_warning",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.High
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -251,13 +258,30 @@ namespace Ozikol_BCC.Api.Authorization
                 _logger.LogWarning(ex, "Failed to record suspicious access attempt telemetry.");
             }
 
+            var cleanTitle = ResolveFeatureTitle(_featureCode);
             context.Result = new ObjectResult(
                 ApiResponse<object>.FailureResponse(
-                    $"Access Denied: Your role does not grant operational authority for '{_featureCode}'.",
+                    $"Access Denied: Your assigned role does not grant operational authority for {cleanTitle}.",
                     errorCode: StandardErrorCodes.AccessDenied))
             {
                 StatusCode = StatusCodes.Status403Forbidden
             };
+        }
+
+        /// <summary>
+        /// Maps an internal canonical feature code to its professional human-readable menu title.
+        /// </summary>
+        private static string ResolveFeatureTitle(string featureCode)
+        {
+            if (string.IsNullOrWhiteSpace(featureCode)) return "Workspace Feature";
+            if (Ozikol.MasterDomain.Models.MasterFeatureSuiteDefaults.FeatureMenuTitleByCode.TryGetValue(featureCode, out var menuTitle))
+            {
+                return menuTitle;
+            }
+            var clean = featureCode.StartsWith("bcp-", StringComparison.OrdinalIgnoreCase)
+                ? featureCode.Substring(4)
+                : featureCode;
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(clean.Replace('-', ' '));
         }
     }
 }

@@ -302,10 +302,8 @@ namespace Ozikol_BCC.Api.Controllers
                         }, ct);
 
                         var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                         {
-                            TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                            TargetUserId = supervisorTarget,
                             TenantKey = CurrentTenantKey,
                             Title = "Shift Claim Awaiting Approval",
                             Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
@@ -357,10 +355,8 @@ namespace Ozikol_BCC.Api.Controllers
                     }, ct);
 
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = "Open Shift Claimed",
                         Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
@@ -415,10 +411,8 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = "Duty Confirmed by Officer",
                         Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
@@ -482,10 +476,8 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = $"Shift Offer Declined ({shift.ShiftCode})",
                         Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
@@ -1287,10 +1279,8 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = "⚠️ Duty Clock-In Alert: " + (isLate && !isInsideGeofence ? "Out of Geofence & Late" : !isInsideGeofence ? "Out of Geofence" : "Late Arrival"),
                         Message = $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with alert: {flagReason}",
@@ -1553,6 +1543,28 @@ namespace Ozikol_BCC.Api.Controllers
 
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return earthRadiusMeters * c;
+        }
+
+        private async Task NotifySupervisorsOrAdminsAsync(
+            string? supervisorTarget,
+            NotificationDispatchPayload payload,
+            CancellationToken ct)
+        {
+            if (_notificationDispatcher == null) return;
+
+            var targetId = supervisorTarget;
+            if (string.IsNullOrWhiteSpace(targetId))
+            {
+                var admin = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id != CurrentUserId, ct);
+                targetId = admin?.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetId))
+            {
+                payload.TargetType = NotificationDispatchTarget.SingleUser;
+                payload.TargetUserId = targetId;
+                await _notificationDispatcher.DispatchAsync(payload, ct);
+            }
         }
 
         private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;

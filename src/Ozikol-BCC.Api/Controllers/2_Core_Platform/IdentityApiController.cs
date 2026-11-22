@@ -626,23 +626,35 @@ namespace Ozikol_BCC.Api.Controllers
             };
             _dbContext.BcpActivityLogs.Add(auditLog);
 
-            // Alert SuperAdmins if high authority role (Admin) was granted
+            // Alert workspace SuperAdmins and Admins if high authority role (Admin) was granted
             if (isHighAuthority && _notificationDispatcher != null)
             {
                 var tenantKey = _tenantProvider?.CurrentTenant;
-                var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"));
-                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                var adminRoleIds = await _dbContext.Roles.AsNoTracking()
+                    .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                    .Select(r => r.Id)
+                    .ToListAsync();
+                var adminUserIds = await _dbContext.UserRoles.AsNoTracking()
+                    .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                    .Select(ur => ur.UserId)
+                    .Distinct()
+                    .ToListAsync();
+
+                foreach (var adminUserId in adminUserIds)
                 {
-                    TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                    TargetUserId = superAdminUser?.Id,
-                    TenantKey = tenantKey,
-                    Title = "Security Alert: Privilege Escalation",
-                    Message = $"Administrator '{callerEmail}' assigned 'Admin' role to member '{user.FullName}' ({user.Email}).",
-                    Severity = NotificationSeverity.Warning,
-                    Category = BcpMessageCategory.Security,
-                    Channels = NotificationChannels.InApp,
-                    ActionUrl = "/identity/console/audit-logs?severity=Critical"
-                });
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = adminUserId,
+                        TenantKey = tenantKey,
+                        Title = "Security Alert: Privilege Escalation",
+                        Message = $"Administrator '{callerEmail}' assigned 'Admin' role to member '{user.FullName}' ({user.Email}).",
+                        Severity = NotificationSeverity.Warning,
+                        Category = BcpMessageCategory.Security,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/audit-logs?severity=Critical"
+                    });
+                }
             }
 
             await _dbContext.SaveChangesAsync();
@@ -1720,26 +1732,38 @@ namespace Ozikol_BCC.Api.Controllers
             _dbContext.BcpActivityLogs.Add(logEntry);
             await _dbContext.SaveChangesAsync();
 
-            // Real-time notification dispatched to workspace SuperAdmin
+            // Real-time notification dispatched to workspace administrators
             if (_notificationDispatcher != null)
             {
                 var tenantKey = _tenantProvider?.CurrentTenant;
-                var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"));
-                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                var adminRoleIds = await _dbContext.Roles.AsNoTracking()
+                    .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                    .Select(r => r.Id)
+                    .ToListAsync();
+                var adminUserIds = await _dbContext.UserRoles.AsNoTracking()
+                    .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                    .Select(ur => ur.UserId)
+                    .Distinct()
+                    .ToListAsync();
+
+                foreach (var adminUserId in adminUserIds)
                 {
-                    TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                    TargetUserId = superAdminUser?.Id,
-                    TenantKey = tenantKey,
-                    Title = "Security Alert: Suspicious Access Blocked",
-                    Message = $"User '{email}' was blocked attempting to access '{attemptedUrl}' ({friendlyDevice}).",
-                    Severity = NotificationSeverity.Warning,
-                    Channels = NotificationChannels.InApp,
-                    ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
-                    Module = "Security",
-                    Icon = "security_update_warning",
-                    Category = BcpMessageCategory.Security,
-                    Priority = BcpMessagePriority.High
-                });
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = adminUserId,
+                        TenantKey = tenantKey,
+                        Title = "Security Alert: Suspicious Access Blocked",
+                        Message = $"User '{email}' was blocked attempting to access '{attemptedUrl}' ({friendlyDevice}).",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
+                        Module = "Security",
+                        Icon = "security_update_warning",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.High
+                    });
+                }
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new { logId = logEntry.Id }, "Suspicious access attempt recorded."));
