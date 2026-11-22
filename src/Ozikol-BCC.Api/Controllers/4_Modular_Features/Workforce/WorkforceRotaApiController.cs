@@ -427,7 +427,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                     var onLeaveUserIds = await _db.BcpLeaveRequests
                         .AsNoTracking()
-                        .Where(l => l.Status == Enum.Enum.LeaveRequestStatus.Approved
+                        .Where(l => l.Status == Ozikol_BCC.Domain.Enum.Enum.LeaveRequestStatus.Approved
                                  && candidateStaff.Contains(l.UserId!)
                                  && l.StartDate <= end
                                  && (l.EndDate == null || l.EndDate.Value >= start))
