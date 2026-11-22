@@ -50,6 +50,10 @@ public class CentralMessageOutboxService : ICentralMessageOutboxService
         string? senderOrTemplateName = null,
         string? metadataJson = null,
         DateTime? scheduledAt = null,
+        string status = "Queued",
+        DateTime? sentAt = null,
+        string? lastError = null,
+        string? providerMessageId = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(recipientAddress))
@@ -95,12 +99,15 @@ public class CentralMessageOutboxService : ICentralMessageOutboxService
                 Category = category,
                 Severity = severity,
                 Priority = priority,
-                Status = "Queued",
+                Status = string.IsNullOrWhiteSpace(status) ? "Queued" : status,
                 Retries = 0,
                 MaxRetries = 5,
+                LastError = lastError,
+                ProviderMessageId = providerMessageId,
                 SenderOrTemplateName = senderOrTemplateName,
                 MetadataJson = metadataJson,
                 ScheduledAt = scheduledAt,
+                SentAt = sentAt,
                 CreatedAt = DateTime.UtcNow
             };
 

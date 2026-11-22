@@ -387,8 +387,9 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Dispatches a multi-channel (In-App + Push + Email) workforce notification to all active staff members
-        /// (e.g. when an Open Shift is created or broadcasted).
+        /// Dispatches a multi-channel (In-App + Push + Email) workforce notification exclusively to available,
+        /// active workforce staff members (qualified in BcpShiftStaffProfiles and not on approved leave or conflicting shift).
+        /// Targets each available staff member by their specific User ID, ensuring no general or unauthorized broadcast.
         /// </summary>
         private async Task NotifyAllActiveWorkforceStaffAsync(
             string title,
@@ -396,24 +397,77 @@ namespace Ozikol_BCC.Api.Controllers
             string actionUrl,
             string icon,
             NotificationSeverity severity,
-            CancellationToken ct)
+            DateTime? shiftStartUtc = null,
+            DateTime? shiftEndUtc = null,
+            CancellationToken ct = default)
         {
             if (_notificationDispatcher == null) return;
 
             try
             {
-                var profileUserIds = await _db.BcpShiftStaffProfiles
+                // 1. Identify exclusively active workforce staff profiles in this tenant
+                var candidateStaff = await _db.BcpShiftStaffProfiles
                     .AsNoTracking()
-                    .Where(p => p.IsActive && !string.IsNullOrEmpty(p.UserId))
+                    .Where(p => p.TenantKey == CurrentTenantKey
+                             && p.IsActive
+                             && !string.IsNullOrEmpty(p.UserId)
+                             && p.WorkingAvailability != "Unavailable"
+                             && p.WorkingAvailability != "Inactive")
                     .Select(p => p.UserId)
+                    .Distinct()
                     .ToListAsync(ct);
 
-                var activeUsers = await _db.Users
+                if (candidateStaff.Count == 0) return;
+
+                // 2. Filter out staff members with approved leave covering this shift window
+                if (shiftStartUtc.HasValue && shiftEndUtc.HasValue)
+                {
+                    var start = shiftStartUtc.Value;
+                    var end = shiftEndUtc.Value;
+
+                    var onLeaveUserIds = await _db.BcpLeaveRequests
+                        .AsNoTracking()
+                        .Where(l => l.Status == Enum.Enum.LeaveRequestStatus.Approved
+                                 && candidateStaff.Contains(l.UserId!)
+                                 && l.StartDate <= end
+                                 && (l.EndDate == null || l.EndDate.Value >= start))
+                        .Select(l => l.UserId!)
+                        .Distinct()
+                        .ToListAsync(ct);
+
+                    if (onLeaveUserIds.Count > 0)
+                    {
+                        candidateStaff.RemoveAll(id => onLeaveUserIds.Contains(id));
+                    }
+
+                    // 3. Filter out staff members already scheduled on a conflicting shift
+                    var busyUserIds = await _db.BcpShifts
+                        .AsNoTracking()
+                        .Where(s => s.TenantKey == CurrentTenantKey
+                                 && !string.IsNullOrEmpty(s.AssignedUserId)
+                                 && candidateStaff.Contains(s.AssignedUserId)
+                                 && s.Status != "Cancelled" && s.Status != "Draft"
+                                 && s.StartsAtUtc < end
+                                 && s.EndsAtUtc > start)
+                        .Select(s => s.AssignedUserId!)
+                        .Distinct()
+                        .ToListAsync(ct);
+
+                    if (busyUserIds.Count > 0)
+                    {
+                        candidateStaff.RemoveAll(id => busyUserIds.Contains(id));
+                    }
+                }
+
+                if (candidateStaff.Count == 0) return;
+
+                // 4. Resolve active user records strictly matching the eligible workforce candidate IDs
+                var eligibleUsers = await _db.Users
                     .AsNoTracking()
-                    .Where(u => u.UserStatus == UserStatus.Active || profileUserIds.Contains(u.Id))
+                    .Where(u => u.UserStatus == UserStatus.Active && candidateStaff.Contains(u.Id))
                     .ToListAsync(ct);
 
-                foreach (var user in activeUsers)
+                foreach (var user in eligibleUsers)
                 {
                     var recipientName = $"{user.FirstName} {user.LastName}".Trim();
                     if (string.IsNullOrWhiteSpace(recipientName)) recipientName = user.Email ?? "Staff Member";
@@ -1077,6 +1131,8 @@ namespace Ozikol_BCC.Api.Controllers
                     "/workforce/workspace/open-shifts",
                     "campaign",
                     NotificationSeverity.NewFeature,
+                    startUtc,
+                    endUtc,
                     ct);
             }
 
@@ -1117,6 +1173,8 @@ namespace Ozikol_BCC.Api.Controllers
                 "/workforce/workspace/open-shifts",
                 "campaign",
                 NotificationSeverity.NewFeature,
+                shift.StartsAtUtc,
+                shift.EndsAtUtc,
                 ct);
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, $"Open shift {shift.ShiftCode} broadcasted to all active officers."));
@@ -1698,6 +1756,8 @@ namespace Ozikol_BCC.Api.Controllers
                     "/workforce/workspace/open-shifts",
                     "campaign",
                     NotificationSeverity.NewFeature,
+                    request.StartDate,
+                    request.EndDate,
                     ct);
             }
 

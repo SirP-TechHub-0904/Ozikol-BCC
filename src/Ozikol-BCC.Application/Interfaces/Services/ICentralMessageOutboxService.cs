@@ -49,5 +49,9 @@ public interface ICentralMessageOutboxService
         string? senderOrTemplateName = null,
         string? metadataJson = null,
         DateTime? scheduledAt = null,
+        string status = "Queued",
+        DateTime? sentAt = null,
+        string? lastError = null,
+        string? providerMessageId = null,
         CancellationToken cancellationToken = default);
 }

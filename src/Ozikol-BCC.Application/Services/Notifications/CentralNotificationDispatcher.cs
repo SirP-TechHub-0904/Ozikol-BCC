@@ -329,6 +329,27 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 result.DispatchedInAppCount = 1;
 
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "InApp",
+                        provider: "SignalR",
+                        recipientAddress: "All Users (Broadcast)",
+                        recipientName: "Broadcast",
+                        subject: inAppTitle,
+                        content: inAppBody,
+                        actionUrl: payload.ActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: "Sent",
+                        sentAt: DateTime.UtcNow,
+                        metadataJson: payload.MetadataJson,
+                        cancellationToken: cancellationToken);
+                }
+
                 var dto = BcpNotificationDto.FromEntity(broadcastNotif);
                 await _hubContext.Clients.Group("broadcast").SendAsync("ReceiveNotification", dto, cancellationToken);
 
@@ -382,6 +403,29 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         CreatedAt = DateTime.UtcNow
                     });
                     createdNotifications.Add(notif);
+
+                    if (_outboxService != null)
+                    {
+                        var address = profile.Email ?? profile.UserName ?? profile.Id;
+                        var recipientName = $"{profile.FirstName} {profile.LastName}".Trim();
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: null,
+                            channel: "InApp",
+                            provider: "SignalR",
+                            recipientAddress: address,
+                            recipientName: recipientName,
+                            subject: inAppTitle,
+                            content: inAppBody,
+                            actionUrl: payload.ActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            status: "Sent",
+                            sentAt: DateTime.UtcNow,
+                            metadataJson: payload.MetadataJson,
+                            cancellationToken: cancellationToken);
+                    }
                 }
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
@@ -540,6 +584,63 @@ namespace Ozikol_BCC.Application.Services.Notifications
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save push BcpMessagePool records: {Msg}", ex.Message);
+            }
+
+            // Mirror push notifications to central Master Message Pool for cross-tenant outbox auditing
+            if (_outboxService != null)
+            {
+                var pushProvider = _oneSignalDispatcher != null ? "OneSignal" : "SystemPush";
+                var pushStatus = pushDelivered ? "Sent" : "Failed";
+
+                if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "Push",
+                        provider: pushProvider,
+                        recipientAddress: "All Devices (Push Broadcast)",
+                        recipientName: "Push Broadcast",
+                        subject: cleanPushTitle,
+                        content: cleanPushBody,
+                        actionUrl: payload.ActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: pushStatus,
+                        sentAt: sentTimestamp,
+                        lastError: pushError,
+                        providerMessageId: oneSignalExternalId,
+                        metadataJson: System.Text.Json.JsonSerializer.Serialize(pushData),
+                        cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    foreach (var profile in targetProfiles)
+                    {
+                        var pushAddress = profile.Email ?? profile.UserName ?? profile.Id;
+                        var recName = $"{profile.FirstName} {profile.LastName}".Trim();
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: null,
+                            channel: "Push",
+                            provider: pushProvider,
+                            recipientAddress: pushAddress,
+                            recipientName: recName,
+                            subject: cleanPushTitle,
+                            content: cleanPushBody,
+                            actionUrl: payload.ActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            status: pushStatus,
+                            sentAt: sentTimestamp,
+                            lastError: pushError,
+                            providerMessageId: oneSignalExternalId,
+                            metadataJson: System.Text.Json.JsonSerializer.Serialize(pushData),
+                            cancellationToken: cancellationToken);
+                    }
+                }
             }
 
             if (pushDelivered)
@@ -819,6 +920,24 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     CreatedAt = DateTime.UtcNow
                 });
                 result.DispatchedSmsCount++;
+
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "Sms",
+                        provider: "Carrier",
+                        recipientAddress: phone,
+                        recipientName: targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                        subject: "SMS Notification",
+                        content: smsContent,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: "Queued",
+                        cancellationToken: cancellationToken);
+                }
             }
 
             try
@@ -899,6 +1018,27 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     MetadataJson = payload.MetadataJson,
                     CreatedAt = DateTime.UtcNow
                 });
+
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "WhatsApp",
+                        provider: "MetaWhatsApp",
+                        recipientAddress: phone,
+                        recipientName: targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                        subject: payload.Title ?? "WhatsApp Notification",
+                        content: whatsAppBody,
+                        actionUrl: payload.ActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        senderOrTemplateName: payload.WhatsAppTemplateName ?? "freeform-markdown",
+                        metadataJson: payload.MetadataJson,
+                        status: "Queued",
+                        cancellationToken: cancellationToken);
+                }
             }
 
             try
