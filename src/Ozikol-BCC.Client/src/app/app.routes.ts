@@ -240,6 +240,11 @@ export const routes: Routes = [
       { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
 
+      // Broadcast & Announcements System Routes
+      { path: 'broadcast', redirectTo: 'broadcast/studio', pathMatch: 'full' },
+      { path: 'broadcast/studio', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'broadcast/logs', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+
       // Backward-Compatibility Aliases for Admin Users Suite
       { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },
       { path: 'admin/users/dashboard', redirectTo: 'users/console/dashboard', pathMatch: 'full' },

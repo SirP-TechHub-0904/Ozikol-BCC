@@ -228,17 +228,34 @@ namespace Ozikol_BCC.Api.Authorization
 
                 if (_notificationDispatcher != null)
                 {
-                    // Find the primary administrator by ID or email — never broadcast security alerts
-                    var adminUser = await _dbContext.Users.AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.Id != userId, httpContext.RequestAborted);
+                    // Strictly alert designated workspace administrators — never leak security alerts to members
+                    var adminRoleIds = await _dbContext.Roles.AsNoTracking()
+                        .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                        .Select(r => r.Id)
+                        .ToListAsync(httpContext.RequestAborted);
 
-                    if (adminUser != null)
+                    var adminUserIds = await _dbContext.UserRoles.AsNoTracking()
+                        .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                        .Select(ur => ur.UserId)
+                        .Distinct()
+                        .ToListAsync(httpContext.RequestAborted);
+
+                    // Fallback to designated admin users if role mappings are not populated
+                    if (adminUserIds.Count == 0)
                     {
-                        var featureTitle = ResolveFeatureTitle(_featureCode);
+                        adminUserIds = await _dbContext.Users.AsNoTracking()
+                            .Where(u => u.Id != userId && u.Email != null && (u.Email.Contains("admin") || u.UserName.Contains("admin")))
+                            .Select(u => u.Id)
+                            .ToListAsync(httpContext.RequestAborted);
+                    }
+
+                    var featureTitle = ResolveFeatureTitle(_featureCode);
+                    foreach (var adminUserId in adminUserIds)
+                    {
                         await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                         {
                             TargetType = NotificationDispatchTarget.SingleUser,
-                            TargetUserId = adminUser.Id,
+                            TargetUserId = adminUserId,
                             TenantKey = tenantKey,
                             Title = $"Security Alert: {featureTitle} Access Blocked",
                             Message = $"User '{email}' was blocked attempting to access {featureTitle} without operational authority.",
@@ -249,7 +266,7 @@ namespace Ozikol_BCC.Api.Authorization
                             Icon = "security_update_warning",
                             Category = BcpMessageCategory.Security,
                             Priority = BcpMessagePriority.High
-                        });
+                        }, httpContext.RequestAborted);
                     }
                 }
             }

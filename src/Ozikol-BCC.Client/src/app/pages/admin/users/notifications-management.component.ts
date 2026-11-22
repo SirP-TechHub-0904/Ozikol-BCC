@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 
 @Component({
@@ -775,9 +775,13 @@ export class NotificationsManagementComponent implements OnInit {
 
   companyName = localStorage.getItem('tenant_company_name') || 'Organization';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private router: Router) {}
 
   ngOnInit(): void {
+    if (this.router.url.includes('/broadcast/logs') || this.router.url.includes('tab=history')) {
+      this.activeTab = 'history';
+      this.loadHistory();
+    }
     this.loadTenantSettings();
     this.loadMembersAndCategories();
   }

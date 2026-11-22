@@ -1154,6 +1154,37 @@ export interface SuiteInfoDetail {
             </ng-container>
           </ng-container>
 
+          <!-- System Menu: Broadcast & Announcements (Push, In-App, Email Multi-Channel Broadcasts) -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text" style="display:inline-flex; align-items:center; gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle; color:#0050e5;">campaign</span>
+              <span>BROADCAST &amp; ALERTS</span>
+            </span>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/broadcast/studio" [class.active]="isCurrentRoute('/broadcast/studio') || isCurrentRoute('/broadcast')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">send_to_mobile</span>
+                <span>Broadcast Studio</span>
+                <span class="badge-pill badge-hot">Live</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/broadcast/studio')" (click)="togglePin('Broadcast Studio', '/broadcast/studio', 'send_to_mobile'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/broadcast/studio') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/broadcast/studio') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/broadcast/logs" [class.active]="isCurrentRoute('/broadcast/logs')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">history_toggle_off</span>
+                <span>Dispatch Logs &amp; History</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/broadcast/logs')" (click)="togglePin('Dispatch Logs', '/broadcast/logs', 'history_toggle_off'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/broadcast/logs') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/broadcast/logs') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+
           <!-- Suite 13: Billing & Subscriptions (Fixed System Menu at Bottom) -->
           <ng-container *ngIf="canAccessSuite('billing_subscriptions')">
           <div class="menu-title suite-header-row">
