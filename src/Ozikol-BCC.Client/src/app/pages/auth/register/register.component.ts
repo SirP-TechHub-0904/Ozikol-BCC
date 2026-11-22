@@ -413,7 +413,7 @@ interface WizardStep {
                       <div class="form-group" *ngIf="field.fieldType === 'select'">
                         <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                         <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                          <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                          <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                           <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                         </select>
                       </div>
@@ -556,7 +556,7 @@ interface WizardStep {
                             class="form-select"
                             [required]="field.isRequired"
                           >
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                         </div>
@@ -973,7 +973,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                         </div>
@@ -1068,7 +1068,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                           <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
@@ -1238,7 +1238,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_p_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                         </div>
@@ -1330,7 +1330,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
+                            <option [value]="''" selected>{{ field.placeholder || 'Enter response' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                           <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
@@ -3047,6 +3047,12 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
       f.sectionName === 'Personal Information' || f.sectionName === '__core__';
     this.personalDynamicFields = this.visibleDynamicFields.filter(isPersonal);
     this.additionalDynamicFields = this.visibleDynamicFields.filter(f => !isPersonal(f));
+
+    for (const f of this.visibleDynamicFields) {
+      if (f.fieldType === 'select' && (this.customAttributes[f.fieldKey] === undefined || this.customAttributes[f.fieldKey] === null)) {
+        this.customAttributes[f.fieldKey] = '';
+      }
+    }
   }
 
   /**
