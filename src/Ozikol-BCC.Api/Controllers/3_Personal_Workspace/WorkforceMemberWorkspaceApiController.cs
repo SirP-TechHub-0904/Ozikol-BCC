@@ -295,7 +295,7 @@ namespace Ozikol_BCC.Api.Controllers
                             Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName} has been submitted for supervisor approval.",
                             Category = BcpMessageCategory.General,
                             Severity = NotificationSeverity.Update,
-                            Channels = channels,
+                            Channels = channels | NotificationChannels.InApp,
                             Module = "Workforce",
                             Icon = "hourglass_top",
                             ActionUrl = "/workforce/workspace/my-shifts"
@@ -348,10 +348,10 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"You have successfully claimed shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName}. It has been added to your roster.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = channels,
+                        Channels = channels | NotificationChannels.InApp,
                         Module = "Workforce",
                         Icon = "check_circle",
-                        ActionUrl = "/workforce/my-shifts"
+                        ActionUrl = "/workforce/workspace/my-shifts"
                     }, ct);
 
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
@@ -1552,18 +1552,71 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (_notificationDispatcher == null) return;
 
-            var targetId = supervisorTarget;
-            if (string.IsNullOrWhiteSpace(targetId))
+            var recipientIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(supervisorTarget))
             {
-                var admin = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id != CurrentUserId, ct);
-                targetId = admin?.Id;
+                recipientIds.Add(supervisorTarget);
             }
 
-            if (!string.IsNullOrWhiteSpace(targetId))
+            // Always resolve workspace administrators (SuperAdmin, Admin, Management) so they are notified of shift activity
+            var adminRoleIds = await _db.Roles.AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin" || r.Name == "Management")
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            var adminUserIds = await _db.UserRoles.AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+
+            foreach (var id in adminUserIds)
             {
-                payload.TargetType = NotificationDispatchTarget.SingleUser;
-                payload.TargetUserId = targetId;
-                await _notificationDispatcher.DispatchAsync(payload, ct);
+                recipientIds.Add(id);
+            }
+
+            // Fallback: If no role mappings found, resolve users with admin usernames/emails or workspace owner
+            if (recipientIds.Count == 0)
+            {
+                var adminFallback = await _db.Users.AsNoTracking()
+                    .Where(u => u.Id != CurrentUserId && u.Email != null && (u.Email.Contains("admin") || u.UserName.Contains("admin")))
+                    .Select(u => u.Id)
+                    .ToListAsync(ct);
+
+                if (adminFallback.Count > 0)
+                {
+                    foreach (var id in adminFallback) recipientIds.Add(id);
+                }
+                else
+                {
+                    var firstUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (firstUser != null && firstUser.Id != CurrentUserId) recipientIds.Add(firstUser.Id);
+                }
+            }
+
+            // Never send supervisor notification to the officer performing the action
+            if (!string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                recipientIds.Remove(CurrentUserId);
+            }
+
+            foreach (var recId in recipientIds)
+            {
+                var adminPayload = new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = recId,
+                    TenantKey = CurrentTenantKey,
+                    Title = payload.Title,
+                    Message = payload.Message,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Channels = payload.Channels | NotificationChannels.InApp,
+                    Module = payload.Module,
+                    Icon = payload.Icon,
+                    ActionUrl = payload.ActionUrl,
+                    Priority = payload.Priority
+                };
+                await _notificationDispatcher.DispatchAsync(adminPayload, ct);
             }
         }
 
