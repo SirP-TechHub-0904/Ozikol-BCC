@@ -7383,12 +7383,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       queryParams: { tab: 'shifts', date: dateStr },
       queryParamsHandling: 'merge'
     });
-    setTimeout(() => {
-      const el = document.getElementById('dayOperationsInspector');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }, 100);
+    this.scrollToDayBreakdown();
   }
 
   jumpToMonthFromYear(monthIndex: number): void {
@@ -7405,6 +7400,19 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     this.rebuildAllCalendarViews();
     const targetStr = this.formatDateForInput(date);
     this.selectedDay = this.calendarDays.find(c => c.dateStr === targetStr) || null;
+    this.scrollToDayBreakdown();
+  }
+
+  /**
+   * Smoothly scrolls the window down to the Day Operations Breakdown panel immediately upon day selection.
+   */
+  scrollToDayBreakdown(): void {
+    setTimeout(() => {
+      const el = document.getElementById('dayOperationsInspector') || document.querySelector('.day-inspector-card');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   }
 
   rebuildAllCalendarViews(): void {
