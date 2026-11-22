@@ -238,12 +238,12 @@ export const routes: Routes = [
       { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/auth-setup', component: AuthPageSetupComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/notifications', redirectTo: 'broadcast/studio', pathMatch: 'full' },
 
-      // Broadcast & Announcements System Routes
+      // Broadcast & Communications System Routes
       { path: 'broadcast', redirectTo: 'broadcast/studio', pathMatch: 'full' },
-      { path: 'broadcast/studio', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'broadcast/logs', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'broadcast/studio', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'UserManager', 'Management'] } },
+      { path: 'broadcast/logs', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'UserManager', 'Management'] } },
 
       // Backward-Compatibility Aliases for Admin Users Suite
       { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },

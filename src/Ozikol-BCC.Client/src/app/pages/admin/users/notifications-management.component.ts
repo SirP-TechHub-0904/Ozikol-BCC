@@ -34,31 +34,27 @@ import { ApiService } from '../../../core/services/api.service';
         <form (ngSubmit)="sendNotification()">
           <!-- Quick Presets -->
           <div class="presets-section">
-            <label class="section-label">⚡ Quick Notification Presets:</label>
+            <label class="section-label">⚡ Quick Broadcast Presets:</label>
             <div class="preset-chips">
-              <button type="button" class="preset-btn" (click)="applyPreset('security_tip')">
-                <span class="material-symbols-outlined text-red">shield_lock</span>
-                <span>Security Reminder & OTP Tip</span>
-              </button>
-              <button type="button" class="preset-btn" (click)="applyPreset('greetings')">
-                <span class="material-symbols-outlined text-blue">celebration</span>
-                <span>Warm Greetings & Happy Day</span>
-              </button>
-              <button type="button" class="preset-btn" (click)="applyPreset('checkin')">
-                <span class="material-symbols-outlined text-green">favorite</span>
-                <span>Member Check-in & Support</span>
+              <button type="button" class="preset-btn" (click)="applyPreset('platform_update')">
+                <span class="material-symbols-outlined text-blue">new_releases</span>
+                <span>Platform Update &amp; Release</span>
               </button>
               <button type="button" class="preset-btn" (click)="applyPreset('maintenance')">
-                <span class="material-symbols-outlined text-purple">campaign</span>
-                <span>System Maintenance Broadcast</span>
+                <span class="material-symbols-outlined text-purple">build</span>
+                <span>System Maintenance Warning</span>
               </button>
-              <button type="button" class="preset-btn" (click)="applyPreset('meeting')">
-                <span class="material-symbols-outlined text-amber">event</span>
-                <span>General Assembly & Meeting</span>
+              <button type="button" class="preset-btn" (click)="applyPreset('urgent_policy')">
+                <span class="material-symbols-outlined text-amber">priority_high</span>
+                <span>Urgent Policy Announcement</span>
               </button>
-              <button type="button" class="preset-btn" (click)="applyPreset('guidelines')">
-                <span class="material-symbols-outlined text-blue">info</span>
-                <span>Community Guidelines Notice</span>
+              <button type="button" class="preset-btn" (click)="applyPreset('security_compliance')">
+                <span class="material-symbols-outlined text-red">security</span>
+                <span>Security &amp; Compliance Reminder</span>
+              </button>
+              <button type="button" class="preset-btn" (click)="applyPreset('holiday_greeting')">
+                <span class="material-symbols-outlined text-green">celebration</span>
+                <span>Holiday &amp; Seasonal Greeting</span>
               </button>
             </div>
           </div>
@@ -836,62 +832,65 @@ export class NotificationsManagementComponent implements OnInit {
   applyPreset(type: string): void {
     const cName = this.companyName || 'Organization';
 
-    if (type === 'security_tip') {
-      this.model.title = 'Security Advisory: Protect Your Credentials';
-      this.model.message = `Security Reminder: Please note that ${cName} administrators will never ask for your password, PIN, or OTP verification code. Never share your verification codes with anyone.`;
+    if (type === 'platform_update') {
+      this.model.targetType = 'BroadcastAll';
+      this.model.title = `New Platform Update & Capability Release`;
+      this.model.message = `We have rolled out new features and operational performance enhancements to your ${cName} workspace. Review the release highlights in your workspace dashboard.`;
+      this.model.category = 'System';
+      this.model.priority = 'Normal';
+      this.model.severity = 'NewFeature';
+      this.model.module = 'Release';
+      this.model.icon = 'new_releases';
+      this.model.sendInApp = true;
+      this.model.sendPush = true;
+      this.model.actionUrl = '/dashboard/workspace';
+    } else if (type === 'maintenance') {
+      this.model.targetType = 'BroadcastAll';
+      this.model.title = 'Scheduled System Maintenance Warning';
+      this.model.message = 'Scheduled maintenance is taking place tonight at 23:00 UTC. Essential infrastructure updates will be deployed with minimal expected disruption.';
+      this.model.category = 'System';
+      this.model.priority = 'High';
+      this.model.severity = 'Maintenance';
+      this.model.module = 'Operations';
+      this.model.icon = 'build';
+      this.model.sendInApp = true;
+      this.model.sendPush = true;
+      this.model.actionUrl = '/dashboard/console';
+    } else if (type === 'urgent_policy') {
+      this.model.targetType = 'BroadcastAll';
+      this.model.title = `Urgent Workspace Policy Announcement`;
+      this.model.message = `All active staff and members are required to review the updated operational directives and workplace compliance policy. Please confirm your review.`;
+      this.model.category = 'System';
+      this.model.priority = 'Urgent';
+      this.model.severity = 'Update';
+      this.model.module = 'Policy';
+      this.model.icon = 'priority_high';
+      this.model.sendInApp = true;
+      this.model.sendPush = true;
+      this.model.actionUrl = '/dashboard/workspace';
+    } else if (type === 'security_compliance') {
+      this.model.targetType = 'BroadcastAll';
+      this.model.title = 'Security & Compliance Reminder: Protect Your Credentials';
+      this.model.message = `Security Advisory: ${cName} will never request your login password, PIN, or multi-factor authentication tokens. Always ensure your session is secure.`;
       this.model.category = 'Security';
       this.model.priority = 'High';
       this.model.severity = 'Error';
       this.model.module = 'Security';
-      this.model.icon = 'shield_lock';
+      this.model.icon = 'security';
+      this.model.sendInApp = true;
+      this.model.sendPush = false;
       this.model.actionUrl = '/users/workspace/security';
-    } else if (type === 'greetings') {
-      this.model.title = `Warm Greetings from ${cName}!`;
-      this.model.message = `Wishing you a productive and joyful week ahead! Thank you for being a valued member of ${cName}.`;
+    } else if (type === 'holiday_greeting') {
+      this.model.targetType = 'BroadcastAll';
+      this.model.title = `Warm Seasonal Greetings from ${cName}!`;
+      this.model.message = `Wishing you and your family a safe, productive, and joyous holiday season! Thank you for your continued dedication and excellence.`;
       this.model.category = 'General';
       this.model.priority = 'Normal';
       this.model.severity = 'Success';
       this.model.module = 'Community';
       this.model.icon = 'celebration';
-      this.model.actionUrl = '/dashboard/workspace';
-    } else if (type === 'checkin') {
-      this.model.title = `${cName} Member Check-in & Support`;
-      this.model.message = `We are checking in on your experience and milestones. If you need any assistance, guidance, or support, please reach out to the ${cName} management team.`;
-      this.model.category = 'Membership';
-      this.model.priority = 'Normal';
-      this.model.severity = 'Update';
-      this.model.module = 'Users';
-      this.model.icon = 'favorite';
-      this.model.actionUrl = '/users/workspace/profile';
-    } else if (type === 'maintenance') {
-      this.model.targetType = 'BroadcastAll';
-      this.model.title = 'Scheduled System Maintenance Notice';
-      this.model.message = 'System maintenance is scheduled for tonight at 10:00 PM UTC. Platform services will remain available with minor intermittency.';
-      this.model.category = 'System';
-      this.model.priority = 'Normal';
-      this.model.severity = 'Maintenance';
-      this.model.module = 'Announcement';
-      this.model.icon = 'campaign';
-      this.model.actionUrl = '/dashboard/console';
-    } else if (type === 'meeting') {
-      this.model.targetType = 'BroadcastAll';
-      this.model.title = `Upcoming ${cName} General Assembly & Meeting`;
-      this.model.message = `Please join us for our upcoming virtual general assembly meeting. We will discuss key community milestones, updates, and upcoming events.`;
-      this.model.category = 'General';
-      this.model.priority = 'High';
-      this.model.severity = 'Update';
-      this.model.module = 'Events';
-      this.model.icon = 'event';
-      this.model.actionUrl = '/groups/workspace';
-    } else if (type === 'guidelines') {
-      this.model.targetType = 'BroadcastAll';
-      this.model.title = `${cName} Community Guidelines Notice`;
-      this.model.message = `Please take a moment to review our updated workspace conduct and operational guidelines to ensure a productive and collaborative environment.`;
-      this.model.category = 'System';
-      this.model.priority = 'Normal';
-      this.model.severity = 'Update';
-      this.model.module = 'Policy';
-      this.model.icon = 'info';
+      this.model.sendInApp = true;
+      this.model.sendPush = true;
       this.model.actionUrl = '/dashboard/workspace';
     }
   }
