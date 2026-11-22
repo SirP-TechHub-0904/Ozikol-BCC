@@ -2294,7 +2294,7 @@ interface WorkforcePolicies {
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' = 'roles';
+  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' | 'payroll' = 'roles';
   isLoading = false;
 
   currencyCode = 'NGN';
