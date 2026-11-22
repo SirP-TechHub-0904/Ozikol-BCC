@@ -610,28 +610,30 @@ interface YearMonthGrid {
 
         <!-- 1. Top Metrics Row (KPIs) -->
         <div class="metrics-grid mb-4">
-          <!-- Metric 1: Real Take-Home Pay -->
+          <!-- Metric 1: Real Take-Home Pay (After Tax) -->
           <div class="metric-card">
+            <div class="card-kpi-heading">ESTIMATED TAKE-HOME PAY</div>
             <div class="card-top">
               <div class="card-icon bg-blue">
                 <span class="material-symbols-outlined">payments</span>
               </div>
-              <span class="card-chip chip-blue">Estimated Net</span>
+              <span class="card-chip chip-blue">After Tax (Net)</span>
             </div>
             <div class="card-value">
-              {{ currencySymbol }}{{ (estimatedTakeHomePay | number:'1.2-2') || '0.00' }}
+              {{ currencySymbol }}{{ (periodTakeHomePay | number:'1.2-2') || '0.00' }}
             </div>
-            <div class="card-label">Monthly Take-Home Pay</div>
+            <div class="card-label">{{ periodLabel }} Net Pay</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-blue" [style.width.%]="shifts.length > 0 ? 80 : 0"></div>
+              <div class="card-progress-bar bg-blue" [style.width.%]="periodShifts.length > 0 ? 80 : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts &bull; {{ accruedHolidayHours }}h Holiday Pay</span>
+              <span>Gross: {{ currencySymbol }}{{ (periodGrossPay | number:'1.2-2') || '0.00' }} ({{ periodPlannedHours }}h) &bull; ~18% Est. Tax/NI Deducted</span>
             </div>
           </div>
 
           <!-- Metric 2: Next Payday Countdown -->
           <div class="metric-card">
+            <div class="card-kpi-heading">UPCOMING PAYDAY</div>
             <div class="card-top">
               <div class="card-icon bg-green">
                 <span class="material-symbols-outlined">event_available</span>
@@ -646,12 +648,13 @@ interface YearMonthGrid {
               <div class="card-progress-bar bg-green" style="width: 70%;"></div>
             </div>
             <div class="card-sub-info">
-              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (estimatedGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
+              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (periodGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
             </div>
           </div>
 
           <!-- Metric 3: Next Shift Spotlight -->
           <div class="metric-card spotlight-card" *ngIf="nextUpcomingShift">
+            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">schedule</span>
@@ -680,6 +683,7 @@ interface YearMonthGrid {
 
           <!-- Standby Card when no upcoming shift is scheduled -->
           <div class="metric-card" *ngIf="!nextUpcomingShift">
+            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">event_busy</span>
@@ -687,7 +691,7 @@ interface YearMonthGrid {
               <span class="card-chip chip-teal">Duty Standby</span>
             </div>
             <div class="card-value" style="font-size: 20px;">No Duty Assigned</div>
-            <div class="card-label">Next Scheduled Shift</div>
+            <div class="card-label">Awaiting Assignment</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
             </div>
@@ -698,19 +702,20 @@ interface YearMonthGrid {
 
           <!-- Metric 4: Punctuality & Standing -->
           <div class="metric-card">
+            <div class="card-kpi-heading">PUNCTUALITY REPORT</div>
             <div class="card-top">
               <div class="card-icon bg-purple">
                 <span class="material-symbols-outlined">verified_user</span>
               </div>
-              <span class="card-chip chip-purple">Duty Standing</span>
+              <span class="card-chip chip-purple">{{ completedDutiesCount > 0 ? 'Duty Standing' : 'No Duty History' }}</span>
             </div>
-            <div class="card-value">100%</div>
-            <div class="card-label">Overall Punctuality Score</div>
+            <div class="card-value">{{ completedDutiesCount > 0 ? (punctualityScore + '%') : '—' }}</div>
+            <div class="card-label">{{ completedDutiesCount > 0 ? 'Overall Punctuality Score' : 'Punctuality (No Shifts Yet)' }}</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-purple" style="width: 100%;"></div>
+              <div class="card-progress-bar bg-purple" [style.width.%]="completedDutiesCount > 0 ? punctualityScore : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>Zero geofence boundary warnings recorded</span>
+              <span>{{ completedDutiesCount > 0 ? (onTimeDutiesCount + ' of ' + completedDutiesCount + ' completed duties on-time') : 'No completed shifts yet. Score activates after duty.' }}</span>
             </div>
           </div>
         </div>
@@ -2903,6 +2908,14 @@ interface YearMonthGrid {
       flex-direction: column;
       gap: 8px;
       transition: all 0.2s;
+    }
+    .card-kpi-heading {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #64748b;
+      margin-bottom: 2px;
     }
     .metric-card:hover {
       transform: translateY(-2px);
@@ -8461,6 +8474,94 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   get accruedHolidayHours(): number {
     return Math.round(this.totalPlannedHours * 0.1207 * 10) / 10;
+  }
+
+  /**
+   * Filters shifts strictly belonging to the currently selected calendar period (Month / Week / Day / Year).
+   */
+  get periodShifts(): Shift[] {
+    if (!this.shifts || this.shifts.length === 0) return [];
+    const calDate = this.currentCalendarDate || new Date();
+
+    if (this.calendarMode === 'day') {
+      const targetDate = this.selectedDay ? this.selectedDay.date : calDate;
+      const targetStr = this.formatDateForInput(targetDate);
+      return this.shifts.filter(s => {
+        const sDate = this.formatDateForInput(new Date(s.startsAtUtc));
+        return sDate === targetStr;
+      });
+    }
+
+    if (this.calendarMode === 'week') {
+      const startOfWeek = new Date(calDate);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return this.shifts.filter(s => {
+        const sTime = new Date(s.startsAtUtc).getTime();
+        return sTime >= startOfWeek.getTime() && sTime <= endOfWeek.getTime();
+      });
+    }
+
+    if (this.calendarMode === 'year') {
+      const year = calDate.getFullYear();
+      return this.shifts.filter(s => new Date(s.startsAtUtc).getFullYear() === year);
+    }
+
+    // Default: 'month'
+    const month = calDate.getMonth();
+    const year = calDate.getFullYear();
+    return this.shifts.filter(s => {
+      const d = new Date(s.startsAtUtc);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+  }
+
+  get periodLabel(): string {
+    const calDate = this.currentCalendarDate || new Date();
+    if (this.calendarMode === 'day') {
+      const targetDate = this.selectedDay ? this.selectedDay.date : calDate;
+      return targetDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+    if (this.calendarMode === 'week') return 'This Week';
+    if (this.calendarMode === 'year') return calDate.getFullYear().toString();
+    return calDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+
+  get periodPlannedHours(): number {
+    return this.periodShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get periodGrossPay(): number {
+    return this.periodShifts.reduce((acc, s) => acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10.0)), 0);
+  }
+
+  get periodTakeHomePay(): number {
+    return Math.round(this.periodGrossPay * 0.82 * 100) / 100;
+  }
+
+  get completedDuties(): Shift[] {
+    if (!this.shifts) return [];
+    return this.shifts.filter(s => s.status === 'Completed' || (s.attendanceRecord && !!s.attendanceRecord.clockOutUtc));
+  }
+
+  get completedDutiesCount(): number {
+    return this.completedDuties.length;
+  }
+
+  get onTimeDutiesCount(): number {
+    return this.completedDuties.filter(s => !this.isShiftLate(s) && (!s.attendanceRecord || !s.attendanceRecord.isFlagged)).length;
+  }
+
+  get punctualityScore(): number {
+    if (this.completedDutiesCount === 0) return 0;
+    return Math.round((this.onTimeDutiesCount / this.completedDutiesCount) * 100);
   }
 
   get nextPaydayDate(): Date {
