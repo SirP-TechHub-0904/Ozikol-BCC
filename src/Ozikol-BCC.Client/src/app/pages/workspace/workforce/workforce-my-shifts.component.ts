@@ -610,45 +610,45 @@ interface YearMonthGrid {
 
         <!-- 1. Top Metrics Row (KPIs) -->
         <div class="metrics-grid mb-4">
-          <!-- Metric 1: Real Take-Home Pay (After Tax) -->
+          <!-- Metric 1: Take-Home / Gross Pay (Respects Admin Policy) -->
           <div class="metric-card">
-            <div class="card-kpi-heading">ESTIMATED TAKE-HOME PAY</div>
+            <div class="card-kpi-heading">{{ earningsCardTitle }}</div>
             <div class="card-top">
               <div class="card-icon bg-blue">
                 <span class="material-symbols-outlined">payments</span>
               </div>
-              <span class="card-chip chip-blue">After Tax (Net)</span>
+              <span class="card-chip chip-blue">{{ earningsCardChip }}</span>
             </div>
             <div class="card-value">
-              {{ currencySymbol }}{{ (periodTakeHomePay | number:'1.2-2') || '0.00' }}
+              {{ currencySymbol }}{{ (effectiveEarningsAmount | number:'1.2-2') || '0.00' }}
             </div>
-            <div class="card-label">{{ periodLabel }} Net Pay</div>
+            <div class="card-label">{{ periodLabel }} {{ earningsCardLabel }}</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-blue" [style.width.%]="periodShifts.length > 0 ? 80 : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>Gross: {{ currencySymbol }}{{ (periodGrossPay | number:'1.2-2') || '0.00' }} ({{ periodPlannedHours }}h) &bull; ~18% Est. Tax/NI Deducted</span>
+              <span>{{ earningsCardSubInfo }}</span>
             </div>
           </div>
 
-          <!-- Metric 2: Next Payday Countdown -->
+          <!-- Metric 2: Next Payday Countdown (Respects Admin Policy) -->
           <div class="metric-card">
             <div class="card-kpi-heading">UPCOMING PAYDAY</div>
             <div class="card-top">
               <div class="card-icon bg-green">
                 <span class="material-symbols-outlined">event_available</span>
               </div>
-              <span class="card-chip chip-teal">{{ daysUntilPayday }} Days Away</span>
+              <span class="card-chip chip-teal">{{ daysUntilPayday }} Day{{ daysUntilPayday === 1 ? '' : 's' }} Away</span>
             </div>
             <div class="card-value font-monospace" style="font-size: 20px; line-height: 28px;">
               {{ nextPaydayDate | date:'EEEE, d MMM' }}
             </div>
-            <div class="card-label">Next Scheduled Payday</div>
+            <div class="card-label">Next Scheduled Payday ({{ paydayFrequencyLabel }})</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-green" style="width: 70%;"></div>
             </div>
             <div class="card-sub-info">
-              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (periodGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
+              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (effectiveEarningsAmount * 0.5 | number:'1.2-2') || '0.00' }}</span>
             </div>
           </div>
 
@@ -7176,6 +7176,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       error: () => { }
     });
 
+    this.loadWorkforcePolicies();
+
     this.routeSub = this.route.data.subscribe((data) => {
       const tab = data['tab'] || this.route.snapshot.queryParams['tab'];
       if (tab) {
@@ -8650,13 +8652,59 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     return this.periodShifts.reduce((acc, s) => acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10.0)), 0);
   }
 
+  staffEarningsDisplayMode: string = 'GrossOnly';
+  estimatedTaxWithholdingPercent: number = 0.0;
+  paydayFrequency: string = 'Weekly';
+  paydaySpecificDay: string = 'Friday';
+
+  get earningsCardTitle(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'ESTIMATED TAKE-HOME PAY';
+    if (this.staffEarningsDisplayMode === 'Both') return 'ESTIMATED GROSS & NET PAY';
+    return 'ESTIMATED GROSS PAY';
+  }
+
+  get earningsCardChip(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'After Tax (Net)';
+    if (this.staffEarningsDisplayMode === 'Both') return 'Dual Gross/Net';
+    return 'Pre-Tax (Gross)';
+  }
+
+  get earningsCardLabel(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'Take-Home Pay';
+    return 'Gross Earnings';
+  }
+
+  get effectiveEarningsAmount(): number {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') {
+      const withholdingFactor = Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100));
+      return Math.round(this.periodGrossPay * withholdingFactor * 100) / 100;
+    }
+    return this.periodGrossPay;
+  }
+
+  get earningsCardSubInfo(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') {
+      return `Gross: ${this.currencySymbol}${this.periodGrossPay.toFixed(2)} (${this.periodPlannedHours}h) • ~${this.estimatedTaxWithholdingPercent || 0}% Est. Withholding`;
+    }
+    if (this.staffEarningsDisplayMode === 'Both') {
+      const net = Math.round(this.periodGrossPay * Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100)) * 100) / 100;
+      return `${this.periodPlannedHours}h planned • Est. Net: ${this.currencySymbol}${net.toFixed(2)} (~${this.estimatedTaxWithholdingPercent || 0}% tax)`;
+    }
+    return `${this.periodPlannedHours}h across rostered shifts • Pre-tax gross pay`;
+  }
+
+  get paydayFrequencyLabel(): string {
+    return this.paydayFrequency || 'Weekly';
+  }
+
   get periodTakeHomePay(): number {
-    return Math.round(this.periodGrossPay * 0.82 * 100) / 100;
+    const factor = Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100));
+    return Math.round(this.periodGrossPay * factor * 100) / 100;
   }
 
   get completedDuties(): Shift[] {
     if (!this.shifts) return [];
-    return this.shifts.filter(s => s.status === 'Completed' || (s.attendanceRecord && !!s.attendanceRecord.clockOutUtc));
+    return this.shifts.filter(s => s.status === 'Completed' || s.isClockedOut || (s.attendanceRecord && !!s.attendanceRecord.clockOutUtc));
   }
 
   get completedDutiesCount(): number {
@@ -8674,11 +8722,19 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   get nextPaydayDate(): Date {
     const today = new Date();
-    const nextFriday = new Date();
-    const day = today.getDay();
-    const diff = (5 - day + 7) % 7 || 7;
-    nextFriday.setDate(today.getDate() + diff);
-    return nextFriday;
+    const targetDayName = (this.paydaySpecificDay || 'Friday').toLowerCase();
+    const dayMap: { [key: string]: number } = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+    };
+    const targetDayIndex = dayMap[targetDayName] !== undefined ? dayMap[targetDayName] : 5;
+
+    const currentDay = today.getDay();
+    let diff = (targetDayIndex - currentDay + 7) % 7;
+    if (diff === 0) diff = 7;
+
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + diff);
+    return nextDate;
   }
 
   get daysUntilPayday(): number {
@@ -8686,6 +8742,20 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const payday = this.nextPaydayDate;
     const diffTime = payday.getTime() - today.getTime();
     return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  }
+
+  loadWorkforcePolicies(): void {
+    this.workforceService.getWorkforcePolicies().subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.staffEarningsDisplayMode = res.data.staffEarningsDisplayMode || 'GrossOnly';
+          this.estimatedTaxWithholdingPercent = res.data.estimatedTaxWithholdingPercent ?? 0.0;
+          this.paydayFrequency = res.data.paydayFrequency || 'Weekly';
+          this.paydaySpecificDay = res.data.paydaySpecificDay || 'Friday';
+        }
+      },
+      error: () => {}
+    });
   }
 
   // --- TAB: SCHEDULE / MY SHIFTS ---

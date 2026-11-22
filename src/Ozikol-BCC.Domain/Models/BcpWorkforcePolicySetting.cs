@@ -154,6 +154,34 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         public string? EmergencyCategoriesJson { get; set; }
 
+        // =========================================================================
+        // 5. STAFF DASHBOARD & EARNINGS DISPLAY POLICY
+        // =========================================================================
+
+        /// <summary>
+        /// Display mode for staff member earnings: "GrossOnly" (default), "EstimatedNet", or "Both".
+        /// </summary>
+        [StringLength(30)]
+        public string StaffEarningsDisplayMode { get; set; } = "GrossOnly";
+
+        /// <summary>
+        /// Optional estimated statutory payroll tax and withholdings deduction percentage (e.g. 18.00% or 0.00% for contractors).
+        /// </summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal EstimatedTaxWithholdingPercent { get; set; } = 0.00m;
+
+        /// <summary>
+        /// Payday distribution frequency: "Weekly", "BiWeekly", or "Monthly" (defaults to "Weekly").
+        /// </summary>
+        [StringLength(30)]
+        public string PaydayFrequency { get; set; } = "Weekly";
+
+        /// <summary>
+        /// Specific day of week (e.g. "Friday") or calendar day of month (e.g. "28") when wages are disbursed.
+        /// </summary>
+        [StringLength(30)]
+        public string PaydaySpecificDay { get; set; } = "Friday";
+
         /// <summary>
         /// Timestamp when the policy record was created in UTC.
         /// </summary>

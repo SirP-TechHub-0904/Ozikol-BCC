@@ -80,6 +80,11 @@ interface WorkforcePolicies {
   requireDbsCriminalDisclosure: boolean;
   customOnboardingQuestionsJson?: string;
   emergencyCategoriesJson?: string;
+  staffEarningsDisplayMode?: string;
+  estimatedTaxWithholdingPercent?: number;
+  paydayFrequency?: string;
+  paydaySpecificDay?: string;
+  currencySymbol?: string;
 }
 
 @Component({
@@ -141,7 +146,7 @@ interface WorkforcePolicies {
           <button
             type="button"
             class="btn btn-primary"
-            *ngIf="activeTab === 'breaks'"
+            *ngIf="activeTab === 'breaks' || activeTab === 'payroll'"
             (click)="savePolicies()"
             [disabled]="isSavingPolicies"
           >
@@ -203,6 +208,16 @@ interface WorkforcePolicies {
           <span class="material-symbols-outlined">folder_shared</span>
           <span>Document Categories &amp; Credentials</span>
           <span class="tab-count">{{ documentCategories.length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'payroll'"
+          (click)="activeTab = 'payroll'"
+        >
+          <span class="material-symbols-outlined" style="color: #0050e5;">payments</span>
+          <span>Staff Earnings &amp; Payday Policy</span>
         </button>
 
         <button
@@ -662,6 +677,167 @@ interface WorkforcePolicies {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB: STAFF DASHBOARD & PAYROLL DISPLAY POLICY -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'payroll'">
+        <div class="policy-grid">
+          <!-- Earnings Display Mode Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">account_balance_wallet</span>
+                <div>
+                  <h3 class="card-heading">Staff Dashboard Earnings Display</h3>
+                  <p class="card-sub">Configure whether officers view gross pay or estimated take-home (after tax) on their personal schedule dashboard.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form p-4">
+              <!-- Radio choices -->
+              <div class="form-group mb-4">
+                <label class="form-label fw-bold mb-2">Earnings Display Mode</label>
+                <div class="d-flex flex-column gap-3">
+                  <label class="radio-option-card p-3 border rounded-3" [style.background]="policies.staffEarningsDisplayMode === 'GrossOnly' ? '#eff6ff' : '#ffffff'" [style.border-color]="policies.staffEarningsDisplayMode === 'GrossOnly' ? '#3b82f6' : '#e2e8f0'">
+                    <div class="d-flex align-items-start gap-2">
+                      <input type="radio" name="staffEarningsDisplayMode" value="GrossOnly" [(ngModel)]="policies.staffEarningsDisplayMode" style="margin-top: 4px;" />
+                      <div>
+                        <strong>Gross Pay (Before Tax) &mdash; Recommended for Subcontractors &amp; Contractors</strong>
+                        <p class="text-muted small mb-0 mt-1">Staff member sees total scheduled gross earnings (Hours &times; Pay Rate) without deductions. Ideal for self-employed and pre-tax rosters.</p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label class="radio-option-card p-3 border rounded-3" [style.background]="policies.staffEarningsDisplayMode === 'EstimatedNet' ? '#eff6ff' : '#ffffff'" [style.border-color]="policies.staffEarningsDisplayMode === 'EstimatedNet' ? '#3b82f6' : '#e2e8f0'">
+                    <div class="d-flex align-items-start gap-2">
+                      <input type="radio" name="staffEarningsDisplayMode" value="EstimatedNet" [(ngModel)]="policies.staffEarningsDisplayMode" style="margin-top: 4px;" />
+                      <div>
+                        <strong>Estimated Net Take-Home (After Tax) &mdash; Recommended for PAYE Staff</strong>
+                        <p class="text-muted small mb-0 mt-1">Applies an estimated statutory payroll tax &amp; NI withholding deduction percentage.</p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label class="radio-option-card p-3 border rounded-3" [style.background]="policies.staffEarningsDisplayMode === 'Both' ? '#eff6ff' : '#ffffff'" [style.border-color]="policies.staffEarningsDisplayMode === 'Both' ? '#3b82f6' : '#e2e8f0'">
+                    <div class="d-flex align-items-start gap-2">
+                      <input type="radio" name="staffEarningsDisplayMode" value="Both" [(ngModel)]="policies.staffEarningsDisplayMode" style="margin-top: 4px;" />
+                      <div>
+                        <strong>Dual Display (Gross &amp; Estimated Net)</strong>
+                        <p class="text-muted small mb-0 mt-1">Displays primary Gross Pay with secondary Estimated Net side-by-side.</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Estimated Withholding Rate % -->
+              <div class="form-group mb-4" *ngIf="policies.staffEarningsDisplayMode !== 'GrossOnly'">
+                <label class="form-label fw-bold">Estimated Statutory Withholding Rate (%)</label>
+                <p class="text-muted small mb-2">Estimated income tax and social insurance percentage deducted from gross pay for preview purposes.</p>
+                <div class="d-flex align-items-center gap-2" style="max-width: 200px;">
+                  <input
+                    type="number"
+                    class="form-control text-center"
+                    [(ngModel)]="policies.estimatedTaxWithholdingPercent"
+                    name="estimatedTaxWithholdingPercent"
+                    min="0"
+                    max="60"
+                    step="0.5"
+                    placeholder="e.g. 18.0"
+                  />
+                  <span class="fw-bold text-muted">%</span>
+                </div>
+              </div>
+
+              <!-- Payday Schedule Configurator -->
+              <div class="border-top pt-4">
+                <h4 class="fw-bold mb-1">Payday Distribution Schedule</h4>
+                <p class="text-muted small mb-3">Controls the dynamic date and countdown shown on the member's Upcoming Payday dashboard card.</p>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Disbursement Frequency</label>
+                    <select class="form-select" [(ngModel)]="policies.paydayFrequency" name="paydayFrequency">
+                      <option value="Weekly">Weekly (Every Week)</option>
+                      <option value="BiWeekly">Bi-Weekly (Every 2 Weeks)</option>
+                      <option value="Monthly">Monthly</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Disbursement Day</label>
+                    <select class="form-select" [(ngModel)]="policies.paydaySpecificDay" name="paydaySpecificDay" *ngIf="policies.paydayFrequency !== 'Monthly'">
+                      <option value="Friday">Friday (Default)</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Wednesday">Wednesday</option>
+                    </select>
+                    <input
+                      type="text"
+                      class="form-control"
+                      [(ngModel)]="policies.paydaySpecificDay"
+                      name="paydaySpecificDay"
+                      *ngIf="policies.paydayFrequency === 'Monthly'"
+                      placeholder="e.g. 28th or Last Working Day"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Preview Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">preview</span>
+                <div>
+                  <h3 class="card-heading">Live Member Card Preview</h3>
+                  <p class="card-sub">Real-time simulation of the dashboard cards as seen by your staff officers.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 d-flex flex-column gap-3">
+              <!-- Earnings Preview -->
+              <div class="preview-box p-3 border rounded-3 bg-light">
+                <span class="text-muted text-uppercase fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">
+                  {{ policies.staffEarningsDisplayMode === 'GrossOnly' ? 'ESTIMATED GROSS PAY' : 'ESTIMATED TAKE-HOME PAY' }}
+                </span>
+                <div class="d-flex align-items-baseline gap-2 mt-1">
+                  <h2 class="mb-0 fw-bold text-dark">
+                    {{ policies.staffEarningsDisplayMode === 'GrossOnly' ? ((policies.currencySymbol || '£') + '108.00') : ((policies.currencySymbol || '£') + (108.0 * (1 - (policies.estimatedTaxWithholdingPercent || 0) / 100)).toFixed(2)) }}
+                  </h2>
+                  <span class="badge bg-primary" *ngIf="policies.staffEarningsDisplayMode === 'GrossOnly'">PRE-TAX</span>
+                  <span class="badge bg-success" *ngIf="policies.staffEarningsDisplayMode !== 'GrossOnly'">EST. NET</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0" *ngIf="policies.staffEarningsDisplayMode === 'GrossOnly'">
+                  8h across 1 rostered shift &bull; Gross earnings before tax
+                </p>
+                <p class="text-muted small mt-2 mb-0" *ngIf="policies.staffEarningsDisplayMode !== 'GrossOnly'">
+                  Gross: {{ policies.currencySymbol || '£' }}108.00 &bull; {{ policies.estimatedTaxWithholdingPercent || 0 }}% Est. Withheld
+                </p>
+              </div>
+
+              <!-- Payday Preview -->
+              <div class="preview-box p-3 border rounded-3 bg-light">
+                <span class="text-muted text-uppercase fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">
+                  UPCOMING PAYDAY
+                </span>
+                <div class="d-flex align-items-baseline gap-2 mt-1">
+                  <h3 class="mb-0 fw-bold text-dark">{{ policies.paydaySpecificDay || 'Friday' }}</h3>
+                  <span class="badge bg-secondary">{{ policies.paydayFrequency || 'Weekly' }} Cycle</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  Scheduled disbursement per organization payroll policy
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2193,7 +2369,11 @@ export class WorkforceSettingsComponent implements OnInit {
     requireUniformSizes: true,
     requireDrivingLicense: true,
     requireMedicalAllergies: true,
-    requireDbsCriminalDisclosure: true
+    requireDbsCriminalDisclosure: true,
+    staffEarningsDisplayMode: 'GrossOnly',
+    estimatedTaxWithholdingPercent: 0.0,
+    paydayFrequency: 'Weekly',
+    paydaySpecificDay: 'Friday'
   };
   isSavingPolicies = false;
 

@@ -67,6 +67,7 @@ export interface Shift {
   fineStatus?: string;
   reportSubmissionUtc?: string;
   reportContent?: string;
+  attendanceRecord?: any;
 }
 
 export interface LiveDutyMonitorItem {
@@ -578,12 +579,25 @@ export class WorkforceService {
 
   transmitEmergencySos(shiftId: string, payload: {
     categoryId: string;
-    categoryName: string;
+    categoryName?: string;
+    categoryTitle?: string;
     severity?: string;
     description: string;
     latitude?: number | null;
     longitude?: number | null;
   }): Observable<any> {
     return this.apiService.post<any>(`workforce/shifts/${shiftId}/emergency-sos`, payload);
+  }
+
+  triggerEmergencySos(shiftId: string, payload: {
+    categoryId: string;
+    categoryName?: string;
+    categoryTitle?: string;
+    severity?: string;
+    description: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Observable<any> {
+    return this.transmitEmergencySos(shiftId, payload);
   }
 }
