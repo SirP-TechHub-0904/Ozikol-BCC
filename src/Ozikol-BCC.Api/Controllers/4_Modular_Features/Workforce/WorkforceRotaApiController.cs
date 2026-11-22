@@ -2388,7 +2388,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     var companyName = await ResolveTenantCompanyNameAsync(ct);
                     var customNote = !string.IsNullOrWhiteSpace(request.WelcomeNote)
-                        ? $"\n\n**Note from Administrator:**\n_{request.WelcomeNote.Trim()}_\n"
+                        ? $"\n\nNote from Administrator:\n{request.WelcomeNote.Trim()}\n"
                         : string.Empty;
 
                     var roleText = !string.IsNullOrWhiteSpace(request.JobTitle)
