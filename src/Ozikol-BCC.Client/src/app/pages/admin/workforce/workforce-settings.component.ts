@@ -87,6 +87,11 @@ interface WorkforcePolicies {
   currencySymbol?: string;
 }
 
+/**
+ * Supported navigation tab keys for workforce configuration and policies.
+ */
+export type WorkforceSettingsTab = 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' | 'payroll';
+
 @Component({
   selector: 'app-workforce-settings',
   standalone: true,
@@ -2294,7 +2299,8 @@ interface WorkforcePolicies {
   `]
 })
 export class WorkforceSettingsComponent implements OnInit {
-  activeTab: 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' | 'payroll' = 'roles';
+  /** Active settings tab including payroll, policy configurator, and operational definitions */
+  activeTab: WorkforceSettingsTab = 'roles';
   isLoading = false;
 
   currencyCode = 'NGN';
