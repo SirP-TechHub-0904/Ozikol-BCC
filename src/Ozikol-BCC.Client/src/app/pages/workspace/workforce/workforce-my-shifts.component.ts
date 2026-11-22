@@ -1402,16 +1402,15 @@ interface YearMonthGrid {
 
                   <!-- Quick Action Buttons for Shift -->
                   <div class="dsc-actions">
-                    <!-- Primary Overview Button -->
-                    <button
-                      type="button"
+                    <!-- Primary Overview Button (Dedicated Shift Details Page) -->
+                    <a
+                      [routerLink]="['/workforce/workspace/shifts', s.id]"
                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
-                      (click)="openDutyDetailModal(s)"
                       title="View Complete Shift Details, Instructions & Actions"
                     >
                       <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
                       <span>View Details</span>
-                    </button>
+                    </a>
 
                     <!-- Fast Clock In Button (Only if duty is Today or Active) -->
                     <a
@@ -1581,6 +1580,14 @@ interface YearMonthGrid {
                 </div>
 
                 <div class="shift-actions-row">
+                  <a
+                    [routerLink]="['/workforce/workspace/shifts', s.id]"
+                    class="btn btn-sm btn-outline d-inline-flex align-items-center gap-1"
+                    title="View Complete Shift Details, Instructions & Actions"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                    <span>View Details</span>
+                  </a>
                   <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'" title="Awaiting supervisor approval">Claim Pending Approval</span>
                   <button
                     type="button"
@@ -2444,147 +2451,6 @@ interface YearMonthGrid {
           </div>
           <div class="modal-footer-custom">
             <button type="button" class="btn btn-primary" (click)="showInfoModal = false">Got it</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6B. Dedicated Shift Duty Details & Operational Modal -->
-      <div class="modal-backdrop-custom" *ngIf="showDutyDetailModal && selectedDutyShift" (click)="closeDutyDetailModal()">
-        <div class="modal-card-custom duty-detail-modal-card" style="max-width: 780px;" (click)="$event.stopPropagation()">
-          <div class="modal-header-custom">
-            <div class="modal-title-group">
-              <span class="material-symbols-outlined text-primary" style="font-size: 28px;">badge</span>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <h3 style="margin: 0;">Shift Duty Details</h3>
-                  <span class="shift-code-tag">{{ selectedDutyShift.shiftCode }}</span>
-                </div>
-                <p class="modal-subtitle">Operational briefing, venue directives, attendance telemetry &amp; live action protocols.</p>
-              </div>
-            </div>
-            <button type="button" class="btn-close-custom" (click)="closeDutyDetailModal()">&times;</button>
-          </div>
-
-          <div class="modal-body-custom">
-            <!-- Duty Status Banner -->
-            <div class="duty-status-banner status-active-banner" *ngIf="isShiftActive(selectedDutyShift)">
-              <span class="material-symbols-outlined text-success" style="font-size: 26px;">sensors</span>
-              <div>
-                <strong>ACTIVE ON DUTY &bull; CLOCKED IN</strong>
-                <p>Officer is currently rostered on-site. Real-time telemetry, panic SOS, and occurrence reports are active.</p>
-              </div>
-            </div>
-
-            <div class="duty-status-banner status-upcoming-banner" *ngIf="!isShiftActive(selectedDutyShift) && isShiftUpcoming(selectedDutyShift)">
-              <span class="material-symbols-outlined text-primary" style="font-size: 26px;">schedule</span>
-              <div>
-                <strong>UPCOMING SCHEDULED SHIFT</strong>
-                <p>Scheduled for {{ selectedDutyShift.startsAtUtc | date:'EEEE, d MMMM yyyy' }} ({{ selectedDutyShift.startsAtUtc | date:'HH:mm' }} &ndash; {{ selectedDutyShift.endsAtUtc | date:'HH:mm' }}).</p>
-              </div>
-            </div>
-
-            <div class="duty-status-banner status-completed-banner" *ngIf="isShiftCompleted(selectedDutyShift)">
-              <span class="material-symbols-outlined text-muted" style="font-size: 26px;">task_alt</span>
-              <div>
-                <strong>DUTY COMPLETED</strong>
-                <p>This shift has concluded. Hours worked have been compiled for timesheet processing.</p>
-              </div>
-            </div>
-
-            <!-- Key Specs Grid -->
-            <div class="duty-specs-grid mt-3">
-              <div class="spec-card">
-                <span class="spec-label">Venue / Location</span>
-                <strong class="spec-value">{{ selectedDutyShift.facilityName || selectedDutyShift.siteName }}</strong>
-                <span class="spec-sub">{{ selectedDutyShift.address || selectedDutyShift.siteAddress }} <span *ngIf="selectedDutyShift.postCode">({{ selectedDutyShift.postCode }})</span></span>
-              </div>
-
-              <div class="spec-card">
-                <span class="spec-label">Assigned Post &amp; Station</span>
-                <strong class="spec-value text-primary">{{ selectedDutyShift.postName }}</strong>
-                <span class="spec-sub">{{ selectedDutyShift.requiredWorkspaceStationName || 'Standard Security Deployment' }}</span>
-              </div>
-
-              <div class="spec-card">
-                <span class="spec-label">Roster Window</span>
-                <strong class="spec-value">{{ selectedDutyShift.startsAtUtc | date:'d MMM yyyy' }}</strong>
-                <span class="spec-sub">{{ selectedDutyShift.startsAtUtc | date:'HH:mm' }} &ndash; {{ selectedDutyShift.endsAtUtc | date:'HH:mm' }} ({{ selectedDutyShift.plannedDurationHours }}h &bull; {{ selectedDutyShift.breakMinutes }}m break)</span>
-              </div>
-
-              <div class="spec-card">
-                <span class="spec-label">Agreed Pay Rate</span>
-                <strong class="spec-value val-rate">{{ selectedDutyShift.hourlyPayRate ? (currencySymbol + selectedDutyShift.hourlyPayRate + '/hr') : (currencySymbol + '10.00/hr') }}</strong>
-                <span class="spec-sub">Est. Gross: {{ currencySymbol }}{{ ((selectedDutyShift.hourlyPayRate || 10) * selectedDutyShift.plannedDurationHours).toFixed(2) }}</span>
-              </div>
-            </div>
-
-            <!-- Site Instructions & Briefing Notes -->
-            <div class="info-group-box mt-3" *ngIf="selectedDutyShift.siteAssignmentInstructions || selectedDutyShift.notes">
-              <h5>
-                <span class="material-symbols-outlined">menu_book</span>
-                <span>Post Instructions &amp; Briefing Notes</span>
-              </h5>
-              <p>{{ selectedDutyShift.siteAssignmentInstructions || selectedDutyShift.notes }}</p>
-            </div>
-
-            <!-- Existing Duty Report (if already submitted) -->
-            <div class="info-group-box mt-3" *ngIf="selectedDutyShift.reportContent">
-              <h5>
-                <span class="material-symbols-outlined text-success">assignment_turned_in</span>
-                <span>Submitted Shift Activity Report</span>
-              </h5>
-              <p style="white-space: pre-wrap;">{{ selectedDutyShift.reportContent }}</p>
-            </div>
-          </div>
-
-          <div class="modal-footer-custom d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-outline" (click)="closeDutyDetailModal()">Close</button>
-
-            <div class="d-flex align-items-center gap-2">
-              <!-- Fast Clock In / Clock Out -->
-              <a
-                routerLink="/attendance/workspace/clock"
-                [queryParams]="{ shiftId: selectedDutyShift.id }"
-                class="btn btn-success d-inline-flex align-items-center gap-1"
-                *ngIf="selectedDutyShift.isClockedIn || selectedDay?.isToday"
-                (click)="closeDutyDetailModal()"
-              >
-                <span class="material-symbols-outlined">fingerprint</span>
-                <span>{{ isShiftActive(selectedDutyShift) ? 'Duty Clock-Out' : 'Clock In Fast' }}</span>
-              </a>
-
-              <!-- Duty Report (Active or Completed) -->
-              <button
-                type="button"
-                class="btn btn-primary d-inline-flex align-items-center gap-1"
-                (click)="closeDutyDetailModal(); openDutyReportModal(selectedDutyShift)"
-              >
-                <span class="material-symbols-outlined">assignment</span>
-                <span>{{ selectedDutyShift.reportContent ? 'Edit Duty Report' : 'Submit Duty Report' }}</span>
-              </button>
-
-              <!-- Emergency SOS (Active duty) -->
-              <button
-                type="button"
-                class="btn btn-danger d-inline-flex align-items-center gap-1"
-                *ngIf="isShiftActive(selectedDutyShift)"
-                (click)="closeDutyDetailModal(); openEmergencySosModal(selectedDutyShift)"
-              >
-                <span class="material-symbols-outlined">e911</span>
-                <span>Emergency SOS</span>
-              </button>
-
-              <!-- Request Swap (Upcoming) -->
-              <button
-                type="button"
-                class="btn btn-outline d-inline-flex align-items-center gap-1"
-                *ngIf="isShiftUpcoming(selectedDutyShift) && selectedDutyShift.status !== 'SwapOffered'"
-                (click)="closeDutyDetailModal(); openSwapModal(selectedDutyShift)"
-              >
-                <span class="material-symbols-outlined">swap_horiz</span>
-                <span>Request Swap</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

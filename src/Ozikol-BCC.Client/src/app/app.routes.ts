@@ -40,6 +40,7 @@ import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforc
 import { WorkforceMyMessagesComponent } from './pages/workspace/workforce/workforce-my-messages.component';
 import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
 import { WorkforceOnboardingComponent } from './pages/workspace/workforce/workforce-onboarding.component';
+import { WorkforceShiftDetailComponent } from './pages/workspace/workforce/workforce-shift-detail.component';
 
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
@@ -340,6 +341,8 @@ export const routes: Routes = [
       { path: 'workforce/workspace', redirectTo: 'workforce/workspace/analytics', pathMatch: 'full' },
       { path: 'workforce/workspace/analytics', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'analytics' } },
       { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'shifts' } },
+      { path: 'workforce/workspace/shifts/:id', component: WorkforceShiftDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/workspace/my-shifts/:id', component: WorkforceShiftDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/workspace/open-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'open-shifts' } },
       { path: 'workforce/workspace/timesheets', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'timesheets' } },
       { path: 'workforce/workspace/leave', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'leave' } },

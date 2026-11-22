@@ -1350,6 +1350,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="ct">Cancellation token.</param>
         /// <returns>Populated shift data transfer object.</returns>
         [HttpGet("shifts/{id:guid}")]
+        [AllowMemberAccess]
         public async Task<ActionResult<ApiResponse<ShiftDto>>> GetShift(Guid id, CancellationToken ct)
         {
             var s = await _db.BcpShifts
