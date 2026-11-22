@@ -228,22 +228,46 @@ namespace Ozikol_BCC.Api.Authorization
 
                 if (_notificationDispatcher != null)
                 {
-                    var superAdminUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email != null && u.Email.Contains("superadmin"), httpContext.RequestAborted);
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    // Strictly alert designated workspace administrators — never leak security alerts to members
+                    var adminRoleIds = await _dbContext.Roles.AsNoTracking()
+                        .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin")
+                        .Select(r => r.Id)
+                        .ToListAsync(httpContext.RequestAborted);
+
+                    var adminUserIds = await _dbContext.UserRoles.AsNoTracking()
+                        .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                        .Select(ur => ur.UserId)
+                        .Distinct()
+                        .ToListAsync(httpContext.RequestAborted);
+
+                    // Fallback to designated admin users if role mappings are not populated
+                    if (adminUserIds.Count == 0)
                     {
-                        TargetType = superAdminUser != null ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = superAdminUser?.Id,
-                        TenantKey = tenantKey,
-                        Title = "Security Alert: Feature Access Blocked",
-                        Message = $"User '{email}' was blocked attempting to access feature '{_featureCode}' ({attemptedPath}).",
-                        Severity = NotificationSeverity.Warning,
-                        Channels = NotificationChannels.InApp,
-                        ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
-                        Module = "Security",
-                        Icon = "security_update_warning",
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.High
-                    });
+                        adminUserIds = await _dbContext.Users.AsNoTracking()
+                            .Where(u => u.Id != userId && u.Email != null && (u.Email.Contains("admin") || u.UserName.Contains("admin")))
+                            .Select(u => u.Id)
+                            .ToListAsync(httpContext.RequestAborted);
+                    }
+
+                    var featureTitle = ResolveFeatureTitle(_featureCode);
+                    foreach (var adminUserId in adminUserIds)
+                    {
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = adminUserId,
+                            TenantKey = tenantKey,
+                            Title = $"Security Alert: {featureTitle} Access Blocked",
+                            Message = $"User '{email}' was blocked attempting to access {featureTitle} without operational authority.",
+                            Severity = NotificationSeverity.Warning,
+                            Channels = NotificationChannels.InApp,
+                            ActionUrl = "/identity/console/audit-logs?severity=Suspicious",
+                            Module = "Security",
+                            Icon = "security_update_warning",
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.High
+                        }, httpContext.RequestAborted);
+                    }
                 }
             }
             catch (Exception ex)
@@ -251,13 +275,30 @@ namespace Ozikol_BCC.Api.Authorization
                 _logger.LogWarning(ex, "Failed to record suspicious access attempt telemetry.");
             }
 
+            var cleanTitle = ResolveFeatureTitle(_featureCode);
             context.Result = new ObjectResult(
                 ApiResponse<object>.FailureResponse(
-                    $"Access Denied: Your role does not grant operational authority for '{_featureCode}'.",
+                    $"Access Denied: Your assigned role does not grant operational authority for {cleanTitle}.",
                     errorCode: StandardErrorCodes.AccessDenied))
             {
                 StatusCode = StatusCodes.Status403Forbidden
             };
+        }
+
+        /// <summary>
+        /// Maps an internal canonical feature code to its professional human-readable menu title.
+        /// </summary>
+        private static string ResolveFeatureTitle(string featureCode)
+        {
+            if (string.IsNullOrWhiteSpace(featureCode)) return "Workspace Feature";
+            if (Ozikol.MasterDomain.Models.MasterFeatureSuiteDefaults.FeatureMenuTitleByCode.TryGetValue(featureCode, out var menuTitle))
+            {
+                return menuTitle;
+            }
+            var clean = featureCode.StartsWith("bcp-", StringComparison.OrdinalIgnoreCase)
+                ? featureCode.Substring(4)
+                : featureCode;
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(clean.Replace('-', ' '));
         }
     }
 }

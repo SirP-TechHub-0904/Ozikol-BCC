@@ -610,48 +610,51 @@ interface YearMonthGrid {
 
         <!-- 1. Top Metrics Row (KPIs) -->
         <div class="metrics-grid mb-4">
-          <!-- Metric 1: Real Take-Home Pay -->
+          <!-- Metric 1: Take-Home / Gross Pay (Respects Admin Policy) -->
           <div class="metric-card">
+            <div class="card-kpi-heading">{{ earningsCardTitle }}</div>
             <div class="card-top">
               <div class="card-icon bg-blue">
                 <span class="material-symbols-outlined">payments</span>
               </div>
-              <span class="card-chip chip-blue">Estimated Net</span>
+              <span class="card-chip chip-blue">{{ earningsCardChip }}</span>
             </div>
             <div class="card-value">
-              {{ currencySymbol }}{{ (estimatedTakeHomePay | number:'1.2-2') || '0.00' }}
+              {{ currencySymbol }}{{ (effectiveEarningsAmount | number:'1.2-2') || '0.00' }}
             </div>
-            <div class="card-label">Monthly Take-Home Pay</div>
+            <div class="card-label">{{ periodLabel }} {{ earningsCardLabel }}</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-blue" [style.width.%]="shifts.length > 0 ? 80 : 0"></div>
+              <div class="card-progress-bar bg-blue" [style.width.%]="periodShifts.length > 0 ? 80 : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>{{ totalPlannedHours }}h across {{ shifts.length }} rostered shifts &bull; {{ accruedHolidayHours }}h Holiday Pay</span>
+              <span>{{ earningsCardSubInfo }}</span>
             </div>
           </div>
 
-          <!-- Metric 2: Next Payday Countdown -->
+          <!-- Metric 2: Next Payday Countdown (Respects Admin Policy) -->
           <div class="metric-card">
+            <div class="card-kpi-heading">UPCOMING PAYDAY</div>
             <div class="card-top">
               <div class="card-icon bg-green">
                 <span class="material-symbols-outlined">event_available</span>
               </div>
-              <span class="card-chip chip-teal">{{ daysUntilPayday }} Days Away</span>
+              <span class="card-chip chip-teal">{{ daysUntilPayday }} Day{{ daysUntilPayday === 1 ? '' : 's' }} Away</span>
             </div>
             <div class="card-value font-monospace" style="font-size: 20px; line-height: 28px;">
               {{ nextPaydayDate | date:'EEEE, d MMM' }}
             </div>
-            <div class="card-label">Next Scheduled Payday</div>
+            <div class="card-label">Next Scheduled Payday ({{ paydayFrequencyLabel }})</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-green" style="width: 70%;"></div>
             </div>
             <div class="card-sub-info">
-              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (estimatedGrossPay * 0.5 | number:'1.2-2') || '0.00' }}</span>
+              <span>Est. Cycle Payout: {{ currencySymbol }}{{ (effectiveEarningsAmount * 0.5 | number:'1.2-2') || '0.00' }}</span>
             </div>
           </div>
 
           <!-- Metric 3: Next Shift Spotlight -->
           <div class="metric-card spotlight-card" *ngIf="nextUpcomingShift">
+            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">schedule</span>
@@ -680,6 +683,7 @@ interface YearMonthGrid {
 
           <!-- Standby Card when no upcoming shift is scheduled -->
           <div class="metric-card" *ngIf="!nextUpcomingShift">
+            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
             <div class="card-top">
               <div class="card-icon bg-teal">
                 <span class="material-symbols-outlined">event_busy</span>
@@ -687,7 +691,7 @@ interface YearMonthGrid {
               <span class="card-chip chip-teal">Duty Standby</span>
             </div>
             <div class="card-value" style="font-size: 20px;">No Duty Assigned</div>
-            <div class="card-label">Next Scheduled Shift</div>
+            <div class="card-label">Awaiting Assignment</div>
             <div class="card-progress-track">
               <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
             </div>
@@ -698,19 +702,20 @@ interface YearMonthGrid {
 
           <!-- Metric 4: Punctuality & Standing -->
           <div class="metric-card">
+            <div class="card-kpi-heading">PUNCTUALITY REPORT</div>
             <div class="card-top">
               <div class="card-icon bg-purple">
                 <span class="material-symbols-outlined">verified_user</span>
               </div>
-              <span class="card-chip chip-purple">Duty Standing</span>
+              <span class="card-chip chip-purple">{{ completedDutiesCount > 0 ? 'Duty Standing' : 'No Duty History' }}</span>
             </div>
-            <div class="card-value">100%</div>
-            <div class="card-label">Overall Punctuality Score</div>
+            <div class="card-value">{{ completedDutiesCount > 0 ? (punctualityScore + '%') : '—' }}</div>
+            <div class="card-label">{{ completedDutiesCount > 0 ? 'Overall Punctuality Score' : 'Punctuality (No Shifts Yet)' }}</div>
             <div class="card-progress-track">
-              <div class="card-progress-bar bg-purple" style="width: 100%;"></div>
+              <div class="card-progress-bar bg-purple" [style.width.%]="completedDutiesCount > 0 ? punctualityScore : 0"></div>
             </div>
             <div class="card-sub-info">
-              <span>Zero geofence boundary warnings recorded</span>
+              <span>{{ completedDutiesCount > 0 ? (onTimeDutiesCount + ' of ' + completedDutiesCount + ' completed duties on-time') : 'No completed shifts yet. Score activates after duty.' }}</span>
             </div>
           </div>
         </div>
@@ -1365,19 +1370,29 @@ interface YearMonthGrid {
                 <div
                   class="day-shift-card"
                   *ngFor="let s of selectedDay.shifts"
-                  [class.card-upcoming]="selectedDay.isFuture"
+                  [class.card-active]="isShiftActive(s)"
+                  [class.card-upcoming]="!isShiftActive(s) && isShiftUpcoming(s)"
+                  [class.card-completed]="isShiftCompleted(s)"
                 >
                   <div class="dsc-top">
                     <div class="shift-code-tag">{{ s.shiftCode }}</div>
-                    <span class="status-pill" [ngClass]="getStatusBadge(s)">{{ s.status }}</span>
+                    <span class="status-pill status-active" *ngIf="isShiftActive(s)">
+                      <span class="live-dot pulse"></span> ACTIVE ON DUTY
+                    </span>
+                    <span class="status-pill status-upcoming" *ngIf="!isShiftActive(s) && isShiftUpcoming(s)">
+                      UPCOMING
+                    </span>
+                    <span class="status-pill status-completed" *ngIf="isShiftCompleted(s)">
+                      COMPLETED
+                    </span>
                   </div>
 
                   <h5 class="dsc-venue">{{ s.facilityName || s.siteName }}</h5>
                   <div class="dsc-post">{{ s.postName }} &bull; {{ s.address || s.siteAddress }}</div>
 
                   <div class="dsc-time">
-                    <span class="material-symbols-outlined">schedule</span>
-                    <span>{{ s.startsAtUtc | date:'HH:mm' }} &ndash; {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
+                    <span class="material-symbols-outlined">event</span>
+                    <span>{{ s.startsAtUtc | date:'EEE, d MMM yyyy' }} &bull; {{ s.startsAtUtc | date:'HH:mm' }} &ndash; {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours }}h)</span>
                   </div>
 
                   <div class="dsc-staff">
@@ -1387,42 +1402,29 @@ interface YearMonthGrid {
 
                   <!-- Quick Action Buttons for Shift -->
                   <div class="dsc-actions">
-                    <!-- Fast Clock In Button -->
+                    <!-- Primary Overview Button (Dedicated Shift Details Page) -->
+                    <a
+                      [routerLink]="['/workforce/workspace/shifts', s.id]"
+                      class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                      title="View Complete Shift Details, Instructions & Actions"
+                    >
+                      <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                      <span>View Details</span>
+                    </a>
+
+                    <!-- Fast Clock In Button (Only if duty is Today or Active) -->
                     <a
                       routerLink="/attendance/workspace/clock"
                       [queryParams]="{ shiftId: s.id }"
-                      class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
-                      *ngIf="selectedDay.isToday || s.isClockedIn"
+                      class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                      *ngIf="(selectedDay.isToday || isShiftActive(s)) && !isShiftCompleted(s)"
                       title="Fast Duty Clock-In"
                     >
                       <span class="material-symbols-outlined" style="font-size: 15px;">fingerprint</span>
-                      <span>Clock In Fast</span>
+                      <span>{{ isShiftActive(s) ? 'Live Duty Clock-Out' : 'Clock In Fast' }}</span>
                     </a>
 
-                    <!-- Duty Report -->
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline d-inline-flex align-items-center gap-1"
-                      style="color: #0050e5; border-color: #bfdbfe;"
-                      (click)="openDutyReportModal(s)"
-                      title="Submit Shift Duty Activity Report"
-                    >
-                      <span class="material-symbols-outlined" style="font-size: 15px;">assignment</span>
-                      <span>Duty Report</span>
-                    </button>
-
-                    <!-- Emergency SOS Alert -->
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1 emergency-sos-trigger-btn"
-                      (click)="openEmergencySosModal(s)"
-                      title="Engage Immediate Emergency SOS Security Panic Alert"
-                    >
-                      <span class="material-symbols-outlined pulse-icon" style="font-size: 15px;">e911</span>
-                      <span>Emergency SOS</span>
-                    </button>
-
-                    <!-- 1-Tap Confirm / Acknowledge -->
+                    <!-- 1-Tap Confirm / Acknowledge (Only if Unconfirmed) -->
                     <button
                       type="button"
                       class="btn btn-sm btn-confirm"
@@ -1434,40 +1436,16 @@ interface YearMonthGrid {
                       <span>{{ s.assignmentMode === 'Mandatory' ? 'Acknowledge' : 'Accept' }}</span>
                     </button>
 
-                    <!-- Decline offer -->
+                    <!-- Request Swap (Only if Upcoming) -->
                     <button
                       type="button"
                       class="btn btn-sm btn-outline"
-                      style="color: #dc2626; border-color: #fecaca;"
-                      *ngIf="!s.isConfirmedByGuard && s.assignmentMode !== 'Mandatory' && s.status !== 'ClaimPending' && s.status !== 'PendingClaim'"
-                      (click)="declineShiftOffer(s)"
-                      [disabled]="isActionLoading"
-                    >
-                      <span class="material-symbols-outlined">close</span>
-                      <span>Decline</span>
-                    </button>
-
-                    <!-- Request Swap -->
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline"
-                      *ngIf="s.status !== 'SwapOffered'"
+                      *ngIf="isShiftUpcoming(s) && s.status !== 'SwapOffered'"
                       (click)="openSwapModal(s)"
+                      title="Request Peer Cover / Shift Swap"
                     >
                       <span class="material-symbols-outlined">swap_horiz</span>
-                      <span>Swap</span>
-                    </button>
-
-                    <!-- Withdraw Swap -->
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline"
-                      style="color: #dc2626; border-color: #fecaca;"
-                      *ngIf="s.status === 'SwapOffered'"
-                      (click)="withdrawShiftSwap(s)"
-                    >
-                      <span class="material-symbols-outlined">cancel</span>
-                      <span>Withdraw Swap</span>
+                      <span>Request Swap</span>
                     </button>
                   </div>
                 </div>
@@ -1498,8 +1476,8 @@ interface YearMonthGrid {
           </div>
         </div>
 
-        <!-- 5. Upcoming Assigned Shifts Section (Canonical CMS Card) -->
-        <div class="cms-card mt-4">
+        <!-- 5. Upcoming Assigned Shifts Section (Canonical CMS Card - Only visible when browsing all days) -->
+        <div class="cms-card mt-4" *ngIf="!selectedDay">
           <div class="table-toolbar">
             <div class="toolbar-left">
               <h3>Upcoming Assigned Rota Duties</h3>
@@ -1602,6 +1580,14 @@ interface YearMonthGrid {
                 </div>
 
                 <div class="shift-actions-row">
+                  <a
+                    [routerLink]="['/workforce/workspace/shifts', s.id]"
+                    class="btn btn-sm btn-outline d-inline-flex align-items-center gap-1"
+                    title="View Complete Shift Details, Instructions & Actions"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                    <span>View Details</span>
+                  </a>
                   <span class="card-chip chip-amber" *ngIf="s.status === 'ClaimPending' || s.status === 'PendingClaim'" title="Awaiting supervisor approval">Claim Pending Approval</span>
                   <button
                     type="button"
@@ -2904,6 +2890,14 @@ interface YearMonthGrid {
       gap: 8px;
       transition: all 0.2s;
     }
+    .card-kpi-heading {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
     .metric-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0,0,0,0.06);
@@ -3629,16 +3623,112 @@ interface YearMonthGrid {
     .day-shift-card {
       padding: 14px;
       border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    .day-shift-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .day-shift-card.card-active {
+      background: #f0fdf4;
+      border-color: #22c55e;
+      border-width: 1.5px;
     }
     .day-shift-card.card-upcoming {
-      background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
-      border-color: #86efac;
+      background: #ffffff;
+      border-color: #cbd5e1;
     }
+    .day-shift-card.card-completed {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      opacity: 0.9;
+    }
+    .status-pill.status-active {
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-pill.status-upcoming {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 700;
+      border: 1px solid #bfdbfe;
+    }
+    .status-pill.status-completed {
+      background: #f1f5f9;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .live-dot.pulse {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+      animation: pulse-dot 1.8s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+    }
+
+    /* Duty Detail Modal Styling */
+    .duty-status-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+    .duty-status-banner p { margin: 2px 0 0 0; font-size: 12.5px; color: #475569; }
+    .status-active-banner { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; }
+    .status-upcoming-banner { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .status-completed-banner { background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; }
+
+    .duty-specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .spec-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .spec-label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
+    .spec-value { font-size: 14px; color: #0f172a; }
+    .spec-sub { font-size: 12px; color: #64748b; }
+
+    .info-group-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .info-group-box h5 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+    }
+    .info-group-box p { font-size: 12.5px; color: #334155; line-height: 1.5; margin: 0; }
     .dsc-top { display: flex; justify-content: space-between; align-items: center; }
     .dsc-venue { font-size: 14px; font-weight: 800; color: #0f172a; margin: 4px 0 0 0; }
     .dsc-post { font-size: 12px; font-weight: 700; color: #0050e5; }
@@ -7086,6 +7176,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       error: () => { }
     });
 
+    this.loadWorkforcePolicies();
+
     this.routeSub = this.route.data.subscribe((data) => {
       const tab = data['tab'] || this.route.snapshot.queryParams['tab'];
       if (tab) {
@@ -7383,12 +7475,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       queryParams: { tab: 'shifts', date: dateStr },
       queryParamsHandling: 'merge'
     });
-    setTimeout(() => {
-      const el = document.getElementById('dayOperationsInspector');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }, 100);
+    this.scrollToDayBreakdown();
   }
 
   jumpToMonthFromYear(monthIndex: number): void {
@@ -7405,6 +7492,19 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     this.rebuildAllCalendarViews();
     const targetStr = this.formatDateForInput(date);
     this.selectedDay = this.calendarDays.find(c => c.dateStr === targetStr) || null;
+    this.scrollToDayBreakdown();
+  }
+
+  /**
+   * Smoothly scrolls the window down to the Day Operations Breakdown panel immediately upon day selection.
+   */
+  scrollToDayBreakdown(): void {
+    setTimeout(() => {
+      const el = document.getElementById('dayOperationsInspector') || document.querySelector('.day-inspector-card');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   }
 
   rebuildAllCalendarViews(): void {
@@ -7593,6 +7693,37 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
 
   isShiftDone(s: Shift): boolean {
     return s.isClockedOut || s.status === 'Completed';
+  }
+
+  // --- DUTY SHIFT STATE & DETAIL MODAL CONTROLS ---
+  selectedDutyShift: Shift | null = null;
+  showDutyDetailModal: boolean = false;
+
+  openDutyDetailModal(s: Shift): void {
+    this.selectedDutyShift = s;
+    this.showDutyDetailModal = true;
+  }
+
+  closeDutyDetailModal(): void {
+    this.showDutyDetailModal = false;
+    this.selectedDutyShift = null;
+  }
+
+  isShiftActive(s: Shift | null | undefined): boolean {
+    if (!s) return false;
+    return !!(s.isClockedIn || s.status === 'InProgress' || s.status === 'Active');
+  }
+
+  isShiftCompleted(s: Shift | null | undefined): boolean {
+    if (!s) return false;
+    if (s.isClockedOut || s.status === 'Completed' || s.status === 'Done') return true;
+    const end = new Date(s.endsAtUtc).getTime();
+    return !isNaN(end) && end < Date.now() && !s.isClockedIn;
+  }
+
+  isShiftUpcoming(s: Shift | null | undefined): boolean {
+    if (!s) return false;
+    return !this.isShiftActive(s) && !this.isShiftCompleted(s);
   }
 
   calculateShiftsHours(shifts: Shift[]): number {
@@ -8455,13 +8586,155 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     return Math.round(this.totalPlannedHours * 0.1207 * 10) / 10;
   }
 
+  /**
+   * Filters shifts strictly belonging to the currently selected calendar period (Month / Week / Day / Year).
+   */
+  get periodShifts(): Shift[] {
+    if (!this.shifts || this.shifts.length === 0) return [];
+    const calDate = this.currentCalendarDate || new Date();
+
+    if (this.calendarMode === 'day') {
+      const targetDate = this.selectedDay ? this.selectedDay.date : calDate;
+      const targetStr = this.formatDateForInput(targetDate);
+      return this.shifts.filter(s => {
+        const sDate = this.formatDateForInput(new Date(s.startsAtUtc));
+        return sDate === targetStr;
+      });
+    }
+
+    if (this.calendarMode === 'week') {
+      const startOfWeek = new Date(calDate);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return this.shifts.filter(s => {
+        const sTime = new Date(s.startsAtUtc).getTime();
+        return sTime >= startOfWeek.getTime() && sTime <= endOfWeek.getTime();
+      });
+    }
+
+    if (this.calendarMode === 'year') {
+      const year = calDate.getFullYear();
+      return this.shifts.filter(s => new Date(s.startsAtUtc).getFullYear() === year);
+    }
+
+    // Default: 'month'
+    const month = calDate.getMonth();
+    const year = calDate.getFullYear();
+    return this.shifts.filter(s => {
+      const d = new Date(s.startsAtUtc);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+  }
+
+  get periodLabel(): string {
+    const calDate = this.currentCalendarDate || new Date();
+    if (this.calendarMode === 'day') {
+      const targetDate = this.selectedDay ? this.selectedDay.date : calDate;
+      return targetDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+    if (this.calendarMode === 'week') return 'This Week';
+    if (this.calendarMode === 'year') return calDate.getFullYear().toString();
+    return calDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+
+  get periodPlannedHours(): number {
+    return this.periodShifts.reduce((acc, s) => acc + (s.plannedDurationHours || 0), 0);
+  }
+
+  get periodGrossPay(): number {
+    return this.periodShifts.reduce((acc, s) => acc + ((s.plannedDurationHours || 0) * (s.hourlyPayRate || 10.0)), 0);
+  }
+
+  staffEarningsDisplayMode: string = 'GrossOnly';
+  estimatedTaxWithholdingPercent: number = 0.0;
+  paydayFrequency: string = 'Weekly';
+  paydaySpecificDay: string = 'Friday';
+
+  get earningsCardTitle(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'ESTIMATED TAKE-HOME PAY';
+    if (this.staffEarningsDisplayMode === 'Both') return 'ESTIMATED GROSS & NET PAY';
+    return 'ESTIMATED GROSS PAY';
+  }
+
+  get earningsCardChip(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'After Tax (Net)';
+    if (this.staffEarningsDisplayMode === 'Both') return 'Dual Gross/Net';
+    return 'Pre-Tax (Gross)';
+  }
+
+  get earningsCardLabel(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') return 'Take-Home Pay';
+    return 'Gross Earnings';
+  }
+
+  get effectiveEarningsAmount(): number {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') {
+      const withholdingFactor = Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100));
+      return Math.round(this.periodGrossPay * withholdingFactor * 100) / 100;
+    }
+    return this.periodGrossPay;
+  }
+
+  get earningsCardSubInfo(): string {
+    if (this.staffEarningsDisplayMode === 'EstimatedNet') {
+      return `Gross: ${this.currencySymbol}${this.periodGrossPay.toFixed(2)} (${this.periodPlannedHours}h) • ~${this.estimatedTaxWithholdingPercent || 0}% Est. Withholding`;
+    }
+    if (this.staffEarningsDisplayMode === 'Both') {
+      const net = Math.round(this.periodGrossPay * Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100)) * 100) / 100;
+      return `${this.periodPlannedHours}h planned • Est. Net: ${this.currencySymbol}${net.toFixed(2)} (~${this.estimatedTaxWithholdingPercent || 0}% tax)`;
+    }
+    return `${this.periodPlannedHours}h across rostered shifts • Pre-tax gross pay`;
+  }
+
+  get paydayFrequencyLabel(): string {
+    return this.paydayFrequency || 'Weekly';
+  }
+
+  get periodTakeHomePay(): number {
+    const factor = Math.max(0, 1 - ((this.estimatedTaxWithholdingPercent || 0) / 100));
+    return Math.round(this.periodGrossPay * factor * 100) / 100;
+  }
+
+  get completedDuties(): Shift[] {
+    if (!this.shifts) return [];
+    return this.shifts.filter(s => s.status === 'Completed' || s.isClockedOut || (s.attendanceRecord && !!s.attendanceRecord.clockOutUtc));
+  }
+
+  get completedDutiesCount(): number {
+    return this.completedDuties.length;
+  }
+
+  get onTimeDutiesCount(): number {
+    return this.completedDuties.filter(s => !this.isShiftLate(s) && (!s.attendanceRecord || !s.attendanceRecord.isFlagged)).length;
+  }
+
+  get punctualityScore(): number {
+    if (this.completedDutiesCount === 0) return 0;
+    return Math.round((this.onTimeDutiesCount / this.completedDutiesCount) * 100);
+  }
+
   get nextPaydayDate(): Date {
     const today = new Date();
-    const nextFriday = new Date();
-    const day = today.getDay();
-    const diff = (5 - day + 7) % 7 || 7;
-    nextFriday.setDate(today.getDate() + diff);
-    return nextFriday;
+    const targetDayName = (this.paydaySpecificDay || 'Friday').toLowerCase();
+    const dayMap: { [key: string]: number } = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+    };
+    const targetDayIndex = dayMap[targetDayName] !== undefined ? dayMap[targetDayName] : 5;
+
+    const currentDay = today.getDay();
+    let diff = (targetDayIndex - currentDay + 7) % 7;
+    if (diff === 0) diff = 7;
+
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + diff);
+    return nextDate;
   }
 
   get daysUntilPayday(): number {
@@ -8469,6 +8742,20 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const payday = this.nextPaydayDate;
     const diffTime = payday.getTime() - today.getTime();
     return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  }
+
+  loadWorkforcePolicies(): void {
+    this.workforceService.getWorkforcePolicies().subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.staffEarningsDisplayMode = res.data.staffEarningsDisplayMode || 'GrossOnly';
+          this.estimatedTaxWithholdingPercent = res.data.estimatedTaxWithholdingPercent ?? 0.0;
+          this.paydayFrequency = res.data.paydayFrequency || 'Weekly';
+          this.paydaySpecificDay = res.data.paydaySpecificDay || 'Friday';
+        }
+      },
+      error: () => {}
+    });
   }
 
   // --- TAB: SCHEDULE / MY SHIFTS ---

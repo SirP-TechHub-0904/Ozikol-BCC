@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Ozikol_BCC.Application.Services.IMessageTemplateService, Ozikol_BCC.Application.Services.MessageTemplateService>();
         services.Configure<Ozikol_BCC.Application.Configuration.CloudflareR2Settings>(configuration.GetSection("CloudflareR2"));
         services.AddScoped<Ozikol_BCC.Application.Services.Cloudflare.ICloudflareR2StorageService, Ozikol_BCC.Application.Services.Cloudflare.CloudflareR2StorageService>();
+        services.AddHttpContextAccessor();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher, Ozikol_BCC.Application.Services.Notifications.CentralNotificationDispatcher>();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralMessageOutboxService, Ozikol_BCC.Application.Services.Notifications.CentralMessageOutboxService>();
         services.AddHttpClient<Ozikol_BCC.Application.Interfaces.Services.IOneSignalPushDispatcher, Ozikol_BCC.Application.Services.Notifications.OneSignalPushDispatcher>();

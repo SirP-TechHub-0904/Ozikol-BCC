@@ -437,7 +437,7 @@ interface YearMonthGrid {
       <!-- ========================================================================= -->
       <!-- 4. INTERACTIVE "DAY ACTIVITY INSPECTOR" PANEL (SECTIONS A, B, C, D) -->
       <!-- ========================================================================= -->
-      <div class="day-inspector-card" *ngIf="selectedDayCell">
+      <div class="day-inspector-card" id="dayOperationsInspector" *ngIf="selectedDayCell">
         <div class="inspector-header">
           <div class="inspector-title-left">
             <div class="inspector-date-icon" [class.today]="selectedDayCell.isToday" [class.upcoming]="selectedDayCell.isFuture">
@@ -1555,10 +1555,12 @@ export class WorkforceScheduleComponent implements OnInit {
       this.rebuildAllCalendarViews();
       const targetStr = this.toDateStr(clickedDate);
       this.selectedDayCell = this.calendarDays.find(c => c.dateStr === targetStr) || this.buildDayMetrics(clickedDate, true);
+      this.scrollToDayBreakdown();
       return;
     }
 
     this.selectedDayCell = cell;
+    this.scrollToDayBreakdown();
   }
 
   jumpToMonthFromYear(monthIndex: number): void {
@@ -1573,6 +1575,19 @@ export class WorkforceScheduleComponent implements OnInit {
     this.rebuildAllCalendarViews();
     const targetStr = this.toDateStr(date);
     this.selectedDayCell = this.calendarDays.find(c => c.dateStr === targetStr) || null;
+    this.scrollToDayBreakdown();
+  }
+
+  /**
+   * Smoothly scrolls the window down to the Day Operations Breakdown panel immediately upon day selection.
+   */
+  scrollToDayBreakdown(): void {
+    setTimeout(() => {
+      const el = document.getElementById('dayOperationsInspector') || document.querySelector('.day-inspector-card');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   }
 
   rebuildAllCalendarViews(): void {

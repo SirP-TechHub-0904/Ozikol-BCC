@@ -53,6 +53,11 @@ namespace Ozikol_BCC.Api.Controllers
             return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
 
+        private string? GetCurrentUserEmail()
+        {
+            return User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name;
+        }
+
         /// <summary>
         /// Data transfer model representing a notification item returned to client apps.
         /// </summary>
@@ -215,13 +220,14 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> GetFeed()
         {
             var userId = GetCurrentUserId();
-            if (string.IsNullOrEmpty(userId))
+            var userEmail = GetCurrentUserEmail();
+            if (string.IsNullOrEmpty(userId) && string.IsNullOrEmpty(userEmail))
             {
                 return Ok(ApiResponse<NotificationFeedResponse>.SuccessResponse(new NotificationFeedResponse(), "Feed retrieved."));
             }
 
             var query = _dbContext.BcpNotifications
-                .Where(n => n.UserId == userId || n.IsBroadcast);
+                .Where(n => n.UserId == userId || (userEmail != null && n.UserId == userEmail));
 
             var unreadCount = await query.CountAsync(n => !n.IsRead);
 
@@ -268,13 +274,14 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> GetAll([FromQuery] string? filter = null)
         {
             var userId = GetCurrentUserId();
-            if (string.IsNullOrEmpty(userId))
+            var userEmail = GetCurrentUserEmail();
+            if (string.IsNullOrEmpty(userId) && string.IsNullOrEmpty(userEmail))
             {
                 return Ok(ApiResponse<List<NotificationDto>>.SuccessResponse(new List<NotificationDto>(), "List retrieved."));
             }
 
             var query = _dbContext.BcpNotifications
-                .Where(n => n.UserId == userId || n.IsBroadcast);
+                .Where(n => n.UserId == userId || (userEmail != null && n.UserId == userEmail));
 
             if (!string.IsNullOrWhiteSpace(filter))
             {
@@ -338,8 +345,9 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> MarkAsRead(Guid id)
         {
             var userId = GetCurrentUserId();
+            var userEmail = GetCurrentUserEmail();
             var notification = await _dbContext.BcpNotifications
-                .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.IsBroadcast));
+                .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || (userEmail != null && n.UserId == userEmail)));
 
             if (notification != null)
             {
@@ -359,10 +367,11 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> MarkAllAsRead()
         {
             var userId = GetCurrentUserId();
-            if (!string.IsNullOrEmpty(userId))
+            var userEmail = GetCurrentUserEmail();
+            if (!string.IsNullOrEmpty(userId) || !string.IsNullOrEmpty(userEmail))
             {
                 var unreadItems = await _dbContext.BcpNotifications
-                    .Where(n => (n.UserId == userId || n.IsBroadcast) && !n.IsRead)
+                    .Where(n => (n.UserId == userId || (userEmail != null && n.UserId == userEmail)) && !n.IsRead)
                     .ToListAsync();
 
                 foreach (var item in unreadItems)
@@ -386,8 +395,9 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> DeleteNotification(Guid id)
         {
             var userId = GetCurrentUserId();
+            var userEmail = GetCurrentUserEmail();
             var notification = await _dbContext.BcpNotifications
-                .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.IsBroadcast));
+                .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || (userEmail != null && n.UserId == userEmail)));
 
             if (notification != null)
             {

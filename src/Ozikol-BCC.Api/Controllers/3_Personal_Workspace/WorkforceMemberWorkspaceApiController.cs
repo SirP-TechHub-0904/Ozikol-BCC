@@ -295,17 +295,15 @@ namespace Ozikol_BCC.Api.Controllers
                             Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName} has been submitted for supervisor approval.",
                             Category = BcpMessageCategory.General,
                             Severity = NotificationSeverity.Update,
-                            Channels = channels,
+                            Channels = channels | NotificationChannels.InApp,
                             Module = "Workforce",
                             Icon = "hourglass_top",
                             ActionUrl = "/workforce/workspace/my-shifts"
                         }, ct);
 
                         var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                         {
-                            TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                            TargetUserId = supervisorTarget,
                             TenantKey = CurrentTenantKey,
                             Title = "Shift Claim Awaiting Approval",
                             Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
@@ -350,17 +348,15 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"You have successfully claimed shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName}. It has been added to your roster.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = channels,
+                        Channels = channels | NotificationChannels.InApp,
                         Module = "Workforce",
                         Icon = "check_circle",
-                        ActionUrl = "/workforce/my-shifts"
+                        ActionUrl = "/workforce/workspace/my-shifts"
                     }, ct);
 
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = "Open Shift Claimed",
                         Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
@@ -415,10 +411,8 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = "Duty Confirmed by Officer",
                         Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
@@ -482,10 +476,8 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
                         TenantKey = CurrentTenantKey,
                         Title = $"Shift Offer Declined ({shift.ShiftCode})",
                         Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
@@ -678,6 +670,23 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    // 1. In-App confirmation to the accepting officer
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Shift Swap Claimed",
+                        Message = $"You accepted the shift swap offer for {swap.Shift?.ShiftCode ?? "duty"}. It has been submitted for supervisor approval.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "swap_horiz",
+                        ActionUrl = "/workforce/workspace/my-shifts"
+                    }, ct);
+
+                    // 2. Alert to original requester across In-App, Push, and Email
                     var requesterChannels = await ResolveStaffNotificationChannelsAsync(swap.RequestingUserId, ct);
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
@@ -688,21 +697,22 @@ namespace Ozikol_BCC.Api.Controllers
                         Message = $"Officer {CurrentUserName} has accepted your shift swap offer for shift {swap.Shift?.ShiftCode ?? "assignment"}. It is now awaiting supervisor review.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = requesterChannels,
+                        Channels = requesterChannels | NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
                         Module = "Workforce",
                         Icon = "swap_horiz",
-                        ActionUrl = "/workforce/my-shifts"
+                        ActionUrl = "/workforce/workspace/my-shifts"
                     }, ct);
 
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    // 3. Alert to workspace administrators and shift supervisor
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(swap.Shift?.CreatedByUserId) ? swap.Shift.CreatedByUserId : null;
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
                     {
-                        TargetType = NotificationDispatchTarget.BroadcastAll,
                         TenantKey = CurrentTenantKey,
                         Title = "Shift Swap Awaiting Review",
                         Message = $"Officers {swap.RequestingUserName} and {CurrentUserName} have agreed on a shift swap for {swap.Shift?.ShiftCode ?? "duty"} and are awaiting administrative approval.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
                         Module = "Workforce",
                         Icon = "supervisor_account",
                         ActionUrl = "/workforce/console/schedule"
@@ -803,20 +813,35 @@ namespace Ozikol_BCC.Api.Controllers
             _db.BcpShiftLeaveRequests.Add(leave);
             await _db.SaveChangesAsync(ct);
 
-            // Notify supervisor / management of new time-off request
+            // 1. In-App notification confirmation to the requesting officer
             if (_notificationDispatcher != null)
             {
                 try
                 {
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
-                        TargetType = NotificationDispatchTarget.BroadcastAll,
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Leave Request Submitted",
+                        Message = $"Your {leave.LeaveType} leave request ({leave.StartDate:dd MMM yyyy} – {leave.EndDate:dd MMM yyyy}) has been submitted for supervisor approval.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "event_busy",
+                        ActionUrl = "/workforce/workspace/time-off"
+                    }, ct);
+
+                    // 2. Alert to workspace administrators and supervisors (In-App + Push + Email)
+                    await NotifySupervisorsOrAdminsAsync(null, new NotificationDispatchPayload
+                    {
                         TenantKey = CurrentTenantKey,
                         Title = "New Time-Off Request",
-                        Message = $"Officer {CurrentUserName} requested {leave.LeaveType} leave ({leave.StartDate:dd MMM yyyy} - {leave.EndDate:dd MMM yyyy}). Reason: {leave.Reason ?? "Not specified"}",
+                        Message = $"Officer {CurrentUserName} requested {leave.LeaveType} leave ({leave.StartDate:dd MMM yyyy} – {leave.EndDate:dd MMM yyyy}). Reason: {leave.Reason ?? "Not specified"}",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
                         Module = "Workforce",
                         Icon = "event_busy",
                         ActionUrl = "/workforce/console/schedule"
@@ -1281,24 +1306,47 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync(ct);
 
-            // Dispatch alert to supervisor if arrival is late or outside geofence boundary
-            if (isFlagged && _notificationDispatcher != null)
+            // Dispatch in-app notification to the officer and multi-channel push alert to administrators
+            if (_notificationDispatcher != null)
             {
                 try
                 {
-                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    // 1. In-App notification confirmation to the officer
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
-                        TargetType = !string.IsNullOrWhiteSpace(supervisorTarget) ? NotificationDispatchTarget.SingleUser : NotificationDispatchTarget.BroadcastAll,
-                        TargetUserId = supervisorTarget,
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
                         TenantKey = CurrentTenantKey,
-                        Title = "⚠️ Duty Clock-In Alert: " + (isLate && !isInsideGeofence ? "Out of Geofence & Late" : !isInsideGeofence ? "Out of Geofence" : "Late Arrival"),
-                        Message = $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with alert: {flagReason}",
+                        Title = isFlagged ? "Duty Clock-In (Notice Recorded)" : "Duty Clock-In Confirmed",
+                        Message = isFlagged
+                            ? $"Clock-in recorded for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}) with notice: {flagReason}."
+                            : $"You have clocked in on-site for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}). Active duty begun.",
                         Category = BcpMessageCategory.General,
-                        Severity = NotificationSeverity.Error,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email,
+                        Severity = isFlagged ? NotificationSeverity.Warning : NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
                         Module = "Workforce",
-                        Icon = "warning",
+                        Icon = isFlagged ? "warning" : "login",
+                        ActionUrl = "/workforce/workspace/my-shifts"
+                    }, ct);
+
+                    // 2. Multi-channel alert to shift supervisor and workspace administrators (In-App + Push, plus Email if flagged)
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
+                    {
+                        TenantKey = CurrentTenantKey,
+                        Title = isFlagged
+                            ? "⚠️ Duty Clock-In Alert: " + (isLate && !isInsideGeofence ? "Out of Geofence & Late" : !isInsideGeofence ? "Out of Geofence" : "Late Arrival")
+                            : $"Officer On Duty ({shift.ShiftCode})",
+                        Message = isFlagged
+                            ? $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with notice: {flagReason}."
+                            : $"Officer {CurrentUserName} clocked in on schedule for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}).",
+                        Category = BcpMessageCategory.General,
+                        Severity = isFlagged ? NotificationSeverity.Error : NotificationSeverity.Update,
+                        Channels = isFlagged
+                            ? (NotificationChannels.InApp | NotificationChannels.Push | NotificationChannels.Email)
+                            : (NotificationChannels.InApp | NotificationChannels.Push),
+                        Module = "Workforce",
+                        Icon = isFlagged ? "warning" : "login",
                         ActionUrl = "/workforce/console/live"
                     }, ct);
                 }
@@ -1361,6 +1409,48 @@ namespace Ozikol_BCC.Api.Controllers
             shift.UpdatedUtc = nowUtc;
 
             await _db.SaveChangesAsync(ct);
+
+            // Dispatch Clock-Out in-app notification to officer and alert to supervisors/admins
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    // 1. In-App confirmation to officer
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Duty Clock-Out Confirmed",
+                        Message = $"You have successfully clocked out of shift {shift.ShiftCode} at {shift.PostName}. Total duration: {Math.Round(actualTotalHours, 2)} hrs ({Math.Round(netBillableHours, 2)} billable).",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "logout",
+                        ActionUrl = "/workforce/workspace/timesheets"
+                    }, ct);
+
+                    // 2. Multi-channel alert to shift supervisor and workspace administrators (In-App + Push)
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
+                    {
+                        TenantKey = CurrentTenantKey,
+                        Title = $"Duty Concluded ({shift.ShiftCode})",
+                        Message = $"Officer {CurrentUserName} has clocked out of shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}). Total duty duration: {Math.Round(actualTotalHours, 2)} hrs.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Module = "Workforce",
+                        Icon = "logout",
+                        ActionUrl = "/workforce/console/schedule"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
 
             return Ok(ApiResponse<ClockOutResultDto>.SuccessResponse(new ClockOutResultDto
             {
@@ -1469,6 +1559,48 @@ namespace Ozikol_BCC.Api.Controllers
             shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
+            // Dispatch in-app notification to officer and alert to supervisors/admins
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    // 1. In-App confirmation to the submitting officer
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = CurrentUserId,
+                        TenantKey = CurrentTenantKey,
+                        Title = "Duty Report Submitted",
+                        Message = $"Your shift report and occurrence log for {shift.ShiftCode} at {shift.PostName} has been submitted for supervisor review.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        Module = "Workforce",
+                        Icon = "description",
+                        ActionUrl = "/workforce/workspace/my-shifts"
+                    }, ct);
+
+                    // 2. Alert to shift supervisor and workspace administrators (In-App + Push)
+                    var supervisorTarget = !string.IsNullOrWhiteSpace(shift.CreatedByUserId) ? shift.CreatedByUserId : null;
+                    await NotifySupervisorsOrAdminsAsync(supervisorTarget, new NotificationDispatchPayload
+                    {
+                        TenantKey = CurrentTenantKey,
+                        Title = $"Duty Report Submitted ({shift.ShiftCode})",
+                        Message = $"Officer {CurrentUserName} has submitted a duty occurrence report for shift {shift.ShiftCode} at {shift.PostName}.",
+                        Category = BcpMessageCategory.General,
+                        Severity = NotificationSeverity.Update,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push,
+                        Module = "Workforce",
+                        Icon = "description",
+                        ActionUrl = $"/workforce/console/shifts/{shift.Id}/report"
+                    }, ct);
+                }
+                catch
+                {
+                    // Non-blocking notification dispatch
+                }
+            }
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Shift duty report submitted successfully."));
         }
 
@@ -1553,6 +1685,81 @@ namespace Ozikol_BCC.Api.Controllers
 
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return earthRadiusMeters * c;
+        }
+
+        private async Task NotifySupervisorsOrAdminsAsync(
+            string? supervisorTarget,
+            NotificationDispatchPayload payload,
+            CancellationToken ct)
+        {
+            if (_notificationDispatcher == null) return;
+
+            var recipientIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(supervisorTarget))
+            {
+                recipientIds.Add(supervisorTarget);
+            }
+
+            // Always resolve workspace administrators (SuperAdmin, Admin, Management) so they are notified of shift activity
+            var adminRoleIds = await _db.Roles.AsNoTracking()
+                .Where(r => r.Name == "SuperAdmin" || r.Name == "Admin" || r.Name == "Management")
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            var adminUserIds = await _db.UserRoles.AsNoTracking()
+                .Where(ur => adminRoleIds.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync(ct);
+
+            foreach (var id in adminUserIds)
+            {
+                recipientIds.Add(id);
+            }
+
+            // Fallback: If no role mappings found, resolve users with admin usernames/emails or workspace owner
+            if (recipientIds.Count == 0)
+            {
+                var adminFallback = await _db.Users.AsNoTracking()
+                    .Where(u => u.Id != CurrentUserId && u.Email != null && (u.Email.Contains("admin") || u.UserName.Contains("admin")))
+                    .Select(u => u.Id)
+                    .ToListAsync(ct);
+
+                if (adminFallback.Count > 0)
+                {
+                    foreach (var id in adminFallback) recipientIds.Add(id);
+                }
+                else
+                {
+                    var firstUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (firstUser != null && firstUser.Id != CurrentUserId) recipientIds.Add(firstUser.Id);
+                }
+            }
+
+            // Never send supervisor notification to the officer performing the action
+            if (!string.IsNullOrWhiteSpace(CurrentUserId))
+            {
+                recipientIds.Remove(CurrentUserId);
+            }
+
+            foreach (var recId in recipientIds)
+            {
+                var adminPayload = new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = recId,
+                    TenantKey = CurrentTenantKey,
+                    Title = payload.Title,
+                    Message = payload.Message,
+                    Category = payload.Category,
+                    Severity = payload.Severity,
+                    Channels = payload.Channels | NotificationChannels.InApp,
+                    Module = payload.Module,
+                    Icon = payload.Icon,
+                    ActionUrl = payload.ActionUrl,
+                    Priority = payload.Priority
+                };
+                await _notificationDispatcher.DispatchAsync(adminPayload, ct);
+            }
         }
 
         private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;

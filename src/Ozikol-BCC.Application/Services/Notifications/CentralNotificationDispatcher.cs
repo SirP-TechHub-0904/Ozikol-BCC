@@ -36,6 +36,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         private readonly IConfiguration _configuration;
         private readonly IOneSignalPushDispatcher? _oneSignalDispatcher;
         private readonly ICentralMessageOutboxService? _outboxService;
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor? _httpContextAccessor;
 
         private static readonly string[] SpamBlacklistWords = new[]
         {
@@ -62,6 +63,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="emailShellService">Optional tenant email shell wrapping service.</param>
         /// <param name="oneSignalDispatcher">Optional OneSignal REST API push notification dispatcher.</param>
         /// <param name="outboxService">Optional central message outbox bridge service.</param>
+        /// <param name="httpContextAccessor">Optional HTTP context accessor for resolving client browser host.</param>
         public CentralNotificationDispatcher(
             DashboardDbContext dbContext,
             IHubContext<NotificationHub> hubContext,
@@ -72,7 +74,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
             IMessageTemplateService? templateService = null,
             ITenantEmailShellService? emailShellService = null,
             IOneSignalPushDispatcher? oneSignalDispatcher = null,
-            ICentralMessageOutboxService? outboxService = null)
+            ICentralMessageOutboxService? outboxService = null,
+            Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
@@ -84,6 +87,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             _emailShellService = emailShellService;
             _oneSignalDispatcher = oneSignalDispatcher;
             _outboxService = outboxService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <inheritdoc />
@@ -117,22 +121,36 @@ namespace Ozikol_BCC.Application.Services.Notifications
 
                 if (payload.TargetType == NotificationDispatchTarget.SingleUser)
                 {
+                    Profile? user = null;
+
                     if (!string.IsNullOrWhiteSpace(payload.TargetUserId))
                     {
-                        var user = await _dbContext.Users.FindAsync(new object?[] { payload.TargetUserId }, cancellationToken);
-                        if (user != null)
+                        user = await _dbContext.Users.FindAsync(new object?[] { payload.TargetUserId }, cancellationToken);
+
+                        if (user == null)
                         {
-                            targetProfiles.Add(user);
+                            user = await _dbContext.Users.FirstOrDefaultAsync(
+                                u => u.Id == payload.TargetUserId ||
+                                     u.Email == payload.TargetUserId ||
+                                     u.UserName == payload.TargetUserId,
+                                cancellationToken);
                         }
-                        else if (string.IsNullOrWhiteSpace(payload.RecipientEmail))
-                        {
-                            result.Errors.Add($"Target user '{payload.TargetUserId}' was not found.");
-                            return result;
-                        }
+                    }
+
+                    if (user == null && !string.IsNullOrWhiteSpace(payload.RecipientEmail))
+                    {
+                        user = await _dbContext.Users.FirstOrDefaultAsync(
+                            u => u.Email == payload.RecipientEmail,
+                            cancellationToken);
+                    }
+
+                    if (user != null)
+                    {
+                        targetProfiles.Add(user);
                     }
                     else if (string.IsNullOrWhiteSpace(payload.RecipientEmail))
                     {
-                        result.Errors.Add("TargetUserId or RecipientEmail is required for SingleUser dispatch.");
+                        result.Errors.Add($"Target user '{payload.TargetUserId}' was not found.");
                         return result;
                     }
                 }
@@ -329,6 +347,27 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 result.DispatchedInAppCount = 1;
 
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "InApp",
+                        provider: "SignalR",
+                        recipientAddress: "All Users (Broadcast)",
+                        recipientName: "Broadcast",
+                        subject: inAppTitle,
+                        content: inAppBody,
+                        actionUrl: payload.ActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: "Sent",
+                        sentAt: DateTime.UtcNow,
+                        metadataJson: payload.MetadataJson,
+                        cancellationToken: cancellationToken);
+                }
+
                 var dto = BcpNotificationDto.FromEntity(broadcastNotif);
                 await _hubContext.Clients.Group("broadcast").SendAsync("ReceiveNotification", dto, cancellationToken);
 
@@ -382,6 +421,29 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         CreatedAt = DateTime.UtcNow
                     });
                     createdNotifications.Add(notif);
+
+                    if (_outboxService != null)
+                    {
+                        var address = profile.Email ?? profile.UserName ?? profile.Id;
+                        var recipientName = $"{profile.FirstName} {profile.LastName}".Trim();
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: null,
+                            channel: "InApp",
+                            provider: "SignalR",
+                            recipientAddress: address,
+                            recipientName: recipientName,
+                            subject: inAppTitle,
+                            content: inAppBody,
+                            actionUrl: payload.ActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            status: "Sent",
+                            sentAt: DateTime.UtcNow,
+                            metadataJson: payload.MetadataJson,
+                            cancellationToken: cancellationToken);
+                    }
                 }
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
@@ -433,6 +495,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 cleanPushBody = cleanPushBody.Substring(0, 137) + "...";
             }
 
+            // Resolve canonical absolute action URL
+            var effectiveActionUrl = EnsureAbsoluteActionUrl(payload.ActionUrl, payload.TenantKey);
+
             // Prepare push metadata payload dictionary
             var pushData = payload.PushData != null
                 ? new Dictionary<string, string>(payload.PushData)
@@ -441,7 +506,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             pushData["tenant_key"] = payload.TenantKey ?? string.Empty;
             pushData["severity"] = ((int)payload.Severity).ToString();
             pushData["severity_label"] = payload.Severity.ToString();
-            pushData["action_url"] = payload.ActionUrl ?? string.Empty;
+            pushData["action_url"] = effectiveActionUrl;
             pushData["module"] = payload.Module ?? "General";
 
             _logger.LogInformation(
@@ -462,7 +527,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 var dispatchResult = await _oneSignalDispatcher.SendPushNotificationAsync(
                     cleanPushTitle,
                     cleanPushBody,
-                    payload.ActionUrl,
+                    effectiveActionUrl,
                     targetUserIds,
                     payload.TenantKey,
                     pushData,
@@ -492,7 +557,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     RecipientName = "Push Broadcast",
                     Subject = cleanPushTitle,
                     Content = cleanPushBody,
-                    ActionUrl = payload.ActionUrl,
+                    ActionUrl = effectiveActionUrl,
                     Category = payload.Category,
                     Severity = payload.Severity,
                     Priority = payload.Priority,
@@ -518,7 +583,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         RecipientName = $"{profile.FirstName} {profile.LastName}".Trim(),
                         Subject = cleanPushTitle,
                         Content = cleanPushBody,
-                        ActionUrl = payload.ActionUrl,
+                        ActionUrl = effectiveActionUrl,
                         Category = payload.Category,
                         Severity = payload.Severity,
                         Priority = payload.Priority,
@@ -540,6 +605,63 @@ namespace Ozikol_BCC.Application.Services.Notifications
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save push BcpMessagePool records: {Msg}", ex.Message);
+            }
+
+            // Mirror push notifications to central Master Message Pool for cross-tenant outbox auditing
+            if (_outboxService != null)
+            {
+                var pushProvider = _oneSignalDispatcher != null ? "OneSignal" : "SystemPush";
+                var pushStatus = pushDelivered ? "Sent" : "Failed";
+
+                if (payload.TargetType == NotificationDispatchTarget.BroadcastAll)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "Push",
+                        provider: pushProvider,
+                        recipientAddress: "All Devices (Push Broadcast)",
+                        recipientName: "Push Broadcast",
+                        subject: cleanPushTitle,
+                        content: cleanPushBody,
+                        actionUrl: effectiveActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: pushStatus,
+                        sentAt: sentTimestamp,
+                        lastError: pushError,
+                        providerMessageId: oneSignalExternalId,
+                        metadataJson: System.Text.Json.JsonSerializer.Serialize(pushData),
+                        cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    foreach (var profile in targetProfiles)
+                    {
+                        var pushAddress = profile.Email ?? profile.UserName ?? profile.Id;
+                        var recName = $"{profile.FirstName} {profile.LastName}".Trim();
+                        await _outboxService.EnqueueOutboundMessageAsync(
+                            tenantKey: payload.TenantKey ?? string.Empty,
+                            organizationName: null,
+                            channel: "Push",
+                            provider: pushProvider,
+                            recipientAddress: pushAddress,
+                            recipientName: recName,
+                            subject: cleanPushTitle,
+                            content: cleanPushBody,
+                            actionUrl: effectiveActionUrl,
+                            category: payload.Category.ToString(),
+                            severity: payload.Severity.ToString(),
+                            priority: payload.Priority.ToString(),
+                            status: pushStatus,
+                            sentAt: sentTimestamp,
+                            lastError: pushError,
+                            providerMessageId: oneSignalExternalId,
+                            metadataJson: System.Text.Json.JsonSerializer.Serialize(pushData),
+                            cancellationToken: cancellationToken);
+                    }
+                }
             }
 
             if (pushDelivered)
@@ -606,6 +728,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 // Fallback to Workspace
             }
 
+            // Resolve canonical absolute action URL so email buttons always open a valid web address
+            var effectiveActionUrl = EnsureAbsoluteActionUrl(payload.ActionUrl, payload.TenantKey);
+
             foreach (var email in recipients)
             {
                 string htmlBody = string.Empty;
@@ -626,7 +751,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             recipientFirstName: payload.RecipientName,
                             tenantBrandName: tenantBrand,
                             tenantLogoUrl: tenantLogo,
-                            actionUrl: payload.ActionUrl,
+                            actionUrl: effectiveActionUrl,
                             actionText: "View in Workspace",
                             brandColorHex: colorHex,
                             badgeLabel: null);
@@ -634,7 +759,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     else
                     {
                         var bodyText = !string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message;
-                        htmlBody = GenerateSeverityEmailHtml(safeSubject, bodyText, payload.ActionUrl, severityLabel, colorHex, tenantBrand, tenantLogo);
+                        htmlBody = GenerateSeverityEmailHtml(safeSubject, bodyText, effectiveActionUrl, severityLabel, colorHex, tenantBrand, tenantLogo);
                     }
 
                     // Anti-spam body check for suspicious URL shorteners
@@ -685,7 +810,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         Subject = safeSubject,
                         Content = htmlBody,
                         PlainTextFallback = StripHtmlTags(!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message).Trim(),
-                        ActionUrl = payload.ActionUrl,
+                        ActionUrl = effectiveActionUrl,
                         Icon = payload.Icon,
                         SenderOrTemplateName = string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress,
                         MetadataJson = emailMetadataJson,
@@ -711,7 +836,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             subject: safeSubject,
                             content: htmlBody,
                             plainTextFallback: StripHtmlTags(!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message).Trim(),
-                            actionUrl: payload.ActionUrl,
+                            actionUrl: effectiveActionUrl,
                             category: payload.Category.ToString(),
                             severity: payload.Severity.ToString(),
                             priority: payload.Priority.ToString(),
@@ -819,6 +944,24 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     CreatedAt = DateTime.UtcNow
                 });
                 result.DispatchedSmsCount++;
+
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "Sms",
+                        provider: "Carrier",
+                        recipientAddress: phone,
+                        recipientName: targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                        subject: "SMS Notification",
+                        content: smsContent,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        status: "Queued",
+                        cancellationToken: cancellationToken);
+                }
             }
 
             try
@@ -847,6 +990,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 .Distinct()
                 .ToList();
 
+            // Resolve canonical absolute action URL
+            var effectiveActionUrl = EnsureAbsoluteActionUrl(payload.ActionUrl, payload.TenantKey);
+
             // Format WhatsApp content using WhatsApp-specific markdown (*bold*, _italic_)
             string whatsAppBody;
             if (!string.IsNullOrWhiteSpace(payload.WhatsAppMessage))
@@ -863,10 +1009,10 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 sb.AppendLine();
                 sb.AppendLine(cleanBody);
 
-                if (!string.IsNullOrWhiteSpace(payload.ActionUrl))
+                if (!string.IsNullOrWhiteSpace(effectiveActionUrl))
                 {
                     sb.AppendLine();
-                    sb.AppendLine($"👉 *Open in Workspace:* {payload.ActionUrl.Trim()}");
+                    sb.AppendLine($"👉 *Open in Workspace:* {effectiveActionUrl.Trim()}");
                 }
 
                 whatsAppBody = sb.ToString();
@@ -889,7 +1035,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     Subject = payload.Title ?? "WhatsApp Notification",
                     Content = whatsAppBody,
                     SenderOrTemplateName = payload.WhatsAppTemplateName ?? "freeform-markdown",
-                    ActionUrl = payload.ActionUrl,
+                    ActionUrl = effectiveActionUrl,
                     Category = payload.Category,
                     Severity = payload.Severity,
                     Priority = payload.Priority,
@@ -899,6 +1045,27 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     MetadataJson = payload.MetadataJson,
                     CreatedAt = DateTime.UtcNow
                 });
+
+                if (_outboxService != null)
+                {
+                    await _outboxService.EnqueueOutboundMessageAsync(
+                        tenantKey: payload.TenantKey ?? string.Empty,
+                        organizationName: null,
+                        channel: "WhatsApp",
+                        provider: "MetaWhatsApp",
+                        recipientAddress: phone,
+                        recipientName: targetProfile != null ? $"{targetProfile.FirstName} {targetProfile.LastName}".Trim() : null,
+                        subject: payload.Title ?? "WhatsApp Notification",
+                        content: whatsAppBody,
+                        actionUrl: effectiveActionUrl,
+                        category: payload.Category.ToString(),
+                        severity: payload.Severity.ToString(),
+                        priority: payload.Priority.ToString(),
+                        senderOrTemplateName: payload.WhatsAppTemplateName ?? "freeform-markdown",
+                        metadataJson: payload.MetadataJson,
+                        status: "Queued",
+                        cancellationToken: cancellationToken);
+                }
             }
 
             try
@@ -941,6 +1108,63 @@ namespace Ozikol_BCC.Application.Services.Notifications
             }
 
             return (trimmed, warnings);
+        }
+
+        /// <summary>
+        /// Converts relative action paths (e.g. "/workforce/workspace/open-shifts") into fully qualified,
+        /// absolute browser URLs by resolving the calling client's Origin, Referer, Host, or tenant domain fallback.
+        /// Prevents email clients (such as Gmail) from rendering malformed URLs like "http:///path".
+        /// </summary>
+        private string EnsureAbsoluteActionUrl(string? actionUrl, string? tenantKey)
+        {
+            if (string.IsNullOrWhiteSpace(actionUrl)) return string.Empty;
+            var trimmed = actionUrl.Trim();
+
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            string? clientBaseUrl = null;
+
+            if (_httpContextAccessor?.HttpContext != null)
+            {
+                var req = _httpContextAccessor.HttpContext.Request;
+
+                // 1. Inspect Origin header (e.g. "http://nightpress.localhost:4200" or "https://nightpress.ozikol.cloud")
+                var origin = req.Headers["Origin"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(origin) && !origin.Equals("null", StringComparison.OrdinalIgnoreCase))
+                {
+                    clientBaseUrl = origin.TrimEnd('/');
+                }
+
+                // 2. Fall back to Referer header authority
+                if (string.IsNullOrWhiteSpace(clientBaseUrl))
+                {
+                    var referer = req.Headers["Referer"].FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refUri))
+                    {
+                        clientBaseUrl = $"{refUri.Scheme}://{refUri.Authority}";
+                    }
+                }
+
+                // 3. Fall back to Request Host (e.g. "nightpress.ozikol.cloud" or "nightpress.localhost:5000")
+                if (string.IsNullOrWhiteSpace(clientBaseUrl) && req.Host.HasValue)
+                {
+                    clientBaseUrl = $"{req.Scheme}://{req.Host}";
+                }
+            }
+
+            // 4. Default fallback: derive tenant production domain
+            if (string.IsNullOrWhiteSpace(clientBaseUrl))
+            {
+                var safeTenant = !string.IsNullOrWhiteSpace(tenantKey) ? tenantKey.Trim().ToLowerInvariant() : "app";
+                clientBaseUrl = $"https://{safeTenant}.ozikol.cloud";
+            }
+
+            var cleanPath = trimmed.StartsWith("/") ? trimmed : $"/{trimmed}";
+            return $"{clientBaseUrl}{cleanPath}";
         }
 
         /// <summary>

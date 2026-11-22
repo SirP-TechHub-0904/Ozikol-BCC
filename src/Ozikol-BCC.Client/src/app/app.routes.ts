@@ -40,6 +40,7 @@ import { WorkforceMyShiftsComponent } from './pages/workspace/workforce/workforc
 import { WorkforceMyMessagesComponent } from './pages/workspace/workforce/workforce-my-messages.component';
 import { WorkforceClockComponent } from './pages/workspace/workforce/workforce-clock.component';
 import { WorkforceOnboardingComponent } from './pages/workspace/workforce/workforce-onboarding.component';
+import { WorkforceShiftDetailComponent } from './pages/workspace/workforce/workforce-shift-detail.component';
 
 // Dashboards
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
@@ -238,7 +239,12 @@ export const routes: Routes = [
       { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/auth-setup', component: AuthPageSetupComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
-      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/notifications', redirectTo: 'broadcast/studio', pathMatch: 'full' },
+
+      // Broadcast & Communications System Routes
+      { path: 'broadcast', redirectTo: 'broadcast/studio', pathMatch: 'full' },
+      { path: 'broadcast/studio', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'UserManager', 'Management'] } },
+      { path: 'broadcast/logs', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'UserManager', 'Management'] } },
 
       // Backward-Compatibility Aliases for Admin Users Suite
       { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },
@@ -335,6 +341,8 @@ export const routes: Routes = [
       { path: 'workforce/workspace', redirectTo: 'workforce/workspace/analytics', pathMatch: 'full' },
       { path: 'workforce/workspace/analytics', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'analytics' } },
       { path: 'workforce/workspace/my-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'shifts' } },
+      { path: 'workforce/workspace/shifts/:id', component: WorkforceShiftDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
+      { path: 'workforce/workspace/my-shifts/:id', component: WorkforceShiftDetailComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management' } },
       { path: 'workforce/workspace/open-shifts', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'open-shifts' } },
       { path: 'workforce/workspace/timesheets', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'timesheets' } },
       { path: 'workforce/workspace/leave', component: WorkforceMyShiftsComponent, canActivate: [featureGuard], data: { feature: 'bcp-staff-rota', featureName: 'Staff Rota & Shift Management', tab: 'leave' } },

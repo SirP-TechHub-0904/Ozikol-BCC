@@ -134,7 +134,7 @@ import {
                         [(ngModel)]="customAttributes[f.fieldKey]"
                         [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
               <select *ngIf="f.fieldType === 'select'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input">
-                <option value="">{{ f.placeholder || '-- Choose Option --' }}</option>
+                <option [value]="''" selected>{{ f.placeholder || 'Enter response' }}</option>
                 <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
               </select>
               <input *ngIf="f.fieldType === 'date'" type="date" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input" />
@@ -227,7 +227,7 @@ import {
                        class="rf-sim-input"
                        [placeholder]="f.placeholder || 'e.g. Enter details'" />
                 <select *ngIf="f.fieldType === 'select'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input">
-                  <option value="">{{ f.placeholder || '-- Select --' }}</option>
+                  <option [value]="''" selected>{{ f.placeholder || 'Enter response' }}</option>
                   <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
                 </select>
                 <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2" [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
@@ -338,7 +338,7 @@ import {
                 <label class="rf-sim-label">{{ f.label }} <span *ngIf="f.isRequired" class="rf-sim-req">*</span></label>
                 <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'" [type]="f.fieldType === 'number' ? 'number' : 'text'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input" [placeholder]="f.placeholder || 'e.g. Enter details'" />
                 <select *ngIf="f.fieldType === 'select'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input">
-                  <option value="">{{ f.placeholder || '-- Select --' }}</option>
+                  <option [value]="''" selected>{{ f.placeholder || 'Enter response' }}</option>
                   <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
                 </select>
                 <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2" [placeholder]="f.placeholder || 'e.g. Enter notes'"></textarea>
@@ -444,7 +444,7 @@ import {
                 <label class="rf-sim-label">{{ f.label }} <span *ngIf="f.isRequired" class="rf-sim-req">*</span></label>
                 <input *ngIf="f.fieldType === 'text' || f.fieldType === 'number'" [type]="f.fieldType === 'number' ? 'number' : 'text'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input" [placeholder]="f.placeholder || 'e.g. Details'" />
                 <select *ngIf="f.fieldType === 'select'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input">
-                  <option value="">{{ f.placeholder || '-- Select --' }}</option>
+                  <option [value]="''" selected>{{ f.placeholder || 'Enter response' }}</option>
                   <option *ngFor="let opt of f.options" [value]="opt">{{ opt }}</option>
                 </select>
                 <textarea *ngIf="f.fieldType === 'textarea'" [(ngModel)]="customAttributes[f.fieldKey]" class="rf-sim-input rf-sim-textarea" rows="2"></textarea>
@@ -1041,6 +1041,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
                 options = f.optionsJson.split(',').map((s: string) => s.trim());
               }
             }
+            if (f.fieldType === 'select' && (this.customAttributes[f.fieldKey] === undefined || this.customAttributes[f.fieldKey] === null)) {
+              this.customAttributes[f.fieldKey] = '';
+            }
             return { ...f, isActive: true, options };
           });
         }
@@ -1050,11 +1053,19 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   }
 
   get filteredFields(): any[] {
-    return this.fields.filter(f => {
+    const list = this.fields.filter(f => {
       if (f.isActive === false) return false;
       if (!f.bcpUserCategoryId) return true;
       return f.bcpUserCategoryId === this.selectedCategoryId;
     });
+
+    for (const f of list) {
+      if (f.fieldType === 'select' && (this.customAttributes[f.fieldKey] === undefined || this.customAttributes[f.fieldKey] === null)) {
+        this.customAttributes[f.fieldKey] = '';
+      }
+    }
+
+    return list;
   }
 
   onPhoneInputChanged(): void {
