@@ -5553,6 +5553,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             this.userEmail = freshData.email;
             localStorage.setItem('user_email', freshData.email);
           }
+          if (freshData.id || freshData.userId) {
+            const uid = String(freshData.id || freshData.userId);
+            localStorage.setItem('user_id', uid);
+            this.oneSignal.login(uid, this.tenantKey || localStorage.getItem('tenant_key') || undefined);
+          } else {
+            this.oneSignal.syncPushSubscriptionWithBackend(undefined, this.tenantKey || localStorage.getItem('tenant_key') || undefined);
+          }
 
           // Persist and keep active workspace session in sync for seamless multi-workspace switching
           this.multiWorkspace.saveSession({

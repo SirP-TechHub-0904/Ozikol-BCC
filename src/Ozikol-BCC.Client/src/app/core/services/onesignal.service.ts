@@ -41,7 +41,7 @@ export class OneSignalService {
   }
 
   /**
-   * Resolves the currently logged-in user ID from localStorage.
+   * Resolves the currently logged-in user ID from localStorage or the JWT access_token payload.
    */
   private resolveCurrentUserId(): string | undefined {
     try {
@@ -55,6 +55,20 @@ export class OneSignalService {
           const uid = parsed?.id || parsed?.userId;
           if (uid) return uid;
         }
+      }
+
+      const token = localStorage.getItem('access_token');
+      if (token && token.includes('.')) {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(window.atob(base64));
+        const jwtUid =
+          payload?.sub ||
+          payload?.nameid ||
+          payload?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
+          payload?.userId ||
+          payload?.id;
+        if (jwtUid) return String(jwtUid);
       }
     } catch {}
     return undefined;
@@ -168,10 +182,10 @@ export class OneSignalService {
    * to OneSignal through the Ozikol backend REST API (/api/NotificationsApi/register-push).
    */
   public async syncPushSubscriptionWithBackend(explicitUserId?: string, explicitTenantKey?: string, force = false): Promise<void> {
-    const userId = explicitUserId || this.resolveCurrentUserId();
-    if (!userId || !localStorage.getItem('access_token')) {
+    if (!localStorage.getItem('access_token')) {
       return;
     }
+    const userId = explicitUserId || this.resolveCurrentUserId() || 'authenticated';
 
     const tenantKey = explicitTenantKey || localStorage.getItem('tenant_key') || undefined;
     const permission = this.getPermissionStatus();

@@ -230,6 +230,21 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<NotificationFeedResponse>.SuccessResponse(new NotificationFeedResponse(), "Feed retrieved."));
             }
 
+            if (_oneSignalPushDispatcher != null && !string.IsNullOrWhiteSpace(userId))
+            {
+                var tenantKey = Request.Headers["X-Tenant-Id"].FirstOrDefault() ?? Request.Headers["X-Tenant-Key"].FirstOrDefault();
+                var userAgent = Request.Headers["User-Agent"].ToString();
+                try
+                {
+                    await _oneSignalPushDispatcher.RegisterUserSubscriptionAsync(
+                        externalUserId: userId,
+                        tenantKey: tenantKey,
+                        email: userEmail,
+                        userAgent: userAgent);
+                }
+                catch { }
+            }
+
             var query = _dbContext.BcpNotifications
                 .Where(n => n.UserId == userId || (userEmail != null && n.UserId == userEmail));
 
