@@ -2530,7 +2530,12 @@ export class IdentityAccountComponent implements OnInit, OnDestroy, AfterViewIni
     const el = this.subnavTabsRef.nativeElement as HTMLElement;
     const activeEl = el.querySelector('.tab-btn.active') as HTMLElement;
     if (activeEl) {
-      activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const elRect = el.getBoundingClientRect();
+      const btnRect = activeEl.getBoundingClientRect();
+      const offsetInEl = (btnRect.left - elRect.left) + el.scrollLeft;
+      const targetScroll = offsetInEl - (el.clientWidth / 2) + (btnRect.width / 2);
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      el.scrollTo({ left: Math.max(0, Math.min(targetScroll, maxScroll)), behavior: 'smooth' });
     }
   }
 

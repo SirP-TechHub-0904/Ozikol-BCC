@@ -388,13 +388,24 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
     .bcp-page-container {
       display: flex;
       flex-direction: column;
       gap: 18px;
       padding: 0 4px 40px 4px;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     /* 1. Canonical BCC Page Header */
@@ -463,8 +474,12 @@ import { ToastService } from '../../../core/services/toast.service';
     .subnav-scroll-wrapper {
       position: relative;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
       display: flex;
       align-items: center;
+      box-sizing: border-box;
     }
     .bcp-subnav-tabs {
       display: flex;
@@ -475,6 +490,9 @@ import { ToastService } from '../../../core/services/toast.service';
       scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       scrollbar-width: thin;
       scrollbar-color: #0050e5 #f1f5f9;
     }

@@ -299,12 +299,21 @@ import { ApiService } from '../../core/services/api.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
     .workspace-dashboard-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
       width: 100%;
       max-width: 100%;
+      min-width: 0;
       box-sizing: border-box;
       overflow-x: hidden;
     }
@@ -415,6 +424,8 @@ import { ApiService } from '../../core/services/api.service';
       color: #64748b;
       color: var(--md-sys-color-on-surface-variant, #64748b);
       margin: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
     .header-actions {
       display: flex;
@@ -461,8 +472,12 @@ import { ApiService } from '../../core/services/api.service';
     }
     .workspace-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
       gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .ws-card {
       background: var(--md-sys-color-surface, #ffffff);
@@ -470,11 +485,25 @@ import { ApiService } from '../../core/services/api.service';
       border-radius: 14px;
       padding: 20px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .card-body {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .card-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
       margin-bottom: 16px;
       border-bottom: 1px solid var(--md-sys-color-outline, #e2e8f0);
       padding-bottom: 12px;
@@ -483,6 +512,7 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
     }
     .head-icon { font-size: 20px; }
     .card-title {
@@ -614,12 +644,20 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
     .meta-list li {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 10px;
       font-size: 13px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     .meta-label {
       display: inline-flex;
@@ -627,23 +665,39 @@ import { ApiService } from '../../core/services/api.service';
       gap: 6px;
       color: #64748b;
       color: var(--md-sys-color-on-surface-variant, #64748b);
+      flex-shrink: 0;
     }
     .icon-mini { font-size: 16px; color: #94a3b8; }
-    .meta-value { color: var(--md-sys-color-on-surface, #0f172a); }
+    .meta-value {
+      color: var(--md-sys-color-on-surface, #0f172a);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      text-align: right;
+      min-width: 0;
+    }
     .category-tag {
       background: rgba(0, 80, 229, 0.08);
       color: #0050e5;
       padding: 2px 8px;
       border-radius: 6px;
       font-size: 12px;
+      max-width: 100%;
+      word-break: break-word;
     }
     .status-tag.verified {
       display: inline-flex;
       align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 3px;
       color: #16a34a;
       font-weight: 700;
       font-size: 12px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      text-align: right;
+      min-width: 0;
+      max-width: 100%;
     }
     .status-tag.verified span { font-size: 14px; }
     .profile-complete-box {
@@ -767,15 +821,17 @@ import { ApiService } from '../../core/services/api.service';
     .device-title-row {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
+      min-width: 0;
     }
     .device-name {
       font-size: 12.5px;
       font-weight: 700;
       color: var(--md-sys-color-on-surface, #0f172a);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      min-width: 0;
     }
     .current-badge {
       font-size: 9.5px;
@@ -787,17 +843,19 @@ import { ApiService } from '../../core/services/api.service';
       border-radius: 4px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
+      flex-shrink: 0;
     }
     .device-sub-row {
       display: flex;
       align-items: center;
-      gap: 5px;
+      flex-wrap: wrap;
+      gap: 3px 5px;
       font-size: 11px;
       color: #64748b;
       color: var(--md-sys-color-on-surface-variant, #64748b);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      word-break: break-word;
+      min-width: 0;
     }
     .meta-dot {
       color: #cbd5e1;
@@ -834,6 +892,8 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 12px;
       padding-top: 10px;
       border-top: 1px solid var(--md-sys-color-outline, #f1f5f9);
@@ -1087,15 +1147,22 @@ import { ApiService } from '../../core/services/api.service';
         white-space: nowrap !important;
       }
       .workspace-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       .ws-card {
         padding: 16px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       .activity-bars-grid {
-        gap: 8px !important;
+        gap: 6px !important;
         padding: 12px 0 4px !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
       }
       .bar-track {
         height: 75px !important;
@@ -1107,7 +1174,7 @@ import { ApiService } from '../../core/services/api.service';
         gap: 12px !important;
       }
       .quick-action-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 10px !important;
       }
     }

@@ -278,7 +278,7 @@ export class WorkforceService {
 
   // --- OPEN SHIFTS & BROADCAST ---
   broadcastOpenShift(shiftId: string): Observable<any> {
-    return this.apiService.post<any>(`workforce/rota/shifts/${shiftId}/broadcast`, {});
+    return this.apiService.post<any>(`workforce/shifts/${shiftId}/broadcast`, {});
   }
 
   // --- SWAPS ---
@@ -295,11 +295,11 @@ export class WorkforceService {
   }
 
   getWorkspaceSwaps(): Observable<any> {
-    return this.apiService.get<any>('workforce/rota/swaps');
+    return this.apiService.get<any>('workforce/swaps');
   }
 
   reviewSwap(swapId: string, review: { isApproved: boolean; rejectionReason?: string }): Observable<any> {
-    return this.apiService.post<any>(`workforce/rota/swaps/${swapId}/review`, review);
+    return this.apiService.post<any>(`workforce/swaps/${swapId}/review`, review);
   }
 
   // --- LEAVE ---
@@ -314,11 +314,11 @@ export class WorkforceService {
   getSupervisorLeaveRequests(status?: string): Observable<any> {
     const params: any = {};
     if (status) params.status = status;
-    return this.apiService.get<any>('workforce/rota/leave/requests', params);
+    return this.apiService.get<any>('workforce/leave/requests', params);
   }
 
   reviewLeaveRequest(leaveId: string, review: { isApproved: boolean; rejectionReason?: string }): Observable<any> {
-    return this.apiService.post<any>(`workforce/rota/leave/requests/${leaveId}/review`, review);
+    return this.apiService.post<any>(`workforce/leave/requests/${leaveId}/review`, review);
   }
 
   // --- ATTENDANCE & GEOFENCE ---

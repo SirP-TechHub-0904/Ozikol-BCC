@@ -1143,6 +1143,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Broadcasts an open/unassigned shift to all active workforce members across In-App, Push, Email, and WhatsApp.
         /// </summary>
         [HttpPost("shifts/{id:guid}/broadcast")]
+        [HttpPost("rota/shifts/{id:guid}/broadcast")]
         public async Task<ActionResult<ApiResponse<bool>>> BroadcastOpenShift(Guid id, CancellationToken ct)
         {
             var shift = await _db.BcpShifts
@@ -1774,6 +1775,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Approves or rejects a shift swap, automatically updating shift ownership upon approval.
         /// </summary>
         [HttpPost("swaps/{id}/review")]
+        [HttpPost("rota/swaps/{id}/review")]
         public async Task<ActionResult<ApiResponse<bool>>> ReviewSwap(
             Guid id,
             [FromBody] ReviewSwapRequest review,
@@ -1849,6 +1851,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Returns all peer shift swap requests across the workspace for supervisor review and history.
         /// </summary>
         [HttpGet("swaps")]
+        [HttpGet("rota/swaps")]
         public async Task<ActionResult<ApiResponse<List<object>>>> GetWorkspaceSwaps(CancellationToken ct)
         {
             var swaps = await _db.BcpShiftSwapRequests
@@ -1886,6 +1889,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Returns all staff leave and absence requests for management review and calendar blackout tracking.
         /// </summary>
         [HttpGet("leave/requests")]
+        [HttpGet("rota/leave/requests")]
         public async Task<ActionResult<ApiResponse<List<BcpShiftLeaveRequest>>>> GetLeaveRequests(
             [FromQuery] string? status,
             CancellationToken ct)
@@ -1910,6 +1914,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Approves or rejects a staff leave request with supervisor notes and dispatches multi-channel notification.
         /// </summary>
         [HttpPost("leave/requests/{id:guid}/review")]
+        [HttpPost("rota/leave/requests/{id:guid}/review")]
         public async Task<ActionResult<ApiResponse<bool>>> ReviewLeaveRequest(
             Guid id,
             [FromBody] ReviewLeaveRequest review,

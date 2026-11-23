@@ -2710,6 +2710,10 @@ interface YearMonthGrid {
     .subnav-scroll-wrapper {
       position: relative;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      box-sizing: border-box;
       display: flex;
       align-items: center;
     }
@@ -2723,6 +2727,9 @@ interface YearMonthGrid {
       -webkit-overflow-scrolling: touch;
       scroll-snap-type: x proximity;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       scrollbar-width: thin;
       scrollbar-color: #0050e5 #f1f5f9;
     }
@@ -5951,10 +5958,16 @@ interface YearMonthGrid {
       .month-grid-scroll {
         overflow-x: hidden !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       .month-grid-header {
-        grid-template-columns: repeat(7, 1fr) !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       .weekday-col {
         padding: 6px 1px !important;
@@ -5963,10 +5976,17 @@ interface YearMonthGrid {
         letter-spacing: 0 !important;
         border-right: 1px solid #f1f5f9 !important;
         text-align: center !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
       }
       .month-grid-body {
-        grid-template-columns: repeat(7, 1fr) !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       .month-day-cell {
         min-height: 54px !important;
@@ -5977,6 +5997,23 @@ interface YearMonthGrid {
         justify-content: flex-start !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+      }
+      .calendar-board-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .shifts-tab-container,
+      .analytics-tab-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
       .cell-top-row {
         width: 100% !important;
@@ -7245,7 +7282,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     if (!el) return;
     const activeBtn = el.querySelector('.subnav-tab.active') as HTMLElement;
     if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      // Scroll strictly within the horizontal subnav container without triggering ancestor scrollIntoView
       const elRect = el.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
       const offsetInEl = (btnRect.left - elRect.left) + el.scrollLeft;
@@ -7254,9 +7291,20 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       const boundedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
       el.scrollTo({ left: boundedScroll, behavior: 'smooth' });
     }
-    // Prevent document or window horizontal overshoot
-    if (typeof window !== 'undefined' && (window.scrollX !== 0 || document.documentElement.scrollLeft !== 0)) {
-      window.scrollTo({ left: 0 });
+    // Prevent document, shell, or window horizontal/vertical overshoot
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollLeft = 0;
+      document.body.scrollLeft = 0;
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTop = 0;
+        mainEl.scrollLeft = 0;
+      }
+      const pageShell = document.querySelector('.bcp-page-shell') as HTMLElement | null;
+      if (pageShell) {
+        pageShell.scrollLeft = 0;
+      }
     }
   }
 
@@ -7496,13 +7544,18 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   /**
-   * Smoothly scrolls the window down to the Day Operations Breakdown panel immediately upon day selection.
+   * Smoothly scrolls the inner page shell down to the Day Operations Breakdown panel upon day selection
+   * without scrolling #main-content or hiding #topbar.
    */
   scrollToDayBreakdown(): void {
     setTimeout(() => {
       const el = document.getElementById('dayOperationsInspector') || document.querySelector('.day-inspector-card');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const pageShell = document.querySelector('.bcp-page-shell') as HTMLElement | null;
+      if (el && pageShell) {
+        const shellRect = pageShell.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetTop = pageShell.scrollTop + (elRect.top - shellRect.top) - 12;
+        pageShell.scrollTo({ top: Math.max(0, targetTop), left: 0, behavior: 'smooth' });
       }
     }, 60);
   }
