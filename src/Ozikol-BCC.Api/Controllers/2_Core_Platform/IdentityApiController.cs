@@ -41,6 +41,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
         private readonly MasterCatalogDbContext? _master;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly ITenantFeatureGateService? _featureGateService;
 
         public IdentityApiController(
             RoleManager<AppRole> roleManager,
@@ -50,7 +51,8 @@ namespace Ozikol_BCC.Api.Controllers
             IHubContext<NotificationHub>? notificationHubContext = null,
             ICentralNotificationDispatcher? notificationDispatcher = null,
             MasterCatalogDbContext? master = null,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            ITenantFeatureGateService? featureGateService = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
@@ -60,6 +62,7 @@ namespace Ozikol_BCC.Api.Controllers
             _notificationDispatcher = notificationDispatcher;
             _master = master;
             _tenantProvider = tenantProvider;
+            _featureGateService = featureGateService;
         }
 
         /// <summary>
@@ -2746,6 +2749,49 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
+            // 1. Built-in System Core Features (standard on every BCC tenant, always assignable)
+            var systemFeatures = new List<object>
+            {
+                new { Key = "Dashboard", Name = "Console Dashboard", Category = "Central Command", Icon = "space_dashboard", Description = "Main workspace executive command center, high-level KPIs, fast actions, system analytics.", IsPaid = false },
+                new { Key = "UserManager", Name = "User Management Suite", Category = "Governance & Identity", Icon = "manage_accounts", Description = "User Directory, Member Profiles, Onboarding Custom Attributes, Categories & OTP Verification.", IsPaid = false },
+                new { Key = "IdentityManager", Name = "Identity & Access Policies", Category = "Security & Auth", Icon = "admin_panel_settings", Description = "System Roles, Fine-Grained Permissions, Member Invitations, Security Rules & Session Audits.", IsPaid = false },
+                new { Key = "ContentManager", Name = "Website & CMS Studio", Category = "Content & Publishing", Icon = "web", Description = "Web Pages, Dynamic Blog Articles, Visual Templates, Navigation Menus, and Code Injections.", IsPaid = false },
+                new { Key = "Broadcast", Name = "System Broadcasts & Member Notifications", Category = "Communication & Alerts", Icon = "campaign", Description = "Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.", IsPaid = false },
+                new { Key = "BillingManager", Name = "Billing & Subscriptions", Category = "Financial Governance", Icon = "credit_card", Description = "Workspace Invoicing, Payment Gateways, Subscription Plans & Feature Add-On Entitlements.", IsPaid = false },
+                new { Key = "SettingsManager", Name = "System Settings & Audit", Category = "Settings & Audit", Icon = "settings", Description = "Workspace global settings, localization, brand identity, full tamper-proof audit trails.", IsPaid = false }
+            };
+
+            // 2. Dynamic Paid/Modular Features: ONLY returned if actively subscribed/unlocked on this tenant
+            var activePaidFeatures = new List<object>();
+            var tenantKey = _tenantProvider?.CurrentTenant ?? Request.Headers["X-Tenant-Key"].FirstOrDefault();
+            if (_featureGateService != null && !string.IsNullOrWhiteSpace(tenantKey) && _master != null)
+            {
+                try
+                {
+                    var entitlements = await _featureGateService.GetTenantFeatureEntitlementsAsync(tenantKey);
+                    var activeCodes = entitlements.ActiveFeatureCodes;
+                    if (activeCodes != null && activeCodes.Count > 0)
+                    {
+                        var catalogList = await _master.MasterFeatureCatalogs
+                            .AsNoTracking()
+                            .Where(f => activeCodes.Contains(f.FeatureCode))
+                            .OrderBy(f => f.SortOrder)
+                            .Select(f => new
+                            {
+                                Key = f.FeatureCode,
+                                Name = f.Name,
+                                Category = f.Category,
+                                Icon = string.IsNullOrWhiteSpace(f.Icon) ? "extension" : f.Icon,
+                                Description = f.Description,
+                                IsPaid = true
+                            })
+                            .ToListAsync();
+                        activePaidFeatures.AddRange(catalogList);
+                    }
+                }
+                catch { }
+            }
+
             var data = new
             {
                 UserId = user.Id,
@@ -2758,7 +2804,9 @@ namespace Ozikol_BCC.Api.Controllers
                 AllRoles = globalRoles,
                 IsAdmin = isAdmin,
                 IsSuperAdmin = isSuperAdmin,
-                FeatureRoles = featureRoles
+                FeatureRoles = featureRoles,
+                SystemFeatures = systemFeatures,
+                ActivePaidFeatures = activePaidFeatures
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(data, "User security feature roles retrieved."));
