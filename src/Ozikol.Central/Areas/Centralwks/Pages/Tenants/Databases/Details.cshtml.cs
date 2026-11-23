@@ -224,26 +224,54 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
             if (tenant == null)
             {
-                return new JsonResult(new { success = false, message = "Tenant not found." });
+                return new JsonResult(new { success = false, message = "Tenant database record not found." });
             }
 
             var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
             string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
+            var builder = new SqlConnectionStringBuilder(harmonizedConnStr)
+            {
+                ConnectTimeout = 5
+            };
+
             var sw = Stopwatch.StartNew();
             try
             {
-                using var conn = new SqlConnection(harmonizedConnStr);
-                await conn.OpenAsync();
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT 1;";
-                await cmd.ExecuteScalarAsync();
+                using var conn = new SqlConnection(builder.ConnectionString);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await conn.OpenAsync(cts.Token);
+
+                string serverVersion = "Microsoft SQL Server";
+                DateTime serverUtc = DateTime.UtcNow;
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandTimeout = 5;
+                    cmd.CommandText = "SELECT @@VERSION; SELECT GETUTCDATE();";
+                    using var reader = await cmd.ExecuteReaderAsync(cts.Token);
+                    if (await reader.ReadAsync(cts.Token))
+                    {
+                        var rawVer = reader.GetString(0);
+                        serverVersion = rawVer.Split('\n')[0].Trim();
+                    }
+                    if (await reader.NextResultAsync(cts.Token) && await reader.ReadAsync(cts.Token))
+                    {
+                        serverUtc = reader.GetDateTime(0);
+                    }
+                }
+
                 sw.Stop();
 
                 return new JsonResult(new
                 {
                     success = true,
                     latencyMs = sw.ElapsedMilliseconds,
+                    serverHost = builder.DataSource,
+                    databaseName = builder.InitialCatalog,
+                    userId = builder.UserID,
+                    serverVersion = serverVersion,
+                    serverUtc = serverUtc.ToString("yyyy-MM-dd HH:mm:ss 'UTC'"),
                     message = $"Connection verified in {sw.ElapsedMilliseconds} ms."
                 });
             }
@@ -254,9 +282,86 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
-                    message = ex.Message
+                    serverHost = builder.DataSource,
+                    databaseName = builder.InitialCatalog,
+                    userId = builder.UserID,
+                    message = ex.Message,
+                    errorType = ex.GetType().Name
                 });
             }
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to flush in-memory and distributed caches for this specific tenant across all API instances with zero downtime.
+        /// </summary>
+        public async Task<IActionResult> OnPostFlushCacheAsync(string tenantKey)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage(new { tenantKey });
+            }
+
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var steps = new List<string>();
+
+            try
+            {
+                // 1. Evict L1 & L2 Redis cache
+                var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
+                if (cacheInvalidator != null)
+                {
+                    await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+                    steps.Add("Evicted Redis & local distributed cache");
+                }
+
+                // 2. Broadcast zero-downtime cache invalidation to running Ozikol-BCC.Api instances
+                var apiTargetUrl = !string.IsNullOrWhiteSpace(tenant.ApiUrl)
+                    ? tenant.ApiUrl.TrimEnd('/')
+                    : "https://api.ozikol.cloud";
+
+                var syncToken = Ozikol.MasterDomain.Security.OzikolDataCipher.GenerateInternalSyncToken(tenant.TenantKey);
+                var invalidateEndpoint = $"{apiTargetUrl}/api/tenants/cache/invalidate?tenantKey={Uri.EscapeDataString(tenant.TenantKey)}";
+
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                using var syncRequest = new HttpRequestMessage(HttpMethod.Post, invalidateEndpoint);
+                syncRequest.Headers.Add("X-Internal-Sync-Token", syncToken);
+
+                using var syncResponse = await client.SendAsync(syncRequest);
+                if (syncResponse.IsSuccessStatusCode)
+                {
+                    steps.Add("Notified Ozikol API nodes (zero downtime)");
+                }
+                else
+                {
+                    steps.Add($"API broadcast returned HTTP {(int)syncResponse.StatusCode}");
+                }
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Tenant.CacheFlushed",
+                    EntityType = "Database",
+                    EntityId = tenant.TenantKey,
+                    Summary = $"Admin {adminUser} flushed in-memory and distributed cache for '{tenant.OrganizationName}' ({tenant.TenantKey}).",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Cache flushed for '{tenant.OrganizationName}' ({tenant.TenantKey}): {string.Join(" → ", steps)}.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to flush cache for tenant {TenantKey}", tenant.TenantKey);
+                TempData["Error"] = $"Cache flush failed: {ex.Message}";
+            }
+
+            return RedirectToPage(new { tenantKey });
         }
 
         /// <summary>
@@ -1221,6 +1326,32 @@ CRITICAL DIAGNOSIS TASK:
                 if (cacheInvalidator != null)
                 {
                     await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+                }
+
+                // 7. Notify running Ozikol-BCC.Api instances to evict local in-memory tenant cache with zero downtime
+                try
+                {
+                    var apiTargetUrl = !string.IsNullOrWhiteSpace(tenant.ApiUrl)
+                        ? tenant.ApiUrl.TrimEnd('/')
+                        : "https://api.ozikol.cloud";
+
+                    var syncToken = Ozikol.MasterDomain.Security.OzikolDataCipher.GenerateInternalSyncToken(tenant.TenantKey);
+                    var invalidateEndpoint = $"{apiTargetUrl}/api/tenants/cache/invalidate?tenantKey={Uri.EscapeDataString(tenant.TenantKey)}";
+
+                    using var client = _httpClientFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(4);
+                    using var syncRequest = new HttpRequestMessage(HttpMethod.Post, invalidateEndpoint);
+                    syncRequest.Headers.Add("X-Internal-Sync-Token", syncToken);
+
+                    using var syncResponse = await client.SendAsync(syncRequest);
+                    if (syncResponse.IsSuccessStatusCode)
+                    {
+                        stepsCompleted.Add("Broadcasted zero-downtime cache refresh to Ozikol API");
+                    }
+                }
+                catch (Exception syncEx)
+                {
+                    _logger.LogWarning(syncEx, "Note: Direct API cache invalidation HTTP notification skipped for {TenantKey}: {Message}", tenant.TenantKey, syncEx.Message);
                 }
 
                 _logger.LogInformation("Successfully reset SQL login '{SqlUser}' password and synced encrypted connection string for tenant '{TenantKey}'",

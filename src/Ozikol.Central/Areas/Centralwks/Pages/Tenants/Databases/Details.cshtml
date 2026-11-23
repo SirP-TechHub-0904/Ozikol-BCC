@@ -74,10 +74,18 @@
             Reset SQL Password &amp; Sync
         </button>
 
-        <button type="button" class="btn-admin btn-admin-secondary" onclick="testPingConnection('@Model.Tenant.TenantKey');" id="btnPingTest">
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="openPingModal();" id="btnPingTest">
             <span class="material-symbols-outlined" style="font-size: 16px;">network_ping</span>
             Test Ping Connection
         </button>
+
+        <form method="post" asp-page-handler="FlushCache" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" onclick="return confirm('Flush in-memory and Redis cache for @Model.Tenant.OrganizationName (@Model.Tenant.TenantKey) across all API nodes?\n\nThis forces the API to immediately reload database credentials with zero downtime.');" title="Flush in-memory API cache for this tenant">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">cached</span>
+                Flush API Cache
+            </button>
+        </form>
 
         <a href="#sqlRepairRoom" class="btn-admin btn-admin-secondary" onclick="setTimeout(() => document.getElementById('sqlQueryInput')?.focus(), 100);">
             <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
@@ -620,6 +628,102 @@
     </div>
 </div>
 
+@* ── Database Ping Diagnostics & Live Connectivity Probe Modal ── *@
+<div class="admin-modal-backdrop" id="pingModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1210; align-items: center; justify-content: center; padding: 20px;">
+    <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 580px; box-shadow: var(--shadow-xl); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;">
+        <div class="admin-modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(0, 80, 229, 0.12); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">network_ping</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--admin-text);">Database Ping Diagnostics</h3>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Live round-trip latency &amp; query handshake</div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin-icon" onclick="closePingModal();" aria-label="Close dialog" style="cursor: pointer;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+            </button>
+        </div>
+
+        <div class="admin-modal-body" style="padding: 20px; overflow-y: auto;">
+            <!-- Loading State -->
+            <div id="pingLoadingState" style="display: none; text-align: center; padding: 36px 12px;">
+                <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-primary); animation: spin 1s infinite linear; display: inline-block;">sync</span>
+                <div style="font-weight: 600; margin-top: 14px; font-size: 14px; color: var(--admin-text);">Probing Database Connection...</div>
+                <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-top: 4px;">Testing TCP socket, SQL credentials authentication, and round-trip query execution.</div>
+            </div>
+
+            <!-- Result State -->
+            <div id="pingResultState" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Hero Latency & Health Banner -->
+                <div id="pingHeroBanner" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 8px; border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="pingHeroIconBox" style="width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.12); color: var(--admin-success);">
+                            <span class="material-symbols-outlined" id="pingHeroIcon" style="font-size: 24px;">check_circle</span>
+                        </div>
+                        <div>
+                            <div id="pingHeroTitle" style="font-weight: 700; font-size: 14px; color: var(--admin-text);">Connected &amp; Verified</div>
+                            <div id="pingHeroSubtitle" style="font-size: 12px; color: var(--admin-text-muted);">Database answered round-trip probe query</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="pingLatencyBadge" style="font-size: 16px; font-weight: 800; font-family: monospace; padding: 4px 10px; border-radius: 6px; display: inline-block; background: rgba(16, 185, 129, 0.15); color: var(--admin-success);">-- ms</span>
+                        <div id="pingLatencyLabel" style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">Latency</div>
+                    </div>
+                </div>
+
+                <!-- Error Message Container (shown on failure) -->
+                <div id="pingErrorBox" style="display: none; padding: 12px 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; font-size: 12.5px; color: var(--admin-danger); line-height: 1.5;">
+                    <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+                        <span id="pingErrorType">Database Connection Failed</span>
+                    </div>
+                    <div id="pingErrorMessage" style="font-family: monospace; font-size: 12px; word-break: break-all;"></div>
+                </div>
+
+                <!-- Diagnostics Properties Breakdown -->
+                <div style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 8px; overflow: hidden; font-size: 12.5px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-dim);">Target Server Host</span>
+                        <code id="pingPropHost" style="font-weight: 600; color: var(--admin-text);">@Model.ServerHost</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-dim);">Dedicated Database</span>
+                        <code id="pingPropDatabase" style="font-weight: 600; color: var(--admin-primary);">@Model.Tenant.DatabaseName</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-dim);">SQL Principal</span>
+                        <code id="pingPropUser" style="color: var(--admin-text);">@(!string.IsNullOrWhiteSpace(Model.CurrentUserId) ? Model.CurrentUserId : "Default")</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-dim);">Engine Version</span>
+                        <span id="pingPropVersion" style="color: var(--admin-text); max-width: 320px; text-align: right; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">Microsoft SQL Server</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;">
+                        <span style="color: var(--admin-text-dim);">Server UTC Clock</span>
+                        <span id="pingPropUtc" style="color: var(--admin-text); font-family: monospace;">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 11.5px; color: var(--admin-text-muted); display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-success);">security</span>
+                <span>Encrypted TLS Socket Handshake</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closePingModal();">Close</button>
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="runPingProbe();" id="btnRePing">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">refresh</span>
+                    Ping Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     @@keyframes spin {
         0% { transform: rotate(0deg); }
@@ -1027,13 +1131,31 @@
             }
         }
 
-        async function testPingConnection(tenantKey) {
-            const btn = document.getElementById('btnPingTest');
-            const badge = document.getElementById('pingStatusBadge');
-            const originalText = btn.innerHTML;
-            
-            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1s infinite linear;">sync</span> Pinging...';
-            btn.disabled = true;
+        function openPingModal() {
+            const modal = document.getElementById('pingModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                runPingProbe();
+            }
+        }
+
+        function closePingModal() {
+            const modal = document.getElementById('pingModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function runPingProbe() {
+            const tenantKey = '@Model.Tenant.TenantKey';
+            const loadingState = document.getElementById('pingLoadingState');
+            const resultState = document.getElementById('pingResultState');
+            const btnRePing = document.getElementById('btnRePing');
+
+            if (loadingState) loadingState.style.display = 'block';
+            if (resultState) resultState.style.display = 'none';
+            if (btnRePing) {
+                btnRePing.disabled = true;
+                btnRePing.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; animation: spin 1s infinite linear;">sync</span> Pinging...';
+            }
 
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
             const formData = new FormData();
@@ -1049,25 +1171,102 @@
                 });
 
                 const data = await response.json();
-                if (data.success) {
-                    if (badge) {
-                        badge.className = 'badge badge-success';
-                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-success);"></span> Online (${data.latencyMs}ms)`;
-                    }
-                    alert(data.message);
-                } else {
-                    if (badge) {
-                        badge.className = 'badge badge-danger';
-                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-danger);"></span> Unreachable`;
-                    }
-                    alert('Ping test failed: ' + data.message);
-                }
+                renderPingResults(data);
             } catch (err) {
-                console.error('Ping test error', err);
-                alert('Ping connection test encountered an error.');
+                renderPingResults({
+                    success: false,
+                    latencyMs: null,
+                    message: err.message || 'Network error attempting to reach Central server.'
+                });
             } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                if (loadingState) loadingState.style.display = 'none';
+                if (resultState) resultState.style.display = 'flex';
+                if (btnRePing) {
+                    btnRePing.disabled = false;
+                    btnRePing.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px;">refresh</span> Ping Again';
+                }
+            }
+        }
+
+        function renderPingResults(data) {
+            const heroBanner = document.getElementById('pingHeroBanner');
+            const iconBox = document.getElementById('pingHeroIconBox');
+            const icon = document.getElementById('pingHeroIcon');
+            const title = document.getElementById('pingHeroTitle');
+            const subtitle = document.getElementById('pingHeroSubtitle');
+            const badge = document.getElementById('pingLatencyBadge');
+            const errorBox = document.getElementById('pingErrorBox');
+            const errorMessage = document.getElementById('pingErrorMessage');
+            const errorType = document.getElementById('pingErrorType');
+            const propHost = document.getElementById('pingPropHost');
+            const propDatabase = document.getElementById('pingPropDatabase');
+            const propUser = document.getElementById('pingPropUser');
+            const propVersion = document.getElementById('pingPropVersion');
+            const propUtc = document.getElementById('pingPropUtc');
+            const mainBadge = document.getElementById('pingStatusBadge');
+
+            if (propHost) propHost.innerText = data.serverHost || '@Model.ServerHost';
+            if (propDatabase) propDatabase.innerText = data.databaseName || '@Model.Tenant.DatabaseName';
+            if (propUser) propUser.innerText = data.userId || '@Model.CurrentUserId' || 'Default';
+            if (propVersion) propVersion.innerText = data.serverVersion || 'Microsoft SQL Server';
+            if (propUtc) propUtc.innerText = data.serverUtc || new Date().toUTCString();
+
+            if (data.success) {
+                if (heroBanner) {
+                    heroBanner.style.background = 'rgba(16, 185, 129, 0.08)';
+                    heroBanner.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                }
+                if (iconBox) {
+                    iconBox.style.background = 'rgba(16, 185, 129, 0.15)';
+                    iconBox.style.color = 'var(--admin-success)';
+                }
+                if (icon) icon.innerText = 'check_circle';
+                if (title) {
+                    title.innerText = 'Connected & Verified';
+                    title.style.color = 'var(--admin-success)';
+                }
+                if (subtitle) subtitle.innerText = data.message || 'Round-trip query executed successfully';
+                if (badge) {
+                    badge.innerText = `${data.latencyMs} ms`;
+                    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    badge.style.color = 'var(--admin-success)';
+                }
+                if (errorBox) errorBox.style.display = 'none';
+
+                if (mainBadge) {
+                    mainBadge.className = 'badge badge-success';
+                    mainBadge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-success);"></span> Online (${data.latencyMs}ms)`;
+                }
+            } else {
+                if (heroBanner) {
+                    heroBanner.style.background = 'rgba(239, 68, 68, 0.08)';
+                    heroBanner.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                }
+                if (iconBox) {
+                    iconBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                    iconBox.style.color = 'var(--admin-danger)';
+                }
+                if (icon) icon.innerText = 'error';
+                if (title) {
+                    title.innerText = 'Connection Failed';
+                    title.style.color = 'var(--admin-danger)';
+                }
+                if (subtitle) subtitle.innerText = 'Database unreachable or credentials rejected';
+                if (badge) {
+                    badge.innerText = data.latencyMs ? `${data.latencyMs} ms` : 'Timeout';
+                    badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    badge.style.color = 'var(--admin-danger)';
+                }
+                if (errorBox) {
+                    errorBox.style.display = 'block';
+                    if (errorType) errorType.innerText = data.errorType || 'SQL Exception';
+                    if (errorMessage) errorMessage.innerText = data.message || 'Unknown database connectivity error.';
+                }
+
+                if (mainBadge) {
+                    mainBadge.className = 'badge badge-danger';
+                    mainBadge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-danger);"></span> Unreachable`;
+                }
             }
         }
     </script>
