@@ -1161,7 +1161,12 @@ namespace Ozikol_BCC.Domain.Enum
             /// <summary>
             /// OneSignal push notification delivery provider across Web, Mobile, and Desktop.
             /// </summary>
-            OneSignal = 2
+            OneSignal = 2,
+
+            /// <summary>
+            /// Real-time SignalR WebSocket hub for in-app notification feeds.
+            /// </summary>
+            SignalR = 3
         }
 
         /// <summary>

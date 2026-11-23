@@ -175,32 +175,58 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.MessagePool
                     .Take(PageSize == int.MaxValue ? 500 : PageSize)
                     .ToListAsync();
 
-                Messages = items.Select(m => new CrossTenantMessageRow
+                var tenantNameMap = activeTenants.ToDictionary(
+                    t => t.TenantKey,
+                    t => t.OrganizationName,
+                    StringComparer.OrdinalIgnoreCase);
+
+                Messages = items.Select(m =>
                 {
-                    Id = m.Id,
-                    TenantKey = m.TenantKey,
-                    OrganizationName = m.OrganizationName ?? m.TenantKey,
-                    Channel = Enum.TryParse<BcpMessageChannel>(m.Channel, true, out var ch) ? ch : BcpMessageChannel.Email,
-                    Provider = Enum.TryParse<BcpMessageProvider>(m.Provider, true, out var prov) ? prov : BcpMessageProvider.Mailcow,
-                    RecipientAddress = m.RecipientAddress,
-                    RecipientName = m.RecipientName,
-                    Subject = m.Subject,
-                    Content = m.Content,
-                    PlainTextFallback = m.PlainTextFallback,
-                    ActionUrl = m.ActionUrl,
-                    SenderOrTemplateName = m.SenderOrTemplateName,
-                    MetadataJson = m.MetadataJson,
-                    Category = Enum.TryParse<BcpMessageCategory>(m.Category, true, out var cat) ? cat : BcpMessageCategory.General,
-                    Severity = Enum.TryParse<NotificationSeverity>(m.Severity, true, out var sev) ? sev : NotificationSeverity.Update,
-                    Priority = Enum.TryParse<BcpMessagePriority>(m.Priority, true, out var prio) ? prio : BcpMessagePriority.Normal,
-                    Status = Enum.TryParse<BcpQueueStatus>(m.Status, true, out var st) ? st : BcpQueueStatus.Queued,
-                    Retries = m.Retries,
-                    MaxRetries = m.MaxRetries,
-                    LastError = m.LastError,
-                    ProviderMessageId = m.ProviderMessageId,
-                    ScheduledAt = m.ScheduledAt,
-                    SentAt = m.SentAt,
-                    CreatedAt = m.CreatedAt
+                    var parsedChannel = Enum.TryParse<BcpMessageChannel>(m.Channel, true, out var ch)
+                        ? ch
+                        : (string.Equals(m.Channel, "InApp", StringComparison.OrdinalIgnoreCase)
+                            ? BcpMessageChannel.InAppNotification
+                            : BcpMessageChannel.Email);
+
+                    var parsedProvider = Enum.TryParse<BcpMessageProvider>(m.Provider, true, out var prov)
+                        ? prov
+                        : (parsedChannel == BcpMessageChannel.InAppNotification
+                            ? BcpMessageProvider.SignalR
+                            : (parsedChannel == BcpMessageChannel.Push
+                                ? BcpMessageProvider.OneSignal
+                                : BcpMessageProvider.Mailcow));
+
+                    var resolvedOrgName = !string.IsNullOrWhiteSpace(m.OrganizationName)
+                        ? m.OrganizationName
+                        : (tenantNameMap.TryGetValue(m.TenantKey, out var mappedOrg) ? mappedOrg : m.TenantKey);
+
+                    return new CrossTenantMessageRow
+                    {
+                        Id = m.Id,
+                        TenantKey = m.TenantKey,
+                        OrganizationName = resolvedOrgName,
+                        Channel = parsedChannel,
+                        Provider = parsedProvider,
+                        RecipientAddress = m.RecipientAddress,
+                        RecipientName = m.RecipientName,
+                        Subject = m.Subject,
+                        Content = m.Content,
+                        PlainTextFallback = m.PlainTextFallback,
+                        ActionUrl = m.ActionUrl,
+                        SenderOrTemplateName = m.SenderOrTemplateName,
+                        MetadataJson = m.MetadataJson,
+                        Category = Enum.TryParse<BcpMessageCategory>(m.Category, true, out var cat) ? cat : BcpMessageCategory.General,
+                        Severity = Enum.TryParse<NotificationSeverity>(m.Severity, true, out var sev) ? sev : NotificationSeverity.Update,
+                        Priority = Enum.TryParse<BcpMessagePriority>(m.Priority, true, out var prio) ? prio : BcpMessagePriority.Normal,
+                        Status = Enum.TryParse<BcpQueueStatus>(m.Status, true, out var st) ? st : BcpQueueStatus.Queued,
+                        Retries = m.Retries,
+                        MaxRetries = m.MaxRetries,
+                        LastError = m.LastError,
+                        ProviderMessageId = m.ProviderMessageId,
+                        ScheduledAt = m.ScheduledAt,
+                        SentAt = m.SentAt,
+                        CreatedAt = m.CreatedAt
+                    };
                 }).ToList();
             }
             catch (Exception ex)

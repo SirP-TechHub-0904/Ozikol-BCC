@@ -33,10 +33,17 @@ export interface ChatMessagePayload {
 })
 export class SignalRService {
   private hubConnection!: signalR.HubConnection;
+  private notificationHubConnection!: signalR.HubConnection;
   
   // Real-time Event Subjects
   private messageSubject = new Subject<ChatMessagePayload>();
   public message$ = this.messageSubject.asObservable();
+
+  private notificationSubject = new Subject<any>();
+  public notification$ = this.notificationSubject.asObservable();
+
+  private notificationCountSubject = new Subject<number>();
+  public notificationCount$ = this.notificationCountSubject.asObservable();
 
   private typingSubject = new Subject<{ groupId: string, userId: string, userName: string, isTyping: boolean, recipientUserId?: string }>();
   public typing$ = this.typingSubject.asObservable();
@@ -113,6 +120,87 @@ export class SignalRService {
 
     this.hubConnection.onclose(() => this.connectionStatusSubject.next(false));
     this.hubConnection.onreconnected(() => this.connectionStatusSubject.next(true));
+
+    this.startNotificationHubConnection(apiOrigin, tenantKey, token);
+  }
+
+  /**
+   * Connects to the dedicated real-time NotificationHub (/hubs/notifications) so that in-app alerts,
+   * unread badge counts, and native browser Web Notifications trigger across all sovereign custom domains.
+   */
+  private startNotificationHubConnection(apiOrigin: string, tenantKey: string, token: string): void {
+    if (this.notificationHubConnection &&
+        (this.notificationHubConnection.state === signalR.HubConnectionState.Connected ||
+         this.notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
+      return;
+    }
+
+    const notifHubUrl = `${apiOrigin}/hubs/notifications?tenant=${encodeURIComponent(tenantKey)}`;
+    this.notificationHubConnection = new signalR.HubConnectionBuilder()
+      .withUrl(notifHubUrl, {
+        accessTokenFactory: () => token
+      })
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+
+    this.notificationHubConnection.on('ReceiveNotification', (notif: any) => {
+      this.notificationSubject.next(notif);
+      this.chatSound.playMessageSound();
+      this.showSystemPushNotification(notif);
+    });
+
+    this.notificationHubConnection.on('NotificationCountUpdated', (count: number) => {
+      this.notificationCountSubject.next(count);
+    });
+
+    this.notificationHubConnection.on('BillingUpdated', (data: any) => {
+      this.billingUpdatedSubject.next(data);
+    });
+
+    this.notificationHubConnection
+      .start()
+      .then(() => {
+        if (tenantKey) {
+          this.notificationHubConnection.invoke('JoinTenantGroup', tenantKey).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }
+
+  /**
+   * Dispatches a native OS/Browser Push Notification via the Service Worker or Notification API
+   * whenever a live platform notification arrives over SignalR (works on every custom tenant domain).
+   */
+  private showSystemPushNotification(notif: any): void {
+    if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
+      return;
+    }
+    const title = notif?.title || notif?.subject || 'Workspace Alert';
+    const rawBody = notif?.message || notif?.content || '';
+    const cleanBody = String(rawBody).replace(/<[^>]*>?/gm, '').trim();
+    const icon = localStorage.getItem('tenant_icon') || localStorage.getItem('tenant_logo') || '/favicon.ico';
+    const actionUrl = notif?.actionUrl || '/users/workspace/notifications';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg && typeof reg.showNotification === 'function') {
+          reg.showNotification(title, {
+            body: cleanBody,
+            icon,
+            data: { url: actionUrl }
+          }).catch(() => {
+            try { new Notification(title, { body: cleanBody, icon }); } catch {}
+          });
+        } else {
+          try { new Notification(title, { body: cleanBody, icon }); } catch {}
+        }
+      }).catch(() => {
+        try { new Notification(title, { body: cleanBody, icon }); } catch {}
+      });
+    } else {
+      try { new Notification(title, { body: cleanBody, icon }); } catch {}
+    }
   }
 
   private registerOnServerEvents(): void {

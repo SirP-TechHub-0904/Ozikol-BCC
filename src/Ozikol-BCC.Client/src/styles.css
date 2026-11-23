@@ -2565,18 +2565,20 @@ body.sidebar-closed .topbar-brand-logo {
     box-shadow: 4px 0 16px rgba(0,0,0,0.15);
   }
 
-  /* Mobile Topbar Cleanup: Display ONLY Toggle, Logo, Search Icon, Profile Avatar */
+  /* Mobile Topbar Cleanup: Display Toggle, Logo, Help, Theme, Notification Bell & Profile Avatar */
   .topbar-search-box,
   .pinned-taskbar,
   .apps-grid-wrapper,
   .calendar-wrapper,
-  .notifications-wrapper,
   .workspace-switcher-wrapper,
   .oz-lang-switcher,
   #toggle-fullscreen,
-  #toggle-theme,
   .pinned-dropdown-wrapper {
     display: none !important;
+  }
+
+  .notifications-wrapper {
+    display: inline-flex !important;
   }
 
   .tour-help-btn {
