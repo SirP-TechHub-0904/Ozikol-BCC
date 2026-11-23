@@ -69,7 +69,12 @@
         </div>
     </div>
     <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="btn-admin btn-admin-primary" onclick="openEditConnectionModal();" id="btnOpenEditConn">
+        <button type="button" class="btn-admin btn-admin-primary" onclick="openResetSqlPasswordModal();" id="btnOpenResetSqlPwd">
+            <span class="material-symbols-outlined" style="font-size: 16px;">lock_reset</span>
+            Reset SQL Password &amp; Sync
+        </button>
+
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="openEditConnectionModal();" id="btnOpenEditConn">
             <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
             Edit Connection
         </button>
@@ -668,11 +673,17 @@
             </div>
 
             @* Modal Footer *@
-            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnTestModalConn" onclick="runModalConnectionTest();">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">network_ping</span>
-                    Test Connection
-                </button>
+            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnTestModalConn" onclick="runModalConnectionTest();">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">network_ping</span>
+                        Test Connection
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeEditConnectionModal(); openResetSqlPasswordModal();" style="color: var(--admin-primary); border-color: rgba(0, 80, 229, 0.35);">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">lock_reset</span>
+                        Reset SQL Password on Server
+                    </button>
+                </div>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeEditConnectionModal();">Cancel</button>
                     <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSaveConn">
@@ -680,6 +691,92 @@
                         Save &amp; Encrypt
                     </button>
                 </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Reset SQL Login Password & Auto-Sync Connection String Modal ── *@
+<div class="admin-modal-backdrop" id="resetSqlPasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1210; align-items: center; justify-content: center; padding: 20px;">
+    <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 600px; box-shadow: var(--shadow-xl); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;">
+        <div class="admin-modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(0, 80, 229, 0.12); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">lock_reset</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--admin-text);">Reset SQL Password &amp; Auto-Sync Connection</h3>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Resets SQL Login on SQL Server &amp; updates encrypted Connection String in Central</div>
+                </div>
+            </div>
+            <button type="button" class="btn-admin-icon" onclick="closeResetSqlPasswordModal();" aria-label="Close dialog" style="cursor: pointer;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="ResetSqlPasswordAndSync" id="formResetSqlPwd" style="display: flex; flex-direction: column; overflow: hidden; margin: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="TenantKey" value="@Model.Tenant.TenantKey" />
+
+            <div class="admin-modal-body" style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+                <div style="padding: 12px 14px; background: rgba(0, 80, 229, 0.06); border: 1px solid rgba(0, 80, 229, 0.22); border-radius: 8px; font-size: 12.5px; color: var(--admin-text); line-height: 1.5; margin-bottom: 16px;">
+                    <strong>How this works:</strong> Central connects to SQL Server, keeps the tenant's existing isolated SQL user (or creates it if missing), resets its password (`ALTER LOGIN ... WITH PASSWORD`), re-links `[db_owner]` on <code>@Model.CurrentInitialCatalog</code>, and updates + encrypts the connection string in Central.
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-weight: 600; font-size: 12.5px;">SQL Server Host</label>
+                        <input type="text" name="Server" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentDataSource) ? Model.CurrentDataSource : Model.ServerHost)" style="font-family: monospace; font-size: 12.5px;" required />
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-weight: 600; font-size: 12.5px;">Tenant Database Name</label>
+                        <input type="text" name="DatabaseName" class="form-control" value="@Model.CurrentInitialCatalog" style="font-family: monospace; font-size: 12.5px;" required />
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label" style="font-weight: 600; font-size: 12.5px; display: flex; justify-content: space-between;">
+                        <span>Dedicated SQL Login / Username</span>
+                        <span style="font-size: 11px; color: var(--admin-text-muted); font-weight: 400;">Keeps existing tenant SQL user</span>
+                    </label>
+                    <input type="text" name="SqlUsername" id="resetSqlUsernameInput" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentUserId) && !string.Equals(Model.CurrentUserId, "sa", StringComparison.OrdinalIgnoreCase) ? Model.CurrentUserId : $"usr_{Model.Tenant.TenantKey}_db")" style="font-family: monospace; font-size: 13px;" required />
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label" style="font-weight: 600; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>New SQL Login Password</span>
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="generateStrongSqlPassword();" style="padding: 2px 8px; font-size: 11px;">
+                                <span class="material-symbols-outlined" style="font-size: 13px;">autorenew</span>
+                                Generate New
+                            </button>
+                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="copyResetSqlPassword();" style="padding: 2px 8px; font-size: 11px;">
+                                <span class="material-symbols-outlined" style="font-size: 13px;">content_copy</span>
+                                Copy
+                            </button>
+                        </div>
+                    </label>
+                    <input type="text" name="NewPassword" id="resetSqlPasswordInput" class="form-control" placeholder="Click 'Generate New' or enter custom password" style="font-family: monospace; font-size: 13px;" required />
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--admin-border);">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
+                        <input type="checkbox" name="EnsureDatabaseExists" value="true" checked />
+                        <span>Create physical database on SQL Server if missing (`CREATE DATABASE [@Model.CurrentInitialCatalog]`)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
+                        <input type="checkbox" name="ApplyMigrationsIfPending" value="true" checked />
+                        <span>Automatically apply pending EF Core migrations &amp; verify default website seed</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeResetSqlPasswordModal();">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">lock_reset</span>
+                    Reset SQL Password &amp; Update Connection String
+                </button>
             </div>
         </form>
     </div>
@@ -706,8 +803,51 @@
         window.addEventListener('DOMContentLoaded', function() {
             if (window.location.hash === '#editConnection') {
                 openEditConnectionModal();
+            } else if (window.location.hash === '#resetPassword') {
+                openResetSqlPasswordModal();
             }
         });
+
+        function openResetSqlPasswordModal() {
+            const modal = document.getElementById('resetSqlPasswordModal');
+            if (modal) {
+                const pwdInput = document.getElementById('resetSqlPasswordInput');
+                if (pwdInput && !pwdInput.value) {
+                    generateStrongSqlPassword();
+                }
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeResetSqlPasswordModal() {
+            const modal = document.getElementById('resetSqlPasswordModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        document.getElementById('resetSqlPasswordModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeResetSqlPasswordModal();
+            }
+        });
+
+        function generateStrongSqlPassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@@#$%^&*()-_=+';
+            const array = new Uint32Array(28);
+            window.crypto.getRandomValues(array);
+            let pwd = 'Ozi!';
+            for (let i = 0; i < array.length; i++) {
+                pwd += chars[array[i] % chars.length];
+            }
+            const pwdInput = document.getElementById('resetSqlPasswordInput');
+            if (pwdInput) pwdInput.value = pwd;
+        }
+
+        function copyResetSqlPassword() {
+            const pwdInput = document.getElementById('resetSqlPasswordInput');
+            if (pwdInput && pwdInput.value) {
+                navigator.clipboard.writeText(pwdInput.value);
+            }
+        }
 
         function switchConnMode(mode) {
             document.getElementById('connConfigMode').value = mode;

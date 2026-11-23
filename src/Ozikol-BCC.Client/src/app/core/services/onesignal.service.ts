@@ -178,6 +178,50 @@ export class OneSignalService {
   }
 
   /**
+   * Returns true if the current device is running iOS/iPadOS (iPhone, iPad, iPod).
+   */
+  public isIosDevice(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return isIOS || isIPadOS;
+  }
+
+  /**
+   * Returns true if the web app is running in standalone Home Screen mode (PWA).
+   */
+  public isStandalonePwa(): boolean {
+    if (typeof window === 'undefined') return false;
+    const nav: any = window.navigator;
+    return (
+      window.matchMedia?.('(display-mode: standalone)')?.matches === true ||
+      nav?.standalone === true
+    );
+  }
+
+  /**
+   * Requests browser Notification permission while preserving the synchronous user gesture
+   * across modern Promise-based browsers (Chrome, Firefox, Edge, Safari 16+) and legacy callback-based Safari.
+   */
+  private requestNativeNotificationPermission(): Promise<NotificationPermission> {
+    return new Promise((resolve) => {
+      try {
+        const reqResult = window.Notification.requestPermission((perm) => {
+          resolve(perm);
+        });
+        if (reqResult && typeof (reqResult as Promise<NotificationPermission>).then === 'function') {
+          (reqResult as Promise<NotificationPermission>).then(resolve).catch(() => {
+            resolve(window.Notification.permission);
+          });
+        }
+      } catch {
+        resolve(window.Notification?.permission || 'default');
+      }
+    });
+  }
+
+  /**
    * Registers the browser ServiceWorker Web Push subscription and syncs the endpoint/keys (or user identity)
    * to OneSignal through the Ozikol backend REST API (/api/NotificationsApi/register-push).
    */
@@ -206,17 +250,23 @@ export class OneSignalService {
 
     if (permission === 'granted' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       try {
-        let reg = await navigator.serviceWorker.getRegistration();
+        let reg = await navigator.serviceWorker.getRegistration('/');
         if (!reg) {
           reg = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' });
         }
-        if (reg && reg.pushManager) {
-          let sub = await reg.pushManager.getSubscription();
+        // Wait for the Service Worker to reach the 'activated' state before subscribing (critical for Safari & Firefox)
+        const activeReg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<ServiceWorkerRegistration | undefined>((resolve) => setTimeout(() => resolve(reg), 4000))
+        ]);
+        const targetReg = activeReg || reg;
+        if (targetReg && targetReg.pushManager) {
+          let sub = await targetReg.pushManager.getSubscription();
           if (!sub) {
             const appServerKey = this.urlBase64ToUint8Array(OneSignalService.ONESIGNAL_VAPID_PUBLIC_KEY);
-            sub = await reg.pushManager.subscribe({
+            sub = await targetReg.pushManager.subscribe({
               userVisibleOnly: true,
-              applicationServerKey: appServerKey.buffer as ArrayBuffer
+              applicationServerKey: appServerKey as unknown as BufferSource
             });
           }
           if (sub) {
@@ -257,23 +307,35 @@ export class OneSignalService {
 
   /**
    * Explicitly triggers browser push permission prompt and OneSignal subscription opt-in for existing users.
+   * Preserves the synchronous user gesture on the very first line so Safari (macOS/iOS) and Firefox never block the prompt.
    */
   public async enableAndPromptPushNotifications(explicitUserId?: string): Promise<{
     status: 'granted' | 'denied' | 'default' | 'unsupported';
     message: string;
   }> {
-    this.init();
-
     if (typeof window === 'undefined' || !('Notification' in window)) {
+      if (this.isIosDevice() && !this.isStandalonePwa()) {
+        return {
+          status: 'unsupported',
+          message:
+            'On iPhone/iPad (Safari), tap the Share button at the bottom of Safari and choose "Add to Home Screen", then open the app from your Home Screen to enable push notifications.'
+        };
+      }
       return {
         status: 'unsupported',
-        message: 'Push notifications are not supported by this browser.'
+        message: 'Push notifications are not supported in this browser window. Please use a modern HTTPS browser or add this app to your Home Screen.'
       };
     }
 
     try {
-      // 1. Trigger native browser Notification permission dialog
-      const permission = await window.Notification.requestPermission();
+      // 1. Trigger native browser Notification permission dialog IMMEDIATELY inside the user click gesture
+      let permission: NotificationPermission = window.Notification.permission;
+      if (permission !== 'granted') {
+        permission = await this.requestNativeNotificationPermission();
+      }
+
+      // Initialize OneSignal SDK after capturing the synchronous user gesture
+      this.init();
 
       // 2. Also opt-in & bind user ID in OneSignal if loaded
       const userId = explicitUserId || this.resolveCurrentUserId();
@@ -288,38 +350,39 @@ export class OneSignalService {
             if (tenantKey && OneSignal.User?.addTag) {
               await OneSignal.User.addTag('tenant_key', tenantKey.trim().toLowerCase());
             }
-            if (OneSignal.Notifications?.requestPermission) {
+            if (OneSignal.Notifications?.requestPermission && window.Notification.permission === 'default') {
               await OneSignal.Notifications.requestPermission();
             }
             if (OneSignal.User?.PushSubscription?.optIn) {
               await OneSignal.User.PushSubscription.optIn();
             }
-            if (OneSignal.Slidedown?.promptPush) {
-              await OneSignal.Slidedown.promptPush({ force: true });
-            }
           } catch {}
         });
       }
 
-      if (permission === 'granted') {
+      const finalPermission = window.Notification.permission || permission;
+
+      if (finalPermission === 'granted') {
         await this.syncPushSubscriptionWithBackend(userId, tenantKey, true, true);
         return {
           status: 'granted',
-          message: 'Push notifications are now enabled! A welcome push alert has been dispatched to your device.'
+          message: 'Push notifications are now active on this device!'
         };
       }
 
-      if (permission === 'denied') {
+      if (finalPermission === 'denied') {
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
         return {
           status: 'denied',
-          message:
-            'Push notifications are currently blocked in your browser site settings. Click the tune/lock icon next to the URL address bar, set "Notifications" to "Allow", and click Enable Push Notifications again.'
+          message: isSafari
+            ? 'Notifications are blocked in Safari for this website. Open Safari Settings -> Websites -> Notifications, set this site to "Allow", and click Enable Notifications again.'
+            : 'Push notifications are blocked in your browser site settings. Click the tune/lock icon next to the URL address bar, set "Notifications" to "Allow", and click Enable Notifications again.'
         };
       }
 
       return {
         status: 'default',
-        message: 'Please click "Allow" on the browser prompt to enable push notifications.'
+        message: 'Please click "Allow" on the browser prompt at the top of your screen to enable push notifications.'
       };
     } catch {
       return {

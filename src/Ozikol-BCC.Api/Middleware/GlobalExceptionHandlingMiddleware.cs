@@ -156,7 +156,8 @@ public class GlobalExceptionHandlingMiddleware
         {
             var msg = current.Message ?? string.Empty;
             if (msg.Contains("Cannot open database", StringComparison.OrdinalIgnoreCase) ||
-                (msg.Contains("Login failed for user 'oz_usr_", StringComparison.OrdinalIgnoreCase)))
+                msg.Contains("Login failed for user 'oz_usr_", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("Login failed for user 'usr_", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

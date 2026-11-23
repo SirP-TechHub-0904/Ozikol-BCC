@@ -265,9 +265,9 @@ import { OneSignalService } from '../../core/services/onesignal.service';
                 Notifications are blocked in your browser. Click the lock icon beside the address bar, set Notifications to Allow, then press the button below.
               </p>
               <p class="section-desc-text" *ngIf="pushStatus === 'unsupported'">
-                This browser does not support push notifications.
+                On iPhone or iPad (Safari), tap the <strong>Share</strong> icon in Safari and select <strong>Add to Home Screen</strong>, then open the app from your Home Screen to enable push notifications.
               </p>
-              <button type="button" class="btn-primary" (click)="enablePushNotifications()" [disabled]="isEnablingPush || pushStatus === 'unsupported'">
+              <button type="button" class="btn-primary" (click)="enablePushNotifications()" [disabled]="isEnablingPush">
                 <span class="material-symbols-outlined">{{ isEnablingPush ? 'hourglass_top' : 'notifications_active' }}</span>
                 <span>{{ pushStatus === 'granted' ? 'Re-Sync Push on This Device' : 'Enable Push Notifications' }}</span>
               </button>

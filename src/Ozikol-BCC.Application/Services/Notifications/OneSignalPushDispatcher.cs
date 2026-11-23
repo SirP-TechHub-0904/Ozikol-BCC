@@ -257,7 +257,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 }
 
                 // Determine device_type for OneSignal Players API:
-                // 5 = Chrome Web Push, 7 = Safari Web Push, 8 = Firefox Web Push
+                // 5 = Standard W3C VAPID Web Push (Chrome, Edge, Opera, Brave, and modern Safari 16+ / iOS 16.4+ VAPID endpoints)
+                // 7 = Legacy Apple Safari Push (.p12 certificate format without VAPID p256dh/auth keys)
+                // 8 = Firefox Web Push
                 int deviceType = 5;
                 if (!string.IsNullOrWhiteSpace(userAgent))
                 {
@@ -266,7 +268,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         deviceType = 8;
                     }
                     else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) &&
-                             !userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase))
+                             !userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) &&
+                             string.IsNullOrWhiteSpace(p256dh))
                     {
                         deviceType = 7;
                     }

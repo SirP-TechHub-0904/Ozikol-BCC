@@ -1691,7 +1691,7 @@ export interface SuiteInfoDetail {
                 type="button" 
                 (click)="triggerEnablePushNotifications(); closeDropdowns()" 
                 class="dropdown-item"
-                [disabled]="isEnablingPush || pushNotificationStatus === 'unsupported'"
+                [disabled]="isEnablingPush"
                 style="display: flex; align-items: center; justify-content: space-between;"
               >
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -4527,11 +4527,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     try {
       const res = await this.oneSignal.enableAndPromptPushNotifications();
       if (res.status === 'granted') {
-        this.toast.success('Push notifications are now enabled on this device!');
+        this.toast.success(res.message || 'Push notifications are now enabled on this device!');
       } else if (res.status === 'denied') {
-        this.toast.warning('Notifications are blocked by your browser. Please allow notifications in site settings.');
+        this.toast.warning(res.message || 'Notifications are blocked by your browser. Please allow notifications in site settings.');
       } else if (res.status === 'unsupported') {
-        this.toast.error('This browser does not support web push notifications.');
+        this.toast.info(res.message || 'This browser requires adding the web app to your Home Screen to enable push notifications.');
+      } else {
+        this.toast.info(res.message || 'Please click "Allow" on your browser prompt to enable push notifications.');
       }
     } catch (err: any) {
       this.toast.error(err?.message || 'Failed to enable push notifications');
