@@ -1317,6 +1317,17 @@ export interface SuiteInfoDetail {
             </a>
           </div>
 
+          <!-- 1b. Workspace Notifications -->
+          <div class="nav-item">
+            <a routerLink="/users/workspace/notifications" [class.active]="isCurrentRoute('/users/workspace/notifications')" class="nav-link position-relative">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">notifications</span>
+                <span>{{ 'adm.notifications' | translate:'Notifications' }}</span>
+              </div>
+              <span class="sidebar-badge-sup" *ngIf="unreadNotifCount > 0">{{ unreadNotifCount > 99 ? '99+' : unreadNotifCount }}</span>
+            </a>
+          </div>
+
           <!-- 2. Committees & Sub-Groups Member Workspace (bcp-committees) -->
           <!-- Placed before Manage My Account per Canonical Navigation Hierarchy -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_committees')" *ngIf="isFeatureActive('bcp-committees')">
@@ -1587,7 +1598,7 @@ export interface SuiteInfoDetail {
           </button>
 
           <!-- Fullscreen Toggle -->
-          <button type="button" class="topbar-action-btn" (click)="toggleFullscreen()" [title]="'adm.toggle_fullscreen' | translate:'Toggle Fullscreen'">
+          <button type="button" class="topbar-action-btn topbar-fullscreen-btn" id="toggle-fullscreen" (click)="toggleFullscreen()" [title]="'adm.toggle_fullscreen' | translate:'Toggle Fullscreen'">
             <span class="material-symbols-outlined">fullscreen</span>
           </button>
 
@@ -2112,11 +2123,23 @@ export interface SuiteInfoDetail {
         cursor: pointer;
       }
       .workspace-switcher-wrapper,
-      .oz-lang-switcher {
+      .oz-lang-switcher,
+      .topbar-fullscreen-btn {
         display: none !important;
       }
       .user-profile-info {
         display: none !important;
+      }
+      .notifications-wrapper {
+        display: inline-flex !important;
+      }
+      .notifications-dropdown {
+        position: fixed !important;
+        top: calc(var(--topbar-height, 64px) + 6px) !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        max-width: calc(100vw - 24px) !important;
       }
     }
     .feature-locked {
