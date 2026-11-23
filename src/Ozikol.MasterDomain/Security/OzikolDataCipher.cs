@@ -288,4 +288,39 @@ public static class OzikolDataCipher
         var saltedInput = Encoding.UTF8.GetBytes($"Ozikol.BCC.AES256GCM.v1::{rawSecret}");
         return SHA256.HashData(saltedInput);
     }
+
+    /// <summary>
+    /// Generates a tamper-proof inter-service HMAC/SHA-256 sync token for internal Central-to-API cache invalidation.
+    /// </summary>
+    /// <param name="tenantKey">The target tenant key.</param>
+    /// <returns>A deterministic hexadecimal HMAC signature.</returns>
+    public static string GenerateInternalSyncToken(string tenantKey)
+    {
+        var key = ResolveActiveKey();
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes($"Ozikol.BCC.InternalSync::{tenantKey.Trim().ToLowerInvariant()}"));
+        return Convert.ToHexString(hash);
+    }
+
+    /// <summary>
+    /// Validates an inter-service HMAC/SHA-256 sync token.
+    /// </summary>
+    /// <param name="tenantKey">The target tenant key.</param>
+    /// <param name="token">The token to validate.</param>
+    /// <returns>True if the token is valid and signed by the active master key.</returns>
+    public static bool ValidateInternalSyncToken(string tenantKey, string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return false;
+        try
+        {
+            var expected = GenerateInternalSyncToken(tenantKey);
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(expected),
+                Encoding.UTF8.GetBytes(token.Trim()));
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

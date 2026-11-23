@@ -1255,6 +1255,32 @@ CRITICAL DIAGNOSIS TASK:
                     await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
                 }
 
+                // 7. Notify running Ozikol-BCC.Api instances to evict local in-memory tenant cache with zero downtime
+                try
+                {
+                    var apiTargetUrl = !string.IsNullOrWhiteSpace(tenant.ApiUrl)
+                        ? tenant.ApiUrl.TrimEnd('/')
+                        : "https://api.ozikol.cloud";
+
+                    var syncToken = Ozikol.MasterDomain.Security.OzikolDataCipher.GenerateInternalSyncToken(tenant.TenantKey);
+                    var invalidateEndpoint = $"{apiTargetUrl}/api/tenants/cache/invalidate?tenantKey={Uri.EscapeDataString(tenant.TenantKey)}";
+
+                    using var client = _httpClientFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(4);
+                    using var syncRequest = new HttpRequestMessage(HttpMethod.Post, invalidateEndpoint);
+                    syncRequest.Headers.Add("X-Internal-Sync-Token", syncToken);
+
+                    using var syncResponse = await client.SendAsync(syncRequest);
+                    if (syncResponse.IsSuccessStatusCode)
+                    {
+                        stepsCompleted.Add("Broadcasted zero-downtime cache refresh to Ozikol API");
+                    }
+                }
+                catch (Exception syncEx)
+                {
+                    _logger.LogWarning(syncEx, "Note: Direct API cache invalidation HTTP notification skipped for {TenantKey}: {Message}", tenant.TenantKey, syncEx.Message);
+                }
+
                 _logger.LogInformation("Successfully reset SQL login '{SqlUser}' password and synced encrypted connection string for tenant '{TenantKey}'",
                     sqlUsername, tenant.TenantKey);
 

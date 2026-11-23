@@ -13,10 +13,17 @@ namespace Ozikol_BCC.Api.Controllers
     public class TenantsApiController : ControllerBase
     {
         private readonly ITenantProvisioningService _provisioningService;
+        private readonly Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator? _cacheInvalidator;
+        private readonly ITenantProvider? _tenantProvider;
 
-        public TenantsApiController(ITenantProvisioningService provisioningService)
+        public TenantsApiController(
+            ITenantProvisioningService provisioningService,
+            Ozikol_BCC.Infrastructure.Caching.ITenantCacheInvalidator? cacheInvalidator = null,
+            ITenantProvider? tenantProvider = null)
         {
             _provisioningService = provisioningService;
+            _cacheInvalidator = cacheInvalidator;
+            _tenantProvider = tenantProvider;
         }
 
         /// <summary>
@@ -149,6 +156,47 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, $"Custom domain for tenant '{tenantKey}' updated successfully."));
+        }
+
+        /// <summary>
+        /// Instantly invalidates and refreshes the cached tenant routing and connection strings in local memory and distributed cache.
+        /// Allows Central Works to sync updated database credentials with zero API downtime and zero impact on other tenants.
+        /// </summary>
+        /// <param name="tenantKey">Target tenant key to evict, or null to evict all.</param>
+        /// <returns>Execution status.</returns>
+        [HttpPost("cache/invalidate")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 401)]
+        public async Task<IActionResult> InvalidateTenantCache([FromQuery] string? tenantKey)
+        {
+            var syncToken = Request.Headers["X-Internal-Sync-Token"].ToString();
+            var cleanKey = tenantKey?.Trim().ToLowerInvariant() ?? "all";
+
+            bool isAuthorized = User.IsInRole("SuperAdmin") ||
+                                User.IsInRole("Admin") ||
+                                Ozikol.MasterDomain.Security.OzikolDataCipher.ValidateInternalSyncToken(cleanKey, syncToken);
+
+            if (!isAuthorized)
+            {
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized internal cache invalidation request."));
+            }
+
+            if (_cacheInvalidator != null)
+            {
+                await _cacheInvalidator.InvalidateTenantCatalogAsync(tenantKey);
+            }
+
+            if (_tenantProvider is TenantProvider tp)
+            {
+                tp.RefreshCachedTenants();
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                tenantKey = cleanKey,
+                invalidatedUtc = DateTime.UtcNow
+            }, $"Tenant cache for '{cleanKey}' successfully invalidated and refreshed with zero downtime."));
         }
     }
 }
