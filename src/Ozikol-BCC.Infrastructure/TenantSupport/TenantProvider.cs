@@ -501,8 +501,14 @@ public class TenantProvider : ITenantProvider
                 tenantBuilder.Remove("Network Address");
                 tenantBuilder["Server"] = masterServer!;
 
-                // If master has credentials and tenant lacks them, inherit master credentials
-                if (masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))
+                // Strictly preserve dedicated tenant SQL credentials. Only fallback to master credentials
+                // if the tenant connection string has NO user defined at all (e.g. Windows Auth or incomplete setup).
+                bool tenantHasUser = (tenantBuilder.TryGetValue("User Id", out var tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
+                                     (tenantBuilder.TryGetValue("UserId", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
+                                     (tenantBuilder.TryGetValue("UID", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
+                                     (tenantBuilder.TryGetValue("User", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString()));
+
+                if (!tenantHasUser && masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))
                 {
                     tenantBuilder["User Id"] = masterUser;
                     if (masterBuilder.TryGetValue("Password", out var masterPass))
