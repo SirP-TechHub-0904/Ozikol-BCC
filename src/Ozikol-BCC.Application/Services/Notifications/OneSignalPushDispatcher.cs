@@ -87,7 +87,6 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     if (customData.TryGetValue("tenant_logo_url", out var logoUrl) && !string.IsNullOrWhiteSpace(logoUrl))
                     {
                         payload["chrome_web_icon"] = logoUrl;
-                        payload["chrome_web_badge"] = logoUrl;
                         payload["firefox_icon"] = logoUrl;
                         payload["large_icon"] = logoUrl;
                     }

@@ -34,6 +34,7 @@ export interface ChatMessagePayload {
 export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private notificationHubConnection!: signalR.HubConnection;
+  private displayedNotificationKeys = new Set<string>();
   
   // Real-time Event Subjects
   private messageSubject = new Subject<ChatMessagePayload>();
@@ -145,6 +146,15 @@ export class SignalRService {
       .build();
 
     this.notificationHubConnection.on('ReceiveNotification', (notif: any) => {
+      const dedupeKey = notif?.id
+        ? String(notif.id)
+        : `${notif?.title || notif?.subject || ''}|${notif?.message || notif?.content || ''}`;
+      if (this.displayedNotificationKeys.has(dedupeKey)) {
+        return;
+      }
+      this.displayedNotificationKeys.add(dedupeKey);
+      setTimeout(() => this.displayedNotificationKeys.delete(dedupeKey), 30000);
+
       this.notificationSubject.next(notif);
       this.chatSound.playMessageSound();
       this.showSystemPushNotification(notif);
@@ -172,6 +182,8 @@ export class SignalRService {
    * Dispatches a native OS/Browser Push Notification via the Service Worker or Notification API
    * whenever a live platform notification arrives over SignalR (works on every custom tenant domain),
    * always branding the push alert with the tenant's organization name and tenant logo/icon.
+   * Uses a stable notification tag and omits non-monochrome badge URLs so Chrome on Android
+   * deduplicates alerts cleanly and never flags them as "Possible spam".
    */
   private showSystemPushNotification(notif: any): void {
     if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
@@ -186,6 +198,7 @@ export class SignalRService {
     const cleanBody = String(rawBody).replace(/<[^>]*>?/gm, '').trim();
     const icon = localStorage.getItem('tenant_icon') || localStorage.getItem('tenant_logo') || '/favicon.ico';
     const actionUrl = notif?.actionUrl || '/users/workspace/notifications';
+    const tag = notif?.id ? `oz-notif-${notif.id}` : `oz-notif-${title}-${cleanBody.substring(0, 40)}`;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(reg => {
@@ -193,19 +206,19 @@ export class SignalRService {
           reg.showNotification(title, {
             body: cleanBody,
             icon,
-            badge: icon,
+            tag,
             data: { url: actionUrl }
           }).catch(() => {
-            try { new Notification(title, { body: cleanBody, icon }); } catch {}
+            try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
           });
         } else {
-          try { new Notification(title, { body: cleanBody, icon }); } catch {}
+          try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
         }
       }).catch(() => {
-        try { new Notification(title, { body: cleanBody, icon }); } catch {}
+        try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
       });
     } else {
-      try { new Notification(title, { body: cleanBody, icon }); } catch {}
+      try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
     }
   }
 
