@@ -18,15 +18,15 @@ import { WorkforceService } from '../../core/services/workforce.service';
 import { MasterHelpService } from '../../core/services/master-help.service';
 import { OneSignalService } from '../../core/services/onesignal.service';
 import { HelpDrawerComponent } from '../../shared/components/help-drawer/help-drawer.component';
-import { 
-  getStoredUserRoles, 
-  canAccessConsole, 
-  isGlobalAdmin, 
+import {
+  getStoredUserRoles,
+  canAccessConsole,
+  isGlobalAdmin,
   isGlobalEditor,
   isReadOnlyUser,
   hasFeatureScope,
-  hasUserRole, 
-  getUserPrimaryRoleName 
+  hasUserRole,
+  getUserPrimaryRoleName
 } from '../../core/utils/user-role.utils';
 
 interface TaskTab {
@@ -95,6 +95,7 @@ export interface SuiteInfoDetail {
         <!-- ============================================== -->
         <ng-container *ngIf="isConsoleActive">
           <!-- 1. Executive Command -->
+          <ng-container *ngIf="canAccessSuite('dashboard')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.core_command' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" [title]="'adm.executive_command_overview' | translate:'Executive Command Overview'">
@@ -112,6 +113,7 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          </ng-container>
 
           <!-- 2. Website & CMS (Web Exclusive) -->
           <ng-container *ngIf="canAccessSuite('cms')">
@@ -4136,22 +4138,22 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    if (cleanKey === 'settings' || cleanKey === 'billingsubscriptions') {
-      return false;
-    }
-
     if (isGlobalEditor(this.userRoles)) {
       return true;
     }
 
     switch (cleanKey) {
+      case 'dashboard':
+      case 'consoledashboard':
+      case 'corecommand':
+        return hasFeatureScope('dashboard', this.userRoles) || this.isGlobalAdmin;
       case 'broadcast':
       case 'broadcastcommunications':
-        return hasFeatureScope('usermanager', this.userRoles) || hasFeatureScope('identitymanager', this.userRoles) || this.isGlobalAdmin;
+      case 'broadcaststudio':
+        return hasFeatureScope('broadcast', this.userRoles) || hasFeatureScope('usermanager', this.userRoles) || this.isGlobalAdmin;
       case 'usermanagement':
         return hasFeatureScope('usermanager', this.userRoles);
       case 'identity':
-      case 'securityaudit':
       case 'compliancegovernance':
       case 'compliancelearningcertification':
       case 'academylearning':
@@ -4160,19 +4162,29 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       case 'websitecms':
       case 'lifeeventspublications':
         return hasFeatureScope('contentmanager', this.userRoles);
+      case 'billing':
+      case 'billingmanager':
+      case 'billingsubscriptions':
+        return hasFeatureScope('billingmanager', this.userRoles) || this.isGlobalAdmin;
+      case 'settings':
+      case 'settingsmanager':
+      case 'securityaudit':
+        return hasFeatureScope('settingsmanager', this.userRoles) || hasFeatureScope('identitymanager', this.userRoles) || this.isGlobalAdmin;
       case 'formsintelligence':
       case 'reportsformsanalytics':
         return hasFeatureScope('formsmanager', this.userRoles) ||
-               hasFeatureScope('contentmanager', this.userRoles);
-      case 'peoplecommunity':
-      case 'peoplecommunitycollaboration':
+          hasFeatureScope('contentmanager', this.userRoles);
       case 'workforceshifts':
       case 'workforcerotascheduling':
+        return hasFeatureScope('workforceshifts', this.userRoles) ||
+          hasFeatureScope('bcp-staff-rota', this.userRoles);
+      case 'peoplecommunity':
+      case 'peoplecommunitycollaboration':
       case 'communicationsupport':
       case 'communicationaisupport':
       case 'operationsworkflows':
         return hasFeatureScope('crmmanager', this.userRoles) ||
-               hasFeatureScope('usermanager', this.userRoles);
+          hasFeatureScope('usermanager', this.userRoles);
       case 'eventsticketing':
       case 'eventstrainingmanagement':
         return hasFeatureScope('eventsmanager', this.userRoles);
@@ -4180,11 +4192,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       case 'financecommercialrevenue':
       case 'commercestore':
         return hasFeatureScope('storemanager', this.userRoles) ||
-               hasFeatureScope('billingmanager', this.userRoles);
+          hasFeatureScope('billingmanager', this.userRoles);
       case 'demographicscensus':
       case 'demographicsciviccensus':
         return hasFeatureScope('telemetrymanager', this.userRoles) ||
-               hasFeatureScope('usermanager', this.userRoles);
+          hasFeatureScope('usermanager', this.userRoles);
       default:
         return hasFeatureScope(cleanKey, this.userRoles);
     }
@@ -4276,11 +4288,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     subGroupAliasSingular: string;
     subGroupAliasPlural: string;
   } = {
-    aliasSingular: 'Committee',
-    aliasPlural: 'Committees',
-    subGroupAliasSingular: 'Sub-Group',
-    subGroupAliasPlural: 'Sub-Groups'
-  };
+      aliasSingular: 'Committee',
+      aliasPlural: 'Committees',
+      subGroupAliasSingular: 'Sub-Group',
+      subGroupAliasPlural: 'Sub-Groups'
+    };
 
   get isConsoleActive(): boolean {
     return this.isAdmin && this.currentConsoleMode === 'console';
@@ -4357,7 +4369,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           fingerprint: this.computeExpirationFingerprint(this.expiringFeatures)
         })
       );
-    } catch {}
+    } catch { }
   }
 
   loadFeatureExpirations(): void {
@@ -4487,13 +4499,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
   constructor(
-    private api: ApiService, 
-    private router: Router, 
+    private api: ApiService,
+    private router: Router,
     private toast: ToastService,
     private signalR: SignalRService,
     private aiAssistantService: AiAssistantContextService,
@@ -4504,7 +4516,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     private masterHelpService: MasterHelpService,
     private oneSignal: OneSignalService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   /// <summary>
   /// Resolves the current browser push notification permission status.
@@ -4586,8 +4598,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     // Trigger the opt-in popup exactly 12 seconds after login as requested
     setTimeout(() => {
       if (this.pushNotificationStatus === 'default' &&
-          localStorage.getItem('push_prompt_dismissed') !== 'true' &&
-          sessionStorage.getItem('push_prompt_dismissed') !== 'true') {
+        localStorage.getItem('push_prompt_dismissed') !== 'true' &&
+        sessionStorage.getItem('push_prompt_dismissed') !== 'true') {
         this.showPushBannerPrompt = true;
         this.cdr.markForCheck();
       }
@@ -4690,7 +4702,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           this.committeesService.applyAliases(res.data);
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     // 1. Live verify and refresh session against backend DB
@@ -4736,7 +4748,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             this.router.navigate(['/auth/login'], { queryParams: { sessionTerminated: 'true' } });
             return;
           }
-        } catch {}
+        } catch { }
       }
     });
 
@@ -4782,7 +4794,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     // Check saved pinned items
     const savedPinned = localStorage.getItem('bcp_pinned_items');
     if (savedPinned) {
-      try { this.pinnedItems = JSON.parse(savedPinned); } catch {}
+      try { this.pinnedItems = JSON.parse(savedPinned); } catch { }
     }
 
     // Initialize current route and active menus
@@ -5072,98 +5084,98 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     suiteSortOrder: number;
     featureCodes: string[];
   }> = [
-    {
-      categoryName: 'People, Community & Collaboration',
-      defaultMenuTitle: 'People & Community',
-      suiteAccessKey: 'people_community',
-      infoKey: 'people_community',
-      infoTitleKey: 'adm.people_community_overview',
-      infoTitleFallback: 'People & Community Overview',
-      suiteSortOrder: 1,
-      featureCodes: ['bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing']
-    },
-    {
-      categoryName: 'Workforce, Rota & Scheduling',
-      defaultMenuTitle: 'Workforce & Shifts',
-      infoKey: 'workforce_shifts',
-      infoTitleKey: 'adm.workforce_shifts_overview',
-      infoTitleFallback: 'Workforce & Shifts Overview',
-      suiteSortOrder: 2,
-      featureCodes: ['bcp-staff-rota', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
-    },
-    {
-      categoryName: 'Reports, Forms & Analytics',
-      defaultMenuTitle: 'Reports & Forms',
-      infoKey: 'forms_intelligence',
-      infoTitleKey: 'adm.forms_intelligence_overview',
-      infoTitleFallback: 'Forms & Intelligence Overview',
-      suiteSortOrder: 3,
-      featureCodes: ['bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms']
-    },
-    {
-      categoryName: 'Events & Training Management',
-      defaultMenuTitle: 'Events & Ticketing',
-      infoKey: 'events_ticketing',
-      infoTitleKey: 'adm.events_ticketing_overview',
-      infoTitleFallback: 'Events & Ticketing Overview',
-      suiteSortOrder: 4,
-      featureCodes: ['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management']
-    },
-    {
-      categoryName: 'Finance & Commercial Revenue',
-      defaultMenuTitle: 'Finance & Commerce',
-      infoKey: 'finance_banking',
-      infoTitleKey: 'adm.finance_banking_overview',
-      infoTitleFallback: 'Finance & Banking Overview',
-      suiteSortOrder: 5,
-      featureCodes: ['bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking']
-    },
-    {
-      categoryName: 'Operations & Workflows',
-      defaultMenuTitle: 'Operations & Workflows',
-      suiteSortOrder: 6,
-      featureCodes: ['bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks']
-    },
-    {
-      categoryName: 'Communication, AI & Support',
-      defaultMenuTitle: 'Communication & AI',
-      infoKey: 'communication_support',
-      infoTitleKey: 'adm.communication_support_overview',
-      infoTitleFallback: 'Communication & Support Overview',
-      suiteSortOrder: 7,
-      featureCodes: ['bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai']
-    },
-    {
-      categoryName: 'Compliance, Learning & Certification',
-      defaultMenuTitle: 'Compliance & Learning',
-      infoKey: 'compliance_governance',
-      infoTitleKey: 'adm.compliance_governance_overview',
-      infoTitleFallback: 'Compliance & Governance Overview',
-      suiteSortOrder: 8,
-      featureCodes: ['bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification']
-    },
-    {
-      categoryName: 'Demographics & Civic Census',
-      defaultMenuTitle: 'Demographics & Census',
-      infoKey: 'demographics_census',
-      infoTitleKey: 'adm.demographics_census_overview',
-      infoTitleFallback: 'Demographics & Census Overview',
-      suiteSortOrder: 9,
-      featureCodes: ['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics']
-    },
-    {
-      categoryName: 'Life Events & Publications',
-      defaultMenuTitle: 'Life Events & Media',
-      suiteSortOrder: 10,
-      featureCodes: ['bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures']
-    },
-    {
-      categoryName: 'Workspace',
-      defaultMenuTitle: 'Workspace',
-      suiteSortOrder: 11,
-      featureCodes: ['bcp-workspace']
-    }
-  ];
+      {
+        categoryName: 'People, Community & Collaboration',
+        defaultMenuTitle: 'People & Community',
+        suiteAccessKey: 'people_community',
+        infoKey: 'people_community',
+        infoTitleKey: 'adm.people_community_overview',
+        infoTitleFallback: 'People & Community Overview',
+        suiteSortOrder: 1,
+        featureCodes: ['bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing']
+      },
+      {
+        categoryName: 'Workforce, Rota & Scheduling',
+        defaultMenuTitle: 'Workforce & Shifts',
+        infoKey: 'workforce_shifts',
+        infoTitleKey: 'adm.workforce_shifts_overview',
+        infoTitleFallback: 'Workforce & Shifts Overview',
+        suiteSortOrder: 2,
+        featureCodes: ['bcp-staff-rota', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
+      },
+      {
+        categoryName: 'Reports, Forms & Analytics',
+        defaultMenuTitle: 'Reports & Forms',
+        infoKey: 'forms_intelligence',
+        infoTitleKey: 'adm.forms_intelligence_overview',
+        infoTitleFallback: 'Forms & Intelligence Overview',
+        suiteSortOrder: 3,
+        featureCodes: ['bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms']
+      },
+      {
+        categoryName: 'Events & Training Management',
+        defaultMenuTitle: 'Events & Ticketing',
+        infoKey: 'events_ticketing',
+        infoTitleKey: 'adm.events_ticketing_overview',
+        infoTitleFallback: 'Events & Ticketing Overview',
+        suiteSortOrder: 4,
+        featureCodes: ['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management']
+      },
+      {
+        categoryName: 'Finance & Commercial Revenue',
+        defaultMenuTitle: 'Finance & Commerce',
+        infoKey: 'finance_banking',
+        infoTitleKey: 'adm.finance_banking_overview',
+        infoTitleFallback: 'Finance & Banking Overview',
+        suiteSortOrder: 5,
+        featureCodes: ['bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking']
+      },
+      {
+        categoryName: 'Operations & Workflows',
+        defaultMenuTitle: 'Operations & Workflows',
+        suiteSortOrder: 6,
+        featureCodes: ['bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks']
+      },
+      {
+        categoryName: 'Communication, AI & Support',
+        defaultMenuTitle: 'Communication & AI',
+        infoKey: 'communication_support',
+        infoTitleKey: 'adm.communication_support_overview',
+        infoTitleFallback: 'Communication & Support Overview',
+        suiteSortOrder: 7,
+        featureCodes: ['bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai']
+      },
+      {
+        categoryName: 'Compliance, Learning & Certification',
+        defaultMenuTitle: 'Compliance & Learning',
+        infoKey: 'compliance_governance',
+        infoTitleKey: 'adm.compliance_governance_overview',
+        infoTitleFallback: 'Compliance & Governance Overview',
+        suiteSortOrder: 8,
+        featureCodes: ['bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification']
+      },
+      {
+        categoryName: 'Demographics & Civic Census',
+        defaultMenuTitle: 'Demographics & Census',
+        infoKey: 'demographics_census',
+        infoTitleKey: 'adm.demographics_census_overview',
+        infoTitleFallback: 'Demographics & Census Overview',
+        suiteSortOrder: 9,
+        featureCodes: ['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics']
+      },
+      {
+        categoryName: 'Life Events & Publications',
+        defaultMenuTitle: 'Life Events & Media',
+        suiteSortOrder: 10,
+        featureCodes: ['bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures']
+      },
+      {
+        categoryName: 'Workspace',
+        defaultMenuTitle: 'Workspace',
+        suiteSortOrder: 11,
+        featureCodes: ['bcp-workspace']
+      }
+    ];
 
   /**
    * Dynamically ordered sidebar suites and feature codes respecting MasterFeatureSuites.SortOrder and MasterFeatureCatalogs.SortOrder.
@@ -5369,7 +5381,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           this.applyBillingSnapshot(res.data);
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -5380,7 +5392,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
    */
   isFeatureVisible(featureCode: string): boolean {
     if (!featureCode) return false;
-    return this.visibleFeatureCodes.has(featureCode.toLowerCase());
+    if (!this.visibleFeatureCodes.has(featureCode.toLowerCase())) return false;
+    // Granular security matrix check: If not global admin / global editor, ensure user is assigned scope
+    if (!this.isGlobalAdmin && !isGlobalEditor(this.userRoles)) {
+      if (!hasFeatureScope(featureCode, this.userRoles)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -5526,7 +5545,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           }));
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -5640,37 +5659,37 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   isCmsStudioActive(): boolean {
     if (this.currentRoute.startsWith('/content/console/marketplace') ||
-        this.currentRoute.startsWith('/admin/marketplace') ||
-        this.currentRoute.startsWith('/content/console/templates') ||
-        this.currentRoute.startsWith('/admin/templates') ||
-        this.currentRoute === '/content/console/forms' ||
-        this.currentRoute === '/content/console/forms/create' ||
-        this.currentRoute.startsWith('/content/console/forms/edit/')) {
+      this.currentRoute.startsWith('/admin/marketplace') ||
+      this.currentRoute.startsWith('/content/console/templates') ||
+      this.currentRoute.startsWith('/admin/templates') ||
+      this.currentRoute === '/content/console/forms' ||
+      this.currentRoute === '/content/console/forms/create' ||
+      this.currentRoute.startsWith('/content/console/forms/edit/')) {
       return false;
     }
     return this.currentRoute.startsWith('/content/console') ||
-           this.currentRoute.startsWith('/admin/content');
+      this.currentRoute.startsWith('/admin/content');
   }
 
   isUserListActive(): boolean {
     return this.currentRoute === '/users/console/list' ||
-           this.currentRoute.startsWith('/users/console/create') ||
-           this.currentRoute.startsWith('/users/console/edit') ||
-           this.currentRoute.startsWith('/users/console/details') ||
-           this.currentRoute === '/admin/users/list' ||
-           this.currentRoute.startsWith('/admin/users/create') ||
-           this.currentRoute.startsWith('/admin/users/edit') ||
-           this.currentRoute.startsWith('/admin/users/details');
+      this.currentRoute.startsWith('/users/console/create') ||
+      this.currentRoute.startsWith('/users/console/edit') ||
+      this.currentRoute.startsWith('/users/console/details') ||
+      this.currentRoute === '/admin/users/list' ||
+      this.currentRoute.startsWith('/admin/users/create') ||
+      this.currentRoute.startsWith('/admin/users/edit') ||
+      this.currentRoute.startsWith('/admin/users/details');
   }
 
   isUserCategoriesActive(): boolean {
     return this.currentRoute.startsWith('/users/console/categories') ||
-           this.currentRoute.startsWith('/admin/users/categories');
+      this.currentRoute.startsWith('/admin/users/categories');
   }
 
   isUserKpiActive(): boolean {
     return this.currentRoute.startsWith('/users/console/kpi') ||
-           this.currentRoute.startsWith('/admin/users/kpi');
+      this.currentRoute.startsWith('/admin/users/kpi');
   }
 
   isContentCategoriesActive(): boolean {
@@ -5740,7 +5759,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.loadTerminologyAliases();
@@ -5755,7 +5774,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           this.userInitials = `${first[0]}${last[0]}`.toUpperCase();
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.api.get<any>('SettingsApi/ecommerce').subscribe({
@@ -5765,7 +5784,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           localStorage.setItem('tenant_website_mode', res.data.storeOperatingMode);
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.api.get<any>('DashboardApi/metrics').subscribe({
@@ -5792,7 +5811,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -5826,7 +5845,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           localStorage.setItem('alias_alumni', this.alumniAlias);
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -5890,9 +5909,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   toggleFullscreen(): void {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   }
 
@@ -5941,9 +5960,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.apps-grid-wrapper') &&
-        !target.closest('.notifications-wrapper') &&
-        !target.closest('.user-profile-wrapper') &&
-        !target.closest('.oz-lang-switcher')) {
+      !target.closest('.notifications-wrapper') &&
+      !target.closest('.user-profile-wrapper') &&
+      !target.closest('.oz-lang-switcher')) {
       this.closeDropdowns();
     }
   }
@@ -6043,7 +6062,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           this.unreadNotifCount = res.data.unreadCount || 0;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -6053,7 +6072,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         this.notificationFeed.forEach(n => n.isRead = true);
         this.unreadNotifCount = 0;
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -6063,7 +6082,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
         this.notificationFeed = [];
         this.unreadNotifCount = 0;
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -6074,7 +6093,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           notif.isRead = true;
           this.unreadNotifCount = Math.max(0, this.unreadNotifCount - 1);
         },
-        error: () => {}
+        error: () => { }
       });
     }
 
@@ -6165,7 +6184,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
     // 1. Instant local/session guard: Avoid unnecessary network checks once verified in current browser session
     if (sessionStorage.getItem('bcp_setup_modal_dismissed') === 'true' ||
-        localStorage.getItem('bcp_workspace_initialized') === 'true') {
+      localStorage.getItem('bcp_workspace_initialized') === 'true') {
       return;
     }
 
@@ -6212,7 +6231,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   checkEmailServiceSetupStatus(): void {
     if (!this.isAdmin) return;
     if (localStorage.getItem('bcp_email_setup_modal_acknowledged') === 'true' ||
-        sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') {
+      sessionStorage.getItem('bcp_email_setup_modal_dismissed') === 'true') {
       return;
     }
 
@@ -6226,7 +6245,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
