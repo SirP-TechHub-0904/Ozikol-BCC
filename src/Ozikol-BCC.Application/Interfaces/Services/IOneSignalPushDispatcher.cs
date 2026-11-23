@@ -29,5 +29,30 @@ namespace Ozikol_BCC.Application.Interfaces.Services
             string? tenantKey = null,
             IDictionary<string, string>? customData = null,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Registers or updates a user and their Web Push / Email subscription directly in OneSignal via the OneSignal REST API.
+        /// Bypasses browser single-origin (restrict_origin) blocks on custom tenant domains so all tenant users appear in OneSignal Audience.
+        /// </summary>
+        /// <param name="externalUserId">The authenticated Ozikol user profile ID.</param>
+        /// <param name="tenantKey">The tenant workspace key for audience tagging.</param>
+        /// <param name="email">Optional user email address.</param>
+        /// <param name="fullName">Optional user full name.</param>
+        /// <param name="pushEndpoint">Optional Web Push subscription endpoint URL from the browser ServiceWorker.</param>
+        /// <param name="p256dh">Optional Web Push p256dh public key.</param>
+        /// <param name="auth">Optional Web Push auth secret.</param>
+        /// <param name="userAgent">Optional browser User-Agent string.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A tuple indicating success, an optional error message, and the OneSignal subscription/player ID.</returns>
+        Task<(bool Success, string? ErrorMessage, string? SubscriptionId)> RegisterUserSubscriptionAsync(
+            string externalUserId,
+            string? tenantKey = null,
+            string? email = null,
+            string? fullName = null,
+            string? pushEndpoint = null,
+            string? p256dh = null,
+            string? auth = null,
+            string? userAgent = null,
+            CancellationToken cancellationToken = default);
     }
 }

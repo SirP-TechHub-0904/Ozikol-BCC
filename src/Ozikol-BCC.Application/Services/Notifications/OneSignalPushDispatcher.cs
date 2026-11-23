@@ -120,6 +120,19 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     payload["included_segments"] = new[] { "Subscribed Users" };
                 }
 
+                // Determine whether push targets failed purely due to missing OneSignal player subscription
+                if (targetUserIds != null && targetUserIds.Count > 0)
+                {
+                    foreach (var uid in targetUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct())
+                    {
+                        try
+                        {
+                            await RegisterUserSubscriptionAsync(uid, tenantKey, cancellationToken: cancellationToken);
+                        }
+                        catch { }
+                    }
+                }
+
                 var jsonPayload = JsonSerializer.Serialize(payload);
                 using var request = new HttpRequestMessage(HttpMethod.Post, "https://onesignal.com/api/v1/notifications")
                 {
@@ -194,6 +207,148 @@ namespace Ozikol_BCC.Application.Services.Notifications
             {
                 _logger.LogError(ex, "❌ [OneSignalPushDispatcher] Exception while dispatching push to OneSignal: {Message}", ex.Message);
                 return (false, $"Dispatch exception: {ex.Message}", null);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<(bool Success, string? ErrorMessage, string? SubscriptionId)> RegisterUserSubscriptionAsync(
+            string externalUserId,
+            string? tenantKey = null,
+            string? email = null,
+            string? fullName = null,
+            string? pushEndpoint = null,
+            string? p256dh = null,
+            string? auth = null,
+            string? userAgent = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return (false, "External user ID is required.", null);
+            }
+
+            var (appId, restApiKey) = await ResolveCredentialsAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(restApiKey))
+            {
+                return (false, "OneSignal Push credentials are not configured in Central Master Catalog.", null);
+            }
+
+            try
+            {
+                var tags = new Dictionary<string, string>
+                {
+                    ["platform"] = "ozikol-bcc"
+                };
+                if (!string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    tags["tenant_key"] = tenantKey.Trim().ToLowerInvariant();
+                }
+                if (!string.IsNullOrWhiteSpace(fullName))
+                {
+                    tags["full_name"] = fullName.Trim();
+                }
+
+                // Determine device_type for OneSignal Players API:
+                // 5 = Chrome Web Push, 7 = Safari Web Push, 8 = Firefox Web Push
+                int deviceType = 5;
+                if (!string.IsNullOrWhiteSpace(userAgent))
+                {
+                    if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase))
+                    {
+                        deviceType = 8;
+                    }
+                    else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) &&
+                             !userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase))
+                    {
+                        deviceType = 7;
+                    }
+                }
+
+                var playerPayload = new Dictionary<string, object>
+                {
+                    ["app_id"] = appId,
+                    ["device_type"] = deviceType,
+                    ["external_user_id"] = externalUserId.Trim(),
+                    ["tags"] = tags
+                };
+
+                if (!string.IsNullOrWhiteSpace(pushEndpoint))
+                {
+                    playerPayload["identifier"] = pushEndpoint.Trim();
+                    playerPayload["notification_types"] = 1; // 1 = Subscribed
+                }
+
+                if (!string.IsNullOrWhiteSpace(p256dh))
+                {
+                    playerPayload["web_p256"] = p256dh.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(auth))
+                {
+                    playerPayload["web_auth"] = auth.Trim();
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, "https://onesignal.com/api/v1/players")
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(playerPayload), Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Key", restApiKey);
+
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                string? playerId = null;
+                if (response.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(responseBody);
+                        if (doc.RootElement.TryGetProperty("id", out var idProp))
+                        {
+                            playerId = idProp.GetString();
+                        }
+                    }
+                    catch { }
+                }
+
+                // Also register/sync email identity in OneSignal Users API so the user appears in OneSignal Audience even before/without Web Push keys
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    try
+                    {
+                        var emailPlayerPayload = new Dictionary<string, object>
+                        {
+                            ["app_id"] = appId,
+                            ["device_type"] = 11, // 11 = Email subscription in OneSignal
+                            ["identifier"] = email.Trim(),
+                            ["external_user_id"] = externalUserId.Trim(),
+                            ["tags"] = tags
+                        };
+                        using var emailReq = new HttpRequestMessage(HttpMethod.Post, "https://onesignal.com/api/v1/players")
+                        {
+                            Content = new StringContent(JsonSerializer.Serialize(emailPlayerPayload), Encoding.UTF8, "application/json")
+                        };
+                        emailReq.Headers.Authorization = new AuthenticationHeaderValue("Key", restApiKey);
+                        await _httpClient.SendAsync(emailReq, cancellationToken);
+                    }
+                    catch { }
+                }
+
+                if (!string.IsNullOrWhiteSpace(playerId))
+                {
+                    _logger.LogInformation("✅ [OneSignalPushDispatcher] Registered OneSignal player '{PlayerId}' for user '{UserId}' (Tenant: {Tenant}).",
+                        playerId, externalUserId, tenantKey);
+                    return (true, null, playerId);
+                }
+
+                _logger.LogWarning("⚠️ [OneSignalPushDispatcher] OneSignal player registration returned {Status}: {Body}",
+                    response.StatusCode, responseBody);
+                return (response.IsSuccessStatusCode, responseBody, playerId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [OneSignalPushDispatcher] Failed to register OneSignal subscription for user '{UserId}'.", externalUserId);
+                return (false, ex.Message, null);
             }
         }
 

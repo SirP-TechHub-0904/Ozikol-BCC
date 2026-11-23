@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { SettingsService, ClientAppConfig } from './settings.service';
+import { ApiService } from './api.service';
 
 declare global {
   interface Window {
@@ -19,9 +20,13 @@ declare global {
 })
 export class OneSignalService {
   private isInitialized = false;
+  private lastSyncedUserId = '';
+  private static readonly ONESIGNAL_VAPID_PUBLIC_KEY =
+    'BLDthX4IRSh5sBKkhfGVWo3tw7t4ZrJQK4PDshcFU-Ch5toYk92XLcV4ST1tYD-uyWty1Z0I2TI5rKn-ZxkbPuQ';
 
   constructor(
     private settingsService: SettingsService,
+    private api: ApiService,
     private router: Router
   ) {}
 
@@ -100,17 +105,33 @@ export class OneSignalService {
             this.login(userId, tenantKey);
           }
         } catch {
-          // Graceful fallback if push notifications are blocked by browser policy
+          // Graceful fallback if push notifications are blocked by browser policy or OneSignal restrict_origin
+          const userId = this.resolveCurrentUserId();
+          const tenantKey = localStorage.getItem('tenant_key') || undefined;
+          if (userId) {
+            this.syncPushSubscriptionWithBackend(userId, tenantKey);
+          }
         }
       });
+
+      // Always ensure custom-domain users are synced to OneSignal via the backend REST API
+      const currentUserId = this.resolveCurrentUserId();
+      const currentTenantKey = localStorage.getItem('tenant_key') || undefined;
+      if (currentUserId) {
+        this.syncPushSubscriptionWithBackend(currentUserId, currentTenantKey);
+      }
     });
   }
 
   /**
    * Links the authenticated Ozikol user ID to OneSignal external_id and tags with tenant key.
+   * Also synchronizes the user and any active ServiceWorker PushSubscription directly via the backend
+   * so custom tenant domains (which OneSignal's browser SDK blocks due to restrict_origin) still appear in OneSignal Audience.
    */
   public login(userId: string, tenantKey?: string): void {
     if (!userId) return;
+    this.syncPushSubscriptionWithBackend(userId, tenantKey);
+
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal: any) => {
       try {
@@ -125,6 +146,78 @@ export class OneSignalService {
           await OneSignal.Notifications.requestPermission();
         }
       } catch {}
+    });
+  }
+
+  /**
+   * Converts a URL-safe base64 VAPID public key string into a Uint8Array for PushManager.subscribe().
+   */
+  private urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  /**
+   * Registers the browser ServiceWorker Web Push subscription and syncs the endpoint/keys (or user identity)
+   * to OneSignal through the Ozikol backend REST API (/api/NotificationsApi/register-push).
+   */
+  public async syncPushSubscriptionWithBackend(explicitUserId?: string, explicitTenantKey?: string, force = false): Promise<void> {
+    const userId = explicitUserId || this.resolveCurrentUserId();
+    if (!userId || !localStorage.getItem('access_token')) {
+      return;
+    }
+
+    const tenantKey = explicitTenantKey || localStorage.getItem('tenant_key') || undefined;
+    const permission = this.getPermissionStatus();
+    if (!force && this.lastSyncedUserId === `${userId}:${permission}`) {
+      return;
+    }
+    this.lastSyncedUserId = `${userId}:${permission}`;
+
+    let endpoint: string | undefined;
+    let p256dh: string | undefined;
+    let auth: string | undefined;
+
+    if (permission === 'granted' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        let reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) {
+          reg = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' });
+        }
+        if (reg && reg.pushManager) {
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            const appServerKey = this.urlBase64ToUint8Array(OneSignalService.ONESIGNAL_VAPID_PUBLIC_KEY);
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: appServerKey.buffer as ArrayBuffer
+            });
+          }
+          if (sub) {
+            const subJson = sub.toJSON();
+            endpoint = subJson.endpoint;
+            p256dh = subJson.keys?.['p256dh'];
+            auth = subJson.keys?.['auth'];
+          }
+        }
+      } catch {}
+    }
+
+    this.api.post<any>('NotificationsApi/register-push', {
+      userId,
+      tenantKey,
+      endpoint,
+      p256dh,
+      auth
+    }).subscribe({
+      next: () => {},
+      error: () => {}
     });
   }
 
@@ -187,6 +280,7 @@ export class OneSignalService {
       }
 
       if (permission === 'granted') {
+        await this.syncPushSubscriptionWithBackend(userId, tenantKey, true);
         try {
           new window.Notification('Push Notifications Enabled', {
             body: 'Your device is now subscribed to receive instant shift, rota, and security push alerts.',
