@@ -655,8 +655,8 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 var recipientFirst = !string.IsNullOrWhiteSpace(user?.FirstName) ? user!.FirstName : "there";
-                var welcomeTitle = $"Welcome to {brandName} Alerts";
-                var welcomeBody = $"Hi {recipientFirst}, real-time push notifications are active! {brandName} will keep you updated on open shifts, rota changes, and urgent workspace notices.";
+                var welcomeTitle = $"Welcome to {brandName}";
+                var welcomeBody = $"Hi {recipientFirst}, real-time notifications are now active! {brandName} will keep you updated with important announcements, activity updates, and account alerts.";
 
                 try
                 {
