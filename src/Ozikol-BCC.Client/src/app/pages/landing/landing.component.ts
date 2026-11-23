@@ -901,6 +901,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     // Unlock native document scrolling for public website mode (unless embedded inside an admin preview)
     if (!this.previewMode) {
+      document.documentElement.classList.add('public-website-mode');
       document.body.classList.add('public-website-mode');
       this.startWebsiteSyncListener();
     }
@@ -1025,6 +1026,7 @@ export class LandingComponent implements OnInit, OnDestroy, OnChanges {
   ngOnDestroy(): void {
     // Re-lock or restore default dashboard mode
     if (!this.previewMode) {
+      document.documentElement.classList.remove('public-website-mode');
       document.body.classList.remove('public-website-mode');
     }
 
