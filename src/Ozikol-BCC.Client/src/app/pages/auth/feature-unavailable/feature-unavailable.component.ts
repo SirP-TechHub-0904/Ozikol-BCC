@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { ApiService } from '../../../core/services/api.service';
 import { 
   getStoredUserRoles, 
   getUserPrimaryRoleName, 
@@ -23,8 +24,20 @@ import {
   template: `
     <div class="unavailable-container">
       <div class="unavailable-card">
-        <!-- Glowing Ambient Icon -->
-        <div class="unavailable-icon-wrap">
+        <!-- Brand Logo or Fallback Icon -->
+        <div class="brand-identity-row" *ngIf="brandLogoUrl || brandCompanyName" style="margin-bottom: 16px;">
+          <img
+            *ngIf="brandLogoUrl && !logoLoadFailed"
+            [src]="brandLogoUrl"
+            [alt]="brandCompanyName || 'Workspace'"
+            style="max-height: 46px; max-width: 220px; object-fit: contain;"
+            (error)="logoLoadFailed = true"
+          />
+          <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" style="font-size: 19px; font-weight: 800; color: #0f172a;">
+            {{ brandCompanyName }}
+          </span>
+        </div>
+        <div class="unavailable-icon-wrap" *ngIf="!brandLogoUrl || logoLoadFailed">
           <span class="material-symbols-outlined unavailable-icon">extension_off</span>
         </div>
 
@@ -375,13 +388,26 @@ export class FeatureUnavailableComponent implements OnInit {
   isMember: boolean = false;
   isAdmin: boolean = true;
   userRoleName: string = 'Administrator';
+  brandLogoUrl: string = '';
+  brandCompanyName: string = '';
+  logoLoadFailed: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private api: ApiService
   ) {}
 
   ngOnInit(): void {
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+        }
+      },
+      error: () => {}
+    });
     this.route.queryParams.subscribe(params => {
       this.featureCode = (params['feature'] || '').toLowerCase();
       this.attemptedUrl = params['attemptedUrl'] || '';

@@ -35,7 +35,7 @@ export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private notificationHubConnection!: signalR.HubConnection;
   private displayedNotificationKeys = new Set<string>();
-  
+
   // Real-time Event Subjects
   private messageSubject = new Subject<ChatMessagePayload>();
   public message$ = this.messageSubject.asObservable();
@@ -85,7 +85,7 @@ export class SignalRService {
   private connectionStatusSubject = new Subject<boolean>();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
-  constructor(private chatSound: ChatSoundService) {}
+  constructor(private chatSound: ChatSoundService) { }
 
   public startConnection(): void {
     const token = localStorage.getItem('access_token');
@@ -131,8 +131,8 @@ export class SignalRService {
    */
   private startNotificationHubConnection(apiOrigin: string, tenantKey: string, token: string): void {
     if (this.notificationHubConnection &&
-        (this.notificationHubConnection.state === signalR.HubConnectionState.Connected ||
-         this.notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
+      (this.notificationHubConnection.state === signalR.HubConnectionState.Connected ||
+        this.notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
       return;
     }
 
@@ -172,10 +172,10 @@ export class SignalRService {
       .start()
       .then(() => {
         if (tenantKey) {
-          this.notificationHubConnection.invoke('JoinTenantGroup', tenantKey).catch(() => {});
+          this.notificationHubConnection.invoke('JoinTenantGroup', tenantKey).catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   /**
@@ -209,16 +209,16 @@ export class SignalRService {
             tag,
             data: { url: actionUrl }
           }).catch(() => {
-            try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
+            try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
           });
         } else {
-          try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
+          try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
         }
       }).catch(() => {
-        try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
+        try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
       });
     } else {
-      try { new Notification(title, { body: cleanBody, icon, tag }); } catch {}
+      try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
     }
   }
 
@@ -305,31 +305,31 @@ export class SignalRService {
 
   public sendTyping(groupId: string, isTyping: boolean, recipientUserId?: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('SendTyping', groupId, isTyping, recipientUserId || null).catch(() => {});
+      this.hubConnection.invoke('SendTyping', groupId, isTyping, recipientUserId || null).catch(() => { });
     }
   }
 
   public markAsRead(groupId: string, messageId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('MarkAsRead', groupId, messageId).catch(() => {});
+      this.hubConnection.invoke('MarkAsRead', groupId, messageId).catch(() => { });
     }
   }
 
   public reactToMessage(groupId: string, messageId: string, emoji: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('ReactToMessage', groupId, messageId, emoji).catch(() => {});
+      this.hubConnection.invoke('ReactToMessage', groupId, messageId, emoji).catch(() => { });
     }
   }
 
   public joinGroup(groupId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('JoinGroup', groupId).catch(() => {});
+      this.hubConnection.invoke('JoinGroup', groupId).catch(() => { });
     }
   }
 
   public leaveGroup(groupId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('LeaveGroup', groupId).catch(() => {});
+      this.hubConnection.invoke('LeaveGroup', groupId).catch(() => { });
     }
   }
 

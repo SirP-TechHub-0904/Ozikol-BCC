@@ -179,12 +179,24 @@ import { ToastService } from '../../../core/services/toast.service';
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>Staff Member</th>
-                <th>Job Title &amp; Type</th>
-                <th>Pay Rate &amp; Contract</th>
-                <th>Shift Preference &amp; Availability</th>
-                <th>Shifts &amp; Punctuality</th>
-                <th>Rating</th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'fullName'" (click)="toggleSort('fullName')">
+                  <span class="th-sort-wrap">Staff Member <span class="material-symbols-outlined sort-icon">{{ getSortIcon('fullName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'jobTitle'" (click)="toggleSort('jobTitle')">
+                  <span class="th-sort-wrap">Job Title &amp; Type <span class="material-symbols-outlined sort-icon">{{ getSortIcon('jobTitle') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'defaultHourlyRate'" (click)="toggleSort('defaultHourlyRate')">
+                  <span class="th-sort-wrap">Pay Rate &amp; Contract <span class="material-symbols-outlined sort-icon">{{ getSortIcon('defaultHourlyRate') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'workingAvailability'" (click)="toggleSort('workingAvailability')">
+                  <span class="th-sort-wrap">Shift Preference &amp; Availability <span class="material-symbols-outlined sort-icon">{{ getSortIcon('workingAvailability') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'completedShiftsCount'" (click)="toggleSort('completedShiftsCount')">
+                  <span class="th-sort-wrap">Shifts &amp; Punctuality <span class="material-symbols-outlined sort-icon">{{ getSortIcon('completedShiftsCount') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'averageRating'" (click)="toggleSort('averageRating')">
+                  <span class="th-sort-wrap">Rating <span class="material-symbols-outlined sort-icon">{{ getSortIcon('averageRating') }}</span></span>
+                </th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
@@ -999,9 +1011,28 @@ export class WorkforceStaffManagerComponent implements OnInit {
     this.availabilityFilter = '';
   }
 
+  // Default Sort: Latest Enrolled First ('enrolledUtc' desc)
+  sortCol = 'enrolledUtc';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  toggleSort(col: string): void {
+    if (this.sortCol === col) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortCol = col;
+      this.sortDir = ['defaultHourlyRate', 'completedShiftsCount', 'averageRating', 'enrolledUtc'].includes(col) ? 'desc' : 'asc';
+    }
+    this.currentPage = 1;
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortCol !== col) return 'unfold_more';
+    return this.sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
   get filteredMembers(): any[] {
     const q = this.searchQuery.trim().toLowerCase();
-    return this.members.filter(m => {
+    const list = this.members.filter(m => {
       if (this.roleFilter && m.jobTitle !== this.roleFilter) return false;
       if (this.typeFilter && m.staffTypeName !== this.typeFilter) return false;
       if (this.availabilityFilter === 'Available' && !this.isAvailable(m)) return false;
@@ -1015,6 +1046,28 @@ export class WorkforceStaffManagerComponent implements OnInit {
         (m.jobTitle || '').toLowerCase().includes(q) ||
         (m.staffTypeName || '').toLowerCase().includes(q)
       );
+    });
+
+    const mult = this.sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      switch (this.sortCol) {
+        case 'enrolledUtc': {
+          const tA = a.enrolledUtc ? new Date(a.enrolledUtc).getTime() : 0;
+          const tB = b.enrolledUtc ? new Date(b.enrolledUtc).getTime() : 0;
+          return (tA - tB) * mult;
+        }
+        case 'defaultHourlyRate':
+          return ((Number(a.defaultHourlyRate) || 0) - (Number(b.defaultHourlyRate) || 0)) * mult;
+        case 'completedShiftsCount':
+          return ((Number(a.completedShiftsCount ?? a.totalShiftsCompleted) || 0) - (Number(b.completedShiftsCount ?? b.totalShiftsCompleted) || 0)) * mult;
+        case 'averageRating':
+          return ((Number(a.averageRating) || 0) - (Number(b.averageRating) || 0)) * mult;
+        default: {
+          const sA = String(a[this.sortCol] || '').toLowerCase();
+          const sB = String(b[this.sortCol] || '').toLowerCase();
+          return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+        }
+      }
     });
   }
 

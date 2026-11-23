@@ -173,11 +173,21 @@ import { ToastService } from '../../../core/services/toast.service';
               <thead>
                 <tr>
                   <th style="width: 52px;">S/N</th>
-                  <th>Ticket &amp; Topic</th>
-                  <th>Staff Member</th>
-                  <th>Category &amp; Shift</th>
-                  <th>Last Activity</th>
-                  <th>Status</th>
+                  <th class="sortable-th" [class.active-sort]="sortCol === 'topic'" (click)="toggleSort('topic')">
+                    <span class="th-sort-wrap">Ticket &amp; Topic <span class="material-symbols-outlined sort-icon">{{ getSortIcon('topic') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="sortCol === 'staffFullName'" (click)="toggleSort('staffFullName')">
+                    <span class="th-sort-wrap">Staff Member <span class="material-symbols-outlined sort-icon">{{ getSortIcon('staffFullName') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="sortCol === 'category'" (click)="toggleSort('category')">
+                    <span class="th-sort-wrap">Category &amp; Shift <span class="material-symbols-outlined sort-icon">{{ getSortIcon('category') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="sortCol === 'lastActivityUtc'" (click)="toggleSort('lastActivityUtc')">
+                    <span class="th-sort-wrap">Last Activity <span class="material-symbols-outlined sort-icon">{{ getSortIcon('lastActivityUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="sortCol === 'status'" (click)="toggleSort('status')">
+                    <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon('status') }}</span></span>
+                  </th>
                   <th class="text-right">Actions</th>
                 </tr>
               </thead>
@@ -822,9 +832,28 @@ export class WorkforceMessagePoolComponent implements OnInit {
     return this.tickets.filter(t => t.status === 'Closed').length;
   }
 
+  // Default Sort: Latest Activity First ('lastActivityUtc' desc)
+  sortCol = 'lastActivityUtc';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  toggleSort(col: string): void {
+    if (this.sortCol === col) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortCol = col;
+      this.sortDir = col === 'lastActivityUtc' ? 'desc' : 'asc';
+    }
+    this.currentPage = 1;
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortCol !== col) return 'unfold_more';
+    return this.sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
   get filteredTickets(): any[] {
     const q = this.searchQuery.trim().toLowerCase();
-    return this.tickets.filter(t => {
+    const list = this.tickets.filter(t => {
       if (this.categoryFilter && t.category !== this.categoryFilter) return false;
       if (this.statusFilter === 'Open' && t.status !== 'Open') return false;
       if (this.statusFilter === 'Closed' && t.status !== 'Closed') return false;
@@ -840,6 +869,18 @@ export class WorkforceMessagePoolComponent implements OnInit {
         (t.category || '').toLowerCase().includes(q) ||
         inReplies
       );
+    });
+
+    const mult = this.sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      if (this.sortCol === 'lastActivityUtc') {
+        const tA = a.lastActivityUtc ? new Date(a.lastActivityUtc).getTime() : 0;
+        const tB = b.lastActivityUtc ? new Date(b.lastActivityUtc).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      const sA = String(a[this.sortCol] || '').toLowerCase();
+      const sB = String(b[this.sortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
     });
   }
 

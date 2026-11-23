@@ -520,14 +520,30 @@ interface YearMonthGrid {
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>Shift &amp; Role</th>
-                  <th>Client Venue</th>
-                  <th>Scheduled Window</th>
-                  <th>Actual Clock-In / Out</th>
-                  <th>Duration</th>
-                  <th>Punctuality Status</th>
-                  <th>Duty Status</th>
-                  <th class="text-end">Shift Earnings</th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'shiftCode'" (click)="toggleStmtSort('shiftCode')">
+                    <span class="th-sort-wrap">Shift &amp; Role <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'shiftCode') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'siteName'" (click)="toggleStmtSort('siteName')">
+                    <span class="th-sort-wrap">Client Venue <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'siteName') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'startsAtUtc'" (click)="toggleStmtSort('startsAtUtc')">
+                    <span class="th-sort-wrap">Scheduled Window <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'startsAtUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'clockIn'" (click)="toggleStmtSort('clockIn')">
+                    <span class="th-sort-wrap">Actual Clock-In / Out <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'clockIn') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'plannedDurationHours'" (click)="toggleStmtSort('plannedDurationHours')">
+                    <span class="th-sort-wrap">Duration <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'plannedDurationHours') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'punctuality'" (click)="toggleStmtSort('punctuality')">
+                    <span class="th-sort-wrap">Punctuality Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'punctuality') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="stmtSortCol === 'status'" (click)="toggleStmtSort('status')">
+                    <span class="th-sort-wrap">Duty Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'status') }}</span></span>
+                  </th>
+                  <th class="sortable-th text-end" [class.active-sort]="stmtSortCol === 'earnings'" (click)="toggleStmtSort('earnings')">
+                    <span class="th-sort-wrap">Shift Earnings <span class="material-symbols-outlined sort-icon">{{ getSortIcon(stmtSortCol, stmtSortDir, 'earnings') }}</span></span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1806,18 +1822,34 @@ interface YearMonthGrid {
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>Shift / Site</th>
-                  <th>Date</th>
-                  <th>Scheduled Window</th>
-                  <th>Clock-In / Out</th>
-                  <th>Duration</th>
-                  <th>Rate</th>
-                  <th>Deductions / Fines</th>
-                  <th class="text-end">Net Pay</th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'siteName'" (click)="toggleTsSort('siteName')">
+                    <span class="th-sort-wrap">Shift / Site <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'siteName') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'startsAtUtc'" (click)="toggleTsSort('startsAtUtc')">
+                    <span class="th-sort-wrap">Date <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'startsAtUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'startsAtUtc'" (click)="toggleTsSort('startsAtUtc')">
+                    <span class="th-sort-wrap">Scheduled Window <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'startsAtUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'clockInUtc'" (click)="toggleTsSort('clockInUtc')">
+                    <span class="th-sort-wrap">Clock-In / Out <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'clockInUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'duration'" (click)="toggleTsSort('duration')">
+                    <span class="th-sort-wrap">Duration <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'duration') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'hourlyPayRate'" (click)="toggleTsSort('hourlyPayRate')">
+                    <span class="th-sort-wrap">Rate <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'hourlyPayRate') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="tsSortCol === 'fineAmount'" (click)="toggleTsSort('fineAmount')">
+                    <span class="th-sort-wrap">Deductions / Fines <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'fineAmount') }}</span></span>
+                  </th>
+                  <th class="sortable-th text-end" [class.active-sort]="tsSortCol === 'netPay'" (click)="toggleTsSort('netPay')">
+                    <span class="th-sort-wrap">Net Pay <span class="material-symbols-outlined sort-icon">{{ getSortIcon(tsSortCol, tsSortDir, 'netPay') }}</span></span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let t of timesheetList">
+                <tr *ngFor="let t of sortedTimesheetList">
                   <td>
                     <div class="venue-cell-title">{{ t.siteName }}</div>
                     <div class="venue-cell-sub">{{ t.shiftCode }} &bull; {{ t.postName }}</div>
@@ -1921,15 +1953,25 @@ interface YearMonthGrid {
               <table class="cms-table">
                 <thead>
                   <tr>
-                    <th>Type</th>
-                    <th>Dates</th>
-                    <th>Days</th>
-                    <th>Status</th>
-                    <th>Notes</th>
+                    <th class="sortable-th" [class.active-sort]="leaveSortCol === 'leaveType'" (click)="toggleLeaveSort('leaveType')">
+                      <span class="th-sort-wrap">Type <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'leaveType') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="leaveSortCol === 'startDate'" (click)="toggleLeaveSort('startDate')">
+                      <span class="th-sort-wrap">Dates <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'startDate') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="leaveSortCol === 'totalDays'" (click)="toggleLeaveSort('totalDays')">
+                      <span class="th-sort-wrap">Days <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'totalDays') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="leaveSortCol === 'status'" (click)="toggleLeaveSort('status')">
+                      <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'status') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="leaveSortCol === 'reason'" (click)="toggleLeaveSort('reason')">
+                      <span class="th-sort-wrap">Notes <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'reason') }}</span></span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let l of leaveList">
+                  <tr *ngFor="let l of sortedLeaveList">
                     <td><span class="badge-station">{{ l.leaveType }}</span></td>
                     <td>{{ l.startDate | date:'dd MMM' }} - {{ l.endDate | date:'dd MMM yyyy' }}</td>
                     <td>{{ l.totalDays }} day(s)</td>
@@ -2104,14 +2146,22 @@ interface YearMonthGrid {
               <table class="cms-table">
                 <thead>
                   <tr>
-                    <th>Document</th>
-                    <th>Type</th>
-                    <th>Expiry</th>
-                    <th>Status</th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'documentName'" (click)="toggleDocSort('documentName')">
+                      <span class="th-sort-wrap">Document <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'documentName') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'documentType'" (click)="toggleDocSort('documentType')">
+                      <span class="th-sort-wrap">Type <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'documentType') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'expiryDateUtc'" (click)="toggleDocSort('expiryDateUtc')">
+                      <span class="th-sort-wrap">Expiry <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'expiryDateUtc') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'isVerified'" (click)="toggleDocSort('isVerified')">
+                      <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'isVerified') }}</span></span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let d of docList">
+                  <tr *ngFor="let d of sortedDocList">
                     <td><strong class="text-dark">{{ d.documentName }}</strong></td>
                     <td><span class="badge-station">{{ d.documentType }}</span></td>
                     <td>{{ d.expiryDateUtc ? (d.expiryDateUtc | date:'dd MMM yyyy') : 'No Expiry' }}</td>
@@ -2199,14 +2249,22 @@ interface YearMonthGrid {
               <table class="cms-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Window</th>
-                    <th>Reason</th>
+                    <th class="sortable-th" [class.active-sort]="availSortCol === 'targetDate'" (click)="toggleAvailSort('targetDate')">
+                      <span class="th-sort-wrap">Date <span class="material-symbols-outlined sort-icon">{{ getSortIcon(availSortCol, availSortDir, 'targetDate') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="availSortCol === 'state'" (click)="toggleAvailSort('state')">
+                      <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(availSortCol, availSortDir, 'state') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="availSortCol === 'unavailableFromTime'" (click)="toggleAvailSort('unavailableFromTime')">
+                      <span class="th-sort-wrap">Window <span class="material-symbols-outlined sort-icon">{{ getSortIcon(availSortCol, availSortDir, 'unavailableFromTime') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="availSortCol === 'reason'" (click)="toggleAvailSort('reason')">
+                      <span class="th-sort-wrap">Reason <span class="material-symbols-outlined sort-icon">{{ getSortIcon(availSortCol, availSortDir, 'reason') }}</span></span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let a of availList">
+                  <tr *ngFor="let a of sortedAvailList">
                     <td><strong>{{ a.targetDate | date:'dd MMM yyyy' }}</strong></td>
                     <td>
                       <span class="status-pill" [ngClass]="a.state === 'Available' ? 'status-active' : (a.state === 'Unavailable' ? 'status-danger' : 'status-pending')">
@@ -8232,6 +8290,139 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     return this.filteredAnalyticsShifts.filter(s => s.startsAtUtc && new Date(s.startsAtUtc) > now).length;
   }
 
+  // Table Sort States (Default: Latest First)
+  stmtSortCol = 'startsAtUtc';
+  stmtSortDir: 'asc' | 'desc' = 'desc';
+  tsSortCol = 'startsAtUtc';
+  tsSortDir: 'asc' | 'desc' = 'desc';
+  leaveSortCol = 'startDate';
+  leaveSortDir: 'asc' | 'desc' = 'desc';
+  docSortCol = 'createdUtc';
+  docSortDir: 'asc' | 'desc' = 'desc';
+  availSortCol = 'targetDate';
+  availSortDir: 'asc' | 'desc' = 'desc';
+
+  toggleStmtSort(col: string): void {
+    if (this.stmtSortCol === col) {
+      this.stmtSortDir = this.stmtSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.stmtSortCol = col;
+      this.stmtSortDir = ['startsAtUtc', 'plannedDurationHours', 'earnings'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  toggleTsSort(col: string): void {
+    if (this.tsSortCol === col) {
+      this.tsSortDir = this.tsSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.tsSortCol = col;
+      this.tsSortDir = ['startsAtUtc', 'clockInUtc', 'duration', 'hourlyPayRate', 'fineAmount', 'netPay'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  toggleLeaveSort(col: string): void {
+    if (this.leaveSortCol === col) {
+      this.leaveSortDir = this.leaveSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.leaveSortCol = col;
+      this.leaveSortDir = ['startDate', 'totalDays'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  toggleDocSort(col: string): void {
+    if (this.docSortCol === col) {
+      this.docSortDir = this.docSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.docSortCol = col;
+      this.docSortDir = ['createdUtc', 'expiryDateUtc'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  toggleAvailSort(col: string): void {
+    if (this.availSortCol === col) {
+      this.availSortDir = this.availSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.availSortCol = col;
+      this.availSortDir = col === 'targetDate' ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(activeCol: string, dir: 'asc' | 'desc', col: string): string {
+    if (activeCol !== col) return 'unfold_more';
+    return dir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  get sortedTimesheetList(): any[] {
+    const mult = this.tsSortDir === 'asc' ? 1 : -1;
+    return [...this.timesheetList].sort((a: any, b: any) => {
+      if (this.tsSortCol === 'startsAtUtc' || this.tsSortCol === 'clockInUtc') {
+        const tA = a[this.tsSortCol] ? new Date(a[this.tsSortCol]).getTime() : 0;
+        const tB = b[this.tsSortCol] ? new Date(b[this.tsSortCol]).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.tsSortCol === 'duration') {
+        return ((Number(a.actualDurationHours || a.plannedDurationHours) || 0) - (Number(b.actualDurationHours || b.plannedDurationHours) || 0)) * mult;
+      }
+      if (this.tsSortCol === 'hourlyPayRate') {
+        return ((Number(a.hourlyPayRate) || 0) - (Number(b.hourlyPayRate) || 0)) * mult;
+      }
+      if (this.tsSortCol === 'fineAmount') {
+        return ((Number(a.fineAmount) || 0) - (Number(b.fineAmount) || 0)) * mult;
+      }
+      if (this.tsSortCol === 'netPay') {
+        return (this.getShiftNetPay(a) - this.getShiftNetPay(b)) * mult;
+      }
+      const sA = String(a[this.tsSortCol] || '').toLowerCase();
+      const sB = String(b[this.tsSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
+
+  get sortedLeaveList(): any[] {
+    const mult = this.leaveSortDir === 'asc' ? 1 : -1;
+    return [...this.leaveList].sort((a: any, b: any) => {
+      if (this.leaveSortCol === 'startDate') {
+        const tA = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const tB = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.leaveSortCol === 'totalDays') {
+        return ((Number(a.totalDays) || 0) - (Number(b.totalDays) || 0)) * mult;
+      }
+      const sA = String(a[this.leaveSortCol] || '').toLowerCase();
+      const sB = String(b[this.leaveSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
+
+  get sortedDocList(): any[] {
+    const mult = this.docSortDir === 'asc' ? 1 : -1;
+    return [...this.docList].sort((a: any, b: any) => {
+      if (this.docSortCol === 'createdUtc' || this.docSortCol === 'expiryDateUtc') {
+        const tA = a[this.docSortCol] ? new Date(a[this.docSortCol]).getTime() : 0;
+        const tB = b[this.docSortCol] ? new Date(b[this.docSortCol]).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      const sA = String(a[this.docSortCol] || '').toLowerCase();
+      const sB = String(b[this.docSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
+
+  get sortedAvailList(): any[] {
+    const mult = this.availSortDir === 'asc' ? 1 : -1;
+    return [...this.availList].sort((a: any, b: any) => {
+      if (this.availSortCol === 'targetDate') {
+        const tA = a.targetDate ? new Date(a.targetDate).getTime() : 0;
+        const tB = b.targetDate ? new Date(b.targetDate).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      const sA = String(a[this.availSortCol] || '').toLowerCase();
+      const sB = String(b[this.availSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
+
   get displayedStatementShifts(): Shift[] {
     const now = new Date();
     let list = this.filteredAnalyticsShifts;
@@ -8258,7 +8449,33 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
       );
     }
 
-    return list;
+    const mult = this.stmtSortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a: any, b: any) => {
+      if (this.stmtSortCol === 'startsAtUtc') {
+        const tA = a.startsAtUtc ? new Date(a.startsAtUtc).getTime() : 0;
+        const tB = b.startsAtUtc ? new Date(b.startsAtUtc).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.stmtSortCol === 'plannedDurationHours') {
+        return ((Number(a.plannedDurationHours) || 0) - (Number(b.plannedDurationHours) || 0)) * mult;
+      }
+      if (this.stmtSortCol === 'earnings') {
+        const eA = (Number(a.plannedDurationHours) || 0) * (Number(a.hourlyPayRate) || 10);
+        const eB = (Number(b.plannedDurationHours) || 0) * (Number(b.hourlyPayRate) || 10);
+        return (eA - eB) * mult;
+      }
+      if (this.stmtSortCol === 'punctuality') {
+        return ((this.isShiftLate(a) ? 1 : 0) - (this.isShiftLate(b) ? 1 : 0)) * mult;
+      }
+      if (this.stmtSortCol === 'siteName') {
+        const sA = String(a.facilityName || a.siteName || '').toLowerCase();
+        const sB = String(b.facilityName || b.siteName || '').toLowerCase();
+        return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+      }
+      const sA = String(a[this.stmtSortCol] || '').toLowerCase();
+      const sB = String(b[this.stmtSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
   }
 
   get statementTotalClockedHours(): number {

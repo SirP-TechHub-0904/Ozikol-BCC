@@ -174,13 +174,27 @@ import { ToastService } from '../../../core/services/toast.service';
           <table class="cms-table">
             <thead>
               <tr>
-                <th>SITE CODE</th>
-                <th>VENUE NAME &amp; ADDRESS</th>
-                <th>CITY</th>
-                <th>GEOFENCE RADIUS</th>
-                <th>GPS COORDINATES</th>
-                <th>REQUIRED CREDENTIAL</th>
-                <th>ACTIVE SHIFTS</th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'siteCode'" (click)="toggleSort('siteCode')">
+                  <span class="th-sort-wrap">SITE CODE <span class="material-symbols-outlined sort-icon">{{ getSortIcon('siteCode') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'siteName'" (click)="toggleSort('siteName')">
+                  <span class="th-sort-wrap">VENUE NAME &amp; ADDRESS <span class="material-symbols-outlined sort-icon">{{ getSortIcon('siteName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'city'" (click)="toggleSort('city')">
+                  <span class="th-sort-wrap">CITY <span class="material-symbols-outlined sort-icon">{{ getSortIcon('city') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'geofenceRadiusMeters'" (click)="toggleSort('geofenceRadiusMeters')">
+                  <span class="th-sort-wrap">GEOFENCE RADIUS <span class="material-symbols-outlined sort-icon">{{ getSortIcon('geofenceRadiusMeters') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'latitude'" (click)="toggleSort('latitude')">
+                  <span class="th-sort-wrap">GPS COORDINATES <span class="material-symbols-outlined sort-icon">{{ getSortIcon('latitude') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'requiredSiaLicenceType'" (click)="toggleSort('requiredSiaLicenceType')">
+                  <span class="th-sort-wrap">REQUIRED CREDENTIAL <span class="material-symbols-outlined sort-icon">{{ getSortIcon('requiredSiaLicenceType') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'activeShiftsCount'" (click)="toggleSort('activeShiftsCount')">
+                  <span class="th-sort-wrap">ACTIVE SHIFTS <span class="material-symbols-outlined sort-icon">{{ getSortIcon('activeShiftsCount') }}</span></span>
+                </th>
                 <th style="text-align: right;">ACTIONS</th>
               </tr>
             </thead>
@@ -1147,11 +1161,27 @@ export class WorkforceSitesComponent implements OnInit {
   isLoading = false;
   showInfoModal = false;
 
-  // Search & Filter
+  // Search, Filter & Sort (Default: Backend Latest-First order until user clicks a column)
   searchQuery = '';
   selectedLicenceFilter = '';
   viewMode: 'cards' | 'table' = 'cards';
   documentCategories: any[] = [];
+  sortCol = '';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  toggleSort(col: string): void {
+    if (this.sortCol === col) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortCol = col;
+      this.sortDir = ['geofenceRadiusMeters', 'activeShiftsCount', 'latitude'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortCol !== col) return 'unfold_more';
+    return this.sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
 
   constructor(
     private readonly workforceService: WorkforceService,
@@ -1202,6 +1232,15 @@ export class WorkforceSitesComponent implements OnInit {
         (s.address && s.address.toLowerCase().includes(q))
       );
     }
-    return list;
+    if (!this.sortCol) return list;
+    const mult = this.sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a: any, b: any) => {
+      if (['geofenceRadiusMeters', 'activeShiftsCount', 'latitude'].includes(this.sortCol)) {
+        return ((Number(a[this.sortCol]) || 0) - (Number(b[this.sortCol]) || 0)) * mult;
+      }
+      const sA = String(a[this.sortCol] || '').toLowerCase();
+      const sB = String(b[this.sortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
   }
 }

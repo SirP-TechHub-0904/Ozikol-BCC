@@ -85,12 +85,14 @@ interface WorkforcePolicies {
   paydayFrequency?: string;
   paydaySpecificDay?: string;
   currencySymbol?: string;
+  shiftCodeFormat?: 'Sequential' | 'SiteSequential' | 'DateDaily';
+  shiftCodePrefix?: string;
 }
 
 /**
  * Supported navigation tab keys for workforce configuration and policies.
  */
-export type WorkforceSettingsTab = 'roles' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' | 'payroll';
+export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | 'staff-types' | 'documents' | 'emergency' | 'payroll';
 
 @Component({
   selector: 'app-workforce-settings',
@@ -151,7 +153,7 @@ export type WorkforceSettingsTab = 'roles' | 'breaks' | 'forms' | 'staff-types' 
           <button
             type="button"
             class="btn btn-primary"
-            *ngIf="activeTab === 'breaks' || activeTab === 'payroll'"
+            *ngIf="activeTab === 'breaks' || activeTab === 'payroll' || activeTab === 'shift-id'"
             (click)="savePolicies()"
             [disabled]="isSavingPolicies"
           >
@@ -181,6 +183,16 @@ export type WorkforceSettingsTab = 'roles' | 'breaks' | 'forms' | 'staff-types' 
           <span class="material-symbols-outlined">badge</span>
           <span>Job Roles</span>
           <span class="tab-count">{{ jobRoles.length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'shift-id'"
+          (click)="activeTab = 'shift-id'"
+        >
+          <span class="material-symbols-outlined">tag</span>
+          <span>Shift ID Format</span>
         </button>
 
         <button
@@ -287,6 +299,203 @@ export type WorkforceSettingsTab = 'roles' | 'breaks' | 'forms' | 'staff-types' 
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 1B: SHIFT ID & NUMBERING FORMAT -->
+      <!-- ========================================================================= -->
+      <div class="tab-pane" *ngIf="activeTab === 'shift-id'">
+        <div class="policy-grid">
+          <!-- Left: 3 Format Options & Prefix Configuration -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">tag</span>
+                <div>
+                  <h3 class="card-heading">Shift ID &amp; Reference Code Format</h3>
+                  <p class="card-sub">Choose how Shift IDs are automatically generated across the Shift Schedule Directory, Push Alerts, and Timesheets.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="policy-form p-4">
+              <!-- Prefix Input -->
+              <div class="form-group mb-4">
+                <label class="form-label fw-bold">Organization / Shift Prefix (2–6 Characters)</label>
+                <p class="text-muted small mb-2">Defaults to your company initials (e.g. <strong>NPS</strong> for NightPress Security) or <strong>SHF</strong>.</p>
+                <div class="d-flex align-items-center gap-2" style="max-width: 240px;">
+                  <input
+                    type="text"
+                    class="form-control text-uppercase fw-bold"
+                    [(ngModel)]="policies.shiftCodePrefix"
+                    name="shiftCodePrefix"
+                    maxlength="6"
+                    placeholder="e.g. NPS or SHF"
+                  />
+                </div>
+              </div>
+
+              <!-- 3 Visual Radio Options -->
+              <div class="form-group mb-4">
+                <label class="form-label fw-bold mb-2">Select Shift Numbering Standard</label>
+                <div class="d-flex flex-column gap-3">
+                  <!-- Option 1 (Default) -->
+                  <label
+                    class="radio-option-card p-3 border rounded-3"
+                    style="cursor: pointer;"
+                    [style.background]="(policies.shiftCodeFormat || 'Sequential') === 'Sequential' ? '#eff6ff' : '#ffffff'"
+                    [style.border-color]="(policies.shiftCodeFormat || 'Sequential') === 'Sequential' ? '#0050e5' : '#e2e8f0'"
+                  >
+                    <div class="d-flex align-items-start gap-2">
+                      <input
+                        type="radio"
+                        name="shiftCodeFormat"
+                        value="Sequential"
+                        [(ngModel)]="policies.shiftCodeFormat"
+                        style="margin-top: 4px;"
+                      />
+                      <div class="w-100">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <strong>Option 1: Continuous Sequential ID (Recommended Default)</strong>
+                          <span class="code-badge">{{ (policies.shiftCodePrefix || 'SHF').toUpperCase() }}-00001</span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1">
+                          Short, invoice-style continuous numbering (<code>{{ (policies.shiftCodePrefix || 'SHF').toUpperCase() }}-00001</code>, <code>{{ (policies.shiftCodePrefix || 'SHF').toUpperCase() }}-00002</code>, <code>{{ (policies.shiftCodePrefix || 'SHF').toUpperCase() }}-00003</code>). Never resets per day, easy to read on mobile push alerts and over the phone.
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Option 2 -->
+                  <label
+                    class="radio-option-card p-3 border rounded-3"
+                    style="cursor: pointer;"
+                    [style.background]="policies.shiftCodeFormat === 'SiteSequential' ? '#eff6ff' : '#ffffff'"
+                    [style.border-color]="policies.shiftCodeFormat === 'SiteSequential' ? '#0050e5' : '#e2e8f0'"
+                  >
+                    <div class="d-flex align-items-start gap-2">
+                      <input
+                        type="radio"
+                        name="shiftCodeFormat"
+                        value="SiteSequential"
+                        [(ngModel)]="policies.shiftCodeFormat"
+                        style="margin-top: 4px;"
+                      />
+                      <div class="w-100">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <strong>Option 2: Venue / Site Code + Continuous Sequence</strong>
+                          <span class="code-badge">WEM-00001 &bull; ABJ-00002</span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1">
+                          Automatically prefixes each shift with the 3-letter Client Site / Venue initials (e.g., <code>WEM-00001</code> for Wembley Stadium, <code>ABJ-00002</code> for Abuja Venue) followed by the continuous shift number.
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Option 3 -->
+                  <label
+                    class="radio-option-card p-3 border rounded-3"
+                    style="cursor: pointer;"
+                    [style.background]="policies.shiftCodeFormat === 'DateDaily' ? '#eff6ff' : '#ffffff'"
+                    [style.border-color]="policies.shiftCodeFormat === 'DateDaily' ? '#0050e5' : '#e2e8f0'"
+                  >
+                    <div class="d-flex align-items-start gap-2">
+                      <input
+                        type="radio"
+                        name="shiftCodeFormat"
+                        value="DateDaily"
+                        [(ngModel)]="policies.shiftCodeFormat"
+                        style="margin-top: 4px;"
+                      />
+                      <div class="w-100">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <strong>Option 3: Date-Stamped Daily Counter</strong>
+                          <span class="code-badge">{{ (policies.shiftCodePrefix || 'SHF').toUpperCase() }}-20261127-001</span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1">
+                          Embeds the full shift date (<code>YYYYMMDD</code>) and a 3-digit daily counter (<code>-001</code>, <code>-002</code>) that counts how many shifts are scheduled on that specific calendar date.
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top">
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  (click)="renumberAllExistingShifts()"
+                  [disabled]="isRenumberingShifts"
+                >
+                  <span class="material-symbols-outlined" [class.spin]="isRenumberingShifts">autorenew</span>
+                  <span>{{ isRenumberingShifts ? 'Re-Numbering Shifts...' : 'Apply Format to Existing Shifts' }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="savePolicies()"
+                  [disabled]="isSavingPolicies"
+                >
+                  <span class="material-symbols-outlined" *ngIf="!isSavingPolicies">save</span>
+                  <span class="material-symbols-outlined spin" *ngIf="isSavingPolicies">sync</span>
+                  <span>{{ isSavingPolicies ? 'Saving...' : 'Save Shift ID Format' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Live Preview Card -->
+          <div class="content-card">
+            <div class="card-header-bar">
+              <div class="header-bar-left">
+                <span class="material-symbols-outlined text-blue">preview</span>
+                <div>
+                  <h3 class="card-heading">Live Shift Directory &amp; Push Alert Preview</h3>
+                  <p class="card-sub">How your Shift IDs will appear in the Shift Manager table and mobile push notifications.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 d-flex flex-column gap-3">
+              <div class="preview-box p-3 border rounded-3 bg-light">
+                <span class="text-muted text-uppercase fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">
+                  SAMPLE SHIFT SCHEDULE DIRECTORY ROWS
+                </span>
+                <div class="mt-2 d-flex flex-column gap-2">
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-white border rounded-2">
+                    <span class="code-badge">{{ getSampleShiftCode(1, 'WEM', '20261127') }}</span>
+                    <span class="small text-dark fw-semibold">Wembley Stadium &bull; Fri, 27 Nov</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-white border rounded-2">
+                    <span class="code-badge">{{ getSampleShiftCode(2, 'ABJ', '20261123') }}</span>
+                    <span class="small text-dark fw-semibold">Abuja Venue &bull; Mon, 23 Nov</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-white border rounded-2">
+                    <span class="code-badge">{{ getSampleShiftCode(3, 'WEM', '20261120') }}</span>
+                    <span class="small text-dark fw-semibold">Wembley Stadium &bull; Fri, 20 Nov</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="preview-box p-3 border rounded-3 bg-light">
+                <span class="text-muted text-uppercase fw-bold small" style="font-size: 11px; letter-spacing: 0.5px;">
+                  SAMPLE MOBILE PUSH NOTIFICATION
+                </span>
+                <div class="mt-2 p-3 bg-white border rounded-3 shadow-sm">
+                  <div class="fw-bold text-dark" style="font-size: 13.5px;">
+                    New Open Shift Available ({{ getSampleShiftCode(4, 'WEM', '20261128') }})
+                  </div>
+                  <div class="text-muted small mt-1">
+                    A new open shift ({{ getSampleShiftCode(4, 'WEM', '20261128') }}) has been posted at Wembley Stadium for Sat, 28 Nov 2026 07:00 – 16:00.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2379,9 +2588,54 @@ export class WorkforceSettingsComponent implements OnInit {
     staffEarningsDisplayMode: 'GrossOnly',
     estimatedTaxWithholdingPercent: 0.0,
     paydayFrequency: 'Weekly',
-    paydaySpecificDay: 'Friday'
+    paydaySpecificDay: 'Friday',
+    shiftCodeFormat: 'Sequential',
+    shiftCodePrefix: 'SHF'
   };
   isSavingPolicies = false;
+  isRenumberingShifts = false;
+
+  getSampleShiftCode(seq: number, siteCode: string, dateStr: string): string {
+    const pfx = (this.policies.shiftCodePrefix || 'SHF').trim().toUpperCase() || 'SHF';
+    const fmt = this.policies.shiftCodeFormat || 'Sequential';
+    if (fmt === 'SiteSequential') {
+      return `${siteCode}-${String(seq).padStart(5, '0')}`;
+    }
+    if (fmt === 'DateDaily') {
+      return `${pfx}-${dateStr}-001`;
+    }
+    return `${pfx}-${String(seq).padStart(5, '0')}`;
+  }
+
+  async renumberAllExistingShifts(): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Apply Shift ID Format to Existing Shifts?',
+      message: 'This will save your selected Shift ID format and re-number your existing shifts in chronological order to match the selected format. Proceed?',
+      confirmLabel: 'Save & Re-Number Shifts',
+      cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
+
+    this.isRenumberingShifts = true;
+    this.workforceService.updateWorkforcePolicies(this.policies).subscribe({
+      next: () => {
+        this.workforceService.renumberShiftCodes().subscribe({
+          next: (res: any) => {
+            this.isRenumberingShifts = false;
+            this.toast.success(res?.message || 'Existing shifts re-numbered to match your Shift ID format.');
+          },
+          error: (err: any) => {
+            this.isRenumberingShifts = false;
+            this.toast.error(err?.error?.message || 'Failed to re-number existing shifts.');
+          }
+        });
+      },
+      error: (err: any) => {
+        this.isRenumberingShifts = false;
+        this.toast.error(err?.error?.message || 'Failed to save Shift ID format.');
+      }
+    });
+  }
 
   // Staff Types State
   staffTypes: StaffTypeItem[] = [];
