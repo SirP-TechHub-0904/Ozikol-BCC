@@ -79,6 +79,14 @@
             Test Ping Connection
         </button>
 
+        <form method="post" asp-page-handler="FlushCache" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" onclick="return confirm('Flush in-memory and Redis cache for @Model.Tenant.OrganizationName (@Model.Tenant.TenantKey) across all API nodes?\n\nThis forces the API to immediately reload database credentials with zero downtime.');" title="Flush in-memory API cache for this tenant">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-primary);">cached</span>
+                Flush API Cache
+            </button>
+        </form>
+
         <a href="#sqlRepairRoom" class="btn-admin btn-admin-secondary" onclick="setTimeout(() => document.getElementById('sqlQueryInput')?.focus(), 100);">
             <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
             SQL Repair Room

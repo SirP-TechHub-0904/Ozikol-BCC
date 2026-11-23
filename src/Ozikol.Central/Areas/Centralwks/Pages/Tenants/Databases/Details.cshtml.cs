@@ -292,6 +292,79 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to flush in-memory and distributed caches for this specific tenant across all API instances with zero downtime.
+        /// </summary>
+        public async Task<IActionResult> OnPostFlushCacheAsync(string tenantKey)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage(new { tenantKey });
+            }
+
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var steps = new List<string>();
+
+            try
+            {
+                // 1. Evict L1 & L2 Redis cache
+                var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
+                if (cacheInvalidator != null)
+                {
+                    await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+                    steps.Add("Evicted Redis & local distributed cache");
+                }
+
+                // 2. Broadcast zero-downtime cache invalidation to running Ozikol-BCC.Api instances
+                var apiTargetUrl = !string.IsNullOrWhiteSpace(tenant.ApiUrl)
+                    ? tenant.ApiUrl.TrimEnd('/')
+                    : "https://api.ozikol.cloud";
+
+                var syncToken = Ozikol.MasterDomain.Security.OzikolDataCipher.GenerateInternalSyncToken(tenant.TenantKey);
+                var invalidateEndpoint = $"{apiTargetUrl}/api/tenants/cache/invalidate?tenantKey={Uri.EscapeDataString(tenant.TenantKey)}";
+
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                using var syncRequest = new HttpRequestMessage(HttpMethod.Post, invalidateEndpoint);
+                syncRequest.Headers.Add("X-Internal-Sync-Token", syncToken);
+
+                using var syncResponse = await client.SendAsync(syncRequest);
+                if (syncResponse.IsSuccessStatusCode)
+                {
+                    steps.Add("Notified Ozikol API nodes (zero downtime)");
+                }
+                else
+                {
+                    steps.Add($"API broadcast returned HTTP {(int)syncResponse.StatusCode}");
+                }
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Tenant.CacheFlushed",
+                    EntityType = "Database",
+                    EntityId = tenant.TenantKey,
+                    Summary = $"Admin {adminUser} flushed in-memory and distributed cache for '{tenant.OrganizationName}' ({tenant.TenantKey}).",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+                await _dbContext.SaveChangesAsync();
+
+                TempData["Success"] = $"Cache flushed for '{tenant.OrganizationName}' ({tenant.TenantKey}): {string.Join(" → ", steps)}.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to flush cache for tenant {TenantKey}", tenant.TenantKey);
+                TempData["Error"] = $"Cache flush failed: {ex.Message}";
+            }
+
+            return RedirectToPage(new { tenantKey });
+        }
+
+        /// <summary>
         /// Handles HTTP POST requests to apply pending migrations to this tenant database.
         /// </summary>
         public async Task<IActionResult> OnPostMigrateAsync(string tenantKey)
