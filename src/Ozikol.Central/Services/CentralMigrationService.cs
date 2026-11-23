@@ -497,18 +497,26 @@ public class CentralMigrationService : ICentralMigrationService
 
         try
         {
+            var fastConnBuilder = new SqlConnectionStringBuilder(tenantConnStr)
+            {
+                ConnectTimeout = 5
+            };
+            string fastTenantConnStr = fastConnBuilder.ConnectionString;
+
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-            optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
+            optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(10))
                 .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>()
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
             using var scope = _serviceProvider.CreateScope();
             var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
 
-            using (tenantProvider.BeginScope(tenantConnStr))
+            using (tenantProvider.BeginScope(fastTenantConnStr))
             {
                 var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-                var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+                var canConnect = await dbContext.Database.CanConnectAsync(linkedCts.Token);
                 deepDive.IsReachable = canConnect;
                 deepDive.Tenant.Status.IsReachable = canConnect;
 

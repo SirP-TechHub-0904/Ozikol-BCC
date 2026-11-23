@@ -808,11 +808,17 @@ CRITICAL DIAGNOSIS TASK:
             var sw = Stopwatch.StartNew();
             try
             {
-                using var conn = new SqlConnection(connectionString);
-                await conn.OpenAsync();
+                var builder = new SqlConnectionStringBuilder(connectionString)
+                {
+                    ConnectTimeout = 3
+                };
+                using var conn = new SqlConnection(builder.ConnectionString);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                await conn.OpenAsync(cts.Token);
                 var cmd = conn.CreateCommand();
+                cmd.CommandTimeout = 3;
                 cmd.CommandText = "SELECT 1;";
-                await cmd.ExecuteScalarAsync();
+                await cmd.ExecuteScalarAsync(cts.Token);
                 sw.Stop();
                 PingLatencyMs = sw.ElapsedMilliseconds;
             }
@@ -1035,23 +1041,21 @@ CRITICAL DIAGNOSIS TASK:
                 existingTenantBuilder = new SqlConnectionStringBuilder();
             }
 
-            // 1. Determine Target Server Host, Database Name, SQL Username, and New Password
-            string targetServer = !string.IsNullOrWhiteSpace(input.Server)
-                ? input.Server.Trim()
-                : (!string.IsNullOrWhiteSpace(existingTenantBuilder.DataSource) ? existingTenantBuilder.DataSource : masterBuilder.DataSource);
+            // 1. Always enforce the tenant's existing Server Host, Database Name, and SQL Username (only NewPassword is editable)
+            string targetServer = !string.IsNullOrWhiteSpace(existingTenantBuilder.DataSource)
+                ? existingTenantBuilder.DataSource
+                : masterBuilder.DataSource;
 
-            string targetDatabase = !string.IsNullOrWhiteSpace(input.DatabaseName)
-                ? input.DatabaseName.Trim()
-                : (!string.IsNullOrWhiteSpace(existingTenantBuilder.InitialCatalog) ? existingTenantBuilder.InitialCatalog : tenant.DatabaseName);
+            string targetDatabase = !string.IsNullOrWhiteSpace(existingTenantBuilder.InitialCatalog)
+                ? existingTenantBuilder.InitialCatalog
+                : tenant.DatabaseName;
 
             if (string.IsNullOrWhiteSpace(targetDatabase))
             {
                 targetDatabase = TenantSecurityGenerator.GenerateDatabaseName(tenant.TenantKey);
             }
 
-            string sqlUsername = !string.IsNullOrWhiteSpace(input.SqlUsername)
-                ? input.SqlUsername.Trim()
-                : existingTenantBuilder.UserID?.Trim() ?? string.Empty;
+            string sqlUsername = existingTenantBuilder.UserID?.Trim() ?? string.Empty;
 
             // Never allow resetting the master admin login via tenant password reset; ensure a dedicated tenant login
             if (string.IsNullOrWhiteSpace(sqlUsername) ||
@@ -1120,24 +1124,42 @@ CRITICAL DIAGNOSIS TASK:
                         stepsCompleted.Add($"Reset SQL login [{sqlUsername}] password on SQL Server");
                     }
 
-                    // 2c. Map/Re-link the SQL Login to the database user inside the tenant database and grant [db_owner]
-                    if (dbExists)
+                    // 2c. Attempt database ownership or user mapping defensively without crashing if usr_ozikol_master lacks tenant db access
+                    try
                     {
-                        await using var mapUserCmd = masterConn.CreateCommand();
-                        mapUserCmd.CommandTimeout = 30;
-                        mapUserCmd.CommandText = $@"
-                            USE [{safeDbBracket}];
-                            IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'{safeUserLiteral}')
-                            BEGIN
-                                CREATE USER [{safeUserBracket}] FOR LOGIN [{safeUserBracket}];
-                            END
-                            ELSE
-                            BEGIN
-                                ALTER USER [{safeUserBracket}] WITH LOGIN = [{safeUserBracket}];
-                            END;
-                            ALTER ROLE [db_owner] ADD MEMBER [{safeUserBracket}];";
-                        await mapUserCmd.ExecuteNonQueryAsync();
-                        stepsCompleted.Add($"Mapped [{sqlUsername}] to [db_owner] on [{targetDatabase}]");
+                        await using var authCmd = masterConn.CreateCommand();
+                        authCmd.CommandTimeout = 10;
+                        authCmd.CommandText = $"ALTER AUTHORIZATION ON DATABASE::[{safeDbBracket}] TO [{safeUserBracket}];";
+                        await authCmd.ExecuteNonQueryAsync();
+                        stepsCompleted.Add($"Ensured [{sqlUsername}] database ownership on [{targetDatabase}]");
+                    }
+                    catch (Exception authEx)
+                    {
+                        _logger.LogWarning(authEx, "Note: ALTER AUTHORIZATION bypassed for {TargetDb}: {Message}", targetDatabase, authEx.Message);
+
+                        // Fallback attempt to map user inside the database if master has direct access
+                        try
+                        {
+                            await using var mapUserCmd = masterConn.CreateCommand();
+                            mapUserCmd.CommandTimeout = 10;
+                            mapUserCmd.CommandText = $@"
+                                USE [{safeDbBracket}];
+                                IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'{safeUserLiteral}')
+                                BEGIN
+                                    CREATE USER [{safeUserBracket}] FOR LOGIN [{safeUserBracket}];
+                                END
+                                ELSE
+                                BEGIN
+                                    ALTER USER [{safeUserBracket}] WITH LOGIN = [{safeUserBracket}];
+                                END;
+                                ALTER ROLE [db_owner] ADD MEMBER [{safeUserBracket}];";
+                            await mapUserCmd.ExecuteNonQueryAsync();
+                            stepsCompleted.Add($"Mapped [{sqlUsername}] to [db_owner] on [{targetDatabase}]");
+                        }
+                        catch (Exception mapEx)
+                        {
+                            _logger.LogWarning(mapEx, "Note: Direct master user mapping bypassed for {SqlUser} on {DbName}: {Message}", sqlUsername, targetDatabase, mapEx.Message);
+                        }
                     }
                 }
 
@@ -1154,16 +1176,22 @@ CRITICAL DIAGNOSIS TASK:
                 };
                 string newTenantConnStr = newTenantConnBuilder.ConnectionString;
 
-                // 4. Verify live connection using the newly reset tenant SQL credentials
+                // 4. Verify live connection using the newly reset tenant SQL credentials directly into the tenant database
                 string harmonizedVerifyConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, newTenantConnStr, targetDatabase);
-                await using (var verifyConn = new SqlConnection(harmonizedVerifyConnStr))
+                var testConnBuilder = new SqlConnectionStringBuilder(harmonizedVerifyConnStr)
                 {
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    ConnectTimeout = 12
+                };
+
+                await using (var verifyConn = new SqlConnection(testConnBuilder.ConnectionString))
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                     await verifyConn.OpenAsync(cts.Token);
                     await using var verifyCmd = verifyConn.CreateCommand();
+                    verifyCmd.CommandTimeout = 12;
                     verifyCmd.CommandText = "SELECT 1;";
                     await verifyCmd.ExecuteScalarAsync(cts.Token);
-                    stepsCompleted.Add("Verified live SQL authentication");
+                    stepsCompleted.Add("Verified live SQL authentication & database access");
                 }
 
                 // 5. Persist updated ConnectionString & DatabaseName in MasterTenantCatalogs (transparently encrypted with AES-256-GCM)
