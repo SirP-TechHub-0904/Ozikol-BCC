@@ -501,30 +501,9 @@ public class TenantProvider : ITenantProvider
                 tenantBuilder.Remove("Network Address");
                 tenantBuilder["Server"] = masterServer!;
 
-                // Strictly preserve dedicated tenant SQL credentials. Only fallback to master credentials
-                // if the tenant connection string has NO user defined at all (e.g. Windows Auth or incomplete setup).
-                bool tenantHasUser = (tenantBuilder.TryGetValue("User Id", out var tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
-                                     (tenantBuilder.TryGetValue("UserId", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
-                                     (tenantBuilder.TryGetValue("UID", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString())) ||
-                                     (tenantBuilder.TryGetValue("User", out tUser) && !string.IsNullOrWhiteSpace(tUser?.ToString()));
-
-                if (!tenantHasUser && masterBuilder.TryGetValue("User Id", out var masterUser) && !string.IsNullOrWhiteSpace(masterUser?.ToString()))
-                {
-                    tenantBuilder["User Id"] = masterUser;
-                    if (masterBuilder.TryGetValue("Password", out var masterPass))
-                    {
-                        tenantBuilder["Password"] = masterPass;
-                    }
-                    if (tenantBuilder.ContainsKey("Integrated Security"))
-                    {
-                        tenantBuilder.Remove("Integrated Security");
-                    }
-                    if (tenantBuilder.ContainsKey("Trusted_Connection"))
-                    {
-                        tenantBuilder.Remove("Trusted_Connection");
-                    }
-                }
-
+                // Strictly preserve dedicated tenant SQL credentials. Zero-Trust Architecture:
+                // Tenant websites must NEVER connect using Master credentials.
+                // Master credentials belong strictly to Central Admin for schema provisioning.
                 if (masterBuilder.TryGetValue("TrustServerCertificate", out var trustCert))
                 {
                     tenantBuilder["TrustServerCertificate"] = trustCert;
