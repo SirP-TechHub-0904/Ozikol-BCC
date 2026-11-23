@@ -477,15 +477,24 @@ interface CapabilityScope {
                 </div>
               </div>
 
-              <!-- Transactional Email Tile -->
-              <div class="dispatch-tile">
-                <div class="tile-icon-box email-icon">
-                  <span class="material-symbols-outlined">outgoing_mail</span>
+              <!-- Transactional Email Tile with SuperAdmin Suppression Toggle -->
+              <div class="dispatch-tile" [class.tile-suppressed]="!sendEmailNotification">
+                <div class="tile-icon-box email-icon" [class.icon-suppressed]="!sendEmailNotification">
+                  <span class="material-symbols-outlined">{{ sendEmailNotification ? 'outgoing_mail' : 'mail_lock' }}</span>
                 </div>
-                <div class="tile-info">
-                  <strong>Account Permission Update Email</strong>
-                  <p>Dispatches a severity-branded HTML breakdown of assigned access roles & active capability scopes to <strong>{{ user?.email }}</strong>.</p>
-                  <span class="tile-badge badge-active">Enforced • Postmark</span>
+                <div class="tile-info" style="flex: 1;">
+                  <div class="tile-header-row">
+                    <strong>Account Permission Update Email</strong>
+                    <label class="email-toggle-switch" title="Toggle email notification dispatch to user">
+                      <input type="checkbox" [(ngModel)]="sendEmailNotification" [disabled]="isRootSuperAdmin" />
+                      <span class="slider-round"></span>
+                    </label>
+                  </div>
+                  <p *ngIf="sendEmailNotification">Dispatches a severity-branded HTML breakdown of assigned access roles & active capability scopes to <strong>{{ user?.email }}</strong>.</p>
+                  <p *ngIf="!sendEmailNotification" class="text-suppressed">Email dispatch is suppressed. No security update email will be sent to <strong>{{ user?.email }}</strong> (silent update).</p>
+                  <span class="tile-badge" [class.badge-active]="sendEmailNotification" [class.badge-suppressed]="!sendEmailNotification">
+                    {{ sendEmailNotification ? 'Enforced • Postmark' : 'Email Suppressed • Silent Update' }}
+                  </span>
                 </div>
               </div>
 
@@ -510,7 +519,13 @@ interface CapabilityScope {
                 <span>
                   Saving will set Primary Role to <strong>'{{ selectedRole }}'</strong> with
                   <strong>{{ getActiveScopesCount() }}</strong> active modular capability scopes.
-                  User will receive an instant notification bell badge and an Account Permission Update email.
+                  <ng-container *ngIf="sendEmailNotification">
+                    User will receive an instant notification bell badge and an Account Permission Update email.
+                  </ng-container>
+                  <ng-container *ngIf="!sendEmailNotification">
+                    <span style="color: #d97706; font-weight: 700;">Email notification is suppressed.</span>
+                    User will not be emailed; changes will apply silently upon their next sign-in.
+                  </ng-container>
                 </span>
               </div>
             </div>
@@ -1218,6 +1233,72 @@ interface CapabilityScope {
       background: #dcfce7;
       color: #15803d;
     }
+    .badge-suppressed {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .tile-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .tile-suppressed {
+      background: #fffbeb !important;
+      border-color: #fde68a !important;
+    }
+    .icon-suppressed {
+      background: #fef3c7 !important;
+      color: #d97706 !important;
+    }
+    .text-suppressed {
+      color: #b45309 !important;
+    }
+
+    /* Email Notification Toggle Switch */
+    .email-toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .email-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      transition: .2s;
+      border-radius: 20px;
+    }
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .email-toggle-switch input:checked + .slider-round {
+      background-color: #0050e5;
+    }
+    .email-toggle-switch input:checked + .slider-round:before {
+      transform: translateX(16px);
+    }
 
     .preview-notice-box {
       background: #f1f5f9;
@@ -1316,6 +1397,7 @@ export class UserPermissionsComponent implements OnInit {
   user: any = null;
 
   selectedRole = 'Member';
+  sendEmailNotification = true;
   headerButtons: PageHeaderButton[] = [];
 
   /**
@@ -1570,13 +1652,17 @@ export class UserPermissionsComponent implements OnInit {
     const payload = {
       systemRole: this.selectedRole,
       isAdmin: this.selectedRole === 'Admin',
-      featureRoles: featureRolesPayload
+      featureRoles: featureRolesPayload,
+      sendEmailNotification: this.sendEmailNotification
     };
 
     this.api.post<any>(`IdentityApi/users/${this.userId}/feature-roles`, payload).subscribe({
       next: (res) => {
         this.isSaving = false;
-        this.toast.success(res?.message || 'Permissions updated successfully! Real-time alerts and email dispatched.');
+        const msg = this.sendEmailNotification
+          ? (res?.message || 'Permissions updated successfully! Real-time alerts and email dispatched.')
+          : 'Permissions updated successfully (Silent update — email notification suppressed).';
+        this.toast.success(msg);
         setTimeout(() => {
           this.router.navigate([`/users/console/details/${this.userId}`]);
         }, 600);

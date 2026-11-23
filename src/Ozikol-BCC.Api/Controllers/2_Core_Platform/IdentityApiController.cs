@@ -2990,6 +2990,12 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 try
                 {
+                    var channels = NotificationChannels.InApp;
+                    if (request.SendEmailNotification)
+                    {
+                        channels |= NotificationChannels.Email;
+                    }
+
                     await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
@@ -2997,15 +3003,15 @@ namespace Ozikol_BCC.Api.Controllers
                         Title = "Account Permission Update",
                         Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
                         Severity = NotificationSeverity.Failed,
-                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        Channels = channels,
                         ActionUrl = "/users/workspace/security",
                         Module = "Identity & Access Governance",
                         Icon = "admin_panel_settings",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
-                        SendEmailCopy = true,
+                        SendEmailCopy = request.SendEmailNotification,
                         EmailSubject = "Account Permission Update",
-                        EmailHtmlBody = emailBody
+                        EmailHtmlBody = request.SendEmailNotification ? emailBody : string.Empty
                     });
                 }
                 catch { }
@@ -3142,6 +3148,12 @@ namespace Ozikol_BCC.Api.Controllers
         public bool IsAdmin { get; set; }
         public string? SystemRole { get; set; }
         public List<FeatureRoleScopeDto>? FeatureRoles { get; set; }
+
+        /// <summary>
+        /// Indicates whether to dispatch an email notification to the member regarding the permission update.
+        /// Defaults to true. If false, email dispatch is suppressed (silent update).
+        /// </summary>
+        public bool SendEmailNotification { get; set; } = true;
     }
 
     public class FeatureRoleScopeDto
