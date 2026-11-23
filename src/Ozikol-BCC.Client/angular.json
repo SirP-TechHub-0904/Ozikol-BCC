@@ -29,7 +29,8 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              "src/OneSignalSDKWorker.js"
+              "src/OneSignalSDKWorker.js",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "src/styles.css"
@@ -94,7 +95,8 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              "src/OneSignalSDKWorker.js"
+              "src/OneSignalSDKWorker.js",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "src/styles.css"

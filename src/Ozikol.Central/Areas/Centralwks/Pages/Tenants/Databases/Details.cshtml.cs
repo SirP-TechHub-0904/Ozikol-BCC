@@ -990,6 +990,264 @@ CRITICAL DIAGNOSIS TASK:
             return RedirectToPage(new { tenantKey = input.TenantKey });
         }
 
+        /// <summary>
+        /// Resets the dedicated SQL Server Login password for a tenant on the SQL Server instance using the Master Admin connection,
+        /// ensures the physical database and <c>db_owner</c> database user mapping exist (re-linking any orphaned user),
+        /// updates and encrypts the tenant's <c>ConnectionString</c> in <c>MasterTenantCatalogs</c>, and evicts the L1/L2 routing caches.
+        /// </summary>
+        /// <param name="input">Password reset and SQL login synchronization parameters.</param>
+        /// <returns>Redirect back to the database details page with full execution status.</returns>
+        public async Task<IActionResult> OnPostResetSqlPasswordAndSyncAsync([FromForm] ResetSqlPasswordInputModel input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.TenantKey))
+            {
+                TempData["Error"] = "Tenant key is required to reset SQL credentials.";
+                return RedirectToPage(new { tenantKey = input?.TenantKey });
+            }
+
+            var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == input.TenantKey);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Databases/Index");
+            }
+
+            var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(masterConnStr))
+            {
+                TempData["Error"] = "Central Master database connection string is unavailable.";
+                return RedirectToPage(new { tenantKey = input.TenantKey });
+            }
+
+            var masterBuilder = new SqlConnectionStringBuilder(masterConnStr);
+
+            // Resolve existing tenant connection details
+            var decryptedExisting = Ozikol.MasterDomain.Security.OzikolDataCipher.DecryptIfNeeded(tenant.ConnectionString) ?? tenant.ConnectionString ?? string.Empty;
+            SqlConnectionStringBuilder existingTenantBuilder;
+            try
+            {
+                existingTenantBuilder = !string.IsNullOrWhiteSpace(decryptedExisting)
+                    ? new SqlConnectionStringBuilder(decryptedExisting)
+                    : new SqlConnectionStringBuilder();
+            }
+            catch
+            {
+                existingTenantBuilder = new SqlConnectionStringBuilder();
+            }
+
+            // 1. Determine Target Server Host, Database Name, SQL Username, and New Password
+            string targetServer = !string.IsNullOrWhiteSpace(input.Server)
+                ? input.Server.Trim()
+                : (!string.IsNullOrWhiteSpace(existingTenantBuilder.DataSource) ? existingTenantBuilder.DataSource : masterBuilder.DataSource);
+
+            string targetDatabase = !string.IsNullOrWhiteSpace(input.DatabaseName)
+                ? input.DatabaseName.Trim()
+                : (!string.IsNullOrWhiteSpace(existingTenantBuilder.InitialCatalog) ? existingTenantBuilder.InitialCatalog : tenant.DatabaseName);
+
+            if (string.IsNullOrWhiteSpace(targetDatabase))
+            {
+                targetDatabase = TenantSecurityGenerator.GenerateDatabaseName(tenant.TenantKey);
+            }
+
+            string sqlUsername = !string.IsNullOrWhiteSpace(input.SqlUsername)
+                ? input.SqlUsername.Trim()
+                : existingTenantBuilder.UserID?.Trim() ?? string.Empty;
+
+            // Never allow resetting the master admin login via tenant password reset; ensure a dedicated tenant login
+            if (string.IsNullOrWhiteSpace(sqlUsername) ||
+                string.Equals(sqlUsername, "sa", StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(masterBuilder.UserID) && string.Equals(sqlUsername, masterBuilder.UserID, StringComparison.OrdinalIgnoreCase)))
+            {
+                sqlUsername = TenantSecurityGenerator.GenerateSqlUsername(tenant.TenantKey);
+            }
+
+            string newPassword = !string.IsNullOrWhiteSpace(input.NewPassword)
+                ? input.NewPassword.Trim()
+                : TenantSecurityGenerator.GenerateStrongPassword(32);
+
+            var adminUser = User.Identity?.Name ?? "SuperAdmin";
+            var stepsCompleted = new List<string>();
+
+            try
+            {
+                // 2. Connect to SQL Server [master] using the Central Master Admin credentials
+                var adminMasterBuilder = new SqlConnectionStringBuilder(masterConnStr)
+                {
+                    InitialCatalog = "master",
+                    ConnectTimeout = 20,
+                    TrustServerCertificate = true
+                };
+
+                await using (var masterConn = new SqlConnection(adminMasterBuilder.ConnectionString))
+                {
+                    await masterConn.OpenAsync();
+
+                    var safeDbBracket = targetDatabase.Replace("]", "]]");
+                    var safeDbLiteral = targetDatabase.Replace("'", "''");
+                    var safeUserBracket = sqlUsername.Replace("]", "]]");
+                    var safeUserLiteral = sqlUsername.Replace("'", "''");
+                    var safePasswordLiteral = newPassword.Replace("'", "''");
+
+                    // 2a. Check if the physical tenant database exists (and optionally create it if missing)
+                    bool dbExists;
+                    await using (var checkDbCmd = masterConn.CreateCommand())
+                    {
+                        checkDbCmd.CommandText = $"SELECT COUNT(1) FROM sys.databases WHERE name = N'{safeDbLiteral}';";
+                        dbExists = Convert.ToInt32(await checkDbCmd.ExecuteScalarAsync()) > 0;
+                    }
+
+                    if (!dbExists)
+                    {
+                        if (input.EnsureDatabaseExists)
+                        {
+                            await using var createDbCmd = masterConn.CreateCommand();
+                            createDbCmd.CommandTimeout = 60;
+                            createDbCmd.CommandText = $@"
+                                IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'{safeDbLiteral}')
+                                BEGIN
+                                    CREATE DATABASE [{safeDbBracket}];
+                                END;";
+                            await createDbCmd.ExecuteNonQueryAsync();
+                            dbExists = true;
+                            stepsCompleted.Add($"Created missing database [{targetDatabase}]");
+                        }
+                        else
+                        {
+                            TempData["Error"] = $"Physical database '{targetDatabase}' does not exist on SQL Server ({masterBuilder.DataSource}). Tick 'Create & Migrate database if missing' to automatically provision it.";
+                            return RedirectToPage(new { tenantKey = input.TenantKey });
+                        }
+                    }
+
+                    // 2b. Reset password on existing SQL Login (or create the SQL Login if missing) and ensure it is enabled/unlocked
+                    await using (var loginCmd = masterConn.CreateCommand())
+                    {
+                        loginCmd.CommandTimeout = 30;
+                        loginCmd.CommandText = $@"
+                            IF EXISTS (SELECT name FROM sys.server_principals WHERE name = N'{safeUserLiteral}')
+                            BEGIN
+                                ALTER LOGIN [{safeUserBracket}] WITH PASSWORD = N'{safePasswordLiteral}', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+                                ALTER LOGIN [{safeUserBracket}] ENABLE;
+                            END
+                            ELSE
+                            BEGIN
+                                CREATE LOGIN [{safeUserBracket}] WITH PASSWORD = N'{safePasswordLiteral}', DEFAULT_DATABASE = [{safeDbBracket}], CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+                            END;";
+                        await loginCmd.ExecuteNonQueryAsync();
+                        stepsCompleted.Add($"Reset SQL login [{sqlUsername}] password on SQL Server");
+                    }
+
+                    // 2c. Map/Re-link the SQL Login to the database user inside the tenant database and grant [db_owner]
+                    if (dbExists)
+                    {
+                        await using var mapUserCmd = masterConn.CreateCommand();
+                        mapUserCmd.CommandTimeout = 30;
+                        mapUserCmd.CommandText = $@"
+                            USE [{safeDbBracket}];
+                            IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'{safeUserLiteral}')
+                            BEGIN
+                                CREATE USER [{safeUserBracket}] FOR LOGIN [{safeUserBracket}];
+                            END
+                            ELSE
+                            BEGIN
+                                ALTER USER [{safeUserBracket}] WITH LOGIN = [{safeUserBracket}];
+                            END;
+                            ALTER ROLE [db_owner] ADD MEMBER [{safeUserBracket}];";
+                        await mapUserCmd.ExecuteNonQueryAsync();
+                        stepsCompleted.Add($"Mapped [{sqlUsername}] to [db_owner] on [{targetDatabase}]");
+                    }
+                }
+
+                // 3. Build the updated isolated Tenant Connection String
+                var newTenantConnBuilder = new SqlConnectionStringBuilder
+                {
+                    DataSource = targetServer,
+                    InitialCatalog = targetDatabase,
+                    UserID = sqlUsername,
+                    Password = newPassword,
+                    TrustServerCertificate = true,
+                    MultipleActiveResultSets = true,
+                    PersistSecurityInfo = true
+                };
+                string newTenantConnStr = newTenantConnBuilder.ConnectionString;
+
+                // 4. Verify live connection using the newly reset tenant SQL credentials
+                string harmonizedVerifyConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, newTenantConnStr, targetDatabase);
+                await using (var verifyConn = new SqlConnection(harmonizedVerifyConnStr))
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await verifyConn.OpenAsync(cts.Token);
+                    await using var verifyCmd = verifyConn.CreateCommand();
+                    verifyCmd.CommandText = "SELECT 1;";
+                    await verifyCmd.ExecuteScalarAsync(cts.Token);
+                    stepsCompleted.Add("Verified live SQL authentication");
+                }
+
+                // 5. Persist updated ConnectionString & DatabaseName in MasterTenantCatalogs (transparently encrypted with AES-256-GCM)
+                tenant.DatabaseName = targetDatabase;
+                tenant.ConnectionString = newTenantConnStr;
+                tenant.UpdatedUtc = DateTime.UtcNow;
+                tenant.LastUpdatedBy = adminUser;
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    UserName = adminUser,
+                    Action = "Database.SqlPasswordResetAndSynced",
+                    EntityType = "Database",
+                    EntityId = tenant.TenantKey,
+                    Summary = $"Admin {adminUser} reset SQL login '{sqlUsername}' password on SQL Server, mapped [db_owner] on '{targetDatabase}', and updated encrypted connection string in Central.",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers.UserAgent.ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+
+                await _dbContext.SaveChangesAsync();
+                stepsCompleted.Add("Updated & AES-256-GCM encrypted connection string in Central");
+
+                // 6. If database had pending migrations or was just created, optionally apply EF Core migrations & seed defaults
+                if (input.ApplyMigrationsIfPending)
+                {
+                    try
+                    {
+                        var migResult = await _migrationService.MigrateTenantDatabaseAsync(tenant.TenantKey);
+                        if (migResult.Success && migResult.MigrationsApplied.Any())
+                        {
+                            stepsCompleted.Add($"Applied {migResult.MigrationsApplied.Count} migration(s)");
+                        }
+
+                        var onboardingSvc = HttpContext.RequestServices.GetService<ITenantOnboardingService>();
+                        if (onboardingSvc != null)
+                        {
+                            await onboardingSvc.SeedTenantDefaultWebsiteAsync(tenant.TenantKey, tenant.OrganizationName);
+                        }
+                    }
+                    catch (Exception migEx)
+                    {
+                        _logger.LogWarning(migEx, "Non-blocking migration/seed warning after SQL password reset for {TenantKey}", tenant.TenantKey);
+                    }
+                }
+
+                // 7. Evict L1 & L2 Redis tenant routing cache immediately across all nodes
+                var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
+                if (cacheInvalidator != null)
+                {
+                    await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
+                }
+
+                _logger.LogInformation("Successfully reset SQL login '{SqlUser}' password and synced encrypted connection string for tenant '{TenantKey}'",
+                    sqlUsername, tenant.TenantKey);
+
+                TempData["Success"] = $"SQL password reset & synced for '{tenant.OrganizationName}' ({tenant.TenantKey}): {string.Join(" → ", stepsCompleted)}.";
+                return RedirectToPage(new { tenantKey = input.TenantKey });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reset SQL password and sync connection string for tenant {TenantKey}", tenant.TenantKey);
+                TempData["Error"] = $"SQL password reset failed: {ex.Message}";
+                return RedirectToPage(new { tenantKey = input.TenantKey });
+            }
+        }
+
         private async Task<string> BuildCandidateConnectionStringAsync(
             string? tenantKey, string mode, string? server, string? databaseName,
             string authType, string? userId, string? password,
@@ -1174,5 +1432,47 @@ CRITICAL DIAGNOSIS TASK:
         /// Raw connection string when Mode is 'Raw'.
         /// </summary>
         public string? RawConnectionString { get; set; }
+    }
+
+    /// <summary>
+    /// Input model for resetting a tenant's SQL Server Login password on SQL Server and auto-syncing the encrypted connection string in Central.
+    /// </summary>
+    public class ResetSqlPasswordInputModel
+    {
+        /// <summary>
+        /// Target tenant key.
+        /// </summary>
+        [Required]
+        public string TenantKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Target SQL Server host or IP and port.
+        /// </summary>
+        public string? Server { get; set; }
+
+        /// <summary>
+        /// Target tenant database name.
+        /// </summary>
+        public string? DatabaseName { get; set; }
+
+        /// <summary>
+        /// Dedicated SQL Server Login / Username (keeps existing user or creates if missing).
+        /// </summary>
+        public string? SqlUsername { get; set; }
+
+        /// <summary>
+        /// New SQL Server password to set on the login and store in Central. If empty, a 32-char strong password is generated.
+        /// </summary>
+        public string? NewPassword { get; set; }
+
+        /// <summary>
+        /// When true, creates the physical SQL database if it is missing on the SQL Server instance.
+        /// </summary>
+        public bool EnsureDatabaseExists { get; set; } = true;
+
+        /// <summary>
+        /// When true, automatically applies pending EF Core migrations and default website seed after resetting credentials.
+        /// </summary>
+        public bool ApplyMigrationsIfPending { get; set; } = true;
     }
 }

@@ -174,7 +174,11 @@
                     <code style="display: block; color: var(--admin-text); background: var(--admin-bg-surface-elevated); padding: 4px 8px; border-radius: 4px; font-weight: 600;">
                         @Model.Tenant.DatabaseName
                     </code>
-                    <div style="margin-top: 6px;">
+                    <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px;">
+                        <a href="/centralwks/tenants/databases/details?tenantKey=@Model.Tenant.TenantKey#resetPassword" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">lock_reset</span>
+                            Reset SQL Password &amp; Sync
+                        </a>
                         <a href="/centralwks/tenants/databases/details?tenantKey=@Model.Tenant.TenantKey#editConnection" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px;">
                             <span class="material-symbols-outlined" style="font-size: 14px; color: var(--admin-primary);">tune</span>
                             Edit Connection String
