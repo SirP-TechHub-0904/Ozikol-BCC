@@ -82,6 +82,18 @@ interface WizardStep {
             
             <!-- Hero Header -->
             <div class="card-hero-header">
+              <div class="brand-identity-row" *ngIf="logoUrl || brandName" style="display: flex; justify-content: center; margin-bottom: 14px;">
+                <img
+                  *ngIf="logoUrl && !logoLoadFailed"
+                  [src]="logoUrl"
+                  [alt]="brandName || 'Workspace'"
+                  style="max-height: 46px; max-width: 220px; object-fit: contain;"
+                  (error)="logoLoadFailed = true"
+                />
+                <span *ngIf="(!logoUrl || logoLoadFailed) && brandName" style="font-size: 19px; font-weight: 800; color: #0f172a;">
+                  {{ brandName }}
+                </span>
+              </div>
               <h1 class="hero-title">{{ policy.formTitle || ('auth.create_your_account' | translate:'Create Your Account') }}</h1>
               <p class="hero-subtitle" *ngIf="!policy.welcomeMessage">{{ 'auth.join_member_directory' | translate:'Join our member directory and workspace portal.' }}</p>
               <div class="hero-welcome-badge" *ngIf="policy.welcomeMessage">
@@ -92,7 +104,7 @@ interface WizardStep {
 
             <!-- Unpublished / Not Accessible Notice -->
             <div *ngIf="!isLoadingSchema && policy.isFormPublished === false" class="disabled-state-card fade-in">
-              <div class="disabled-icon-wrap">
+              <div class="disabled-icon-wrap" *ngIf="!logoUrl || logoLoadFailed">
                 <span class="material-symbols-outlined">visibility_off</span>
               </div>
               <h3>{{ 'auth.form_unpublished' | translate:'Form Not Accessible' }}</h3>
@@ -105,7 +117,7 @@ interface WizardStep {
 
             <!-- Form Disabled Notice (Clean state for users; no blurred form shown) -->
             <div *ngIf="!isLoadingSchema && policy.isFormPublished !== false && policy.isFormDisabled" class="disabled-state-card fade-in">
-              <div class="disabled-icon-wrap">
+              <div class="disabled-icon-wrap" *ngIf="!logoUrl || logoLoadFailed">
                 <span class="material-symbols-outlined">block</span>
               </div>
               <h3>{{ 'auth.form_disabled_title' | translate:'Registration Temporarily Disabled' }}</h3>
@@ -118,7 +130,7 @@ interface WizardStep {
 
             <!-- Public Registration Disabled Notice -->
             <div *ngIf="!isLoadingSchema && policy.isFormPublished !== false && !policy.isFormDisabled && policy.allowPublicRegistration === false" class="disabled-state-card fade-in">
-              <div class="disabled-icon-wrap">
+              <div class="disabled-icon-wrap" *ngIf="!logoUrl || logoLoadFailed">
                 <span class="material-symbols-outlined">lock_clock</span>
               </div>
               <h3>{{ 'auth.registration_closed' | translate:'Registration Closed' }}</h3>
@@ -132,7 +144,7 @@ interface WizardStep {
 
             <!-- Pending Approval State Card -->
             <div *ngIf="registrationSuccess && isPendingApproval" class="approval-state-card fade-in">
-              <div class="approval-icon-wrap">
+              <div class="approval-icon-wrap" *ngIf="!logoUrl || logoLoadFailed">
                 <span class="material-symbols-outlined">hourglass_top</span>
               </div>
               <span class="status-pill">{{ 'auth.pending_verification' | translate:'Pending Verification' }}</span>
@@ -167,7 +179,7 @@ interface WizardStep {
 
             <!-- Instant Activation / Success Confirmation State Card -->
             <div *ngIf="registrationSuccess && !isPendingApproval" class="approval-state-card success-state-card fade-in">
-              <div class="approval-icon-wrap success-icon-wrap">
+              <div class="approval-icon-wrap success-icon-wrap" *ngIf="!logoUrl || logoLoadFailed">
                 <span class="material-symbols-outlined">verified</span>
               </div>
               <span class="status-pill status-pill-success">{{ 'auth.account_activated' | translate:'Account Activated' }}</span>
@@ -2760,6 +2772,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
 
   brandName: string = 'Workspace';
   logoUrl: string = '';
+  logoLoadFailed: boolean = false;
   faviconUrl: string = '';
   siteTitle: string = '';
   tagline: string = '';

@@ -527,17 +527,29 @@ interface StaffMemberDetail {
                 <thead>
                   <tr>
                     <th style="width: 56px;">S/N</th>
-                    <th>Document Type</th>
-                    <th>Document Name</th>
-                    <th>Reference / Sector</th>
-                    <th>Uploaded Date</th>
-                    <th>Expiry Date</th>
-                    <th>Status</th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'documentType'" (click)="toggleDocSort('documentType')">
+                      <span class="th-sort-wrap">Document Type <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'documentType') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'documentName'" (click)="toggleDocSort('documentName')">
+                      <span class="th-sort-wrap">Document Name <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'documentName') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'referenceNumber'" (click)="toggleDocSort('referenceNumber')">
+                      <span class="th-sort-wrap">Reference / Sector <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'referenceNumber') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'createdUtc'" (click)="toggleDocSort('createdUtc')">
+                      <span class="th-sort-wrap">Uploaded Date <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'createdUtc') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'expiryDateUtc'" (click)="toggleDocSort('expiryDateUtc')">
+                      <span class="th-sort-wrap">Expiry Date <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'expiryDateUtc') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="docSortCol === 'isVerified'" (click)="toggleDocSort('isVerified')">
+                      <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(docSortCol, docSortDir, 'isVerified') }}</span></span>
+                    </th>
                     <th style="text-align: right;">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let doc of member.documents; let i = index">
+                  <tr *ngFor="let doc of sortedMemberDocuments; let i = index">
                     <td>
                       <span class="sn-badge">{{ i + 1 }}</span>
                     </td>
@@ -768,13 +780,27 @@ interface StaffMemberDetail {
                 <thead>
                   <tr>
                     <th style="width: 56px;">S/N</th>
-                    <th>WORK LOCATION / POST</th>
-                    <th>DUTY DATE &amp; TIMING</th>
-                    <th>HOURS</th>
-                    <th>STATUS</th>
-                    <th>GPS GEOFENCE</th>
-                    <th>DUTY REPORT</th>
-                    <th>FINE</th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'siteName'" (click)="toggleShiftSort('siteName')">
+                      <span class="th-sort-wrap">WORK LOCATION / POST <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'siteName') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'startsAtUtc'" (click)="toggleShiftSort('startsAtUtc')">
+                      <span class="th-sort-wrap">DUTY DATE &amp; TIMING <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'startsAtUtc') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'hours'" (click)="toggleShiftSort('hours')">
+                      <span class="th-sort-wrap">HOURS <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'hours') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'status'" (click)="toggleShiftSort('status')">
+                      <span class="th-sort-wrap">STATUS <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'status') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'isClockInGeofenceVerified'" (click)="toggleShiftSort('isClockInGeofenceVerified')">
+                      <span class="th-sort-wrap">GPS GEOFENCE <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'isClockInGeofenceVerified') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'reportSubmissionUtc'" (click)="toggleShiftSort('reportSubmissionUtc')">
+                      <span class="th-sort-wrap">DUTY REPORT <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'reportSubmissionUtc') }}</span></span>
+                    </th>
+                    <th class="sortable-th" [class.active-sort]="shiftSortCol === 'fineAmount'" (click)="toggleShiftSort('fineAmount')">
+                      <span class="th-sort-wrap">FINE <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'fineAmount') }}</span></span>
+                    </th>
                     <th style="text-align: right;">ACTION</th>
                   </tr>
                 </thead>
@@ -2109,11 +2135,89 @@ export class WorkforceMemberProfileComponent implements OnInit {
     });
   }
 
-  get displayedStaffShifts(): any[] {
-    if (this.staffDutyHistory?.shifts && this.staffDutyHistory.shifts.length > 0) {
-      return this.staffDutyHistory.shifts;
+  // Sort State (Default: Latest First)
+  docSortCol = 'createdUtc';
+  docSortDir: 'asc' | 'desc' = 'desc';
+  shiftSortCol = 'startsAtUtc';
+  shiftSortDir: 'asc' | 'desc' = 'desc';
+
+  toggleDocSort(col: string): void {
+    if (this.docSortCol === col) {
+      this.docSortDir = this.docSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.docSortCol = col;
+      this.docSortDir = ['createdUtc', 'expiryDateUtc'].includes(col) ? 'desc' : 'asc';
     }
-    return this.member?.recentShifts || [];
+  }
+
+  toggleShiftSort(col: string): void {
+    if (this.shiftSortCol === col) {
+      this.shiftSortDir = this.shiftSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.shiftSortCol = col;
+      this.shiftSortDir = ['startsAtUtc', 'hours', 'reportSubmissionUtc', 'fineAmount'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(activeCol: string, dir: 'asc' | 'desc', col: string): string {
+    if (activeCol !== col) return 'unfold_more';
+    return dir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  get sortedMemberDocuments(): any[] {
+    const docs = this.member?.documents || [];
+    const mult = this.docSortDir === 'asc' ? 1 : -1;
+    return [...docs].sort((a: any, b: any) => {
+      if (this.docSortCol === 'createdUtc' || this.docSortCol === 'expiryDateUtc') {
+        const tA = a[this.docSortCol] ? new Date(a[this.docSortCol]).getTime() : 0;
+        const tB = b[this.docSortCol] ? new Date(b[this.docSortCol]).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.docSortCol === 'isVerified') {
+        return ((a.isVerified ? 1 : 0) - (b.isVerified ? 1 : 0)) * mult;
+      }
+      const sA = String(a[this.docSortCol] || '').toLowerCase();
+      const sB = String(b[this.docSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
+
+  get displayedStaffShifts(): any[] {
+    const raw = (this.staffDutyHistory?.shifts && this.staffDutyHistory.shifts.length > 0)
+      ? this.staffDutyHistory.shifts
+      : (this.member?.recentShifts || []);
+    const mult = this.shiftSortDir === 'asc' ? 1 : -1;
+    return [...raw].sort((a: any, b: any) => {
+      if (this.shiftSortCol === 'startsAtUtc') {
+        const tA = (a.startsAtUtc || a.startUtc) ? new Date(a.startsAtUtc || a.startUtc).getTime() : 0;
+        const tB = (b.startsAtUtc || b.startUtc) ? new Date(b.startsAtUtc || b.startUtc).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.shiftSortCol === 'hours') {
+        const hA = Number(a.actualDurationHours || a.plannedDurationHours || a.totalHours || 8);
+        const hB = Number(b.actualDurationHours || b.plannedDurationHours || b.totalHours || 8);
+        return (hA - hB) * mult;
+      }
+      if (this.shiftSortCol === 'reportSubmissionUtc') {
+        const tA = a.reportSubmissionUtc ? new Date(a.reportSubmissionUtc).getTime() : 0;
+        const tB = b.reportSubmissionUtc ? new Date(b.reportSubmissionUtc).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.shiftSortCol === 'fineAmount') {
+        return ((Number(a.fineAmount) || 0) - (Number(b.fineAmount) || 0)) * mult;
+      }
+      if (this.shiftSortCol === 'isClockInGeofenceVerified') {
+        return ((a.isClockInGeofenceVerified ? 1 : 0) - (b.isClockInGeofenceVerified ? 1 : 0)) * mult;
+      }
+      if (this.shiftSortCol === 'siteName') {
+        const sA = String(a.siteName || a.clientSiteName || '').toLowerCase();
+        const sB = String(b.siteName || b.clientSiteName || '').toLowerCase();
+        return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+      }
+      const sA = String(a[this.shiftSortCol] || '').toLowerCase();
+      const sB = String(b[this.shiftSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
   }
 
   get jobRoleTitles(): string[] {

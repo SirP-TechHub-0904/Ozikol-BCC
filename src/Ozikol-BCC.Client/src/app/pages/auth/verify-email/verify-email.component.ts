@@ -12,8 +12,20 @@ import { ToastService } from '../../../core/services/toast.service';
   template: `
     <div class="auth-card-shell">
       <div class="auth-card-header">
+        <div class="brand-row" *ngIf="brandLogoUrl || brandCompanyName">
+          <img
+            *ngIf="brandLogoUrl && !logoLoadFailed"
+            [src]="brandLogoUrl"
+            [alt]="brandCompanyName || 'Workspace'"
+            class="brand-logo"
+            (error)="logoLoadFailed = true"
+          />
+          <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" class="brand-title">
+            {{ brandCompanyName }}
+          </span>
+        </div>
 
-        <div class="icon-badge" [class.verified]="verified">
+        <div class="icon-badge" [class.verified]="verified" *ngIf="!brandLogoUrl || logoLoadFailed">
           <span class="material-symbols-outlined">
             {{ verified ? (isActive ? 'verified_user' : 'hourglass_top') : 'mark_email_read' }}
           </span>
@@ -247,6 +259,9 @@ export class VerifyEmailComponent implements OnInit, OnDestroy {
   isActive = false;
   statusMessage = '';
   errorMessage = '';
+  brandLogoUrl = '';
+  brandCompanyName = '';
+  logoLoadFailed = false;
   private cooldownTimer: any;
 
   constructor(
@@ -260,6 +275,15 @@ export class VerifyEmailComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       const qEmail = params.get('email');
       if (qEmail) this.email = qEmail;
+    });
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+        }
+      },
+      error: () => {}
     });
     this.startCooldown(30);
   }

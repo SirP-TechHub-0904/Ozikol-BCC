@@ -240,12 +240,24 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>Shift Code</th>
-                <th>Date &amp; Time</th>
-                <th>Venue / Client Site</th>
-                <th>Assigned User / Staff</th>
-                <th>Duration &amp; Pay Rate</th>
-                <th>Status</th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'shiftCode'" (click)="toggleShiftSort('shiftCode')">
+                  <span class="th-sort-wrap">Shift Code <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'shiftCode') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'startsAtUtc'" (click)="toggleShiftSort('startsAtUtc')">
+                  <span class="th-sort-wrap">Date &amp; Time <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'startsAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'siteName'" (click)="toggleShiftSort('siteName')">
+                  <span class="th-sort-wrap">Venue / Client Site <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'siteName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'assignedUserName'" (click)="toggleShiftSort('assignedUserName')">
+                  <span class="th-sort-wrap">Assigned User / Staff <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'assignedUserName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'hourlyPayRate'" (click)="toggleShiftSort('hourlyPayRate')">
+                  <span class="th-sort-wrap">Duration &amp; Pay Rate <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'hourlyPayRate') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'status'" (click)="toggleShiftSort('status')">
+                  <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'status') }}</span></span>
+                </th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
@@ -512,13 +524,27 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>Staff Officer</th>
-                <th>Venue &amp; Post</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Acceptance Status</th>
-                <th>Live Duty Status</th>
-                <th>Rate / Hour</th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'assignedUserName'" (click)="toggleShiftSort('assignedUserName')">
+                  <span class="th-sort-wrap">Staff Officer <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'assignedUserName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'siteName'" (click)="toggleShiftSort('siteName')">
+                  <span class="th-sort-wrap">Venue &amp; Post <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'siteName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'startsAtUtc'" (click)="toggleShiftSort('startsAtUtc')">
+                  <span class="th-sort-wrap">Start Time <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'startsAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'endsAtUtc'" (click)="toggleShiftSort('endsAtUtc')">
+                  <span class="th-sort-wrap">End Time <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'endsAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'isConfirmedByGuard'" (click)="toggleShiftSort('isConfirmedByGuard')">
+                  <span class="th-sort-wrap">Acceptance Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'isConfirmedByGuard') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'isClockedIn'" (click)="toggleShiftSort('isClockedIn')">
+                  <span class="th-sort-wrap">Live Duty Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'isClockedIn') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="shiftSortCol === 'hourlyPayRate'" (click)="toggleShiftSort('hourlyPayRate')">
+                  <span class="th-sort-wrap">Rate / Hour <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'hourlyPayRate') }}</span></span>
+                </th>
                 <th class="text-right">Action</th>
               </tr>
             </thead>
@@ -598,18 +624,32 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>Shift Code</th>
-                <th>Work Location &amp; Post</th>
-                <th>Scheduled Date &amp; Time</th>
-                <th>Requesting Officer</th>
-                <th>Covering Officer</th>
-                <th>Reason</th>
-                <th>Status</th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'shiftCode'" (click)="toggleSwapSort('shiftCode')">
+                  <span class="th-sort-wrap">Shift Code <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'shiftCode') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'siteName'" (click)="toggleSwapSort('siteName')">
+                  <span class="th-sort-wrap">Work Location &amp; Post <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'siteName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'startsAtUtc'" (click)="toggleSwapSort('startsAtUtc')">
+                  <span class="th-sort-wrap">Scheduled Date &amp; Time <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'startsAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'requestingUserName'" (click)="toggleSwapSort('requestingUserName')">
+                  <span class="th-sort-wrap">Requesting Officer <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'requestingUserName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'offeredToUserName'" (click)="toggleSwapSort('offeredToUserName')">
+                  <span class="th-sort-wrap">Covering Officer <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'offeredToUserName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'reason'" (click)="toggleSwapSort('reason')">
+                  <span class="th-sort-wrap">Reason <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'reason') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="swapSortCol === 'status'" (click)="toggleSwapSort('status')">
+                  <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(swapSortCol, swapSortDir, 'status') }}</span></span>
+                </th>
                 <th class="text-right">Supervisor Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let sw of workspaceSwaps; let i = index">
+              <tr *ngFor="let sw of sortedWorkspaceSwaps; let i = index">
                 <td><span class="sn-badge">{{ i + 1 }}</span></td>
                 <td><span class="shift-code-badge">{{ sw.shiftCode }}</span></td>
                 <td>
@@ -688,17 +728,29 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>Staff Officer</th>
-                <th>Leave Type</th>
-                <th>Dates Requested</th>
-                <th>Duration</th>
-                <th>Reason &amp; Notes</th>
-                <th>Status</th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'userName'" (click)="toggleLeaveSort('userName')">
+                  <span class="th-sort-wrap">Staff Officer <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'userName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'leaveType'" (click)="toggleLeaveSort('leaveType')">
+                  <span class="th-sort-wrap">Leave Type <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'leaveType') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'startDate'" (click)="toggleLeaveSort('startDate')">
+                  <span class="th-sort-wrap">Dates Requested <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'startDate') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'totalDays'" (click)="toggleLeaveSort('totalDays')">
+                  <span class="th-sort-wrap">Duration <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'totalDays') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'reason'" (click)="toggleLeaveSort('reason')">
+                  <span class="th-sort-wrap">Reason &amp; Notes <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'reason') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="leaveSortCol === 'status'" (click)="toggleLeaveSort('status')">
+                  <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon(leaveSortCol, leaveSortDir, 'status') }}</span></span>
+                </th>
                 <th class="text-right">Supervisor Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let lv of leaveRequests; let i = index">
+              <tr *ngFor="let lv of sortedLeaveRequests; let i = index">
                 <td><span class="sn-badge">{{ i + 1 }}</span></td>
                 <td><strong class="staff-name">{{ lv.userName }}</strong></td>
                 <td><span class="status-pill status-scheduled">{{ lv.leaveType }}</span></td>
@@ -1281,9 +1333,84 @@ export class WorkforceShiftManagerComponent implements OnInit {
     return this.leaveRequests.filter(l => l.status === 'Pending').length;
   }
 
+  // Sorting State (Default: Latest First)
+  shiftSortCol = 'startsAtUtc';
+  shiftSortDir: 'asc' | 'desc' = 'desc';
+  swapSortCol = 'startsAtUtc';
+  swapSortDir: 'asc' | 'desc' = 'desc';
+  leaveSortCol = 'startDate';
+  leaveSortDir: 'asc' | 'desc' = 'desc';
+
+  toggleShiftSort(col: string): void {
+    if (this.shiftSortCol === col) {
+      this.shiftSortDir = this.shiftSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.shiftSortCol = col;
+      this.shiftSortDir = col === 'startsAtUtc' || col === 'endsAtUtc' || col === 'hourlyPayRate' ? 'desc' : 'asc';
+    }
+    this.currentPage = 1;
+  }
+
+  toggleSwapSort(col: string): void {
+    if (this.swapSortCol === col) {
+      this.swapSortDir = this.swapSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.swapSortCol = col;
+      this.swapSortDir = col === 'startsAtUtc' ? 'desc' : 'asc';
+    }
+  }
+
+  toggleLeaveSort(col: string): void {
+    if (this.leaveSortCol === col) {
+      this.leaveSortDir = this.leaveSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.leaveSortCol = col;
+      this.leaveSortDir = col === 'startDate' || col === 'totalDays' ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(activeCol: string, dir: 'asc' | 'desc', col: string): string {
+    if (activeCol !== col) return 'unfold_more';
+    return dir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  private compareValues(a: any, b: any, dir: 'asc' | 'desc'): number {
+    const mult = dir === 'asc' ? 1 : -1;
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    if (typeof a === 'number' && typeof b === 'number') return (a - b) * mult;
+    if (typeof a === 'boolean' && typeof b === 'boolean') return (a === b ? 0 : a ? -1 : 1) * mult;
+    const strA = String(a).toLowerCase();
+    const strB = String(b).toLowerCase();
+    return strA.localeCompare(strB, undefined, { numeric: true }) * mult;
+  }
+
+  get sortedWorkspaceSwaps(): any[] {
+    return [...this.workspaceSwaps].sort((a, b) => {
+      if (this.swapSortCol === 'startsAtUtc') {
+        const tA = a.startsAtUtc ? new Date(a.startsAtUtc).getTime() : (a.createdUtc ? new Date(a.createdUtc).getTime() : 0);
+        const tB = b.startsAtUtc ? new Date(b.startsAtUtc).getTime() : (b.createdUtc ? new Date(b.createdUtc).getTime() : 0);
+        return this.compareValues(tA, tB, this.swapSortDir);
+      }
+      return this.compareValues(a[this.swapSortCol], b[this.swapSortCol], this.swapSortDir);
+    });
+  }
+
+  get sortedLeaveRequests(): any[] {
+    return [...this.leaveRequests].sort((a, b) => {
+      if (this.leaveSortCol === 'startDate') {
+        const tA = a.startDate ? new Date(a.startDate).getTime() : (a.createdUtc ? new Date(a.createdUtc).getTime() : 0);
+        const tB = b.startDate ? new Date(b.startDate).getTime() : (b.createdUtc ? new Date(b.createdUtc).getTime() : 0);
+        return this.compareValues(tA, tB, this.leaveSortDir);
+      }
+      return this.compareValues(a[this.leaveSortCol], b[this.leaveSortCol], this.leaveSortDir);
+    });
+  }
+
   get filteredShifts(): any[] {
     const q = this.searchQuery.trim().toLowerCase();
-    return this.shifts.filter(s => {
+    const filtered = this.shifts.filter(s => {
       if (this.siteFilter && s.clientSiteId !== this.siteFilter) {
         return false;
       }
@@ -1314,6 +1441,31 @@ export class WorkforceShiftManagerComponent implements OnInit {
         (s.assignedUserEmail || '').toLowerCase().includes(q) ||
         (s.eventTag || '').toLowerCase().includes(q)
       );
+    });
+
+    return filtered.sort((a, b) => {
+      switch (this.shiftSortCol) {
+        case 'startsAtUtc':
+          return this.compareValues(
+            a.startsAtUtc ? new Date(a.startsAtUtc).getTime() : 0,
+            b.startsAtUtc ? new Date(b.startsAtUtc).getTime() : 0,
+            this.shiftSortDir
+          );
+        case 'endsAtUtc':
+          return this.compareValues(
+            a.endsAtUtc ? new Date(a.endsAtUtc).getTime() : 0,
+            b.endsAtUtc ? new Date(b.endsAtUtc).getTime() : 0,
+            this.shiftSortDir
+          );
+        case 'hourlyPayRate':
+          return this.compareValues(Number(a.hourlyPayRate || 0), Number(b.hourlyPayRate || 0), this.shiftSortDir);
+        case 'status':
+          return this.compareValues(this.getDisplayStatus(a), this.getDisplayStatus(b), this.shiftSortDir);
+        case 'assignedUserName':
+          return this.compareValues(a.assignedUserName || 'ZZZ_Open Shift', b.assignedUserName || 'ZZZ_Open Shift', this.shiftSortDir);
+        default:
+          return this.compareValues(a[this.shiftSortCol], b[this.shiftSortCol], this.shiftSortDir);
+      }
     });
   }
 

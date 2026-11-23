@@ -3606,4 +3606,56 @@ body.dark-mode .form-text {
   color: #94a3b8 !important;
 }
 
+/* ==========================================================================
+   UNIVERSAL SORTABLE TABLE COLUMN HEADERS
+   ========================================================================== */
+th.sortable-th {
+  cursor: pointer !important;
+  user-select: none !important;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+th.sortable-th:hover {
+  background-color: #eef2ff !important;
+  color: #0050e5 !important;
+}
+
+th.sortable-th.active-sort {
+  color: #0050e5 !important;
+  background-color: #f0f7ff !important;
+}
+
+th.sortable-th .th-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+th.sortable-th .sort-icon {
+  font-size: 15px !important;
+  line-height: 1;
+  opacity: 0.45;
+  vertical-align: middle;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+th.sortable-th:hover .sort-icon,
+th.sortable-th.active-sort .sort-icon {
+  opacity: 1;
+  color: #0050e5 !important;
+}
+
+body.dark-mode th.sortable-th:hover,
+body.dark-mode th.sortable-th.active-sort {
+  background-color: rgba(110, 162, 255, 0.14) !important;
+  color: #6ea2ff !important;
+}
+
+body.dark-mode th.sortable-th:hover .sort-icon,
+body.dark-mode th.sortable-th.active-sort .sort-icon {
+  color: #6ea2ff !important;
+}
+
+
 

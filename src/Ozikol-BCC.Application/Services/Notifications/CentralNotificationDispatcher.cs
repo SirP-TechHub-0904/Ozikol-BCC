@@ -369,11 +369,14 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 }
 
                 var dto = BcpNotificationDto.FromEntity(broadcastNotif);
-                await _hubContext.Clients.Group("broadcast").SendAsync("ReceiveNotification", dto, cancellationToken);
-
                 if (!string.IsNullOrWhiteSpace(payload.TenantKey))
                 {
                     await _hubContext.Clients.Group($"tenant_{payload.TenantKey.Trim().ToLowerInvariant()}")
+                        .SendAsync("ReceiveNotification", dto, cancellationToken);
+                }
+                else
+                {
+                    await _hubContext.Clients.Group("broadcast")
                         .SendAsync("ReceiveNotification", dto, cancellationToken);
                 }
             }

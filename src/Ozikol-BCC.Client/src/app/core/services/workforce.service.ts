@@ -497,6 +497,10 @@ export class WorkforceService {
     return this.apiService.put<any>('workforce/settings/policies', policy);
   }
 
+  renumberShiftCodes(): Observable<any> {
+    return this.apiService.post<any>('workforce/shifts/renumber-codes', {});
+  }
+
   // --- CLIENT ORGANIZATIONS ---
   getClientOrganizations(): Observable<any> {
     return this.apiService.get<any>('workforce/client-organizations');

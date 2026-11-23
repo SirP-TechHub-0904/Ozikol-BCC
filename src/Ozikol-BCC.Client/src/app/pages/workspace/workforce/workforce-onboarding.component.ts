@@ -54,7 +54,19 @@ import {
 
         <!-- Token Invalid or Already Used State -->
         <div class="state-card error-card" *ngIf="!isVerifying && !tokenValid">
-          <span class="material-symbols-outlined text-danger">gpp_bad</span>
+          <div *ngIf="brandLogoUrl || brandCompanyName" style="display: flex; justify-content: center; margin-bottom: 12px;">
+            <img
+              *ngIf="brandLogoUrl && !logoLoadFailed"
+              [src]="brandLogoUrl"
+              [alt]="brandCompanyName || 'Workspace'"
+              style="max-height: 44px; max-width: 200px; object-fit: contain;"
+              (error)="logoLoadFailed = true"
+            />
+            <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" style="font-size: 18px; font-weight: 800; color: #0f172a;">
+              {{ brandCompanyName }}
+            </span>
+          </div>
+          <span *ngIf="!brandLogoUrl || logoLoadFailed" class="material-symbols-outlined text-danger">gpp_bad</span>
           <h3>Invitation Link Already Used or Invalid</h3>
           <p>{{ verificationError || 'This one-time onboarding link has already been redeemed or has expired.' }}</p>
           <a routerLink="/auth/login" class="btn btn-outline" style="margin-top: 12px;">Go to Sign In</a>
@@ -63,7 +75,19 @@ import {
         <!-- Exact Published Registration Form (When Token is Valid) -->
         <div class="rf-sim-card" *ngIf="!isVerifying && tokenValid">
           <div class="rf-sim-header">
-            <div class="rf-sim-avatar">
+            <div *ngIf="brandLogoUrl || brandCompanyName" style="display: flex; justify-content: center; margin-bottom: 12px;">
+              <img
+                *ngIf="brandLogoUrl && !logoLoadFailed"
+                [src]="brandLogoUrl"
+                [alt]="brandCompanyName || 'Workspace'"
+                style="max-height: 44px; max-width: 200px; object-fit: contain;"
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" style="font-size: 18px; font-weight: 800; color: #0f172a;">
+                {{ brandCompanyName }}
+              </span>
+            </div>
+            <div class="rf-sim-avatar" *ngIf="!brandLogoUrl || logoLoadFailed">
               <span class="material-symbols-outlined">how_to_reg</span>
             </div>
             <h3 class="rf-sim-title">{{ policy.registrationFormTitle || 'Create Your Account' }}</h3>
@@ -877,6 +901,9 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   recaptchaSiteKey = '';
   reCaptchaChecked = false;
   acceptedConsents: { [id: string]: boolean } = {};
+  brandLogoUrl = '';
+  brandCompanyName = '';
+  logoLoadFailed = false;
 
   policy = {
     registrationFormTitle: 'Create Your Account',
@@ -950,6 +977,15 @@ export class WorkforceOnboardingComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+        }
+      },
+      error: () => {}
+    });
     this.loadPublishedRegistrationSchema();
 
     try {

@@ -514,7 +514,8 @@ namespace Ozikol_BCC.Api.Controllers
             var sites = await _db.BcpClientSites
                 .AsNoTracking()
                 .Where(s => s.TenantKey == CurrentTenantKey && s.IsActive)
-                .OrderBy(s => s.SiteName)
+                .OrderByDescending(s => s.CreatedUtc)
+                .ThenBy(s => s.SiteName)
                 .Select(s => new ClientSiteDto
                 {
                     Id = s.Id,
@@ -963,7 +964,8 @@ namespace Ozikol_BCC.Api.Controllers
                 query = query.Where(s => s.Status == status);
 
             var shifts = await query
-                .OrderBy(s => s.StartsAtUtc)
+                .OrderByDescending(s => s.StartsAtUtc)
+                .ThenByDescending(s => s.CreatedUtc)
                 .Select(s => new ShiftDto
                 {
                     Id = s.Id,
@@ -1027,6 +1029,252 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Static fallback cache for Shift ID format &amp; prefix in case DB schema or policy row is unavailable.
+        /// </summary>
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Format, string Prefix)> _memoryShiftCodePolicy =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Resolves the active Shift ID format ("Sequential", "SiteSequential", or "DateDaily") and prefix (e.g. "SHF" or company initials)
+        /// from the tenant's workforce policy configuration without requiring any database schema migration.
+        /// </summary>
+        private async Task<(string Format, string Prefix)> ResolveShiftCodePolicyAsync(BcpWorkforcePolicySetting? policyOverride = null, CancellationToken ct = default)
+        {
+            string format = "Sequential";
+            string prefix = string.Empty;
+
+            var policy = policyOverride;
+            if (policy == null)
+            {
+                try
+                {
+                    policy = await _db.BcpWorkforcePolicySettings
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey, ct);
+                }
+                catch { }
+            }
+
+            if (policy != null && !string.IsNullOrWhiteSpace(policy.CustomQuestionsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(policy.CustomQuestionsJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        if (doc.RootElement.TryGetProperty("shiftCodeFormat", out var fmtEl) && fmtEl.ValueKind == JsonValueKind.String)
+                        {
+                            var candidate = fmtEl.GetString()?.Trim();
+                            if (candidate is "Sequential" or "SiteSequential" or "DateDaily")
+                            {
+                                format = candidate;
+                            }
+                        }
+                        if (doc.RootElement.TryGetProperty("shiftCodePrefix", out var pfxEl) && pfxEl.ValueKind == JsonValueKind.String)
+                        {
+                            prefix = SanitizeShiftCodeToken(pfxEl.GetString(), string.Empty);
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            if (string.IsNullOrWhiteSpace(prefix) && _memoryShiftCodePolicy.TryGetValue(CurrentTenantKey, out var cached))
+            {
+                format = cached.Format;
+                prefix = cached.Prefix;
+            }
+
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                // Derive default prefix from tenant company initials or fallback to "SHF"
+                try
+                {
+                    var brand = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(brand?.CompanyNameAbbreviation))
+                    {
+                        prefix = SanitizeShiftCodeToken(brand.CompanyNameAbbreviation, "SHF");
+                    }
+                    else if (!string.IsNullOrWhiteSpace(brand?.CompanyName))
+                    {
+                        var words = brand.CompanyName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (words.Length >= 2)
+                        {
+                            prefix = SanitizeShiftCodeToken(string.Concat(words.Take(3).Select(w => char.ToUpperInvariant(w[0]))), "SHF");
+                        }
+                        else if (words.Length == 1 && words[0].Length >= 3)
+                        {
+                            prefix = SanitizeShiftCodeToken(words[0][..3], "SHF");
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                prefix = "SHF";
+            }
+
+            return (format, prefix);
+        }
+
+        private static string SanitizeShiftCodeToken(string? input, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return fallback;
+            var chars = input.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).Take(6).ToArray();
+            return chars.Length > 0 ? new string(chars) : fallback;
+        }
+
+        private static string ExtractSitePrefix(BcpClientSite? site, string fallbackPrefix)
+        {
+            if (site == null) return fallbackPrefix;
+            if (!string.IsNullOrWhiteSpace(site.SiteName))
+            {
+                var words = site.SiteName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length >= 2)
+                {
+                    var initials = string.Concat(words.Take(3).Select(w => char.ToUpperInvariant(w[0])));
+                    var clean = SanitizeShiftCodeToken(initials, string.Empty);
+                    if (clean.Length >= 2) return clean;
+                }
+                var firstThree = SanitizeShiftCodeToken(site.SiteName, string.Empty);
+                if (firstThree.Length >= 3) return firstThree[..3];
+            }
+            if (!string.IsNullOrWhiteSpace(site.SiteCode))
+            {
+                var code = site.SiteCode.Trim().ToUpperInvariant();
+                if (code.StartsWith("LOC-") && code.Length > 4) code = code[4..];
+                return SanitizeShiftCodeToken(code, fallbackPrefix);
+            }
+            return fallbackPrefix;
+        }
+
+        /// <summary>
+        /// Generates the next collision-free Shift ID according to the tenant's active Shift ID numbering format:
+        /// 1. "Sequential" (Default): {PREFIX}-00001 (e.g. NPS-00001 or SHF-00001)
+        /// 2. "SiteSequential": {SITE}-00001 (e.g. WEM-00001, ABJ-00002)
+        /// 3. "DateDaily": {PREFIX}-{YYYYMMDD}-001 (e.g. SHF-20261127-001)
+        /// </summary>
+        private async Task<string> GenerateNextShiftCodeAsync(
+            Guid clientSiteId,
+            DateTime shiftStartUtc,
+            HashSet<string>? reservedInBatch = null,
+            CancellationToken ct = default)
+        {
+            var (format, prefix) = await ResolveShiftCodePolicyAsync(null, ct);
+
+            var existingCodes = await _db.BcpShifts
+                .AsNoTracking()
+                .Where(s => s.TenantKey == CurrentTenantKey && s.ShiftCode != null)
+                .Select(s => new { s.ShiftCode, s.StartsAtUtc })
+                .ToListAsync(ct);
+
+            var allKnownCodes = new HashSet<string>(
+                existingCodes.Select(x => x.ShiftCode!),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (reservedInBatch != null)
+            {
+                foreach (var r in reservedInBatch)
+                {
+                    allKnownCodes.Add(r);
+                }
+            }
+
+            if (string.Equals(format, "DateDaily", StringComparison.OrdinalIgnoreCase))
+            {
+                var datePart = shiftStartUtc.ToString("yyyyMMdd");
+                var datePrefix = $"{prefix}-{datePart}-";
+                int maxDaily = 0;
+
+                foreach (var code in allKnownCodes)
+                {
+                    if (code.StartsWith(datePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tail = code[datePrefix.Length..];
+                        if (int.TryParse(tail, out var num) && num > maxDaily)
+                        {
+                            maxDaily = num;
+                        }
+                    }
+                }
+
+                int nextDaily = maxDaily + 1;
+                string candidate;
+                do
+                {
+                    candidate = $"{prefix}-{datePart}-{nextDaily:D3}";
+                    nextDaily++;
+                } while (allKnownCodes.Contains(candidate));
+
+                reservedInBatch?.Add(candidate);
+                return candidate;
+            }
+
+            // For "Sequential" or "SiteSequential": compute highest global sequential number
+            string activePrefix = prefix;
+            if (string.Equals(format, "SiteSequential", StringComparison.OrdinalIgnoreCase))
+            {
+                var site = await _db.BcpClientSites
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == clientSiteId && s.TenantKey == CurrentTenantKey, ct);
+                activePrefix = ExtractSitePrefix(site, prefix);
+            }
+
+            int maxSeq = existingCodes.Count;
+            foreach (var code in allKnownCodes)
+            {
+                var parts = code.Split('-');
+                // Only extract trailing sequence from 2-part codes (e.g. SHF-00004 or WEM-00004)
+                // so 8-digit dates in 3-part codes (SHF-20261127-001) don't skew the sequence
+                if (parts.Length == 2 && int.TryParse(parts[1], out var seq) && seq < 1000000 && seq > maxSeq)
+                {
+                    maxSeq = seq;
+                }
+            }
+
+            int nextSeq = maxSeq + 1;
+            string seqCandidate;
+            do
+            {
+                seqCandidate = $"{activePrefix}-{nextSeq:D5}";
+                nextSeq++;
+            } while (allKnownCodes.Contains(seqCandidate));
+
+            reservedInBatch?.Add(seqCandidate);
+            return seqCandidate;
+        }
+
+        private static string MergeShiftCodePolicyIntoJson(string? existingJson, string format, string prefix)
+        {
+            var dict = new Dictionary<string, object?>();
+            if (!string.IsNullOrWhiteSpace(existingJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(existingJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var prop in doc.RootElement.EnumerateObject())
+                        {
+                            dict[prop.Name] = JsonSerializer.Deserialize<object>(prop.Value.GetRawText());
+                        }
+                    }
+                    else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        dict["questions"] = JsonSerializer.Deserialize<object>(doc.RootElement.GetRawText());
+                    }
+                }
+                catch { }
+            }
+
+            dict["shiftCodeFormat"] = format;
+            dict["shiftCodePrefix"] = prefix;
+            return JsonSerializer.Serialize(dict);
+        }
+
+        /// <summary>
         /// Creates a new planned shift with automatic cross-midnight overnight detection, break deduction,
         /// and rest-period/double-booking conflict checks.
         /// </summary>
@@ -1063,9 +1311,8 @@ namespace Ozikol_BCC.Api.Controllers
             decimal totalHours = (decimal)(endUtc - startUtc).TotalHours;
             decimal plannedNetHours = Math.Max(0, totalHours - (breakMins / 60.0m));
 
-            // Generate deterministic shift reference code
-            var countToday = await _db.BcpShifts.CountAsync(s => s.TenantKey == CurrentTenantKey && s.StartsAtUtc.Date == startUtc.Date, ct);
-            var shiftCode = $"SHF-{startUtc:yyyyMMdd}-{countToday + 1:D3}";
+            // Generate deterministic shift reference code based on tenant's configured Shift ID format (Option 1, 2, or 3)
+            var shiftCode = await GenerateNextShiftCodeAsync(request.ClientSiteId, startUtc, null, ct);
 
             var shift = new BcpShift
             {
@@ -1652,7 +1899,7 @@ namespace Ozikol_BCC.Api.Controllers
                 : (decimal)(endTimeSpan - startTimeSpan).TotalHours;
             decimal plannedNetHours = Math.Max(0, durationHours - (breakMins / 60.0m));
 
-            int shiftSequence = await _db.BcpShifts.CountAsync(s => s.TenantKey == CurrentTenantKey && s.StartsAtUtc.Date == DateTime.UtcNow.Date, ct);
+            var reservedBatchCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             while (currentDate <= endDate)
             {
@@ -1685,8 +1932,7 @@ namespace Ozikol_BCC.Api.Controllers
                         }
                     }
 
-                    shiftSequence++;
-                    var shiftCode = $"SHF-{currentDate:yyyyMMdd}-{shiftSequence:D3}";
+                    var shiftCode = await GenerateNextShiftCodeAsync(request.ClientSiteId, startUtc, reservedBatchCodes, ct);
 
                     var shift = new BcpShift
                     {
@@ -3102,10 +3348,10 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var currentTenant = (CurrentTenantKey ?? "default").Trim().ToLowerInvariant();
 
-            // 1. Fetch all existing profiles matching this tenant or baseline defaults
+            // 1. Fetch all existing profiles matching this tenant or baseline defaults (latest enrolled first)
             var profiles = await _db.BcpShiftStaffProfiles
                 .Where(p => (p.TenantKey.ToLower() == currentTenant || p.TenantKey == "default" || string.IsNullOrEmpty(p.TenantKey)) && p.IsActive)
-                .OrderBy(p => p.JobTitle)
+                .OrderByDescending(p => p.CreatedUtc)
                 .ToListAsync(ct);
 
             // Dynamically resolve tenant-configured operational defaults (Zero Hardcoding)
@@ -3940,6 +4186,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var (currCode, currSymbol) = await ResolveTenantCurrencyAsync(ct);
+            var (shiftCodeFormat, shiftCodePrefix) = await ResolveShiftCodePolicyAsync(policy, ct);
 
             var dto = new BcpWorkforcePolicySettingDto
             {
@@ -3971,7 +4218,9 @@ namespace Ozikol_BCC.Api.Controllers
                 StaffEarningsDisplayMode = policy?.StaffEarningsDisplayMode ?? "GrossOnly",
                 EstimatedTaxWithholdingPercent = policy?.EstimatedTaxWithholdingPercent ?? 0.00m,
                 PaydayFrequency = policy?.PaydayFrequency ?? "Weekly",
-                PaydaySpecificDay = policy?.PaydaySpecificDay ?? "Friday"
+                PaydaySpecificDay = policy?.PaydaySpecificDay ?? "Friday",
+                ShiftCodeFormat = shiftCodeFormat,
+                ShiftCodePrefix = shiftCodePrefix
             };
 
             return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce policies retrieved successfully."));
@@ -4025,11 +4274,20 @@ namespace Ozikol_BCC.Api.Controllers
             policy.IsBreakPaid = request.IsBreakPaid;
             policy.BreakLoggingMode = !string.IsNullOrWhiteSpace(request.BreakLoggingMode) ? request.BreakLoggingMode.Trim() : "AutomaticDeduction";
 
+            var resolvedFormat = request.ShiftCodeFormat is "Sequential" or "SiteSequential" or "DateDaily"
+                ? request.ShiftCodeFormat
+                : "Sequential";
+            var resolvedPrefix = SanitizeShiftCodeToken(request.ShiftCodePrefix, "SHF");
+            _memoryShiftCodePolicy[CurrentTenantKey] = (resolvedFormat, resolvedPrefix);
+
             policy.RequireUniformSizes = request.RequireUniformSizes;
             policy.RequireDrivingLicense = request.RequireDrivingLicense;
             policy.RequireMedicalAllergies = request.RequireMedicalAllergies;
             policy.RequireDbsCriminalDisclosure = request.RequireDbsCriminalDisclosure;
-            policy.CustomQuestionsJson = request.CustomQuestionsJson;
+            policy.CustomQuestionsJson = MergeShiftCodePolicyIntoJson(
+                request.CustomQuestionsJson ?? policy.CustomQuestionsJson,
+                resolvedFormat,
+                resolvedPrefix);
             if (request.EmergencyCategoriesJson != null)
             {
                 policy.EmergencyCategoriesJson = request.EmergencyCategoriesJson;
@@ -4095,10 +4353,72 @@ namespace Ozikol_BCC.Api.Controllers
                 StaffEarningsDisplayMode = policy.StaffEarningsDisplayMode,
                 EstimatedTaxWithholdingPercent = policy.EstimatedTaxWithholdingPercent,
                 PaydayFrequency = policy.PaydayFrequency,
-                PaydaySpecificDay = policy.PaydaySpecificDay
+                PaydaySpecificDay = policy.PaydaySpecificDay,
+                ShiftCodeFormat = resolvedFormat,
+                ShiftCodePrefix = resolvedPrefix
             };
 
             return Ok(ApiResponse<BcpWorkforcePolicySettingDto>.SuccessResponse(dto, "Workforce operational policies updated successfully."));
+        }
+
+        /// <summary>
+        /// Re-numbers all existing shifts for the current tenant in chronological order according to the active Shift ID format.
+        /// </summary>
+        [HttpPost("shifts/renumber-codes")]
+        [HttpPost("rota/shifts/renumber-codes")]
+        public async Task<ActionResult<ApiResponse<int>>> RenumberExistingShiftCodes(CancellationToken ct)
+        {
+            var (format, prefix) = await ResolveShiftCodePolicyAsync(null, ct);
+
+            var shifts = await _db.BcpShifts
+                .Include(s => s.ClientSite)
+                .Where(s => s.TenantKey == CurrentTenantKey)
+                .OrderBy(s => s.StartsAtUtc)
+                .ThenBy(s => s.CreatedUtc)
+                .ToListAsync(ct);
+
+            if (shifts.Count == 0)
+            {
+                return Ok(ApiResponse<int>.SuccessResponse(0, "No shifts found to re-number."));
+            }
+
+            if (string.Equals(format, "DateDaily", StringComparison.OrdinalIgnoreCase))
+            {
+                var dailyCounters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var s in shifts)
+                {
+                    var dateKey = s.StartsAtUtc.ToString("yyyyMMdd");
+                    dailyCounters.TryGetValue(dateKey, out var count);
+                    count++;
+                    dailyCounters[dateKey] = count;
+                    s.ShiftCode = $"{prefix}-{dateKey}-{count:D3}";
+                    s.UpdatedUtc = DateTime.UtcNow;
+                }
+            }
+            else if (string.Equals(format, "SiteSequential", StringComparison.OrdinalIgnoreCase))
+            {
+                int seq = 1;
+                foreach (var s in shifts)
+                {
+                    var sitePrefix = ExtractSitePrefix(s.ClientSite, prefix);
+                    s.ShiftCode = $"{sitePrefix}-{seq:D5}";
+                    s.UpdatedUtc = DateTime.UtcNow;
+                    seq++;
+                }
+            }
+            else
+            {
+                int seq = 1;
+                foreach (var s in shifts)
+                {
+                    s.ShiftCode = $"{prefix}-{seq:D5}";
+                    s.UpdatedUtc = DateTime.UtcNow;
+                    seq++;
+                }
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<int>.SuccessResponse(shifts.Count, $"Successfully re-numbered {shifts.Count} shift(s) to the active Shift ID format."));
         }
 
         /// <summary>
@@ -5933,6 +6253,8 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal EstimatedTaxWithholdingPercent { get; set; }
         public string PaydayFrequency { get; set; } = "Weekly";
         public string PaydaySpecificDay { get; set; } = "Friday";
+        public string ShiftCodeFormat { get; set; } = "Sequential";
+        public string ShiftCodePrefix { get; set; } = "SHF";
     }
 
     public class UpdateWorkforcePolicyRequest
@@ -5962,6 +6284,8 @@ namespace Ozikol_BCC.Api.Controllers
         public decimal EstimatedTaxWithholdingPercent { get; set; }
         public string? PaydayFrequency { get; set; }
         public string? PaydaySpecificDay { get; set; }
+        public string? ShiftCodeFormat { get; set; } = "Sequential";
+        public string? ShiftCodePrefix { get; set; } = "SHF";
     }
 
     public class ClientOrganizationDto

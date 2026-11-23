@@ -34,7 +34,8 @@ export interface ChatMessagePayload {
 export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private notificationHubConnection!: signalR.HubConnection;
-  
+  private displayedNotificationKeys = new Set<string>();
+
   // Real-time Event Subjects
   private messageSubject = new Subject<ChatMessagePayload>();
   public message$ = this.messageSubject.asObservable();
@@ -84,7 +85,7 @@ export class SignalRService {
   private connectionStatusSubject = new Subject<boolean>();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
-  constructor(private chatSound: ChatSoundService) {}
+  constructor(private chatSound: ChatSoundService) { }
 
   public startConnection(): void {
     const token = localStorage.getItem('access_token');
@@ -130,8 +131,8 @@ export class SignalRService {
    */
   private startNotificationHubConnection(apiOrigin: string, tenantKey: string, token: string): void {
     if (this.notificationHubConnection &&
-        (this.notificationHubConnection.state === signalR.HubConnectionState.Connected ||
-         this.notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
+      (this.notificationHubConnection.state === signalR.HubConnectionState.Connected ||
+        this.notificationHubConnection.state === signalR.HubConnectionState.Connecting)) {
       return;
     }
 
@@ -145,6 +146,15 @@ export class SignalRService {
       .build();
 
     this.notificationHubConnection.on('ReceiveNotification', (notif: any) => {
+      const dedupeKey = notif?.id
+        ? String(notif.id)
+        : `${notif?.title || notif?.subject || ''}|${notif?.message || notif?.content || ''}`;
+      if (this.displayedNotificationKeys.has(dedupeKey)) {
+        return;
+      }
+      this.displayedNotificationKeys.add(dedupeKey);
+      setTimeout(() => this.displayedNotificationKeys.delete(dedupeKey), 30000);
+
       this.notificationSubject.next(notif);
       this.chatSound.playMessageSound();
       this.showSystemPushNotification(notif);
@@ -162,16 +172,18 @@ export class SignalRService {
       .start()
       .then(() => {
         if (tenantKey) {
-          this.notificationHubConnection.invoke('JoinTenantGroup', tenantKey).catch(() => {});
+          this.notificationHubConnection.invoke('JoinTenantGroup', tenantKey).catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   /**
    * Dispatches a native OS/Browser Push Notification via the Service Worker or Notification API
    * whenever a live platform notification arrives over SignalR (works on every custom tenant domain),
    * always branding the push alert with the tenant's organization name and tenant logo/icon.
+   * Uses a stable notification tag and omits non-monochrome badge URLs so Chrome on Android
+   * deduplicates alerts cleanly and never flags them as "Possible spam".
    */
   private showSystemPushNotification(notif: any): void {
     if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
@@ -186,6 +198,7 @@ export class SignalRService {
     const cleanBody = String(rawBody).replace(/<[^>]*>?/gm, '').trim();
     const icon = localStorage.getItem('tenant_icon') || localStorage.getItem('tenant_logo') || '/favicon.ico';
     const actionUrl = notif?.actionUrl || '/users/workspace/notifications';
+    const tag = notif?.id ? `oz-notif-${notif.id}` : `oz-notif-${title}-${cleanBody.substring(0, 40)}`;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(reg => {
@@ -193,19 +206,19 @@ export class SignalRService {
           reg.showNotification(title, {
             body: cleanBody,
             icon,
-            badge: icon,
+            tag,
             data: { url: actionUrl }
           }).catch(() => {
-            try { new Notification(title, { body: cleanBody, icon }); } catch {}
+            try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
           });
         } else {
-          try { new Notification(title, { body: cleanBody, icon }); } catch {}
+          try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
         }
       }).catch(() => {
-        try { new Notification(title, { body: cleanBody, icon }); } catch {}
+        try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
       });
     } else {
-      try { new Notification(title, { body: cleanBody, icon }); } catch {}
+      try { new Notification(title, { body: cleanBody, icon, tag }); } catch { }
     }
   }
 
@@ -292,31 +305,31 @@ export class SignalRService {
 
   public sendTyping(groupId: string, isTyping: boolean, recipientUserId?: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('SendTyping', groupId, isTyping, recipientUserId || null).catch(() => {});
+      this.hubConnection.invoke('SendTyping', groupId, isTyping, recipientUserId || null).catch(() => { });
     }
   }
 
   public markAsRead(groupId: string, messageId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('MarkAsRead', groupId, messageId).catch(() => {});
+      this.hubConnection.invoke('MarkAsRead', groupId, messageId).catch(() => { });
     }
   }
 
   public reactToMessage(groupId: string, messageId: string, emoji: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('ReactToMessage', groupId, messageId, emoji).catch(() => {});
+      this.hubConnection.invoke('ReactToMessage', groupId, messageId, emoji).catch(() => { });
     }
   }
 
   public joinGroup(groupId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('JoinGroup', groupId).catch(() => {});
+      this.hubConnection.invoke('JoinGroup', groupId).catch(() => { });
     }
   }
 
   public leaveGroup(groupId: string): void {
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      this.hubConnection.invoke('LeaveGroup', groupId).catch(() => {});
+      this.hubConnection.invoke('LeaveGroup', groupId).catch(() => { });
     }
   }
 

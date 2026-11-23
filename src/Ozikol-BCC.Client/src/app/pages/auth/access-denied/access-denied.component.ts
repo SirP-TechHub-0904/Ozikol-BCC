@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
+import { ApiService } from '../../../core/services/api.service';
 import { 
   getStoredUserRoles, 
   getUserPrimaryRoleName, 
@@ -24,8 +25,20 @@ import {
   template: `
     <div class="denied-container">
       <div class="denied-card">
-        <!-- Ambient Status Badge & Icon -->
-        <div class="denied-icon-wrap">
+        <!-- Brand Logo or Fallback Icon -->
+        <div class="brand-identity-row" *ngIf="brandLogoUrl || brandCompanyName" style="margin-bottom: 16px;">
+          <img
+            *ngIf="brandLogoUrl && !logoLoadFailed"
+            [src]="brandLogoUrl"
+            [alt]="brandCompanyName || 'Workspace'"
+            style="max-height: 46px; max-width: 220px; object-fit: contain;"
+            (error)="logoLoadFailed = true"
+          />
+          <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" style="font-size: 19px; font-weight: 800; color: #0f172a;">
+            {{ brandCompanyName }}
+          </span>
+        </div>
+        <div class="denied-icon-wrap" *ngIf="!brandLogoUrl || logoLoadFailed">
           <span class="material-symbols-outlined denied-icon">gpp_maybe</span>
         </div>
 
@@ -294,11 +307,15 @@ export class AccessDeniedComponent implements OnInit {
   isAdmin: boolean = false;
   isUserManager: boolean = false;
   isIdentityManager: boolean = false;
+  brandLogoUrl: string = '';
+  brandCompanyName: string = '';
+  logoLoadFailed: boolean = false;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private translationService: TranslationService
+    private translationService: TranslationService,
+    private api: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -310,6 +327,15 @@ export class AccessDeniedComponent implements OnInit {
     this.isIdentityManager = hasUserRole('IdentityManager', roles);
 
     this.attemptedUrl = this.route.snapshot.queryParams['attemptedUrl'] || '';
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+        }
+      },
+      error: () => {}
+    });
   }
 
   get attemptedSectionName(): string {

@@ -375,13 +375,27 @@ import { ToastService } from '../../../core/services/toast.service';
           <table class="data-table">
             <thead>
               <tr>
-                <th>Personnel</th>
-                <th>Post &amp; Site</th>
-                <th>Shift Window</th>
-                <th>Clock-In Status</th>
-                <th>Geofence Verification</th>
-                <th>Lone Worker Safety</th>
-                <th>Status</th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'guardName'" (click)="toggleSort('guardName')">
+                  <span class="th-sort-wrap">Personnel <span class="material-symbols-outlined sort-icon">{{ getSortIcon('guardName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'siteName'" (click)="toggleSort('siteName')">
+                  <span class="th-sort-wrap">Post &amp; Site <span class="material-symbols-outlined sort-icon">{{ getSortIcon('siteName') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'startsAtUtc'" (click)="toggleSort('startsAtUtc')">
+                  <span class="th-sort-wrap">Shift Window <span class="material-symbols-outlined sort-icon">{{ getSortIcon('startsAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'clockInUtc'" (click)="toggleSort('clockInUtc')">
+                  <span class="th-sort-wrap">Clock-In Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon('clockInUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'distanceFromSiteMeters'" (click)="toggleSort('distanceFromSiteMeters')">
+                  <span class="th-sort-wrap">Geofence Verification <span class="material-symbols-outlined sort-icon">{{ getSortIcon('distanceFromSiteMeters') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'lastWelfareCheckAtUtc'" (click)="toggleSort('lastWelfareCheckAtUtc')">
+                  <span class="th-sort-wrap">Lone Worker Safety <span class="material-symbols-outlined sort-icon">{{ getSortIcon('lastWelfareCheckAtUtc') }}</span></span>
+                </th>
+                <th class="sortable-th" [class.active-sort]="sortCol === 'shiftStatus'" (click)="toggleSort('shiftStatus')">
+                  <span class="th-sort-wrap">Status <span class="material-symbols-outlined sort-icon">{{ getSortIcon('shiftStatus') }}</span></span>
+                </th>
                 <th style="text-align: right;">Supervisor Actions</th>
               </tr>
             </thead>
@@ -1574,12 +1588,28 @@ export class WorkforceAttendanceLiveComponent implements OnInit, OnDestroy {
   isActionLoading: string | null = null;
   private pollTimer: any;
 
-  // View & Filter State
+  // View, Filter & Sort State (Default: Latest shift window first)
   viewMode: 'cards' | 'table' = 'cards';
   searchQuery: string = '';
   selectedStatusFilter: string = '';
   showInfoModal: boolean = false;
   lastRefreshedAt: Date = new Date();
+  sortCol = 'startsAtUtc';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  toggleSort(col: string): void {
+    if (this.sortCol === col) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortCol = col;
+      this.sortDir = ['startsAtUtc', 'clockInUtc', 'lastWelfareCheckAtUtc'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortCol !== col) return 'unfold_more';
+    return this.sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
 
   showNotifyModal = false;
   isDispatchingNotify = false;
@@ -1689,7 +1719,20 @@ export class WorkforceAttendanceLiveComponent implements OnInit, OnDestroy {
       );
     }
 
-    return list;
+    const mult = this.sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a: any, b: any) => {
+      if (['startsAtUtc', 'clockInUtc', 'lastWelfareCheckAtUtc'].includes(this.sortCol)) {
+        const tA = a[this.sortCol] ? new Date(a[this.sortCol]).getTime() : 0;
+        const tB = b[this.sortCol] ? new Date(b[this.sortCol]).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.sortCol === 'distanceFromSiteMeters') {
+        return ((Number(a.distanceFromSiteMeters) || 0) - (Number(b.distanceFromSiteMeters) || 0)) * mult;
+      }
+      const sA = String(a[this.sortCol] || '').toLowerCase();
+      const sB = String(b[this.sortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
   }
 
   getInitials(name?: string): string {

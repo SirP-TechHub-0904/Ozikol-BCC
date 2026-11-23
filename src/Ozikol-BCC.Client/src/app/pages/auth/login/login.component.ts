@@ -16,17 +16,38 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
   template: `
     <div class="login-container">
       <!-- Dedicated Workspace Not Found State -->
-      <div class="login-card" *ngIf="workspaceNotFound" style="text-align: center; padding: 48px 32px;">
-        <div class="brand-avatar" style="margin: 0 auto 18px; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
-          <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">domain_disabled</span>
+      <div class="login-card" *ngIf="workspaceNotFound" style="text-align: center; padding: 40px 28px;">
+        <div class="brand-identity-row" style="margin-bottom: 18px;">
+          <img
+            *ngIf="brandLogoUrl && !logoLoadFailed"
+            [src]="brandLogoUrl"
+            [alt]="brandCompanyName || 'Workspace'"
+            class="brand-logo-top"
+            (error)="logoLoadFailed = true"
+          />
+          <div *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-avatar" style="margin: 0 auto; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">domain_disabled</span>
+          </div>
         </div>
         <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">{{ 'auth.workspace_not_found' | translate:'Workspace not found.' }}</h2>
       </div>
 
       <!-- Dedicated Account Locked Out State (15-min countdown) -->
-      <div class="login-card" *ngIf="isAccountLockedOut && !workspaceNotFound" style="text-align: center; padding: 48px 32px;">
-        <div class="brand-avatar" style="margin: 0 auto 18px; width: 68px; height: 68px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
-          <span class="material-symbols-outlined" style="font-size: 34px; color: #dc2626;">lock_clock</span>
+      <div class="login-card" *ngIf="isAccountLockedOut && !workspaceNotFound" style="text-align: center; padding: 36px 28px;">
+        <div class="brand-identity-row" style="margin-bottom: 18px;">
+          <img
+            *ngIf="brandLogoUrl && !logoLoadFailed"
+            [src]="brandLogoUrl"
+            [alt]="brandCompanyName || 'Workspace'"
+            class="brand-logo-top"
+            (error)="logoLoadFailed = true"
+          />
+          <span *ngIf="(!brandLogoUrl || logoLoadFailed) && brandCompanyName" class="brand-company-title">
+            {{ brandCompanyName }}
+          </span>
+          <div *ngIf="(!brandLogoUrl || logoLoadFailed) && !brandCompanyName" class="brand-avatar" style="margin: 0 auto; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">lock_clock</span>
+          </div>
         </div>
         <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Account Temporarily Locked</h2>
         <p class="subtitle" style="color: #64748b; font-size: 13.5px; line-height: 1.6; margin: 0 auto 24px; max-width: 380px;">
@@ -167,7 +188,7 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
                 {{ brandCompanyName || 'Workspace' }}
               </span>
             </div>
-            <div class="force-modal-avatar">
+            <div class="force-modal-avatar" *ngIf="!brandLogoUrl || logoLoadFailed">
               <span class="material-symbols-outlined">lock_reset</span>
             </div>
             <h3 class="force-modal-title">{{ 'auth.temporary_pwd_detected' | translate:'Temporary Password Detected' }}</h3>
@@ -256,7 +277,7 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
                 {{ brandCompanyName || 'Workspace' }}
               </span>
             </div>
-            <div class="force-modal-avatar">
+            <div class="force-modal-avatar" *ngIf="!brandLogoUrl || logoLoadFailed">
               <span class="material-symbols-outlined">mark_email_unread</span>
             </div>
             <h3 class="force-modal-title">{{ 'auth.verify_email_address' | translate:'Verify Email Address' }}</h3>
@@ -326,7 +347,7 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
                 {{ brandCompanyName || 'Workspace' }}
               </span>
             </div>
-            <div class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+            <div *ngIf="!brandLogoUrl || logoLoadFailed" class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
               <span class="material-symbols-outlined" style="color:#fff; font-size:28px;">security</span>
             </div>
             <h3 class="force-modal-title" style="margin-top: 10px;">{{ 'auth.two_factor_verification' | translate:'Two-Factor Verification' }}</h3>

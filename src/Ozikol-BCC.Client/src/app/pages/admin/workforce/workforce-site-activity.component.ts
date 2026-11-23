@@ -222,13 +222,27 @@ interface SiteStaffRosterItem {
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>SHIFT CODE</th>
-                  <th>ASSIGNED STAFF &amp; POST</th>
-                  <th>DUTY DATE &amp; TIMING</th>
-                  <th>STATUS</th>
-                  <th>GEOFENCE &amp; CLOCK-IN</th>
-                  <th>DUTY REPORT</th>
-                  <th>PENALTY / FINE</th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'shiftCode'" (click)="toggleDutySort('shiftCode')">
+                    <span class="th-sort-wrap">SHIFT CODE <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'shiftCode') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'assignedUserName'" (click)="toggleDutySort('assignedUserName')">
+                    <span class="th-sort-wrap">ASSIGNED STAFF &amp; POST <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'assignedUserName') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'startsAtUtc'" (click)="toggleDutySort('startsAtUtc')">
+                    <span class="th-sort-wrap">DUTY DATE &amp; TIMING <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'startsAtUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'status'" (click)="toggleDutySort('status')">
+                    <span class="th-sort-wrap">STATUS <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'status') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'isClockInGeofenceVerified'" (click)="toggleDutySort('isClockInGeofenceVerified')">
+                    <span class="th-sort-wrap">GEOFENCE &amp; CLOCK-IN <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'isClockInGeofenceVerified') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'reportSubmissionUtc'" (click)="toggleDutySort('reportSubmissionUtc')">
+                    <span class="th-sort-wrap">DUTY REPORT <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'reportSubmissionUtc') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="dutySortCol === 'fineAmount'" (click)="toggleDutySort('fineAmount')">
+                    <span class="th-sort-wrap">PENALTY / FINE <span class="material-symbols-outlined sort-icon">{{ getSortIcon(dutySortCol, dutySortDir, 'fineAmount') }}</span></span>
+                  </th>
                   <th style="text-align: right;">ACTION</th>
                 </tr>
               </thead>
@@ -409,18 +423,32 @@ interface SiteStaffRosterItem {
             <table class="cms-table">
               <thead>
                 <tr>
-                  <th>STAFF MEMBER</th>
-                  <th>ASSIGNED ROLE / POST</th>
-                  <th>VENUE SHIFTS</th>
-                  <th>TOTAL HOURS AT THIS POST</th>
-                  <th>PUNCTUALITY AT VENUE</th>
-                  <th>ATTACHED FINES</th>
-                  <th>LAST ON DUTY</th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'fullName'" (click)="toggleRosterSort('fullName')">
+                    <span class="th-sort-wrap">STAFF MEMBER <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'fullName') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'jobTitle'" (click)="toggleRosterSort('jobTitle')">
+                    <span class="th-sort-wrap">ASSIGNED ROLE / POST <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'jobTitle') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'totalShiftsAtSite'" (click)="toggleRosterSort('totalShiftsAtSite')">
+                    <span class="th-sort-wrap">VENUE SHIFTS <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'totalShiftsAtSite') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'totalHoursAtSite'" (click)="toggleRosterSort('totalHoursAtSite')">
+                    <span class="th-sort-wrap">TOTAL HOURS AT THIS POST <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'totalHoursAtSite') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'punctualityScorePercent'" (click)="toggleRosterSort('punctualityScorePercent')">
+                    <span class="th-sort-wrap">PUNCTUALITY AT VENUE <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'punctualityScorePercent') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'totalFinesAmount'" (click)="toggleRosterSort('totalFinesAmount')">
+                    <span class="th-sort-wrap">ATTACHED FINES <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'totalFinesAmount') }}</span></span>
+                  </th>
+                  <th class="sortable-th" [class.active-sort]="rosterSortCol === 'lastDutyDateUtc'" (click)="toggleRosterSort('lastDutyDateUtc')">
+                    <span class="th-sort-wrap">LAST ON DUTY <span class="material-symbols-outlined sort-icon">{{ getSortIcon(rosterSortCol, rosterSortDir, 'lastDutyDateUtc') }}</span></span>
+                  </th>
                   <th style="text-align: right;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let m of staffRoster">
+                <tr *ngFor="let m of sortedStaffRoster">
                   <td>
                     <div class="staff-cell">
                       <div class="staff-avatar">
@@ -1345,10 +1373,54 @@ export class WorkforceSiteActivityComponent implements OnInit {
   // View Mode: 'table' | 'cards' | 'calendar' | 'roster'
   viewMode: 'table' | 'cards' | 'calendar' | 'roster' = 'table';
 
-  // Filters
+  // Filters & Sort (Default: Latest First)
   searchQuery = '';
   dateFilter = 'all';
   statusFilter = 'all';
+  dutySortCol = 'startsAtUtc';
+  dutySortDir: 'asc' | 'desc' = 'desc';
+  rosterSortCol = 'lastDutyDateUtc';
+  rosterSortDir: 'asc' | 'desc' = 'desc';
+
+  toggleDutySort(col: string): void {
+    if (this.dutySortCol === col) {
+      this.dutySortDir = this.dutySortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.dutySortCol = col;
+      this.dutySortDir = ['startsAtUtc', 'reportSubmissionUtc', 'fineAmount'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  toggleRosterSort(col: string): void {
+    if (this.rosterSortCol === col) {
+      this.rosterSortDir = this.rosterSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.rosterSortCol = col;
+      this.rosterSortDir = ['lastDutyDateUtc', 'totalShiftsAtSite', 'totalHoursAtSite', 'punctualityScorePercent', 'totalFinesAmount'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  getSortIcon(activeCol: string, dir: 'asc' | 'desc', col: string): string {
+    if (activeCol !== col) return 'unfold_more';
+    return dir === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  get sortedStaffRoster(): SiteStaffRosterItem[] {
+    const mult = this.rosterSortDir === 'asc' ? 1 : -1;
+    return [...this.staffRoster].sort((a: any, b: any) => {
+      if (this.rosterSortCol === 'lastDutyDateUtc') {
+        const tA = a.lastDutyDateUtc ? new Date(a.lastDutyDateUtc).getTime() : 0;
+        const tB = b.lastDutyDateUtc ? new Date(b.lastDutyDateUtc).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (['totalShiftsAtSite', 'totalHoursAtSite', 'punctualityScorePercent', 'totalFinesAmount'].includes(this.rosterSortCol)) {
+        return ((Number(a[this.rosterSortCol]) || 0) - (Number(b[this.rosterSortCol]) || 0)) * mult;
+      }
+      const sA = String(a[this.rosterSortCol] || '').toLowerCase();
+      const sB = String(b[this.rosterSortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
+  }
 
   // Raw Data
   allShifts: any[] = [];
@@ -1458,7 +1530,23 @@ export class WorkforceSiteActivityComponent implements OnInit {
       list = list.filter((s) => new Date(s.startsAtUtc) >= now);
     }
 
-    return list;
+    const mult = this.dutySortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a: any, b: any) => {
+      if (this.dutySortCol === 'startsAtUtc' || this.dutySortCol === 'reportSubmissionUtc') {
+        const tA = a[this.dutySortCol] ? new Date(a[this.dutySortCol]).getTime() : 0;
+        const tB = b[this.dutySortCol] ? new Date(b[this.dutySortCol]).getTime() : 0;
+        return (tA - tB) * mult;
+      }
+      if (this.dutySortCol === 'fineAmount') {
+        return ((Number(a.fineAmount) || 0) - (Number(b.fineAmount) || 0)) * mult;
+      }
+      if (this.dutySortCol === 'isClockInGeofenceVerified') {
+        return ((a.isClockInGeofenceVerified ? 1 : 0) - (b.isClockInGeofenceVerified ? 1 : 0)) * mult;
+      }
+      const sA = String(a[this.dutySortCol] || '').toLowerCase();
+      const sB = String(b[this.dutySortCol] || '').toLowerCase();
+      return sA.localeCompare(sB, undefined, { numeric: true }) * mult;
+    });
   }
 
   get calendarColumns(): { dayName: string; isToday: boolean; shifts: any[] }[] {
