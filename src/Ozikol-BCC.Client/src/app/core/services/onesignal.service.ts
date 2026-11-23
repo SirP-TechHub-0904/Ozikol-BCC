@@ -181,15 +181,21 @@ export class OneSignalService {
    * Registers the browser ServiceWorker Web Push subscription and syncs the endpoint/keys (or user identity)
    * to OneSignal through the Ozikol backend REST API (/api/NotificationsApi/register-push).
    */
-  public async syncPushSubscriptionWithBackend(explicitUserId?: string, explicitTenantKey?: string, force = false): Promise<void> {
+  public async syncPushSubscriptionWithBackend(
+    explicitUserId?: string,
+    explicitTenantKey?: string,
+    force = false,
+    sendWelcomePush = false
+  ): Promise<void> {
     if (!localStorage.getItem('access_token')) {
       return;
     }
     const userId = explicitUserId || this.resolveCurrentUserId() || 'authenticated';
 
     const tenantKey = explicitTenantKey || localStorage.getItem('tenant_key') || undefined;
+    const tenantName = localStorage.getItem('tenant_name') || undefined;
     const permission = this.getPermissionStatus();
-    if (!force && this.lastSyncedUserId === `${userId}:${permission}`) {
+    if (!force && !sendWelcomePush && this.lastSyncedUserId === `${userId}:${permission}`) {
       return;
     }
     this.lastSyncedUserId = `${userId}:${permission}`;
@@ -226,9 +232,11 @@ export class OneSignalService {
     this.api.post<any>('NotificationsApi/register-push', {
       userId,
       tenantKey,
+      tenantName,
       endpoint,
       p256dh,
-      auth
+      auth,
+      sendWelcomePush
     }).subscribe({
       next: () => {},
       error: () => {}
@@ -294,17 +302,10 @@ export class OneSignalService {
       }
 
       if (permission === 'granted') {
-        await this.syncPushSubscriptionWithBackend(userId, tenantKey, true);
-        try {
-          new window.Notification('Push Notifications Enabled', {
-            body: 'Your device is now subscribed to receive instant shift, rota, and security push alerts.',
-            icon: '/favicon.ico'
-          });
-        } catch {}
-
+        await this.syncPushSubscriptionWithBackend(userId, tenantKey, true, true);
         return {
           status: 'granted',
-          message: 'Push notifications are now enabled and active for this device.'
+          message: 'Push notifications are now enabled! A welcome push alert has been dispatched to your device.'
         };
       }
 

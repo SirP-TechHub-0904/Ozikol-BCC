@@ -576,6 +576,9 @@ namespace Ozikol_BCC.Api.Controllers
             /// <summary>Optional tenant key.</summary>
             public string? TenantKey { get; set; }
 
+            /// <summary>Optional tenant organization display name for the welcome notification.</summary>
+            public string? TenantName { get; set; }
+
             /// <summary>Browser Web Push endpoint URL.</summary>
             public string? Endpoint { get; set; }
 
@@ -584,11 +587,14 @@ namespace Ozikol_BCC.Api.Controllers
 
             /// <summary>Browser Web Push auth secret.</summary>
             public string? Auth { get; set; }
+
+            /// <summary>When true, dispatches an immediate real-time Welcome Push &amp; In-App alert confirming live delivery.</summary>
+            public bool SendWelcomePush { get; set; }
         }
 
         /// <summary>
         /// Registers or synchronizes the current user's Web Push subscription directly in OneSignal via the backend REST API,
-        /// bypassing OneSignal's browser single-origin block on custom tenant domains.
+        /// bypassing OneSignal's browser single-origin block on custom tenant domains, and optionally dispatches a live welcome confirmation push.
         /// </summary>
         /// <param name="request">Web Push subscription details from the browser ServiceWorker.</param>
         /// <returns>Registration status and OneSignal player/subscription ID.</returns>
@@ -601,6 +607,10 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var userId = GetCurrentUserId() ?? request?.UserId;
+            if (string.IsNullOrWhiteSpace(userId) || userId == "authenticated")
+            {
+                userId = GetCurrentUserId();
+            }
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return Unauthorized(ApiResponse<object>.FailureResponse("Authenticated user context is required."));
@@ -624,10 +634,61 @@ namespace Ozikol_BCC.Api.Controllers
                 auth: request?.Auth,
                 userAgent: userAgent);
 
+            bool welcomeDispatched = false;
+            if (request?.SendWelcomePush == true)
+            {
+                var brandName = request.TenantName;
+                if (string.IsNullOrWhiteSpace(brandName))
+                {
+                    try
+                    {
+                        var setting = await _dbContext.Setting.AsNoTracking().FirstOrDefaultAsync();
+                        brandName = setting?.CompanyName ?? setting?.SiteTitle;
+                    }
+                    catch { }
+                }
+                if (string.IsNullOrWhiteSpace(brandName))
+                {
+                    brandName = !string.IsNullOrWhiteSpace(tenantKey)
+                        ? char.ToUpperInvariant(tenantKey[0]) + tenantKey.Substring(1)
+                        : "Your Workspace";
+                }
+
+                var recipientFirst = !string.IsNullOrWhiteSpace(user?.FirstName) ? user!.FirstName : "there";
+                var welcomeTitle = $"Welcome to {brandName} Alerts";
+                var welcomeBody = $"Hi {recipientFirst}, real-time push notifications are active! {brandName} will keep you updated on open shifts, rota changes, and urgent workspace notices.";
+
+                try
+                {
+                    var dispatchRes = await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        TenantKey = tenantKey,
+                        Title = welcomeTitle,
+                        Message = welcomeBody,
+                        PushTitle = welcomeTitle,
+                        PushBody = welcomeBody,
+                        InAppTitle = welcomeTitle,
+                        InAppBody = welcomeBody,
+                        ActionUrl = "/users/workspace/notifications",
+                        Module = "Notifications",
+                        Icon = "notifications_active",
+                        Category = BcpMessageCategory.System,
+                        Priority = BcpMessagePriority.High,
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Push
+                    });
+                    welcomeDispatched = dispatchRes.Success;
+                }
+                catch { }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 registered = success,
                 subscriptionId = subId,
+                welcomeDispatched,
                 detail = errorMsg
             }, success ? "Device push subscription synced with OneSignal." : "Push subscription synced locally."));
         }
