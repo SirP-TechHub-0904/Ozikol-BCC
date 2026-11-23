@@ -308,13 +308,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
 
             try
             {
-                // 1. Evict L1 & L2 Redis cache
+                // 1. Evict L1 & L2 Redis cache and clear connection pools
                 var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
                 if (cacheInvalidator != null)
                 {
                     await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
                     steps.Add("Evicted Redis & local distributed cache");
                 }
+
+                // Discard any pooled database connections holding stale credentials
+                SqlConnection.ClearAllPools();
+                steps.Add("Cleared SQL connection pools");
 
                 // 2. Broadcast zero-downtime cache invalidation to running Ozikol-BCC.Api instances
                 var apiTargetUrl = !string.IsNullOrWhiteSpace(tenant.ApiUrl)
@@ -1094,6 +1098,7 @@ CRITICAL DIAGNOSIS TASK:
             {
                 await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
             }
+            SqlConnection.ClearAllPools();
 
             _logger.LogInformation("Central Admin successfully updated database connection for tenant {TenantKey} -> {Host}", tenant.TenantKey, tenant.DatabaseName);
 
@@ -1321,12 +1326,13 @@ CRITICAL DIAGNOSIS TASK:
                 await _dbContext.SaveChangesAsync();
                 stepsCompleted.Add("Updated & AES-256-GCM encrypted connection string in Central");
 
-                // 6. Evict L1 & L2 Redis tenant routing cache immediately across all nodes
+                // 6. Evict L1 & L2 Redis tenant routing cache immediately across all nodes and clear pools
                 var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
                 if (cacheInvalidator != null)
                 {
                     await cacheInvalidator.InvalidateTenantCatalogAsync(tenant.TenantKey);
                 }
+                SqlConnection.ClearAllPools();
 
                 // 7. Notify running Ozikol-BCC.Api instances to evict local in-memory tenant cache with zero downtime
                 try
