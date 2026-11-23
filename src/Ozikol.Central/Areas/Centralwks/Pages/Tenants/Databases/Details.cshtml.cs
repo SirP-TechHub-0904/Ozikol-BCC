@@ -224,26 +224,54 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             var tenant = await _dbContext.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.TenantKey == tenantKey);
             if (tenant == null)
             {
-                return new JsonResult(new { success = false, message = "Tenant not found." });
+                return new JsonResult(new { success = false, message = "Tenant database record not found." });
             }
 
             var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
             string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
+            var builder = new SqlConnectionStringBuilder(harmonizedConnStr)
+            {
+                ConnectTimeout = 5
+            };
+
             var sw = Stopwatch.StartNew();
             try
             {
-                using var conn = new SqlConnection(harmonizedConnStr);
-                await conn.OpenAsync();
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT 1;";
-                await cmd.ExecuteScalarAsync();
+                using var conn = new SqlConnection(builder.ConnectionString);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await conn.OpenAsync(cts.Token);
+
+                string serverVersion = "Microsoft SQL Server";
+                DateTime serverUtc = DateTime.UtcNow;
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandTimeout = 5;
+                    cmd.CommandText = "SELECT @@VERSION; SELECT GETUTCDATE();";
+                    using var reader = await cmd.ExecuteReaderAsync(cts.Token);
+                    if (await reader.ReadAsync(cts.Token))
+                    {
+                        var rawVer = reader.GetString(0);
+                        serverVersion = rawVer.Split('\n')[0].Trim();
+                    }
+                    if (await reader.NextResultAsync(cts.Token) && await reader.ReadAsync(cts.Token))
+                    {
+                        serverUtc = reader.GetDateTime(0);
+                    }
+                }
+
                 sw.Stop();
 
                 return new JsonResult(new
                 {
                     success = true,
                     latencyMs = sw.ElapsedMilliseconds,
+                    serverHost = builder.DataSource,
+                    databaseName = builder.InitialCatalog,
+                    userId = builder.UserID,
+                    serverVersion = serverVersion,
+                    serverUtc = serverUtc.ToString("yyyy-MM-dd HH:mm:ss 'UTC'"),
                     message = $"Connection verified in {sw.ElapsedMilliseconds} ms."
                 });
             }
@@ -254,7 +282,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
-                    message = ex.Message
+                    serverHost = builder.DataSource,
+                    databaseName = builder.InitialCatalog,
+                    userId = builder.UserID,
+                    message = ex.Message,
+                    errorType = ex.GetType().Name
                 });
             }
         }
