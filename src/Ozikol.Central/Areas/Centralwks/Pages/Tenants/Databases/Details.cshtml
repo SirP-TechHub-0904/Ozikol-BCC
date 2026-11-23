@@ -62,8 +62,8 @@
             }
             <div style="color: var(--admin-text-muted); display: inline-flex; align-items: center; gap: 6px;">
                 Host: <strong style="color: var(--admin-text);">@Model.ServerHost</strong>
-                <button type="button" class="btn-admin-icon" onclick="openEditConnectionModal();" title="Edit Server Host / Connection String" style="padding: 2px 4px; height: auto; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg-surface-elevated); cursor: pointer;">
-                    <span class="material-symbols-outlined" style="font-size: 13px; color: var(--admin-primary);">edit</span>
+                <button type="button" class="btn-admin-icon" onclick="openResetSqlPasswordModal();" title="Reset SQL Password &amp; Sync Connection" style="padding: 2px 4px; height: auto; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg-surface-elevated); cursor: pointer;">
+                    <span class="material-symbols-outlined" style="font-size: 13px; color: var(--admin-primary);">lock_reset</span>
                 </button>
             </div>
         </div>
@@ -72,11 +72,6 @@
         <button type="button" class="btn-admin btn-admin-primary" onclick="openResetSqlPasswordModal();" id="btnOpenResetSqlPwd">
             <span class="material-symbols-outlined" style="font-size: 16px;">lock_reset</span>
             Reset SQL Password &amp; Sync
-        </button>
-
-        <button type="button" class="btn-admin btn-admin-secondary" onclick="openEditConnectionModal();" id="btnOpenEditConn">
-            <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
-            Edit Connection
         </button>
 
         <button type="button" class="btn-admin btn-admin-secondary" onclick="testPingConnection('@Model.Tenant.TenantKey');" id="btnPingTest">
@@ -550,152 +545,6 @@
     </div>
 </div>
 
-@* ── Edit Database Connection String Modal ── *@
-<div class="admin-modal-backdrop" id="editConnectionModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1200; align-items: center; justify-content: center; padding: 20px;">
-    <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 620px; box-shadow: var(--shadow-xl); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
-        
-        @* Modal Header *@
-        <div class="admin-modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 80, 229, 0.12); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">tune</span>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--admin-text);">Edit Tenant Database Connection</h3>
-                    <div style="font-size: 12px; color: var(--admin-text-muted);">Workspace: <strong style="color: var(--admin-primary);">@Model.Tenant.TenantKey</strong> &bull; AES-256-GCM Encrypted at Rest</div>
-                </div>
-            </div>
-            <button type="button" class="btn-admin-icon" onclick="closeEditConnectionModal();" aria-label="Close dialog" style="cursor: pointer;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
-            </button>
-        </div>
-
-        @* Modal Form *@
-        <form method="post" asp-page-handler="UpdateConnectionString" id="formUpdateConnStr" style="display: flex; flex-direction: column; overflow: hidden; margin: 0;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="TenantKey" value="@Model.Tenant.TenantKey" />
-            <input type="hidden" name="Mode" id="connConfigMode" value="Structured" />
-
-            <div class="admin-modal-body" style="padding: 20px; overflow-y: auto; flex-grow: 1;">
-                
-                @* Mode Switcher: Structured vs Raw *@
-                <div style="display: flex; gap: 8px; margin-bottom: 18px; background: var(--admin-bg-surface-elevated); padding: 4px; border-radius: 8px; border: 1px solid var(--admin-border);">
-                    <button type="button" class="btn-admin btn-admin-sm" id="btnModeStructured" style="flex: 1; font-weight: 600; background: var(--admin-primary); color: white;" onclick="switchConnMode('Structured');">
-                        <span class="material-symbols-outlined" style="font-size: 15px;">view_agenda</span>
-                        Structured Host &amp; Credentials
-                    </button>
-                    <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" id="btnModeRaw" style="flex: 1; font-weight: 600;" onclick="switchConnMode('Raw');">
-                        <span class="material-symbols-outlined" style="font-size: 15px;">code</span>
-                        Raw Connection String
-                    </button>
-                </div>
-
-                @* Structured Mode Fields *@
-                <div id="sectionStructuredMode">
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
-                            <span>SQL Server Host / IP &amp; Port <span style="color: var(--admin-danger);">*</span></span>
-                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">e.g. 2.24.162.42,1433 or 127.0.0.1,1433</span>
-                        </label>
-                        <input type="text" name="Server" id="inputConnServer" class="form-control" value="@Model.CurrentDataSource" placeholder="e.g. 2.24.162.42,1433" style="font-family: monospace;" />
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
-                            <span>Database Name <span style="color: var(--admin-danger);">*</span></span>
-                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">Dedicated Tenant DB</span>
-                        </label>
-                        <input type="text" name="DatabaseName" id="inputConnDatabase" class="form-control" value="@Model.CurrentInitialCatalog" placeholder="e.g. Ozikol_Tenant_..." style="font-family: monospace;" />
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label class="form-label" style="font-weight: 600; font-size: 13px;">Authentication Type</label>
-                        <select name="AuthType" id="selectConnAuthType" class="form-control" onchange="toggleAuthFields(this.value);">
-                            @if (Model.CurrentIntegratedSecurity)
-                            {
-                                <option value="Sql">SQL Server Authentication (Username &amp; Password)</option>
-                                <option value="Windows" selected>Windows Integrated Security (Localhost Only)</option>
-                            }
-                            else
-                            {
-                                <option value="Sql" selected>SQL Server Authentication (Username &amp; Password)</option>
-                                <option value="Windows">Windows Integrated Security (Localhost Only)</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div id="sectionSqlAuthCredentials" style="@(Model.CurrentIntegratedSecurity ? "display: none;" : "")">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-                            <div class="form-group" style="margin: 0;">
-                                <label class="form-label" style="font-weight: 600; font-size: 13px;">SQL Username</label>
-                                <input type="text" name="UserId" id="inputConnUser" class="form-control" value="@Model.CurrentUserId" placeholder="e.g. sa" style="font-family: monospace;" />
-                            </div>
-                            <div class="form-group" style="margin: 0;">
-                                <label class="form-label" style="font-weight: 600; font-size: 13px;">SQL Password</label>
-                                <input type="password" name="Password" id="inputConnPassword" class="form-control" placeholder="Leave empty to keep existing" style="font-family: monospace;" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 18px; margin-top: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
-                            <input type="checkbox" name="TrustServerCertificate" value="true" @(Model.CurrentTrustServerCertificate ? "checked" : "") />
-                            <span>Trust Server Certificate (TLS)</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
-                            <input type="checkbox" name="MultipleActiveResultSets" value="true" @(Model.CurrentMultipleActiveResultSets ? "checked" : "") />
-                            <span>MARS Enabled</span>
-                        </label>
-                    </div>
-                </div>
-
-                @* Raw Mode Fields *@
-                <div id="sectionRawMode" style="display: none;">
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label class="form-label" style="font-weight: 600; font-size: 13px; display: flex; justify-content: space-between;">
-                            <span>Complete ADO.NET Connection String</span>
-                            <span style="font-size: 11.5px; color: var(--admin-text-muted); font-weight: 400;">Decrypted from database</span>
-                        </label>
-                        <textarea name="RawConnectionString" id="inputRawConnStr" class="form-control" rows="4" style="font-family: monospace; font-size: 12px; resize: vertical;">@Model.DecryptedConnectionString</textarea>
-                    </div>
-                </div>
-
-                @* Connection Test Status Box *@
-                <div id="connTestResultBox" style="display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 12.5px;"></div>
-
-                @* Pre-save verification checkbox *@
-                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--admin-border);">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
-                        <input type="checkbox" name="TestBeforeSaving" value="true" checked id="chkTestBeforeSave" />
-                        <span>Verify database connection before saving</span>
-                    </label>
-                </div>
-            </div>
-
-            @* Modal Footer *@
-            <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" id="btnTestModalConn" onclick="runModalConnectionTest();">
-                        <span class="material-symbols-outlined" style="font-size: 15px;">network_ping</span>
-                        Test Connection
-                    </button>
-                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeEditConnectionModal(); openResetSqlPasswordModal();" style="color: var(--admin-primary); border-color: rgba(0, 80, 229, 0.35);">
-                        <span class="material-symbols-outlined" style="font-size: 15px;">lock_reset</span>
-                        Reset SQL Password on Server
-                    </button>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeEditConnectionModal();">Cancel</button>
-                    <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSaveConn">
-                        <span class="material-symbols-outlined" style="font-size: 15px;">lock</span>
-                        Save &amp; Encrypt
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
 @* ── Reset SQL Login Password & Auto-Sync Connection String Modal ── *@
 <div class="admin-modal-backdrop" id="resetSqlPasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1210; align-items: center; justify-content: center; padding: 20px;">
     <div class="admin-modal-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 100%; max-width: 600px; box-shadow: var(--shadow-xl); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;">
@@ -742,7 +591,7 @@
                     <input type="text" name="SqlUsername" id="resetSqlUsernameInput" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentUserId) && !string.Equals(Model.CurrentUserId, "sa", StringComparison.OrdinalIgnoreCase) ? Model.CurrentUserId : $"usr_{Model.Tenant.TenantKey}_db")" style="font-family: monospace; font-size: 13px;" required />
                 </div>
 
-                <div class="form-group" style="margin-bottom: 16px;">
+                <div class="form-group" style="margin-bottom: 4px;">
                     <label class="form-label" style="font-weight: 600; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center;">
                         <span>New SQL Login Password</span>
                         <div style="display: inline-flex; gap: 6px;">
@@ -757,17 +606,6 @@
                         </div>
                     </label>
                     <input type="text" name="NewPassword" id="resetSqlPasswordInput" class="form-control" placeholder="Click 'Generate New' or enter custom password" style="font-family: monospace; font-size: 13px;" required />
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--admin-border);">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
-                        <input type="checkbox" name="EnsureDatabaseExists" value="true" checked />
-                        <span>Create physical database on SQL Server if missing (`CREATE DATABASE [@Model.CurrentInitialCatalog]`)</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: var(--admin-text);">
-                        <input type="checkbox" name="ApplyMigrationsIfPending" value="true" checked />
-                        <span>Automatically apply pending EF Core migrations &amp; verify default website seed</span>
-                    </label>
                 </div>
             </div>
 
@@ -784,26 +622,8 @@
 
 @section Scripts {
     <script>
-        function openEditConnectionModal() {
-            const modal = document.getElementById('editConnectionModal');
-            if (modal) modal.style.display = 'flex';
-        }
-
-        function closeEditConnectionModal() {
-            const modal = document.getElementById('editConnectionModal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        document.getElementById('editConnectionModal')?.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditConnectionModal();
-            }
-        });
-
         window.addEventListener('DOMContentLoaded', function() {
-            if (window.location.hash === '#editConnection') {
-                openEditConnectionModal();
-            } else if (window.location.hash === '#resetPassword') {
+            if (window.location.hash === '#editConnection' || window.location.hash === '#resetPassword') {
                 openResetSqlPasswordModal();
             }
         });

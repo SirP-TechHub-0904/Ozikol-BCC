@@ -1088,7 +1088,7 @@ CRITICAL DIAGNOSIS TASK:
                     var safeUserLiteral = sqlUsername.Replace("'", "''");
                     var safePasswordLiteral = newPassword.Replace("'", "''");
 
-                    // 2a. Check if the physical tenant database exists (and optionally create it if missing)
+                    // 2a. Check if the physical tenant database exists
                     bool dbExists;
                     await using (var checkDbCmd = masterConn.CreateCommand())
                     {
@@ -1098,24 +1098,8 @@ CRITICAL DIAGNOSIS TASK:
 
                     if (!dbExists)
                     {
-                        if (input.EnsureDatabaseExists)
-                        {
-                            await using var createDbCmd = masterConn.CreateCommand();
-                            createDbCmd.CommandTimeout = 60;
-                            createDbCmd.CommandText = $@"
-                                IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'{safeDbLiteral}')
-                                BEGIN
-                                    CREATE DATABASE [{safeDbBracket}];
-                                END;";
-                            await createDbCmd.ExecuteNonQueryAsync();
-                            dbExists = true;
-                            stepsCompleted.Add($"Created missing database [{targetDatabase}]");
-                        }
-                        else
-                        {
-                            TempData["Error"] = $"Physical database '{targetDatabase}' does not exist on SQL Server ({masterBuilder.DataSource}). Tick 'Create & Migrate database if missing' to automatically provision it.";
-                            return RedirectToPage(new { tenantKey = input.TenantKey });
-                        }
+                        TempData["Error"] = $"Physical database '{targetDatabase}' does not exist on SQL Server ({masterBuilder.DataSource}).";
+                        return RedirectToPage(new { tenantKey = input.TenantKey });
                     }
 
                     // 2b. Reset password on existing SQL Login (or create the SQL Login if missing) and ensure it is enabled/unlocked
@@ -1204,30 +1188,7 @@ CRITICAL DIAGNOSIS TASK:
                 await _dbContext.SaveChangesAsync();
                 stepsCompleted.Add("Updated & AES-256-GCM encrypted connection string in Central");
 
-                // 6. If database had pending migrations or was just created, optionally apply EF Core migrations & seed defaults
-                if (input.ApplyMigrationsIfPending)
-                {
-                    try
-                    {
-                        var migResult = await _migrationService.MigrateTenantDatabaseAsync(tenant.TenantKey);
-                        if (migResult.Success && migResult.MigrationsApplied.Any())
-                        {
-                            stepsCompleted.Add($"Applied {migResult.MigrationsApplied.Count} migration(s)");
-                        }
-
-                        var onboardingSvc = HttpContext.RequestServices.GetService<ITenantOnboardingService>();
-                        if (onboardingSvc != null)
-                        {
-                            await onboardingSvc.SeedTenantDefaultWebsiteAsync(tenant.TenantKey, tenant.OrganizationName);
-                        }
-                    }
-                    catch (Exception migEx)
-                    {
-                        _logger.LogWarning(migEx, "Non-blocking migration/seed warning after SQL password reset for {TenantKey}", tenant.TenantKey);
-                    }
-                }
-
-                // 7. Evict L1 & L2 Redis tenant routing cache immediately across all nodes
+                // 6. Evict L1 & L2 Redis tenant routing cache immediately across all nodes
                 var cacheInvalidator = HttpContext.RequestServices.GetService<ITenantCacheInvalidator>();
                 if (cacheInvalidator != null)
                 {
