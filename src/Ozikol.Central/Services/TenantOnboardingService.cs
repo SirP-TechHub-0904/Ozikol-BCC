@@ -674,11 +674,17 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
         }
 
-        // 2. Create Database
+        // 2. Create Database with Zero-Trust Isolation (transfer ownership to sa)
         string createDbSql = $@"
             IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{dbName}')
             BEGIN
                 CREATE DATABASE [{dbName}];
+                BEGIN TRY
+                    ALTER AUTHORIZATION ON DATABASE::[{dbName}] TO [sa];
+                END TRY
+                BEGIN CATCH
+                    -- Safe fallback if sa is renamed or executing principal lacks ALTER ANY DATABASE permission
+                END CATCH
             END;
         ";
         using var cmdDb = new SqlCommand(createDbSql, connection);

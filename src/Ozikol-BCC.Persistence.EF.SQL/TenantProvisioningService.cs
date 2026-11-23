@@ -279,6 +279,12 @@ public class TenantProvisioningService : ITenantProvisioningService
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'{targetDbName}')
 BEGIN
     CREATE DATABASE [{targetDbName}];
+    BEGIN TRY
+        ALTER AUTHORIZATION ON DATABASE::[{targetDbName}] TO [sa];
+    END TRY
+    BEGIN CATCH
+        -- Safe fallback if sa is renamed or executing principal lacks ALTER ANY DATABASE permission
+    END CATCH
 END";
 
         using var command = new SqlCommand(sql, connection);
