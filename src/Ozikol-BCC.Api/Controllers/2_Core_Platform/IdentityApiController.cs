@@ -2899,7 +2899,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 Id = Guid.CreateVersion7(),
                 UserId = user.Id,
-                Title = "Security: Permissions Matrix Updated",
+                Title = "Account Permission Update",
                 Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
                 Severity = NotificationSeverity.Failed,
                 ActionUrl = "/users/workspace/security",
@@ -2946,7 +2946,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TargetType = NotificationDispatchTarget.SingleUser,
                         TargetUserId = user.Id,
-                        Title = "Security: Permissions Matrix Updated",
+                        Title = "Account Permission Update",
                         Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
                         Severity = NotificationSeverity.Failed,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
@@ -2956,7 +2956,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
                         SendEmailCopy = true,
-                        EmailSubject = "Security Alert: Workspace Role & Permissions Matrix Updated",
+                        EmailSubject = "Account Permission Update",
                         EmailHtmlBody = emailBody
                     });
                 }
