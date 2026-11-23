@@ -575,20 +575,20 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-weight: 600; font-size: 12.5px;">SQL Server Host</label>
-                        <input type="text" name="Server" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentDataSource) ? Model.CurrentDataSource : Model.ServerHost)" style="font-family: monospace; font-size: 12.5px;" required />
+                        <input type="text" name="Server" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentDataSource) ? Model.CurrentDataSource : Model.ServerHost)" style="font-family: monospace; font-size: 12.5px; background: var(--admin-bg-surface-elevated); color: var(--admin-text-muted); cursor: not-allowed;" readonly tabindex="-1" />
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-weight: 600; font-size: 12.5px;">Tenant Database Name</label>
-                        <input type="text" name="DatabaseName" class="form-control" value="@Model.CurrentInitialCatalog" style="font-family: monospace; font-size: 12.5px;" required />
+                        <input type="text" name="DatabaseName" class="form-control" value="@Model.CurrentInitialCatalog" style="font-family: monospace; font-size: 12.5px; background: var(--admin-bg-surface-elevated); color: var(--admin-text-muted); cursor: not-allowed;" readonly tabindex="-1" />
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 14px;">
                     <label class="form-label" style="font-weight: 600; font-size: 12.5px; display: flex; justify-content: space-between;">
                         <span>Dedicated SQL Login / Username</span>
-                        <span style="font-size: 11px; color: var(--admin-text-muted); font-weight: 400;">Keeps existing tenant SQL user</span>
+                        <span style="font-size: 11px; color: var(--admin-text-muted); font-weight: 400;">Locked (Tenant SQL user)</span>
                     </label>
-                    <input type="text" name="SqlUsername" id="resetSqlUsernameInput" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentUserId) && !string.Equals(Model.CurrentUserId, "sa", StringComparison.OrdinalIgnoreCase) ? Model.CurrentUserId : $"usr_{Model.Tenant.TenantKey}_db")" style="font-family: monospace; font-size: 13px;" required />
+                    <input type="text" name="SqlUsername" id="resetSqlUsernameInput" class="form-control" value="@(!string.IsNullOrWhiteSpace(Model.CurrentUserId) && !string.Equals(Model.CurrentUserId, "sa", StringComparison.OrdinalIgnoreCase) ? Model.CurrentUserId : $"usr_{Model.Tenant.TenantKey}_db")" style="font-family: monospace; font-size: 13px; background: var(--admin-bg-surface-elevated); color: var(--admin-text-muted); cursor: not-allowed;" readonly tabindex="-1" />
                 </div>
 
                 <div class="form-group" style="margin-bottom: 4px;">
@@ -611,7 +611,7 @@
 
             <div class="admin-modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
                 <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeResetSqlPasswordModal();">Cancel</button>
-                <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm">
+                <button type="submit" id="btnSubmitResetSql" class="btn-admin btn-admin-primary btn-admin-sm">
                     <span class="material-symbols-outlined" style="font-size: 15px;">lock_reset</span>
                     Reset SQL Password &amp; Update Connection String
                 </button>
@@ -620,8 +620,17 @@
     </div>
 </div>
 
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
 @section Scripts {
     <script>
+        let isResettingSqlPassword = false;
+
         window.addEventListener('DOMContentLoaded', function() {
             if (window.location.hash === '#editConnection' || window.location.hash === '#resetPassword') {
                 openResetSqlPasswordModal();
@@ -640,13 +649,19 @@
         }
 
         function closeResetSqlPasswordModal() {
+            // Prevent accidental closing while update / password reset is running
+            if (isResettingSqlPassword) return;
             const modal = document.getElementById('resetSqlPasswordModal');
             if (modal) modal.style.display = 'none';
         }
 
-        document.getElementById('resetSqlPasswordModal')?.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeResetSqlPasswordModal();
+        // Handle form submission: lock modal and display active spinner
+        document.getElementById('formResetSqlPwd')?.addEventListener('submit', function() {
+            isResettingSqlPassword = true;
+            const btn = document.getElementById('btnSubmitResetSql');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 15px; display: inline-block; animation: spin 1s linear infinite;">sync</span> Resetting SQL Login & Updating...';
             }
         });
 
