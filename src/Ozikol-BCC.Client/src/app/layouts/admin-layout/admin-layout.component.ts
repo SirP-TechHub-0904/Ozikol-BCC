@@ -1767,19 +1767,19 @@ export interface SuiteInfoDetail {
             </button>
           </div>
           <div class="poc-body">
-            <div class="poc-badge">Real-Time Platform Alerts</div>
-            <h3>Enable Web Push Notifications</h3>
+            <div class="poc-badge">Real-Time Workspace Alerts</div>
+            <h3>Enable Push Notifications</h3>
             <p>
-              Stay instantly updated with open shift offers, mandatory rota alerts, schedule approvals, and urgent duty broadcasts on this device &mdash; even when your browser is in the background.
+              Stay instantly updated with important announcements, activity updates, messages, and account alerts from <strong>{{ brandName || 'your workspace' }}</strong> on this device &mdash; even when your browser is in the background.
             </p>
             <div class="poc-features">
               <div class="poc-feat-item">
-                <span class="material-symbols-outlined text-primary">calendar_clock</span>
-                <span>Immediate shift offers &amp; rota schedule updates</span>
+                <span class="material-symbols-outlined text-primary">campaign</span>
+                <span>Instant announcements, messages &amp; workspace updates</span>
               </div>
               <div class="poc-feat-item">
                 <span class="material-symbols-outlined text-primary">verified_user</span>
-                <span>Shift claim decisions &amp; compliance alerts</span>
+                <span>Real-time account, approval &amp; security notifications</span>
               </div>
             </div>
           </div>
@@ -5552,6 +5552,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           if (freshData.email) {
             this.userEmail = freshData.email;
             localStorage.setItem('user_email', freshData.email);
+          }
+          if (freshData.id || freshData.userId) {
+            const uid = String(freshData.id || freshData.userId);
+            localStorage.setItem('user_id', uid);
+            this.oneSignal.login(uid, this.tenantKey || localStorage.getItem('tenant_key') || undefined);
+          } else {
+            this.oneSignal.syncPushSubscriptionWithBackend(undefined, this.tenantKey || localStorage.getItem('tenant_key') || undefined);
           }
 
           // Persist and keep active workspace session in sync for seamless multi-workspace switching

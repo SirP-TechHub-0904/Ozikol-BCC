@@ -480,12 +480,46 @@ namespace Ozikol_BCC.Application.Services.Notifications
         {
             var recipientCount = payload.TargetType == NotificationDispatchTarget.BroadcastAll ? 1 : targetProfiles.Count;
 
-            // Enforce mobile/desktop push lock-screen constraints
+            // Resolve tenant brand identity (BrandName & Logo/Icon) so every push alert displays the tenant's brand name and logo
+            string? tenantBrandName = null;
+            string? tenantLogoUrl = null;
+            try
+            {
+                var brandSetting = await _dbContext.MisWebsiteSettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (brandSetting != null)
+                {
+                    tenantBrandName = !string.IsNullOrWhiteSpace(brandSetting.CompanyName)
+                        ? brandSetting.CompanyName.Trim()
+                        : (!string.IsNullOrWhiteSpace(brandSetting.BrandName) ? brandSetting.BrandName.Trim() : brandSetting.SiteTitle?.Trim());
+                    tenantLogoUrl = !string.IsNullOrWhiteSpace(brandSetting.CompanyIconUrl)
+                        ? brandSetting.CompanyIconUrl.Trim()
+                        : (!string.IsNullOrWhiteSpace(brandSetting.FaviconUrl)
+                            ? brandSetting.FaviconUrl.Trim()
+                            : (!string.IsNullOrWhiteSpace(brandSetting.CompanyLogoUrl)
+                                ? brandSetting.CompanyLogoUrl.Trim()
+                                : brandSetting.LogoUrl?.Trim()));
+                }
+            }
+            catch { }
+
+            if (!string.IsNullOrWhiteSpace(tenantLogoUrl) && !tenantLogoUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                tenantLogoUrl = EnsureAbsoluteActionUrl(tenantLogoUrl, payload.TenantKey);
+            }
+
+            // Enforce mobile/desktop push lock-screen constraints and prefix tenant brand name if not already present
             var rawPushTitle = !string.IsNullOrWhiteSpace(payload.PushTitle) ? payload.PushTitle : payload.Title;
             var cleanPushTitle = StripHtmlTags(rawPushTitle).Trim();
-            if (cleanPushTitle.Length > 50)
+            if (!string.IsNullOrWhiteSpace(tenantBrandName) &&
+                !cleanPushTitle.Contains(tenantBrandName, StringComparison.OrdinalIgnoreCase))
             {
-                cleanPushTitle = cleanPushTitle.Substring(0, 47) + "...";
+                cleanPushTitle = $"{tenantBrandName}: {cleanPushTitle}";
+            }
+            if (cleanPushTitle.Length > 65)
+            {
+                cleanPushTitle = cleanPushTitle.Substring(0, 62) + "...";
             }
 
             var rawPushBody = !string.IsNullOrWhiteSpace(payload.PushBody) ? payload.PushBody : payload.Message;
@@ -504,6 +538,14 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 : new Dictionary<string, string>();
 
             pushData["tenant_key"] = payload.TenantKey ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(tenantBrandName))
+            {
+                pushData["tenant_name"] = tenantBrandName;
+            }
+            if (!string.IsNullOrWhiteSpace(tenantLogoUrl))
+            {
+                pushData["tenant_logo_url"] = tenantLogoUrl;
+            }
             pushData["severity"] = ((int)payload.Severity).ToString();
             pushData["severity_label"] = payload.Severity.ToString();
             pushData["action_url"] = effectiveActionUrl;
