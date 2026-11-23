@@ -138,6 +138,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 if (response.IsSuccessStatusCode)
                 {
                     string? notifId = null;
+                    var oneSignalErrors = new List<string>();
                     try
                     {
                         using var doc = JsonDocument.Parse(responseBody);
@@ -145,8 +146,41 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         {
                             notifId = idProp.GetString();
                         }
+
+                        if (doc.RootElement.TryGetProperty("errors", out var errorsProp))
+                        {
+                            if (errorsProp.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var errItem in errorsProp.EnumerateArray())
+                                {
+                                    if (errItem.ValueKind == JsonValueKind.String)
+                                    {
+                                        var str = errItem.GetString();
+                                        if (!string.IsNullOrWhiteSpace(str))
+                                        {
+                                            oneSignalErrors.Add(str);
+                                        }
+                                    }
+                                }
+                            }
+                            else if (errorsProp.ValueKind == JsonValueKind.Object)
+                            {
+                                oneSignalErrors.Add(errorsProp.GetRawText());
+                            }
+                        }
                     }
                     catch { }
+
+                    // OneSignal returns HTTP 200 with {"id":"","errors":["All included players are not subscribed"]}
+                    // when zero devices match the target external_id. Treat empty id / errors as undelivered.
+                    if (string.IsNullOrWhiteSpace(notifId) || oneSignalErrors.Count > 0)
+                    {
+                        var reason = oneSignalErrors.Count > 0
+                            ? string.Join("; ", oneSignalErrors)
+                            : "No active push subscriptions matched target user(s) in OneSignal.";
+                        _logger.LogWarning("⚠️ [OneSignalPushDispatcher] OneSignal returned HTTP 200 with 0 delivered subscriptions: {Reason}", reason);
+                        return (false, $"OneSignal: {reason}", null);
+                    }
 
                     _logger.LogInformation("✅ [OneSignalPushDispatcher] Push notification accepted by OneSignal. NotificationId: {Id}", notifId);
                     return (true, null, notifId);

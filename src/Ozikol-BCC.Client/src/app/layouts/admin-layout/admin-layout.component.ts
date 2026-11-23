@@ -4678,6 +4678,20 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
     // 2. Real-time SignalR security & branding listener
     this.signalR.startConnection();
+    this.signalR.notification$.subscribe((notif: any) => {
+      if (notif) {
+        this.notificationFeed = [notif, ...this.notificationFeed.filter(n => n.id !== notif.id)].slice(0, 30);
+        this.unreadNotifCount = (this.unreadNotifCount || 0) + 1;
+        this.toast.info(notif.title || 'New notification received');
+        this.cdr.markForCheck();
+      }
+    });
+    this.signalR.notificationCount$.subscribe((count: number) => {
+      if (typeof count === 'number') {
+        this.unreadNotifCount = count;
+        this.cdr.markForCheck();
+      }
+    });
     this.signalR.permissionUpdated$.subscribe((data) => {
       console.log('[AdminLayout] Live real-time permission update received via SignalR -> Syncing session...', data);
       this.verifyAndRefreshSession();

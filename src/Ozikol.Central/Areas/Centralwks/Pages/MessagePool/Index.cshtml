@@ -303,6 +303,8 @@
                         var (provBg, provFg) = item.Provider switch
                         {
                             BcpMessageProvider.Mailcow => ("#eff6ff", "#0050e5"),
+                            BcpMessageProvider.OneSignal => ("#fef3c7", "#b45309"),
+                            BcpMessageProvider.SignalR => ("#f0fdf4", "#15803d"),
                             _ => ("#f1f5f9", "#64748b")
                         };
 

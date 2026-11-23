@@ -352,7 +352,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     await _outboxService.EnqueueOutboundMessageAsync(
                         tenantKey: payload.TenantKey ?? string.Empty,
                         organizationName: null,
-                        channel: "InApp",
+                        channel: "InAppNotification",
                         provider: "SignalR",
                         recipientAddress: "All Users (Broadcast)",
                         recipientName: "Broadcast",
@@ -429,7 +429,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         await _outboxService.EnqueueOutboundMessageAsync(
                             tenantKey: payload.TenantKey ?? string.Empty,
                             organizationName: null,
-                            channel: "InApp",
+                            channel: "InAppNotification",
                             provider: "SignalR",
                             recipientAddress: address,
                             recipientName: recipientName,
