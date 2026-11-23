@@ -642,8 +642,8 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     try
                     {
-                        var setting = await _dbContext.Setting.AsNoTracking().FirstOrDefaultAsync();
-                        brandName = setting?.CompanyName ?? setting?.SiteTitle;
+                        var setting = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+                        brandName = setting?.CompanyName ?? setting?.BrandName ?? setting?.SiteTitle;
                     }
                     catch { }
                 }

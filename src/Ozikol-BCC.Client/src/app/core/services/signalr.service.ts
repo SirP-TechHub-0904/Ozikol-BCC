@@ -170,13 +170,18 @@ export class SignalRService {
 
   /**
    * Dispatches a native OS/Browser Push Notification via the Service Worker or Notification API
-   * whenever a live platform notification arrives over SignalR (works on every custom tenant domain).
+   * whenever a live platform notification arrives over SignalR (works on every custom tenant domain),
+   * always branding the push alert with the tenant's organization name and tenant logo/icon.
    */
   private showSystemPushNotification(notif: any): void {
     if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
       return;
     }
-    const title = notif?.title || notif?.subject || 'Workspace Alert';
+    const tenantName = (localStorage.getItem('tenant_name') || '').trim();
+    let title = (notif?.title || notif?.subject || 'Workspace Alert').trim();
+    if (tenantName && !title.toLowerCase().includes(tenantName.toLowerCase())) {
+      title = `${tenantName}: ${title}`;
+    }
     const rawBody = notif?.message || notif?.content || '';
     const cleanBody = String(rawBody).replace(/<[^>]*>?/gm, '').trim();
     const icon = localStorage.getItem('tenant_icon') || localStorage.getItem('tenant_logo') || '/favicon.ico';
@@ -188,6 +193,7 @@ export class SignalRService {
           reg.showNotification(title, {
             body: cleanBody,
             icon,
+            badge: icon,
             data: { url: actionUrl }
           }).catch(() => {
             try { new Notification(title, { body: cleanBody, icon }); } catch {}

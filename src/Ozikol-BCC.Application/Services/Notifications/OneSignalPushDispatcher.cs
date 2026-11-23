@@ -82,6 +82,15 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 if (customData != null && customData.Count > 0)
                 {
                     payload["data"] = customData;
+
+                    // Attach tenant logo to OneSignal Web & Mobile push payload so the notification displays the tenant's brand logo
+                    if (customData.TryGetValue("tenant_logo_url", out var logoUrl) && !string.IsNullOrWhiteSpace(logoUrl))
+                    {
+                        payload["chrome_web_icon"] = logoUrl;
+                        payload["chrome_web_badge"] = logoUrl;
+                        payload["firefox_icon"] = logoUrl;
+                        payload["large_icon"] = logoUrl;
+                    }
                 }
 
                 // Targeting Strategy
