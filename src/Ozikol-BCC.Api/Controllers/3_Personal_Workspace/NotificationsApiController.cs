@@ -31,6 +31,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _dbContext;
         private readonly UserManager<Profile> _userManager;
         private readonly ICentralNotificationDispatcher _notificationDispatcher;
+        private readonly IOneSignalPushDispatcher? _oneSignalPushDispatcher;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NotificationsApiController"/> class.
@@ -38,14 +39,17 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="dbContext">Database context for the tenant.</param>
         /// <param name="userManager">Identity user manager.</param>
         /// <param name="notificationDispatcher">Central multi-channel notification dispatcher.</param>
+        /// <param name="oneSignalPushDispatcher">Optional OneSignal push dispatcher for server-side subscription registration.</param>
         public NotificationsApiController(
             DashboardDbContext dbContext,
             UserManager<Profile> userManager,
-            ICentralNotificationDispatcher notificationDispatcher)
+            ICentralNotificationDispatcher notificationDispatcher,
+            IOneSignalPushDispatcher? oneSignalPushDispatcher = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _notificationDispatcher = notificationDispatcher ?? throw new ArgumentNullException(nameof(notificationDispatcher));
+            _oneSignalPushDispatcher = oneSignalPushDispatcher;
         }
 
         private string? GetCurrentUserId()
@@ -544,6 +548,73 @@ namespace Ozikol_BCC.Api.Controllers
                 whatsAppDispatched = dispatchResult.DispatchedWhatsAppCount,
                 warnings = dispatchResult.Errors
             }, "Notification dispatched successfully across requested delivery channels."));
+        }
+
+        /// <summary>
+        /// Request payload for registering a browser Web Push subscription with OneSignal from any custom tenant domain.
+        /// </summary>
+        public class RegisterPushSubscriptionRequest
+        {
+            /// <summary>Optional explicit user ID.</summary>
+            public string? UserId { get; set; }
+
+            /// <summary>Optional tenant key.</summary>
+            public string? TenantKey { get; set; }
+
+            /// <summary>Browser Web Push endpoint URL.</summary>
+            public string? Endpoint { get; set; }
+
+            /// <summary>Browser Web Push p256dh public key.</summary>
+            public string? P256dh { get; set; }
+
+            /// <summary>Browser Web Push auth secret.</summary>
+            public string? Auth { get; set; }
+        }
+
+        /// <summary>
+        /// Registers or synchronizes the current user's Web Push subscription directly in OneSignal via the backend REST API,
+        /// bypassing OneSignal's browser single-origin block on custom tenant domains.
+        /// </summary>
+        /// <param name="request">Web Push subscription details from the browser ServiceWorker.</param>
+        /// <returns>Registration status and OneSignal player/subscription ID.</returns>
+        [HttpPost("register-push")]
+        public async Task<IActionResult> RegisterPushSubscription([FromBody] RegisterPushSubscriptionRequest? request)
+        {
+            if (_oneSignalPushDispatcher == null)
+            {
+                return Ok(ApiResponse<object>.FailureResponse("OneSignal push dispatcher is not registered."));
+            }
+
+            var userId = GetCurrentUserId() ?? request?.UserId;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResponse("Authenticated user context is required."));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            var email = user?.Email ?? GetCurrentUserEmail();
+            var fullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : null;
+            var tenantKey = !string.IsNullOrWhiteSpace(request?.TenantKey)
+                ? request.TenantKey
+                : Request.Headers["X-Tenant-Id"].FirstOrDefault() ?? Request.Headers["X-Tenant-Key"].FirstOrDefault();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+
+            var (success, errorMsg, subId) = await _oneSignalPushDispatcher.RegisterUserSubscriptionAsync(
+                externalUserId: userId,
+                tenantKey: tenantKey,
+                email: email,
+                fullName: fullName,
+                pushEndpoint: request?.Endpoint,
+                p256dh: request?.P256dh,
+                auth: request?.Auth,
+                userAgent: userAgent);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                registered = success,
+                subscriptionId = subId,
+                detail = errorMsg
+            }, success ? "Device push subscription synced with OneSignal." : "Push subscription synced locally."));
         }
     }
 }
