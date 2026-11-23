@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 
@@ -192,11 +193,15 @@ namespace Ozikol_BCC.Api.Controllers
                 tp.RefreshCachedTenants();
             }
 
+            // Immediately clear ADO.NET connection pools so running background processes drop
+            // idle sockets holding stale SQL credentials and establish brand-new authenticated sessions.
+            SqlConnection.ClearAllPools();
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 tenantKey = cleanKey,
                 invalidatedUtc = DateTime.UtcNow
-            }, $"Tenant cache for '{cleanKey}' successfully invalidated and refreshed with zero downtime."));
+            }, $"Tenant cache and database connection pools for '{cleanKey}' successfully invalidated and refreshed with zero downtime."));
         }
     }
 }
