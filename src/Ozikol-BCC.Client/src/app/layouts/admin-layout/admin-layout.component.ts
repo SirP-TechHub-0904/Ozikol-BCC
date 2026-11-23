@@ -2139,8 +2139,10 @@ export interface SuiteInfoDetail {
     }
     :host {
       display: flex;
-      width: 100vw;
+      width: 100%;
+      max-width: 100vw;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
     }
     #main-content {
@@ -2148,20 +2150,35 @@ export interface SuiteInfoDetail {
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       min-width: 0;
+      max-width: 100vw;
       overflow: hidden;
       background-color: var(--md-sys-color-background);
+    }
+    #topbar {
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
     }
     .bcp-workspace-container {
       display: flex;
       flex-direction: row;
       flex: 1 1 0;
       min-height: 0;
+      min-width: 0;
       height: calc(100vh - var(--topbar-height, 70px));
+      height: calc(100dvh - var(--topbar-height, 70px));
       max-height: calc(100vh - var(--topbar-height, 70px));
+      max-height: calc(100dvh - var(--topbar-height, 70px));
       overflow: hidden;
       position: relative;
       width: 100%;
+      max-width: 100vw;
       padding: 8px 14px 18px 14px;
       gap: 14px;
       box-sizing: border-box;
@@ -4734,6 +4751,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.updateActiveMenu(this.currentRoute);
     this.handleRouteTab(this.currentRoute);
 
+    // Ensure public-website-mode is stripped and shell scroll offsets are locked so #topbar never scrolls out of view
+    this.resetShellViewportOffsets();
+
     // Auto-collapse navigation sidebar on mobile screens (<= 900px)
     if (typeof window !== 'undefined' && window.innerWidth <= 900) {
       this.sidebarCollapsed = true;
@@ -4745,6 +4765,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       this.currentRoute = e.urlAfterRedirects || e.url;
       this.updateActiveMenu(this.currentRoute);
       this.handleRouteTab(this.currentRoute);
+      this.resetShellViewportOffsets();
       if (typeof window !== 'undefined' && window.innerWidth <= 900) {
         this.closeSidebarMobile();
       }
@@ -5761,6 +5782,43 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       },
       error: () => {}
     });
+  }
+
+  /**
+   * Ensures public-website-mode is removed and locks all outer layout containers at scroll (0, 0)
+   * so #topbar and the navigation menu trigger never scroll off-screen on mobile or desktop.
+   */
+  private resetShellViewportOffsets(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    document.body.classList.remove('public-website-mode');
+    document.documentElement.classList.remove('public-website-mode');
+
+    const lockScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.documentElement.scrollLeft = 0;
+      document.body.scrollTop = 0;
+      document.body.scrollLeft = 0;
+
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTop = 0;
+        mainEl.scrollLeft = 0;
+      }
+      const wsContainer = document.querySelector('.bcp-workspace-container') as HTMLElement | null;
+      if (wsContainer) {
+        wsContainer.scrollTop = 0;
+        wsContainer.scrollLeft = 0;
+      }
+      const pageShell = document.querySelector('.bcp-page-shell') as HTMLElement | null;
+      if (pageShell) {
+        pageShell.scrollLeft = 0;
+      }
+    };
+
+    lockScroll();
+    setTimeout(lockScroll, 50);
+    setTimeout(lockScroll, 200);
   }
 
   closeSidebarMobile(): void {
