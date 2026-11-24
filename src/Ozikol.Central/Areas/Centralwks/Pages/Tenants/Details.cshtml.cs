@@ -39,6 +39,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         private readonly Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? _mailcowProvisioning;
         private readonly Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? _cloudflareDns;
         private readonly Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? _tenantProvider;
+        private readonly Ozikol.Central.Services.Backup.IDatabaseBackupService? _backupService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
@@ -52,7 +53,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             ICentralTwoFactorService twoFactorService,
             Ozikol_BCC.Infrastructure.Services.Email.IMailcowProvisioningService? mailcowProvisioning = null,
             Ozikol_BCC.Infrastructure.TenantSupport.ITenantProvider? tenantProvider = null,
-            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null)
+            Ozikol_BCC.Infrastructure.Services.Email.ICloudflareDnsService? cloudflareDns = null,
+            Ozikol.Central.Services.Backup.IDatabaseBackupService? backupService = null)
         {
             _dbContext = dbContext;
             _migrationService = migrationService;
@@ -63,6 +65,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             _mailcowProvisioning = mailcowProvisioning;
             _tenantProvider = tenantProvider;
             _cloudflareDns = cloudflareDns;
+            _backupService = backupService;
         }
 
         /// <summary>
@@ -709,7 +712,30 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 // Non-blocking parse
             }
 
-            // 1. Drop Physical Database & Dedicated SQL Login using Master Admin SQL Credentials
+            // 1. Mandatory Pre-Purge Safety Archive: Never drop a database without an immutable backup!
+            if (_backupService != null && !string.IsNullOrWhiteSpace(dbName))
+            {
+                try
+                {
+                    _logger.LogInformation("🛡️ [Pre-Purge] Capturing immutable safety snapshot before purging tenant [{TenantKey}] (DB: [{DbName}])...", cleanKey, dbName);
+                    var prePurgeRecord = await _backupService.CreateBackupAsync(cleanKey, dbName, "PrePurgeArchive");
+                    if (prePurgeRecord.Status == "Failed")
+                    {
+                        _logger.LogError("Pre-purge backup failed: {Error}", prePurgeRecord.ErrorMessage);
+                        TempData["Error"] = $"Permanent deletion aborted: Pre-purge safety backup could not be captured: {prePurgeRecord.ErrorMessage}. To prevent data loss, the tenant database was NOT deleted.";
+                        return RedirectToPage(new { id = Id, tab = "governance" });
+                    }
+                    _logger.LogInformation("✅ [Pre-Purge] Safety backup verified: {Key} ({Size} bytes)", prePurgeRecord.CloudStorageKey, prePurgeRecord.CompressedSizeBytes);
+                }
+                catch (Exception bEx)
+                {
+                    _logger.LogError(bEx, "Pre-purge backup encountered an unhandled exception for tenant [{TenantKey}]", cleanKey);
+                    TempData["Error"] = $"Permanent deletion aborted: Pre-purge backup failed with error: {bEx.Message}. To protect your data, deletion is cancelled.";
+                    return RedirectToPage(new { id = Id, tab = "governance" });
+                }
+            }
+
+            // 1b. Drop Physical Database & Dedicated SQL Login using Master Admin SQL Credentials
             bool dbDropped = false;
             string dbDropNote = "Database dropped";
             try
@@ -717,6 +743,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 var masterAdminConnStr = _dbContext.Database.GetConnectionString();
                 if (!string.IsNullOrWhiteSpace(masterAdminConnStr) && !string.IsNullOrWhiteSpace(dbName))
                 {
+                    // Flush lingering ADO.NET connection pools so sockets are released
+                    SqlConnection.ClearAllPools();
+
                     var adminBuilder = new SqlConnectionStringBuilder(masterAdminConnStr)
                     {
                         InitialCatalog = "master",
@@ -735,6 +764,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         dropDbCmd.CommandText = $@"
                             IF EXISTS (SELECT name FROM sys.databases WHERE name = N'{safeDbLiteral}')
                             BEGIN
+                                -- Terminate active connection pool sessions to avoid lock placement errors
+                                DECLARE @killSql NVARCHAR(MAX) = N'';
+                                SELECT @killSql = @killSql + N'KILL ' + CAST(session_id AS NVARCHAR(10)) + N'; '
+                                FROM sys.dm_exec_sessions
+                                WHERE database_id = DB_ID(N'{safeDbLiteral}') AND session_id <> @@SPID;
+
+                                IF LEN(@killSql) > 0 
+                                    EXEC sp_executesql @killSql;
+
                                 ALTER DATABASE [{safeDbBracket}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
                                 DROP DATABASE [{safeDbBracket}];
                             END";

@@ -285,8 +285,11 @@ if (!string.IsNullOrWhiteSpace(centralRedisConnStr))
     }
 }
 builder.Services.Configure<PricingSettings>(builder.Configuration.GetSection("PricingSettings"));
+builder.Services.Configure<Ozikol.Central.Services.Backup.DatabaseBackupSettings>(
+    builder.Configuration.GetSection(Ozikol.Central.Services.Backup.DatabaseBackupSettings.SectionName));
 
 // 7. Register Central Services
+builder.Services.AddScoped<Ozikol.Central.Services.Backup.IDatabaseBackupService, Ozikol.Central.Services.Backup.DatabaseBackupService>();
 builder.Services.AddScoped<ICentralMigrationService, CentralMigrationService>();
 builder.Services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 builder.Services.AddScoped<ICentralEmailService, CentralEmailService>();
