@@ -35,16 +35,22 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
             </span>
           </div>
 
-          <h2 class="title">{{ activeStep === 1 ? ('auth.forgot_password_q' | translate:'Forgot Password?') : ('auth.reset_account_password' | translate:'Reset Account Password') }}</h2>
+          <h2 class="title">
+            <ng-container *ngIf="isInvite">{{ 'auth.activate_account_title' | translate:'Activate Your Account' }}</ng-container>
+            <ng-container *ngIf="!isInvite">{{ activeStep === 1 ? ('auth.forgot_password_q' | translate:'Forgot Password?') : ('auth.reset_account_password' | translate:'Reset Account Password') }}</ng-container>
+          </h2>
           <p class="subtitle">
-            {{ activeStep === 1 
-              ? ('auth.enter_email_dispatch_otp' | translate:'Enter your registered email address and we will dispatch a secure 6-digit verification code.') 
-              : ('auth.enter_code_choose_pwd' | translate:'Enter the 6-digit code sent to your email and choose a strong permanent password.') }}
+            <ng-container *ngIf="isInvite">{{ 'auth.activate_account_subtitle' | translate:'Welcome! Please choose a strong permanent password to activate your account.' }}</ng-container>
+            <ng-container *ngIf="!isInvite">
+              {{ activeStep === 1 
+                ? ('auth.enter_email_dispatch_otp' | translate:'Enter your registered email address and we will dispatch a secure 6-digit verification code.') 
+                : (token ? ('auth.token_set_pwd_sub' | translate:'Choose and confirm your secure permanent password.') : ('auth.enter_code_choose_pwd' | translate:'Enter the 6-digit code sent to your email and choose a strong permanent password.')) }}
+            </ng-container>
           </p>
         </div>
 
-        <!-- Guided Step Navigator Pills -->
-        <div class="step-navigator" *ngIf="!successMessage">
+        <!-- Guided Step Navigator Pills (hidden when using direct security token) -->
+        <div class="step-navigator" *ngIf="!successMessage && !token">
           <button 
             type="button" 
             class="step-pill" 
@@ -147,8 +153,14 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
             </button>
           </div>
 
-          <!-- 6-Digit Verification OTP -->
-          <div class="form-group">
+          <!-- Verified Security Token Indicator -->
+          <div *ngIf="token" style="display:flex; align-items:center; gap:8px; padding:10px 14px; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:10px; margin-bottom:18px; color:#1e40af; font-size:12.5px;">
+            <span class="material-symbols-outlined" style="color:#0050e5; font-size:18px;">verified_user</span>
+            <span>{{ isInvite ? ('auth.invite_token_verified' | translate:'Invitation link verified. Enter your new password below.') : ('auth.security_token_verified' | translate:'Reset link verified. Enter your new password below.') }}</span>
+          </div>
+
+          <!-- 6-Digit Verification OTP (Only when OTP flow) -->
+          <div class="form-group" *ngIf="!token">
             <div class="label-with-action">
               <label for="otp" class="form-label">{{ 'auth.six_digit_otp_label' | translate:'6-Digit Verification Code (OTP) *' }}</label>
               <button 
@@ -971,6 +983,8 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   activeStep: number = 1;
   email: string = '';
   otp: string = '';
+  token: string = '';
+  isInvite: boolean = false;
   newPassword: string = '';
   confirmPassword: string = '';
   showPassword: boolean = false;
@@ -1007,10 +1021,16 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
       if (params['email']) {
         this.email = params['email'];
       }
-      if (params['otp']) {
+      if (params['token']) {
+        this.token = params['token'];
+        this.activeStep = 2;
+      } else if (params['otp']) {
         this.otp = params['otp'];
         // If OTP parameter is provided, automatically switch to Step 2
         this.activeStep = 2;
+      }
+      if (params['isInvite'] === 'true' || params['invite'] === 'true') {
+        this.isInvite = true;
       }
     });
   }
@@ -1099,8 +1119,10 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   }
 
   onResetPassword(): void {
-    if (!this.email.trim() || !this.otp.trim() || !this.newPassword.trim()) {
-      this.errorMessage = 'Please enter your email, 6-digit OTP, and new permanent password.';
+    if (!this.email.trim() || !this.newPassword.trim() || (!this.token.trim() && !this.otp.trim())) {
+      this.errorMessage = this.token
+        ? 'Please enter your email and choose a strong permanent password.'
+        : 'Please enter your email, 6-digit OTP, and new permanent password.';
       return;
     }
 
@@ -1112,20 +1134,23 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.errorMessage = '';
 
-    this.api.post<any>('auth/password/reset-with-otp', {
-      email: this.email.trim(),
-      otp: this.otp.trim(),
-      newPassword: this.newPassword
-    }).subscribe({
+    const endpoint = this.token.trim() ? 'auth/password/reset' : 'auth/password/reset-with-otp';
+    const payload = this.token.trim()
+      ? { email: this.email.trim(), token: this.token.trim(), newPassword: this.newPassword }
+      : { email: this.email.trim(), otp: this.otp.trim(), newPassword: this.newPassword };
+
+    this.api.post<any>(endpoint, payload).subscribe({
       next: () => {
         this.loading = false;
-        this.successMessage = 'OTP verified! Your password has been updated and your account is active.';
-        this.toast.success('Password updated successfully!');
-        setTimeout(() => this.router.navigate(['/auth/login']), 2500);
+        this.successMessage = this.isInvite
+          ? 'Account activated successfully! Your permanent password has been set.'
+          : 'Password reset successfully! Your account is active.';
+        this.toast.success(this.successMessage);
+        setTimeout(() => this.router.navigate(['/auth/login']), 2000);
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = err?.error?.message || 'Invalid or expired OTP verification code.';
+        this.errorMessage = err?.error?.message || (this.token ? 'Invalid or expired setup token.' : 'Invalid or expired OTP verification code.');
       }
     });
   }

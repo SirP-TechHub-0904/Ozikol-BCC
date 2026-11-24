@@ -603,24 +603,36 @@ Chart.register(...registerables);
               <span>Security & Password Credentials</span>
             </div>
 
-            <div class="form-group">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <label style="margin:0;">Initial Temporary Password</label>
-                <button type="button" class="text-link-btn" (click)="generateNewUserPassword()">
-                  <span class="material-symbols-outlined" style="font-size:14px;">autorenew</span>
-                  <span>Generate Secure Password</span>
-                </button>
+            <div class="form-checkbox-row" style="margin-bottom: 14px; padding: 12px 14px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px;">
+              <label class="checkbox-label" style="font-weight: 700; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" [(ngModel)]="newUser.createWithoutPassword" style="width: 17px; height: 17px; accent-color: #0050e5;" />
+                <span>Create without password (Send Set-Password email link)</span>
+              </label>
+              <div style="font-size: 11.5px; color: #3b82f6; margin-top: 4px; padding-left: 25px; line-height: 1.4;">
+                When enabled, no password is required. The member receives an email with a secure link to create and confirm their password on first sign-in.
               </div>
-              <input type="text" [(ngModel)]="newUser.password" placeholder="e.g. TempPassword@2026" />
-              <div class="field-hint">User will be prompted to set a permanent password upon first login.</div>
             </div>
 
-            <div class="form-checkbox-row">
-              <label class="checkbox-label">
-                <input type="checkbox" [(ngModel)]="newUser.mustChangePassword" />
-                <span>Require user to change password on first login</span>
-              </label>
-            </div>
+            <ng-container *ngIf="!newUser.createWithoutPassword">
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="margin:0;">Initial Temporary Password</label>
+                  <button type="button" class="text-link-btn" (click)="generateNewUserPassword()">
+                    <span class="material-symbols-outlined" style="font-size:14px;">autorenew</span>
+                    <span>Generate Secure Password</span>
+                  </button>
+                </div>
+                <input type="text" [(ngModel)]="newUser.password" placeholder="e.g. TempPassword@2026" />
+                <div class="field-hint">User will be prompted to set a permanent password upon first login.</div>
+              </div>
+
+              <div class="form-checkbox-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="newUser.mustChangePassword" />
+                  <span>Require user to change password on first login</span>
+                </label>
+              </div>
+            </ng-container>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" (click)="showCreateUserModal = false">Cancel</button>
@@ -1398,7 +1410,8 @@ export class UsersComponent implements OnInit, AfterViewInit {
       phoneNumber: '',
       designation: '',
       password: this.generateRandomStringPassword(),
-      mustChangePassword: true
+      mustChangePassword: true,
+      createWithoutPassword: true
     };
     this.showCreateUserModal = true;
   }
