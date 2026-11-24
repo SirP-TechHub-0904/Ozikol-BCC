@@ -61,4 +61,38 @@ public interface IDatabaseBackupService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>The number of local backup files safely pruned.</returns>
     Task<int> PruneLocalBackupsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Enqueues and initiates a compressed database backup in the background, creating an immediate
+    /// 'InProgress' MasterBackupRecord so callers return instantly without blocking HTTP threads.
+    /// </summary>
+    /// <param name="tenantKey">The tenant slug (e.g. 'choosehcare', 'nightpress', or 'master').</param>
+    /// <param name="databaseName">The exact SQL database name (e.g. 'oz_db_choosehcare_hn7qarvm').</param>
+    /// <param name="backupType">Operational trigger: 'ScheduledDaily', 'PrePurgeArchive', 'PreRestoreSafety', or 'ManualInstant'.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The initial <see cref="MasterBackupRecord"/> in 'InProgress' status.</returns>
+    Task<MasterBackupRecord> QueueBackupAsync(
+        string tenantKey,
+        string databaseName,
+        string backupType = "ManualInstant",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Enqueues backup jobs for the Master Catalog database and ALL active sovereign tenant databases at once.
+    /// Creates immediate 'InProgress' records for each database and processes them asynchronously in the background.
+    /// </summary>
+    /// <param name="backupType">Operational trigger: defaults to 'ManualBatchAll'.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The initial list of created <see cref="MasterBackupRecord"/> entries in 'InProgress' status.</returns>
+    Task<List<MasterBackupRecord>> QueueBackupAllAsync(
+        string backupType = "ManualBatchAll",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a single backup record by its primary key ID.
+    /// </summary>
+    /// <param name="backupRecordId">Unique primary key of the MasterBackupRecord.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The record if found; otherwise, null.</returns>
+    Task<MasterBackupRecord?> GetBackupRecordByIdAsync(Guid backupRecordId, CancellationToken cancellationToken = default);
 }

@@ -32,6 +32,7 @@ public class DatabaseBackupService : IDatabaseBackupService
     private readonly DatabaseBackupSettings _settings;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DatabaseBackupService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseBackupService"/> class.
@@ -40,12 +41,14 @@ public class DatabaseBackupService : IDatabaseBackupService
         MasterCatalogDbContext dbContext,
         IOptions<DatabaseBackupSettings> settingsOptions,
         IConfiguration configuration,
-        ILogger<DatabaseBackupService> logger)
+        ILogger<DatabaseBackupService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _dbContext = dbContext;
         _settings = ResolveSettings(settingsOptions?.Value, configuration);
         _configuration = configuration;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     /// <inheritdoc />
@@ -55,14 +58,22 @@ public class DatabaseBackupService : IDatabaseBackupService
         string backupType = "ManualInstant",
         CancellationToken cancellationToken = default)
     {
+        var record = await QueueBackupAsync(tenantKey, databaseName, backupType, cancellationToken);
+        await ProcessBackupJobAsync(record.Id, record.TenantKey, record.DatabaseName, record.LocalFilePath);
+        return (await GetBackupRecordByIdAsync(record.Id, cancellationToken)) ?? record;
+    }
+
+    /// <inheritdoc />
+    public async Task<MasterBackupRecord> QueueBackupAsync(
+        string tenantKey,
+        string databaseName,
+        string backupType = "ManualInstant",
+        CancellationToken cancellationToken = default)
+    {
         var cleanTenantKey = (tenantKey ?? "master").Trim().ToLowerInvariant();
         var cleanDbName = databaseName.Trim();
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
 
-        _logger.LogInformation("🚀 [Backup] Initiating {BackupType} backup for database [{DatabaseName}] (Tenant: [{TenantKey}])...",
-            backupType, cleanDbName, cleanTenantKey);
-
-        // 1. Ensure local backup directory exists
         var localDir = !string.IsNullOrWhiteSpace(_settings.LocalDirectory) ? _settings.LocalDirectory : "/var/opt/mssql/backups";
         try
         {
@@ -92,148 +103,245 @@ public class DatabaseBackupService : IDatabaseBackupService
             CloudBucketName = _settings.CloudflareBucketName ?? "ozikol-database-backups",
             EncryptionAlgorithm = "AES-256",
             IsEncrypted = true,
-            Status = "Pending",
+            Status = "InProgress",
+            ChecksumSha256 = "Computing...",
             CreatedAtUtc = DateTime.UtcNow
         };
 
-        // 2. Resolve database connection string
-        string targetConnStr = await ResolveConnectionStringAsync(cleanTenantKey, cleanDbName, cancellationToken);
-
-        // 3. Execute native SQL Server compressed backup with checksum
-        try
-        {
-            var safeDbBracket = cleanDbName.Replace("]", "]]");
-            var safePathLiteral = localFilePath.Replace("'", "''");
-
-            var compressionClause = _settings.CompressionEnabled ? ", COMPRESSION" : "";
-            var checksumClause = _settings.VerifyChecksum ? ", CHECKSUM" : "";
-
-            var sql = $"BACKUP DATABASE [{safeDbBracket}] TO DISK = N'{safePathLiteral}' WITH STATS = 25{compressionClause}{checksumClause};";
-
-            await using var sqlConn = new SqlConnection(targetConnStr);
-            await sqlConn.OpenAsync(cancellationToken);
-
-            await using (var cmd = sqlConn.CreateCommand())
-            {
-                cmd.CommandTimeout = 300; // 5-minute timeout for large databases
-                cmd.CommandText = sql;
-                await cmd.ExecuteNonQueryAsync(cancellationToken);
-            }
-
-            _logger.LogInformation("✅ [Backup] Native SQL backup successfully generated at {LocalFilePath}", localFilePath);
-
-            // 3b. Query exact backup sizes from msdb.dbo.backupset
-            try
-            {
-                await using var sizeCmd = sqlConn.CreateCommand();
-                sizeCmd.CommandText = @"
-                    SELECT TOP 1 compressed_backup_size, backup_size 
-                    FROM msdb.dbo.backupset 
-                    WHERE database_name = @dbName 
-                    ORDER BY backup_set_id DESC;";
-                var p = sizeCmd.CreateParameter();
-                p.ParameterName = "@dbName";
-                p.Value = cleanDbName;
-                sizeCmd.Parameters.Add(p);
-
-                await using var reader = await sizeCmd.ExecuteReaderAsync(cancellationToken);
-                if (await reader.ReadAsync(cancellationToken))
-                {
-                    if (!reader.IsDBNull(0)) record.CompressedSizeBytes = reader.GetInt64(0);
-                    if (!reader.IsDBNull(1)) record.FileSizeBytes = reader.GetInt64(1);
-                }
-            }
-            catch (Exception sizeEx)
-            {
-                _logger.LogWarning(sizeEx, "Could not query msdb.dbo.backupset for database [{DatabaseName}]: {Message}", cleanDbName, sizeEx.Message);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ [Backup] Native SQL backup failed for database [{DatabaseName}]", cleanDbName);
-            record.Status = "Failed";
-            record.ErrorMessage = $"SQL Server backup command failed: {ex.Message}";
-            _dbContext.MasterBackupRecords.Add(record);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return record;
-        }
-
-        // 4. Calculate file size and SHA-256 Checksum
-        try
-        {
-            if (File.Exists(localFilePath))
-            {
-                var fileInfo = new FileInfo(localFilePath);
-                record.CompressedSizeBytes = fileInfo.Length;
-                record.FileSizeBytes = fileInfo.Length;
-
-                using var sha256 = SHA256.Create();
-                await using var fs = File.OpenRead(localFilePath);
-                var hashBytes = await sha256.ComputeHashAsync(fs, cancellationToken);
-                record.ChecksumSha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
-            }
-            else
-            {
-                record.ChecksumSha256 = "N/A (Stored in server filesystem)";
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not compute SHA-256 checksum on local path {LocalFilePath}: {Message}", localFilePath, ex.Message);
-            record.ChecksumSha256 = "UNKNOWN";
-        }
-
-        // 5. Stream upload to Cloudflare R2 if configured
-        if (_settings.IsCloudflareConfigured && File.Exists(localFilePath))
-        {
-            try
-            {
-                _logger.LogInformation("☁️ [Backup] Streaming snapshot to Cloudflare R2 ({Bucket} / {Key})...",
-                    record.CloudBucketName, record.CloudStorageKey);
-
-                var s3Client = CreateR2Client();
-                using var fileTransferUtility = new TransferUtility(s3Client);
-
-                await fileTransferUtility.UploadAsync(new TransferUtilityUploadRequest
-                {
-                    FilePath = localFilePath,
-                    BucketName = record.CloudBucketName,
-                    Key = record.CloudStorageKey,
-                    ContentType = "application/octet-stream",
-                    ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
-                    DisablePayloadSigning = true
-                }, cancellationToken);
-
-                record.Status = "SyncedToCloud";
-                _logger.LogInformation("✅ [Backup] Snapshot successfully vaulted to Cloudflare R2: {CloudStorageKey}", record.CloudStorageKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "⚠️ [Backup] Cloudflare R2 upload failed for {LocalFilePath}: {Message}. Retaining local copy.", localFilePath, ex.Message);
-                record.Status = "CompletedLocalOnly";
-                record.ErrorMessage = $"Cloudflare R2 sync error: {ex.Message}";
-            }
-        }
-        else
-        {
-            record.Status = "Completed";
-        }
-
-        // 6. Record metadata in Master Catalog database
         _dbContext.MasterBackupRecords.Add(record);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // 7. Enforce local retention with Sacred Anchor protection
+        var recordId = record.Id;
+        _ = Task.Run(async () =>
+        {
+            await ProcessBackupJobAsync(recordId, cleanTenantKey, cleanDbName, localFilePath);
+        });
+
+        return record;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<MasterBackupRecord>> QueueBackupAllAsync(
+        string backupType = "ManualBatchAll",
+        CancellationToken cancellationToken = default)
+    {
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var localDir = !string.IsNullOrWhiteSpace(_settings.LocalDirectory) ? _settings.LocalDirectory : "/var/opt/mssql/backups";
         try
         {
-            await PruneLocalBackupsAsync(cancellationToken);
+            if (!Directory.Exists(localDir))
+            {
+                Directory.CreateDirectory(localDir);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Non-blocking local retention prune encountered an exception: {Message}", ex.Message);
+            _logger.LogWarning(ex, "Could not create local backup directory {LocalDir}. Falling back to default MSSQL data directory.", localDir);
+            localDir = "/var/opt/mssql/data";
         }
 
-        return record;
+        var targets = new List<(string TenantKey, string DatabaseName)>
+        {
+            ("master", "Ozikol_MasterCatalogDb")
+        };
+
+        var activeTenants = await _dbContext.MasterTenantCatalogs
+            .AsNoTracking()
+            .Where(t => t.IsActive)
+            .ToListAsync(cancellationToken);
+
+        foreach (var t in activeTenants)
+        {
+            if (!string.IsNullOrWhiteSpace(t.DatabaseName))
+            {
+                targets.Add((t.TenantKey.ToLowerInvariant(), t.DatabaseName));
+            }
+        }
+
+        var queuedRecords = new List<MasterBackupRecord>();
+        foreach (var (tKey, dbName) in targets)
+        {
+            var fileName = $"{dbName}_{timestamp}.bak";
+            var localFilePath = Path.Combine(localDir, fileName).Replace('\\', '/');
+            var cloudStorageKey = $"backups/{tKey}/{fileName}";
+
+            var record = new MasterBackupRecord
+            {
+                Id = Guid.NewGuid(),
+                TenantKey = tKey,
+                DatabaseName = dbName,
+                BackupType = backupType,
+                LocalFilePath = localFilePath,
+                CloudStorageKey = cloudStorageKey,
+                CloudBucketName = _settings.CloudflareBucketName ?? "ozikol-database-backups",
+                EncryptionAlgorithm = "AES-256",
+                IsEncrypted = true,
+                Status = "InProgress",
+                ChecksumSha256 = "Computing...",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            queuedRecords.Add(record);
+        }
+
+        _dbContext.MasterBackupRecords.AddRange(queuedRecords);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Process queued backups in background sequentially
+        var jobPayloads = queuedRecords.Select(r => (r.Id, r.TenantKey, r.DatabaseName, r.LocalFilePath)).ToList();
+        _ = Task.Run(async () =>
+        {
+            foreach (var (recId, tKey, dbName, path) in jobPayloads)
+            {
+                await ProcessBackupJobAsync(recId, tKey, dbName, path);
+            }
+        });
+
+        return queuedRecords;
+    }
+
+    /// <inheritdoc />
+    public async Task<MasterBackupRecord?> GetBackupRecordByIdAsync(Guid backupRecordId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.MasterBackupRecords
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == backupRecordId, cancellationToken);
+    }
+
+    private async Task ProcessBackupJobAsync(Guid recordId, string cleanTenantKey, string cleanDbName, string localFilePath)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MasterCatalogDbContext>();
+            var record = await db.MasterBackupRecords.FirstOrDefaultAsync(r => r.Id == recordId);
+            if (record == null) return;
+
+            string targetConnStr = await ResolveConnectionStringAsync(cleanTenantKey, cleanDbName, CancellationToken.None);
+
+            // 1. Run SQL Native Backup
+            try
+            {
+                var safeDbBracket = cleanDbName.Replace("]", "]]");
+                var safePathLiteral = localFilePath.Replace("'", "''");
+                var compressionClause = _settings.CompressionEnabled ? ", COMPRESSION" : "";
+                var checksumClause = _settings.VerifyChecksum ? ", CHECKSUM" : "";
+
+                var sql = $"BACKUP DATABASE [{safeDbBracket}] TO DISK = N'{safePathLiteral}' WITH STATS = 25{compressionClause}{checksumClause};";
+
+                await using var sqlConn = new SqlConnection(targetConnStr);
+                await sqlConn.OpenAsync(CancellationToken.None);
+
+                await using (var cmd = sqlConn.CreateCommand())
+                {
+                    cmd.CommandTimeout = 600;
+                    cmd.CommandText = sql;
+                    await cmd.ExecuteNonQueryAsync(CancellationToken.None);
+                }
+
+                _logger.LogInformation("✅ [Backup] Native SQL backup successfully generated at {LocalFilePath}", localFilePath);
+
+                // Query exact sizes from msdb.dbo.backupset
+                try
+                {
+                    await using var sizeCmd = sqlConn.CreateCommand();
+                    sizeCmd.CommandText = @"
+                        SELECT TOP 1 compressed_backup_size, backup_size 
+                        FROM msdb.dbo.backupset 
+                        WHERE database_name = @dbName 
+                        ORDER BY backup_set_id DESC;";
+                    var p = sizeCmd.CreateParameter();
+                    p.ParameterName = "@dbName";
+                    p.Value = cleanDbName;
+                    sizeCmd.Parameters.Add(p);
+
+                    await using var reader = await sizeCmd.ExecuteReaderAsync(CancellationToken.None);
+                    if (await reader.ReadAsync(CancellationToken.None))
+                    {
+                        if (!reader.IsDBNull(0)) record.CompressedSizeBytes = reader.GetInt64(0);
+                        if (!reader.IsDBNull(1)) record.FileSizeBytes = reader.GetInt64(1);
+                    }
+                }
+                catch (Exception sizeEx)
+                {
+                    _logger.LogWarning(sizeEx, "Could not query msdb.dbo.backupset for database [{DatabaseName}]: {Message}", cleanDbName, sizeEx.Message);
+                }
+            }
+            catch (Exception sqlEx)
+            {
+                _logger.LogError(sqlEx, "❌ [Backup] Native SQL backup failed for database [{DatabaseName}]", cleanDbName);
+                record.Status = "Failed";
+                record.ErrorMessage = $"SQL Server backup command failed: {sqlEx.Message}";
+                await db.SaveChangesAsync(CancellationToken.None);
+                return;
+            }
+
+            // 2. Check local file & checksum
+            try
+            {
+                if (File.Exists(localFilePath))
+                {
+                    var fileInfo = new FileInfo(localFilePath);
+                    if (record.CompressedSizeBytes <= 0) record.CompressedSizeBytes = fileInfo.Length;
+                    if (record.FileSizeBytes <= 0) record.FileSizeBytes = fileInfo.Length;
+
+                    using var sha256 = SHA256.Create();
+                    await using var fs = File.OpenRead(localFilePath);
+                    var hashBytes = await sha256.ComputeHashAsync(fs, CancellationToken.None);
+                    record.ChecksumSha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                }
+                else
+                {
+                    record.ChecksumSha256 = "N/A (Stored in server filesystem)";
+                }
+            }
+            catch (Exception chkEx)
+            {
+                _logger.LogWarning(chkEx, "Could not compute SHA-256 checksum on local path {LocalFilePath}: {Message}", localFilePath, chkEx.Message);
+                record.ChecksumSha256 = "UNKNOWN";
+            }
+
+            // 3. Upload to Cloudflare R2
+            if (_settings.IsCloudflareConfigured && File.Exists(localFilePath))
+            {
+                try
+                {
+                    _logger.LogInformation("☁️ [Backup] Streaming snapshot to Cloudflare R2 ({Bucket} / {Key})...",
+                        record.CloudBucketName, record.CloudStorageKey);
+
+                    var s3Client = CreateR2Client();
+                    using var fileTransferUtility = new TransferUtility(s3Client);
+
+                    await fileTransferUtility.UploadAsync(new TransferUtilityUploadRequest
+                    {
+                        FilePath = localFilePath,
+                        BucketName = record.CloudBucketName,
+                        Key = record.CloudStorageKey,
+                        ContentType = "application/octet-stream",
+                        ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
+                        DisablePayloadSigning = true
+                    }, CancellationToken.None);
+
+                    record.Status = "SyncedToCloud";
+                    _logger.LogInformation("✅ [Backup] Snapshot successfully vaulted to Cloudflare R2: {CloudStorageKey}", record.CloudStorageKey);
+                }
+                catch (Exception r2Ex)
+                {
+                    _logger.LogError(r2Ex, "⚠️ [Backup] Cloudflare R2 upload failed for {LocalFilePath}: {Message}. Retaining local copy.", localFilePath, r2Ex.Message);
+                    record.Status = "CompletedLocalOnly";
+                    record.ErrorMessage = $"Cloudflare R2 sync error: {r2Ex.Message}";
+                }
+            }
+            else
+            {
+                record.Status = "Completed";
+            }
+
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Background backup unhandled error for [{DatabaseName}]: {Message}", cleanDbName, ex.Message);
+        }
     }
 
     /// <inheritdoc />

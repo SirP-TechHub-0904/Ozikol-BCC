@@ -159,23 +159,55 @@ public class IndexModel : PageModel
 
         try
         {
-            var result = await _backupService.CreateBackupAsync(cleanKey, targetDb, "ManualInstant");
-            if (result.Status == "Failed")
-            {
-                TempData["Error"] = $"Backup failed: {result.ErrorMessage}";
-            }
-            else
-            {
-                TempData["Success"] = $"Instant backup for [{targetDb}] successfully captured! Size: {FormatBytes(result.CompressedSizeBytes)}. Status: {result.Status}.";
-            }
+            var result = await _backupService.QueueBackupAsync(cleanKey, targetDb, "ManualInstant");
+            TempData["Success"] = $"Backup for [{targetDb}] started in the background. Live status will update automatically below.";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Instant backup failed for {Db}", targetDb);
-            TempData["Error"] = $"Backup execution error: {ex.Message}";
+            _logger.LogError(ex, "Instant backup failed to queue for {Db}", targetDb);
+            TempData["Error"] = $"Could not start backup: {ex.Message}";
         }
 
         return RedirectToPage(new { FilterTenantKey, SearchTerm });
+    }
+
+    /// <summary>
+    /// Enqueues background backups for the Master Catalog and ALL active sovereign tenant databases at once.
+    /// </summary>
+    public async Task<IActionResult> OnPostBackupAllAsync()
+    {
+        try
+        {
+            var queued = await _backupService.QueueBackupAllAsync("ManualBatchAll");
+            TempData["Success"] = $"Initiated full platform backup in the background for Master and {queued.Count - 1} tenant databases. Live status will update automatically below.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initiate Backup All: {Message}", ex.Message);
+            TempData["Error"] = $"Could not initiate Backup All: {ex.Message}";
+        }
+
+        return RedirectToPage(new { FilterTenantKey, SearchTerm });
+    }
+
+    /// <summary>
+    /// JSON polling endpoint returning active in-progress or pending backups.
+    /// </summary>
+    public async Task<IActionResult> OnGetActiveBackupsAsync()
+    {
+        var active = await _dbContext.MasterBackupRecords
+            .AsNoTracking()
+            .Where(r => r.Status == "InProgress" || r.Status == "Pending")
+            .Select(r => new
+            {
+                id = r.Id,
+                databaseName = r.DatabaseName,
+                status = r.Status,
+                sizeFormatted = IndexModel.FormatBytes(r.CompressedSizeBytes)
+            })
+            .ToListAsync();
+
+        return new JsonResult(new { activeCount = active.Count, items = active });
     }
 
     /// <summary>
