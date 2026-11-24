@@ -48,31 +48,56 @@ public class DatabaseBackupSettings
 
     // ── Dedicated Cloudflare R2 Vault Settings ──
 
+    private string? _accountId;
     /// <summary>
     /// Cloudflare Account ID powering the R2 object storage endpoint.
     /// </summary>
-    public string? CloudflareAccountId { get; set; }
+    public string? CloudflareAccountId
+    {
+        get => !string.IsNullOrWhiteSpace(_accountId) ? _accountId : Environment.GetEnvironmentVariable("CLOUDFLARE_R2_ACCOUNT_ID") ?? Environment.GetEnvironmentVariable("Backup__CloudflareAccountId");
+        set => _accountId = value;
+    }
 
+    private string? _accessKeyId;
     /// <summary>
     /// Cloudflare R2 API Access Key ID with Read &amp; Write permissions on the backup bucket.
     /// </summary>
-    public string? CloudflareAccessKeyId { get; set; }
+    public string? CloudflareAccessKeyId
+    {
+        get => !string.IsNullOrWhiteSpace(_accessKeyId) ? _accessKeyId : Environment.GetEnvironmentVariable("CLOUDFLARE_R2_ACCESS_KEY_ID") ?? Environment.GetEnvironmentVariable("Backup__CloudflareAccessKeyId");
+        set => _accessKeyId = value;
+    }
 
+    private string? _secretAccessKey;
     /// <summary>
     /// Cloudflare R2 API Secret Access Key.
     /// </summary>
-    public string? CloudflareSecretAccessKey { get; set; }
+    public string? CloudflareSecretAccessKey
+    {
+        get => !string.IsNullOrWhiteSpace(_secretAccessKey) ? _secretAccessKey : Environment.GetEnvironmentVariable("CLOUDFLARE_R2_SECRET_ACCESS_KEY") ?? Environment.GetEnvironmentVariable("Backup__CloudflareSecretAccessKey");
+        set => _secretAccessKey = value;
+    }
 
+    private string _bucketName = "ozikol-database-backups";
     /// <summary>
     /// The dedicated Cloudflare R2 bucket name storing all offsite database archives.
     /// Defaults to 'ozikol-database-backups'.
     /// </summary>
-    public string CloudflareBucketName { get; set; } = "ozikol-database-backups";
+    public string CloudflareBucketName
+    {
+        get => !string.IsNullOrWhiteSpace(_bucketName) && _bucketName != "ozikol-database-backups" ? _bucketName : Environment.GetEnvironmentVariable("CLOUDFLARE_R2_BUCKET_NAME") ?? _bucketName;
+        set => _bucketName = value;
+    }
 
+    private string? _serviceUrl;
     /// <summary>
     /// Custom S3 Service URL if overriding the default Cloudflare R2 endpoint.
     /// </summary>
-    public string? CloudflareServiceUrl { get; set; }
+    public string? CloudflareServiceUrl
+    {
+        get => !string.IsNullOrWhiteSpace(_serviceUrl) ? _serviceUrl : Environment.GetEnvironmentVariable("CLOUDFLARE_R2_SERVICE_URL") ?? Environment.GetEnvironmentVariable("Backup__CloudflareServiceUrl");
+        set => _serviceUrl = value;
+    }
 
     /// <summary>
     /// Retention period in days for offsite backups in Cloudflare R2. Defaults to 30 days.

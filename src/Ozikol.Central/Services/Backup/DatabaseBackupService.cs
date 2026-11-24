@@ -121,6 +121,32 @@ public class DatabaseBackupService : IDatabaseBackupService
             }
 
             _logger.LogInformation("✅ [Backup] Native SQL backup successfully generated at {LocalFilePath}", localFilePath);
+
+            // 3b. Query exact backup sizes from msdb.dbo.backupset
+            try
+            {
+                await using var sizeCmd = sqlConn.CreateCommand();
+                sizeCmd.CommandText = @"
+                    SELECT TOP 1 compressed_backup_size, backup_size 
+                    FROM msdb.dbo.backupset 
+                    WHERE database_name = @dbName 
+                    ORDER BY backup_set_id DESC;";
+                var p = sizeCmd.CreateParameter();
+                p.ParameterName = "@dbName";
+                p.Value = cleanDbName;
+                sizeCmd.Parameters.Add(p);
+
+                await using var reader = await sizeCmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    if (!reader.IsDBNull(0)) record.CompressedSizeBytes = reader.GetInt64(0);
+                    if (!reader.IsDBNull(1)) record.FileSizeBytes = reader.GetInt64(1);
+                }
+            }
+            catch (Exception sizeEx)
+            {
+                _logger.LogWarning(sizeEx, "Could not query msdb.dbo.backupset for database [{DatabaseName}]: {Message}", cleanDbName, sizeEx.Message);
+            }
         }
         catch (Exception ex)
         {
