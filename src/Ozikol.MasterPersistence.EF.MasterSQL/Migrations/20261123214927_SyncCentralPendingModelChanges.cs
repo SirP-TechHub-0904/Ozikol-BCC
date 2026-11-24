@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,66 +11,52 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "MasterMessagePools",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantKey = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    OrganizationName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Channel = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Provider = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    RecipientAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    RecipientName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Subject = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PlainTextFallback = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ActionUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Severity = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Priority = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Retries = table.Column<int>(type: "int", nullable: false),
-                    MaxRetries = table.Column<int>(type: "int", nullable: false),
-                    LastError = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ProviderMessageId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    SenderOrTemplateName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    MetadataJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ScheduledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MasterMessagePools", x => x.Id);
-                });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MasterMessagePools')
+BEGIN
+    CREATE TABLE [MasterMessagePools] (
+        [Id] uniqueidentifier NOT NULL,
+        [TenantKey] nvarchar(100) NOT NULL,
+        [OrganizationName] nvarchar(255) NULL,
+        [Channel] nvarchar(50) NOT NULL,
+        [Provider] nvarchar(50) NOT NULL,
+        [RecipientAddress] nvarchar(255) NOT NULL,
+        [RecipientName] nvarchar(255) NULL,
+        [Subject] nvarchar(500) NULL,
+        [Content] nvarchar(max) NOT NULL,
+        [PlainTextFallback] nvarchar(max) NULL,
+        [ActionUrl] nvarchar(500) NULL,
+        [Category] nvarchar(100) NOT NULL,
+        [Severity] nvarchar(50) NOT NULL,
+        [Priority] nvarchar(50) NOT NULL,
+        [Status] nvarchar(50) NOT NULL,
+        [Retries] int NOT NULL,
+        [MaxRetries] int NOT NULL,
+        [LastError] nvarchar(max) NULL,
+        [ProviderMessageId] nvarchar(255) NULL,
+        [SenderOrTemplateName] nvarchar(255) NULL,
+        [MetadataJson] nvarchar(max) NULL,
+        [ScheduledAt] datetime2 NULL,
+        [SentAt] datetime2 NULL,
+        [CreatedAt] datetime2 NOT NULL,
+        CONSTRAINT [PK_MasterMessagePools] PRIMARY KEY ([Id])
+    );
 
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterMessagePools_CreatedAt",
-                table: "MasterMessagePools",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterMessagePools_RecipientAddress",
-                table: "MasterMessagePools",
-                column: "RecipientAddress");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterMessagePools_Status_Channel_Provider",
-                table: "MasterMessagePools",
-                columns: new[] { "Status", "Channel", "Provider" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterMessagePools_TenantKey_CreatedAt",
-                table: "MasterMessagePools",
-                columns: new[] { "TenantKey", "CreatedAt" });
+    CREATE INDEX [IX_MasterMessagePools_CreatedAt] ON [MasterMessagePools] ([CreatedAt]);
+    CREATE INDEX [IX_MasterMessagePools_RecipientAddress] ON [MasterMessagePools] ([RecipientAddress]);
+    CREATE INDEX [IX_MasterMessagePools_Status_Channel_Provider] ON [MasterMessagePools] ([Status], [Channel], [Provider]);
+    CREATE INDEX [IX_MasterMessagePools_TenantKey_CreatedAt] ON [MasterMessagePools] ([TenantKey], [CreatedAt]);
+END");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "MasterMessagePools");
+            migrationBuilder.Sql(@"
+IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MasterMessagePools')
+BEGIN
+    DROP TABLE [MasterMessagePools];
+END");
         }
     }
 }
