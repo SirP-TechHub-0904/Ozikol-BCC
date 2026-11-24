@@ -602,26 +602,50 @@ public class DatabaseBackupService : IDatabaseBackupService
             ?? configuration["CloudflareR2__Backup__AccountId"]
             ?? configuration["CloudflareR2:AccountId"]
             ?? configuration["CloudflareR2__AccountId"]
+            ?? configuration["CLOUDFLARE_R2_ACCOUNT_ID"]
+            ?? configuration["Backup:CloudflareAccountId"]
+            ?? configuration["Backup__CloudflareAccountId"]
+            ?? Environment.GetEnvironmentVariable("CLOUDFLARE_R2_ACCOUNT_ID")
             ?? s.CloudflareAccountId;
 
         s.CloudflareAccessKeyId = configuration["CloudflareR2:Backup:AccessKeyId"]
             ?? configuration["CloudflareR2__Backup__AccessKeyId"]
             ?? configuration["CloudflareR2:AccessKeyId"]
             ?? configuration["CloudflareR2__AccessKeyId"]
+            ?? configuration["CLOUDFLARE_R2_ACCESS_KEY_ID"]
+            ?? configuration["Backup:CloudflareAccessKeyId"]
+            ?? configuration["Backup__CloudflareAccessKeyId"]
+            ?? Environment.GetEnvironmentVariable("CLOUDFLARE_R2_ACCESS_KEY_ID")
             ?? s.CloudflareAccessKeyId;
 
         s.CloudflareSecretAccessKey = configuration["CloudflareR2:Backup:SecretAccessKey"]
             ?? configuration["CloudflareR2__Backup__SecretAccessKey"]
             ?? configuration["CloudflareR2:SecretAccessKey"]
             ?? configuration["CloudflareR2__SecretAccessKey"]
+            ?? configuration["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
+            ?? configuration["Backup:CloudflareSecretAccessKey"]
+            ?? configuration["Backup__CloudflareSecretAccessKey"]
+            ?? Environment.GetEnvironmentVariable("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
             ?? s.CloudflareSecretAccessKey;
 
         s.CloudflareBucketName = configuration["CloudflareR2:Backup:BucketName"]
             ?? configuration["CloudflareR2__Backup__BucketName"]
+            ?? configuration["CloudflareR2:BucketName"]
+            ?? configuration["CloudflareR2__BucketName"]
+            ?? configuration["CLOUDFLARE_R2_BUCKET_NAME"]
+            ?? configuration["Backup:CloudflareBucketName"]
+            ?? configuration["Backup__CloudflareBucketName"]
+            ?? Environment.GetEnvironmentVariable("CLOUDFLARE_R2_BUCKET_NAME")
             ?? s.CloudflareBucketName;
 
         s.CloudflareServiceUrl = configuration["CloudflareR2:Backup:ServiceUrl"]
             ?? configuration["CloudflareR2__Backup__ServiceUrl"]
+            ?? configuration["CloudflareR2:ServiceUrl"]
+            ?? configuration["CloudflareR2__ServiceUrl"]
+            ?? configuration["CLOUDFLARE_R2_SERVICE_URL"]
+            ?? configuration["Backup:CloudflareServiceUrl"]
+            ?? configuration["Backup__CloudflareServiceUrl"]
+            ?? Environment.GetEnvironmentVariable("CLOUDFLARE_R2_SERVICE_URL")
             ?? s.CloudflareServiceUrl;
 
         return s;
