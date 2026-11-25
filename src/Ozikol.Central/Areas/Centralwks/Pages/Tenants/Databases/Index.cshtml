@@ -298,10 +298,18 @@
                                 }
                                 else
                                 {
-                                    <span class="badge badge-danger" title="@db.Status.ErrorMessage">
-                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
-                                        Unreachable
-                                    </span>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <span class="badge badge-danger" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;" title="@db.Status.ErrorMessage">
+                                            <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                            @(db.Status.ErrorMessage?.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase) == true ? "Auth Error" : "Unreachable")
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(db.Status.ErrorMessage))
+                                        {
+                                            <span style="font-size: 11px; color: var(--admin-danger); font-family: monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@db.Status.ErrorMessage">
+                                                @db.Status.ErrorMessage
+                                            </span>
+                                        }
+                                    </div>
                                 }
                             </td>
                             <td>
@@ -351,6 +359,14 @@
                             </td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                    @if (!db.Status.IsReachable)
+                                    {
+                                        <a href="/centralwks/tenants/databases/details?tenantKey=@db.TenantKey#resetPassword" class="btn-admin btn-admin-sm" style="background: rgba(239, 68, 68, 0.12); color: var(--admin-danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11.5px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" title="Reset SQL Credentials & Re-sync Database Connection">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">key</span>
+                                            <span>Fix Login</span>
+                                        </a>
+                                    }
+
                                     <a href="/centralwks/tenants/databases/details?tenantKey=@db.TenantKey" class="btn-admin btn-admin-secondary btn-admin-sm" title="Inspect Database Deep Dive">
                                         <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
                                     </a>

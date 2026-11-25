@@ -791,41 +791,48 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         }
                     }
 
-                    // Drop dedicated SQL login as well as any orphan logins matching this tenant key
-                    var safeTenantKeyLiteral = cleanKey.Replace("'", "''");
-                    await using (var dropLoginCmd = masterConn.CreateCommand())
+                    // Drop strictly the dedicated SQL login parsed directly from the tenant's connection string.
+                    // Zero-Trust Rule: NEVER use wildcard pattern matching (LIKE 'usr_...') or cursors, as shared prefixes
+                    // would unintentionally drop sibling tenant accounts. Only drop the verified, exact UserID.
+                    if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
                     {
-                        var explicitDropSql = string.Empty;
-                        if (!string.IsNullOrWhiteSpace(dedicatedSqlUser))
+                        var masterAdminUser = adminBuilder.UserID?.Trim();
+                        bool isPlatformSystemUser = string.Equals(dedicatedSqlUser, "sa", StringComparison.OrdinalIgnoreCase) ||
+                                                    string.Equals(dedicatedSqlUser, "usr_ozikol_master", StringComparison.OrdinalIgnoreCase) ||
+                                                    (!string.IsNullOrWhiteSpace(masterAdminUser) && string.Equals(dedicatedSqlUser, masterAdminUser, StringComparison.OrdinalIgnoreCase));
+
+                        if (!isPlatformSystemUser)
                         {
-                            var safeLoginBracket = dedicatedSqlUser.Replace("]", "]]");
-                            var safeLoginLiteral = dedicatedSqlUser.Replace("'", "''");
-                            explicitDropSql = $@"
-                            IF EXISTS (SELECT name FROM sys.server_principals WHERE name = N'{safeLoginLiteral}')
-                            BEGIN
-                                DROP LOGIN [{safeLoginBracket}];
-                            END";
+                            await using var dropLoginCmd = masterConn.CreateCommand();
+                            dropLoginCmd.CommandTimeout = 30;
+                            dropLoginCmd.CommandText = @"
+                                IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = @ExactLoginName)
+                                BEGIN
+                                    -- Terminate lingering sessions specifically belonging to this exact login
+                                    DECLARE @killLoginSessions NVARCHAR(MAX) = N'';
+                                    SELECT @killLoginSessions = @killLoginSessions + N'KILL ' + CAST(session_id AS NVARCHAR(10)) + N'; '
+                                    FROM sys.dm_exec_sessions
+                                    WHERE login_name = @ExactLoginName AND session_id <> @@SPID;
+
+                                    IF LEN(@killLoginSessions) > 0
+                                        EXEC sp_executesql @killLoginSessions;
+
+                                    DECLARE @dropSql NVARCHAR(256) = N'DROP LOGIN ' + QUOTENAME(@ExactLoginName) + N';';
+                                    EXEC sp_executesql @dropSql;
+                                END";
+
+                            dropLoginCmd.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@ExactLoginName", System.Data.SqlDbType.NVarChar, 128)
+                            {
+                                Value = dedicatedSqlUser
+                            });
+
+                            await dropLoginCmd.ExecuteNonQueryAsync();
+                            _logger.LogInformation("Successfully dropped dedicated SQL login '{SqlUser}' for purged tenant '{TenantKey}'", dedicatedSqlUser, cleanKey);
                         }
-
-                        dropLoginCmd.CommandText = $@"
-                            {explicitDropSql}
-
-                            DECLARE @curLogin NVARCHAR(128);
-                            DECLARE login_cur CURSOR LOCAL FAST_FORWARD FOR 
-                                SELECT name FROM sys.server_principals 
-                                WHERE name LIKE 'usr_' + N'{safeTenantKeyLiteral}' + '_%'
-                                   OR name LIKE 'oz_usr_' + N'{safeTenantKeyLiteral}' + '_%';
-                            OPEN login_cur;
-                            FETCH NEXT FROM login_cur INTO @curLogin;
-                            WHILE @@FETCH_STATUS = 0
-                            BEGIN
-                                EXEC('DROP LOGIN [' + @curLogin + ']');
-                                FETCH NEXT FROM login_cur INTO @curLogin;
-                            END
-                            CLOSE login_cur;
-                            DEALLOCATE login_cur;";
-
-                        await dropLoginCmd.ExecuteNonQueryAsync();
+                        else
+                        {
+                            _logger.LogWarning("Security protection: Bypassed dropping shared platform login '{SqlUser}' during purge of tenant '{TenantKey}'", dedicatedSqlUser, cleanKey);
+                        }
                     }
 
                     dbDropped = true;
