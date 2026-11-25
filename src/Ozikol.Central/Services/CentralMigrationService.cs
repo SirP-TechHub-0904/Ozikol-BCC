@@ -372,7 +372,7 @@ public class CentralMigrationService : ICentralMigrationService
 
     public async Task<List<TenantMigrationSummary>> GetAllTenantMigrationStatusesAsync(CancellationToken cancellationToken = default)
     {
-        var results = new List<TenantMigrationSummary>();
+        var results = new System.Collections.Concurrent.ConcurrentBag<TenantMigrationSummary>();
 
         List<MasterTenantCatalog> tenants;
         try
@@ -385,14 +385,21 @@ public class CentralMigrationService : ICentralMigrationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load tenants list from MasterCatalogDbContext");
-            return results;
+            return new List<TenantMigrationSummary>();
         }
 
         var masterConnStr = _masterCatalogDbContext.Database.GetConnectionString()
             ?? _tenantOptions.Value.ConnectionString
             ?? string.Empty;
 
-        foreach (var tenant in tenants)
+        // Execute tenant database probes in parallel with a strict 3-second timeout per database.
+        // Non-blocking resilience: If any tenant database is offline, unreachable, or has missing SQL credentials,
+        // it is captured cleanly and skipped immediately without stalling the page or triggering Cloudflare 504 timeouts.
+        await Parallel.ForEachAsync(tenants, new ParallelOptions
+        {
+            MaxDegreeOfParallelism = 8,
+            CancellationToken = cancellationToken
+        }, async (tenant, ct) =>
         {
             var tenantSummary = new TenantMigrationSummary
             {
@@ -407,8 +414,6 @@ public class CentralMigrationService : ICentralMigrationService
                 CreatedUtc = tenant.CreatedUtc
             };
 
-            string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
-
             var dbStatus = new DatabaseMigrationStatus
             {
                 DatabaseName = tenant.DatabaseName,
@@ -417,50 +422,78 @@ public class CentralMigrationService : ICentralMigrationService
 
             try
             {
+                string rawConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+                var fastConnBuilder = new SqlConnectionStringBuilder(rawConnStr)
+                {
+                    ConnectTimeout = 3
+                };
+                string fastTenantConnStr = fastConnBuilder.ConnectionString;
+
                 var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-                optionsBuilder.UseSqlServer(tenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName))
+                optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(3))
                     .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
                 using var scope = _serviceProvider.CreateScope();
                 var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
 
-                using (tenantProvider.BeginScope(tenantConnStr))
+                using (tenantProvider.BeginScope(fastTenantConnStr))
                 {
                     var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-                    var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
+                    using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+                    var canConnect = await dbContext.Database.CanConnectAsync(linkedCts.Token);
                     dbStatus.IsReachable = canConnect;
 
                     if (canConnect)
                     {
-                        var applied = await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken);
-                        var pending = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
+                        var applied = await dbContext.Database.GetAppliedMigrationsAsync(linkedCts.Token);
+                        var pending = await dbContext.Database.GetPendingMigrationsAsync(linkedCts.Token);
 
                         dbStatus.AppliedMigrations = applied.ToList();
                         dbStatus.PendingMigrations = pending.ToList();
 
                         // Fast DMV table and row counts
-                        var stats = await GetTableStatsFromConnectionAsync(tenantConnStr, cancellationToken);
+                        var stats = await GetTableStatsFromConnectionAsync(fastTenantConnStr, linkedCts.Token);
                         tenantSummary.TotalTablesCount = stats.Count;
                         tenantSummary.TotalRecordsCount = stats.Sum(s => s.TotalRows);
                         tenantSummary.TotalStorageKb = stats.Sum(s => s.UsedSpaceKb);
                     }
                     else
                     {
-                        dbStatus.ErrorMessage = "Tenant database is unreachable or does not exist.";
+                        dbStatus.ErrorMessage = "Tenant database is unreachable or offline.";
                     }
                 }
             }
             catch (Exception ex)
             {
                 dbStatus.IsReachable = false;
-                dbStatus.ErrorMessage = ex.Message;
+                var msg = ex.Message ?? string.Empty;
+                if (msg.Contains("Login failed for user", StringComparison.OrdinalIgnoreCase))
+                {
+                    dbStatus.ErrorMessage = "Authentication failed: SQL login missing or invalid password (SQL 18456)";
+                }
+                else if (msg.Contains("Cannot open database", StringComparison.OrdinalIgnoreCase))
+                {
+                    dbStatus.ErrorMessage = "Database missing or offline (SQL 4060)";
+                }
+                else if (ex is OperationCanceledException || msg.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+                {
+                    dbStatus.ErrorMessage = "Database connection timed out (> 3s)";
+                }
+                else
+                {
+                    dbStatus.ErrorMessage = msg;
+                }
+
+                _logger.LogWarning("Skipping unreachable tenant DB {TenantKey} ({DbName}): {Error}", tenant.TenantKey, tenant.DatabaseName, dbStatus.ErrorMessage);
             }
 
             tenantSummary.Status = dbStatus;
             results.Add(tenantSummary);
-        }
+        });
 
-        return results;
+        return results.OrderBy(t => t.TenantKey).ToList();
     }
 
     public async Task<TenantDatabaseDeepDive?> GetTenantDeepDiveAsync(string tenantKey, CancellationToken cancellationToken = default)
