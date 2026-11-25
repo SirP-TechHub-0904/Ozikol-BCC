@@ -1,13 +1,15 @@
 using System;
 using Microsoft.Data.SqlClient;
+using Ozikol.MasterDomain.Security;
 
 namespace Ozikol.Central.Services
 {
     /// <summary>
     /// Enterprise connection string harmonizer for multi-tenant database operations.
     /// Dynamically aligns the database server host (<c>DataSource</c>) of individual tenant connection strings
-    /// with the active Master Catalog environment connection string, while preserving each tenant's isolated
-    /// database name, SQL credentials, and security configurations.
+    /// with the active Master Catalog environment connection string, while strictly preserving each tenant's isolated
+    /// database name, dedicated SQL credentials, and security configurations.
+    /// Zero-Trust Architecture: Never silently substitutes Master credentials for tenant operations.
     /// </summary>
     public static class TenantConnectionHarmonizer
     {
@@ -16,64 +18,55 @@ namespace Ozikol.Central.Services
         /// Preserves individual tenant database credentials while dynamically adopting the active master server host/DataSource.
         /// </summary>
         /// <param name="masterConnStr">Active master database connection string (from .env/configuration).</param>
-        /// <param name="rawTenantConnStr">Raw tenant connection string (from <c>MasterTenantCatalogs</c>).</param>
+        /// <param name="rawTenantConnStr">Raw tenant connection string (from <c>MasterTenantCatalogs</c>, plaintext or AES-256-GCM encrypted).</param>
         /// <param name="targetDbName">Optional target tenant database name fallback.</param>
         /// <returns>The harmonized connection string ready for secure multi-environment execution.</returns>
         public static string Harmonize(string masterConnStr, string? rawTenantConnStr, string? targetDbName = null)
         {
             if (string.IsNullOrWhiteSpace(masterConnStr))
             {
-                return rawTenantConnStr ?? string.Empty;
+                var fallbackPlain = OzikolDataCipher.DecryptIfNeeded(rawTenantConnStr) ?? rawTenantConnStr;
+                return fallbackPlain ?? string.Empty;
             }
 
-            // Fallback: If no tenant connection string was provided, build directly from master connection string
+            // Provisioning Only: When no tenant connection string exists yet (initial DB creation during onboarding),
+            // use master credentials to run initial physical CREATE DATABASE DDL.
             if (string.IsNullOrWhiteSpace(rawTenantConnStr))
             {
-                var fallbackBuilder = new SqlConnectionStringBuilder(masterConnStr);
-                if (!string.IsNullOrWhiteSpace(targetDbName))
+                if (string.IsNullOrWhiteSpace(targetDbName))
                 {
-                    fallbackBuilder.InitialCatalog = targetDbName;
+                    throw new InvalidOperationException("[TenantConnectionHarmonizer] Cannot harmonize connection string: both tenant connection string and target database name are missing.");
                 }
-                return fallbackBuilder.ConnectionString;
+
+                var provisioningBuilder = new SqlConnectionStringBuilder(masterConnStr)
+                {
+                    InitialCatalog = targetDbName,
+                    TrustServerCertificate = true
+                };
+                return provisioningBuilder.ConnectionString;
             }
 
-            try
+            // 1. Transparently decrypt tenant connection string at rest (AES-256-GCM enc:v1:...)
+            var decryptedTenantConn = OzikolDataCipher.DecryptIfNeeded(rawTenantConnStr) ?? rawTenantConnStr;
+
+            var masterBuilder = new SqlConnectionStringBuilder(masterConnStr);
+            var tenantBuilder = new SqlConnectionStringBuilder(decryptedTenantConn);
+
+            if (!string.IsNullOrWhiteSpace(targetDbName))
             {
-                var masterBuilder = new SqlConnectionStringBuilder(masterConnStr);
-                var tenantBuilder = new SqlConnectionStringBuilder(rawTenantConnStr);
-
-                if (!string.IsNullOrWhiteSpace(targetDbName))
-                {
-                    tenantBuilder.InitialCatalog = targetDbName;
-                }
-
-                // Dynamically borrow the active environment's DataSource/Server host
-                if (!string.IsNullOrWhiteSpace(masterBuilder.DataSource))
-                {
-                    tenantBuilder.DataSource = masterBuilder.DataSource;
-                }
-
-                // Ensure modern certificate trust is preserved
-                tenantBuilder.TrustServerCertificate = true;
-
-                // If master uses Windows Integrated Security and tenant has no credentials, inherit integrated security
-                if (masterBuilder.IntegratedSecurity && string.IsNullOrWhiteSpace(tenantBuilder.UserID))
-                {
-                    tenantBuilder.IntegratedSecurity = true;
-                }
-
-                return tenantBuilder.ConnectionString;
+                tenantBuilder.InitialCatalog = targetDbName;
             }
-            catch
+
+            // 2. Zero-Trust Rule: Strictly preserve the tenant's dedicated UserID and Password.
+            // Only adopt the environment's active server host (DataSource) so queries reach the correct IP (e.g. VPS or localhost).
+            if (!string.IsNullOrWhiteSpace(masterBuilder.DataSource))
             {
-                // Resilient fallback in case of malformed raw connection strings
-                var safeBuilder = new SqlConnectionStringBuilder(masterConnStr);
-                if (!string.IsNullOrWhiteSpace(targetDbName))
-                {
-                    safeBuilder.InitialCatalog = targetDbName;
-                }
-                return safeBuilder.ConnectionString;
+                tenantBuilder.DataSource = masterBuilder.DataSource;
             }
+
+            tenantBuilder.TrustServerCertificate = true;
+
+            return tenantBuilder.ConnectionString;
         }
     }
 }
