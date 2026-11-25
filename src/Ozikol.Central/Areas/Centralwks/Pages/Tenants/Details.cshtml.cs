@@ -122,6 +122,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public TenantDatabaseDeepDive? DatabaseDeepDive { get; set; }
 
         /// <summary>
+        /// Completed point-in-time database backup snapshots available for disaster recovery restoration.
+        /// </summary>
+        public List<MasterBackupRecord> BackupRecords { get; set; } = new();
+
+        /// <summary>
         /// Handles HTTP GET requests to load full tenant diagnostics, subscriptions, billing, logs, and database metrics.
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
@@ -223,6 +228,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to retrieve deep dive database metrics for tenant key '{TenantKey}'", tenant.TenantKey);
+            }
+
+            // 5. Load Completed Disaster Recovery Database Snapshots for Point-In-Time Restoration
+            try
+            {
+                BackupRecords = await _dbContext.MasterBackupRecords
+                    .AsNoTracking()
+                    .Where(b => b.TenantKey == tenant.TenantKey && b.Status == "Completed")
+                    .OrderByDescending(b => b.CreatedAtUtc)
+                    .Take(25)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load backup snapshots for tenant key '{TenantKey}'", tenant.TenantKey);
             }
 
             return Page();
@@ -1159,6 +1179,73 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
 
             return RedirectToPage(new { id });
+        }
+
+        /// <summary>
+        /// Handles point-in-time database disaster recovery restoration for this tenant.
+        /// Replaces the live tenant database with the selected snapshot, verifies SQL login permissions, and invalidates caches.
+        /// </summary>
+        /// <param name="backupId">The ID of the completed backup snapshot to restore.</param>
+        /// <returns>A redirect result back to the tenant details page.</returns>
+        public async Task<IActionResult> OnPostRestoreAsync(Guid backupId)
+        {
+            if (_backupService == null)
+            {
+                TempData["Error"] = "Database Backup & Disaster Recovery Service is not configured.";
+                return RedirectToPage(new { id = Id });
+            }
+
+            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(Id);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Tenants/Index");
+            }
+
+            var record = await _dbContext.MasterBackupRecords.FindAsync(backupId);
+            if (record == null || !string.Equals(record.TenantKey, tenant.TenantKey, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Invalid backup record or backup does not belong to this tenant organization.";
+                return RedirectToPage(new { id = Id });
+            }
+
+            try
+            {
+                var adminUser = User.Identity?.Name ?? "SuperAdmin";
+                _logger.LogWarning("Point-in-time disaster recovery restore initiated for tenant '{TenantKey}' using backup record {BackupId} by {AdminUser}.",
+                    tenant.TenantKey, backupId, adminUser);
+
+                var success = await _backupService.RestoreBackupAsync(backupId);
+                if (success)
+                {
+                    _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                    {
+                        UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                        UserName = adminUser,
+                        Action = "Tenant.DatabaseRestored",
+                        EntityType = "Tenant",
+                        EntityId = tenant.Id.ToString(),
+                        Summary = $"Central Admin {adminUser} performed a point-in-time disaster recovery restore of database '{record.DatabaseName}' to snapshot from {record.CreatedAtUtc:yyyy-MM-dd HH:mm:ss} UTC.",
+                        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        UserAgent = Request.Headers.UserAgent.ToString(),
+                        CreatedUtc = DateTime.UtcNow
+                    });
+                    await _dbContext.SaveChangesAsync();
+
+                    TempData["Success"] = $"Point-in-time disaster recovery restore completed successfully! Database '{record.DatabaseName}' has been restored to the snapshot from {record.CreatedAtUtc:yyyy-MM-dd HH:mm:ss} UTC.";
+                }
+                else
+                {
+                    TempData["Error"] = "Database restoration failed. Please inspect the Central application telemetry logs.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Restore execution failed for backup record {BackupId} on tenant {TenantKey}", backupId, tenant.TenantKey);
+                TempData["Error"] = $"Restoration error: {ex.Message}";
+            }
+
+            return RedirectToPage(new { id = Id });
         }
     }
 }

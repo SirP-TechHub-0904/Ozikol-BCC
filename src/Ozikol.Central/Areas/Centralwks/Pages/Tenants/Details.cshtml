@@ -449,6 +449,89 @@
             </div>
         </div>
     </div>
+
+    @* Disaster Recovery & Point-In-Time Database Restore *@
+    <div class="admin-card" style="margin-top: 24px;" id="disaster-recovery-card">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">history</span>
+                <div>
+                    <h3 class="admin-card-title" style="font-size: 15px; margin: 0; font-weight: 700;">Database Disaster Recovery &amp; Point-In-Time Restore</h3>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                        Roll back this tenant's live database (<code style="font-weight: 600;">@Model.Tenant.DatabaseName</code>) to an immutable compressed point-in-time snapshot.
+                    </p>
+                </div>
+            </div>
+            <span class="badge badge-info">@Model.BackupRecords.Count Snapshots Available</span>
+        </div>
+        <div class="admin-card-body" style="padding: 0;">
+            @if (Model.BackupRecords.Any())
+            {
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Snapshot Timestamp (UTC)</th>
+                                <th>Trigger Type</th>
+                                <th>Compressed Size</th>
+                                <th>Cloud Vault Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var snap in Model.BackupRecords)
+                            {
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 700; color: var(--admin-text);">@snap.CreatedAtUtc.ToString("MMM dd, yyyy HH:mm:ss") UTC</div>
+                                        <code style="font-size: 11px; color: var(--admin-text-dim);">@snap.DatabaseName</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text); font-weight: 600;">@snap.BackupType</span>
+                                    </td>
+                                    <td>
+                                        <strong>@((snap.CompressedSizeBytes / 1024.0 / 1024.0).ToString("F2")) MB</strong>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(snap.CloudStorageKey))
+                                        {
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; color: #059669; font-weight: 700; font-size: 12px;">
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">cloud_done</span>
+                                                Cloudflare R2
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; color: #0284c7; font-weight: 700; font-size: 12px;">
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">save</span>
+                                                Local Disk
+                                            </span>
+                                        }
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm"
+                                                onclick="confirmTenantRestore('@snap.Id', '@snap.DatabaseName', '@snap.CreatedAtUtc.ToString("MMM dd, yyyy HH:mm:ss") UTC');"
+                                                style="color: var(--admin-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">history</span>
+                                            Restore
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div style="padding: 32px 20px; text-align: center; color: var(--admin-text-muted);">
+                    <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">settings_backup_restore</span>
+                    <div style="font-weight: 600;">No Disaster Recovery Snapshots Found</div>
+                    <div style="font-size: 12.5px; margin-top: 4px;">Snapshots are created automatically on schedule or triggered via Central Backups.</div>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
 @* ══════════════════════════════════════════════════════════════════════════
@@ -966,6 +1049,60 @@
             <div style="font-size: 13px; color: var(--admin-text-muted); margin-top: 4px;">Unable to fetch real-time SQL metrics for this database.</div>
         </div>
     }
+
+    @* Point-In-Time Database Disaster Recovery Snapshots Cross-Link *@
+    <div class="admin-card" style="margin-top: 20px;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">history</span>
+                <div>
+                    <h3 class="admin-card-title" style="font-size: 15px; margin: 0; font-weight: 700;">Point-In-Time Disaster Recovery Snapshots</h3>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                        Snapshots captured for live database <code style="font-weight: 600;">@Model.Tenant.DatabaseName</code>.
+                    </p>
+                </div>
+            </div>
+            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="switchTenantTab('tab-governance', null); document.getElementById('disaster-recovery-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });">
+                <span class="material-symbols-outlined" style="font-size: 16px;">admin_panel_settings</span>
+                Manage &amp; Restore in Governance (@Model.BackupRecords.Count)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Tenant Point-In-Time Restore -->
+<div id="tenantRestoreModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+    <div style="background: var(--admin-bg-surface, #ffffff); border-radius: 16px; width: 100%; max-width: 520px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); border: 1px solid var(--admin-border, #e2e8f0);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 80, 229, 0.1); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">history</span>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; font-weight: 800; color: var(--admin-text, #0f172a); margin: 0;">Confirm Point-In-Time Restore</h2>
+                <div style="font-size: 13px; color: var(--admin-text-muted, #64748b);">Roll back live database to this snapshot.</div>
+            </div>
+        </div>
+        <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 13.5px;">
+            <div>Target Database: <strong id="tenantRestoreDbText" style="color: var(--admin-text, #0f172a);"></strong></div>
+            <div style="margin-top: 4px;">Snapshot Date: <strong id="tenantRestoreDateText" style="color: var(--admin-primary, #0050E5);"></strong></div>
+            <div style="margin-top: 10px; font-size: 12px; color: #059669; font-weight: 600;">
+                🛡️ A safety snapshot of your current live database will automatically be taken before restoring.
+            </div>
+        </div>
+        <form method="post" asp-page-handler="Restore" id="tenantRestoreForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="backupId" id="tenantRestoreBackupIdInput" value="" />
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('tenantRestoreModal').style.display='none'" class="btn-admin btn-admin-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-admin btn-admin-primary" style="background: #0050E5; color: #ffffff; font-weight: 700;">
+                    Confirm &amp; Restore Live Database
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Styles {
@@ -1036,6 +1173,13 @@
                     if (matchingBtn) matchingBtn.classList.add('active');
                 }
             }
+        }
+
+        function confirmTenantRestore(backupId, dbName, dateStr) {
+            document.getElementById('tenantRestoreBackupIdInput').value = backupId;
+            document.getElementById('tenantRestoreDbText').textContent = dbName;
+            document.getElementById('tenantRestoreDateText').textContent = dateStr;
+            document.getElementById('tenantRestoreModal').style.display = 'flex';
         }
 
         function openPermanentDeleteSection() {
@@ -1159,10 +1303,13 @@
             const params = new URLSearchParams(window.location.search);
             const tabParam = (params.get('tab') || '').toLowerCase();
             const hash = (window.location.hash || '').toLowerCase();
-            if (tabParam === 'governance' || hash === '#tab-governance' || hash === '#permanent-delete-card') {
+            if (tabParam === 'governance' || hash === '#tab-governance' || hash === '#permanent-delete-card' || hash === '#disaster-recovery-card') {
                 switchTenantTab('tab-governance', null);
                 if (hash === '#permanent-delete-card') {
                     const card = document.getElementById('permanent-delete-card');
+                    if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+                } else if (hash === '#disaster-recovery-card') {
+                    const card = document.getElementById('disaster-recovery-card');
                     if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
                 }
             }
@@ -1172,7 +1319,13 @@
                 form.addEventListener('submit', function (e) {
                     if (e.defaultPrevented) return;
                     const actionAttr = (form.getAttribute('action') || '').toLowerCase();
-                    if (form.id === 'permanentDeleteForm' || actionAttr.includes('permanentdelete')) {
+                    if (form.id === 'tenantRestoreForm') {
+                        showGovernanceLoadingOverlay(
+                            'Restoring Live Database to Point-In-Time Snapshot...',
+                            'Taking pre-restore safety snapshot, terminating active connections, executing RESTORE WITH REPLACE, and re-authorizing SQL credentials. Please wait...',
+                            true
+                        );
+                    } else if (form.id === 'permanentDeleteForm' || actionAttr.includes('permanentdelete')) {
                         showGovernanceLoadingOverlay(
                             'Permanently Scrubbing Workspace & Dropping Database...',
                             'Dropping physical SQL database [@Model.Tenant.DatabaseName], purging SQL login, scrubbing Master Catalog records, and evicting cluster caches. Please wait...',
