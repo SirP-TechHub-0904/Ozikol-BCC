@@ -2933,7 +2933,18 @@ namespace Ozikol_BCC.Api.Controllers
                 try
                 {
                     var companyName = await ResolveTenantCompanyNameAsync(ct);
-                    var resetPath = $"/auth/forgot-password?email={Uri.EscapeDataString(email)}";
+                    string resetPath;
+                    if (_userManager != null && user != null)
+                    {
+                        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var encodedToken = Uri.EscapeDataString(resetToken);
+                        var encodedEmail = Uri.EscapeDataString(email);
+                        resetPath = $"/auth/reset-password?token={encodedToken}&email={encodedEmail}&isInvite=true";
+                    }
+                    else
+                    {
+                        resetPath = $"/auth/forgot-password?email={Uri.EscapeDataString(email)}";
+                    }
 
                     var clientOrigin = Request.Headers.Origin.FirstOrDefault();
                     if (string.IsNullOrWhiteSpace(clientOrigin))
@@ -2956,7 +2967,7 @@ namespace Ozikol_BCC.Api.Controllers
                         RecipientName = fullName,
                         TenantKey = CurrentTenantKey,
                         Title = $"Welcome to {companyName} — Set Your Account Password",
-                        Message = $"An administrator has registered your staff account at **{companyName}** as a **{staffProfile.JobTitle}**.\n\nBecause your account was created in-house, please click the button below to complete a quick password reset using your registered email address (`{email}`). Once you set your password, you can sign in immediately to view your rota schedule and shifts.",
+                        Message = $"An administrator has registered your staff account at **{companyName}** as a **{staffProfile.JobTitle}**.\n\nPlease click the button below to choose your password and activate your account. Once your password is set, you can sign in immediately to view your shifts and rota schedule.",
                         Category = BcpMessageCategory.Account,
                         Severity = NotificationSeverity.NewFeature,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,

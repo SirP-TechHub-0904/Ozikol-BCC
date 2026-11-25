@@ -166,6 +166,18 @@ export function isGlobalAdmin(roles?: string[]): boolean {
 }
 
 /**
+ * Determines whether the user possesses root Super Administrator authority.
+ * 
+ * @param roles - Optional array of roles to evaluate (defaults to stored roles)
+ * @returns True if the user is a SuperAdmin or SystemAdministrator
+ */
+export function isSuperAdmin(roles?: string[]): boolean {
+  const userRoles = roles ?? getStoredUserRoles();
+  const normalized = userRoles.map(normalizeRoleKey);
+  return normalized.some(r => ['superadmin', 'systemadministrator'].includes(r));
+}
+
+/**
  * Determines whether the user holds the Global Editor operational role across all active workspace modules.
  *
  * @param roles - Optional array of roles to evaluate (defaults to stored roles)
@@ -289,12 +301,22 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
  */
 export function hasFeatureScope(targetScope: string, roles?: string[]): boolean {
   const userRoles = roles ?? getStoredUserRoles();
-  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles)) return true;
+  if (isSuperAdmin(userRoles)) return true;
 
-  // An unscoped Read-Only Auditor (no specific FeatureAreaKey rows) can view console suites except Settings/Billing
-  if (isReadOnlyUser(userRoles) && !hasScopedFeatureAssignments(userRoles)) {
-    const clean = (targetScope || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
-    return clean !== 'settings' && clean !== 'billingsubscriptions';
+  const cleanTarget = (targetScope || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
+
+  // Broadcast requires explicit grant or root SuperAdmin authority
+  const isBroadcastCheck = ['broadcast', 'broadcastcommunications', 'broadcaststudio', 'systembroadcast', 'systembroadcasts'].includes(cleanTarget);
+
+  // If unscoped global admin / editor (and not checking strict broadcast), grant standard admin access
+  const hasScoped = hasScopedFeatureAssignments(userRoles) || getStoredUserFeatureKeys().length > 0;
+  if (!hasScoped && !isBroadcastCheck && (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles))) {
+    return true;
+  }
+
+  // An unscoped Read-Only Auditor (no specific FeatureAreaKey rows) can view console suites except Settings/Billing/Broadcast
+  if (isReadOnlyUser(userRoles) && !hasScoped) {
+    return cleanTarget !== 'settings' && cleanTarget !== 'billingsubscriptions' && !isBroadcastCheck;
   }
 
   const equivalentTargets = getEquivalentScopeKeys(targetScope);

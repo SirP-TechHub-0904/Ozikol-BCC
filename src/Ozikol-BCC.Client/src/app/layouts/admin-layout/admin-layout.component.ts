@@ -22,6 +22,7 @@ import {
   getStoredUserRoles,
   canAccessConsole,
   isGlobalAdmin,
+  isSuperAdmin,
   isGlobalEditor,
   isReadOnlyUser,
   hasFeatureScope,
@@ -4105,6 +4106,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     return isGlobalAdmin(this.userRoles);
   }
 
+  get isSuperAdmin(): boolean {
+    return isSuperAdmin(this.userRoles);
+  }
+
   showPrivilegesModal = false;
 
   openPrivilegesModal(): void {
@@ -4134,11 +4139,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   canAccessSuite(suiteKey: string): boolean {
     const cleanKey = (suiteKey || '').trim().toLowerCase().replace(/[\s\-_,&]/g, '');
 
-    if (this.isGlobalAdmin) {
-      return true;
-    }
-
-    if (isGlobalEditor(this.userRoles)) {
+    // Root SuperAdmin has universal platform bypass across all suites
+    if (this.isSuperAdmin) {
       return true;
     }
 
@@ -4146,11 +4148,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       case 'dashboard':
       case 'consoledashboard':
       case 'corecommand':
-        return hasFeatureScope('dashboard', this.userRoles) || this.isGlobalAdmin;
+        return hasFeatureScope('dashboard', this.userRoles) || this.isSuperAdmin;
       case 'broadcast':
       case 'broadcastcommunications':
       case 'broadcaststudio':
-        return hasFeatureScope('broadcast', this.userRoles) || hasFeatureScope('usermanager', this.userRoles) || this.isGlobalAdmin;
+        return hasFeatureScope('broadcast', this.userRoles);
       case 'usermanagement':
         return hasFeatureScope('usermanager', this.userRoles);
       case 'identity':
@@ -4165,11 +4167,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       case 'billing':
       case 'billingmanager':
       case 'billingsubscriptions':
-        return hasFeatureScope('billingmanager', this.userRoles) || this.isGlobalAdmin;
+        return hasFeatureScope('billingmanager', this.userRoles);
       case 'settings':
       case 'settingsmanager':
       case 'securityaudit':
-        return hasFeatureScope('settingsmanager', this.userRoles) || hasFeatureScope('identitymanager', this.userRoles) || this.isGlobalAdmin;
+        return hasFeatureScope('settingsmanager', this.userRoles) || hasFeatureScope('identitymanager', this.userRoles);
       case 'formsintelligence':
       case 'reportsformsanalytics':
         return hasFeatureScope('formsmanager', this.userRoles) ||
