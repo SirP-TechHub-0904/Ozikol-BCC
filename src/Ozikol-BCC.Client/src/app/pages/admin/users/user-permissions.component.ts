@@ -16,6 +16,7 @@ interface CapabilityScope {
   icon: string;
   description: string;
   scope: 'None' | 'ReadOnly' | 'FeatureEdit' | 'GlobalEdit';
+  isPaid?: boolean;
 }
 
 /**
@@ -212,14 +213,14 @@ interface CapabilityScope {
           </div>
         </div>
 
-        <!-- 4. Modular Capability Suites & Action Roles Matrix -->
+        <!-- 4. Capability Suites & Action Roles Matrix -->
         <div class="permissions-section-card">
           <div class="section-card-header" style="justify-content: space-between;">
             <div class="header-title-box">
               <span class="material-symbols-outlined section-icon">tune</span>
               <div>
-                <h3>2. Modular Capability Suites & Action Roles</h3>
-                <p>Assign granular operational scopes (None, Read Only, Feature Editor CRUD, Global Editor) across specific BCC functional domains</p>
+                <h3>2. Capability Suites & Action Roles Matrix</h3>
+                <p>Assign granular operational scopes (None, Read Only, Feature Editor CRUD, Global Editor) across system core features and active workspace add-ons</p>
               </div>
             </div>
 
@@ -241,24 +242,35 @@ interface CapabilityScope {
           </div>
 
           <div class="section-card-body">
-            <!-- Scopes Table -->
-            <div class="scopes-table-wrapper">
+            <!-- Subsection 2A: System-Managed Core Capabilities -->
+            <div class="matrix-subsection-header">
+              <div class="subsection-title">
+                <span class="material-symbols-outlined sub-icon-core">lock_clock</span>
+                <h4>2A. System-Managed Core Capabilities</h4>
+              </div>
+              <span class="core-notice-chip">Core BCC Foundation • Standard on All Tenants</span>
+            </div>
+            <p class="subsection-desc">
+              Essential administrative command and platform governance suites built directly into your workspace.
+            </p>
+
+            <div class="scopes-table-wrapper" style="margin-bottom: 24px;">
               <table class="scopes-matrix-table">
                 <thead>
                   <tr>
-                    <th class="th-feature">Modular Capability Suite</th>
+                    <th class="th-feature">System Core Capability</th>
                     <th class="th-description">Functional Scope</th>
                     <th class="th-actions">Assigned Action Role</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of capabilitySuites; let i = index">
+                  <tr *ngFor="let item of systemFeatures; let i = index">
                     <td class="td-feature">
                       <div class="suite-title-row">
-                        <span class="material-symbols-outlined suite-icon">{{ item.icon }}</span>
+                        <span class="material-symbols-outlined suite-icon core-feat-icon">{{ item.icon }}</span>
                         <div>
                           <strong>{{ item.name }}</strong>
-                          <span class="suite-category-pill">{{ item.category }}</span>
+                          <span class="suite-category-pill core-cat">{{ item.category }}</span>
                         </div>
                       </div>
                     </td>
@@ -274,7 +286,7 @@ interface CapabilityScope {
                           [class.active]="item.scope === 'None'"
                           (click)="item.scope = 'None'"
                           [disabled]="isRootSuperAdmin"
-                          title="No access to this capability suite"
+                          title="No access to this capability suite (hidden from sidebar)"
                         >
                           <span class="material-symbols-outlined">block</span>
                           <span>None</span>
@@ -324,6 +336,118 @@ interface CapabilityScope {
                 </tbody>
               </table>
             </div>
+
+            <!-- Subsection 2B: Active Subscribed Capabilities -->
+            <div class="matrix-subsection-header" style="margin-top: 10px;">
+              <div class="subsection-title">
+                <span class="material-symbols-outlined sub-icon-paid">stars</span>
+                <h4>2B. Active Subscribed Capabilities</h4>
+              </div>
+              <span class="paid-notice-chip" *ngIf="activePaidFeatures.length > 0">
+                {{ activePaidFeatures.length }} Active Add-On{{ activePaidFeatures.length === 1 ? '' : 's' }} Unlocked
+              </span>
+            </div>
+            <p class="subsection-desc">
+              Modular and paid capabilities currently active on this workspace plan (flat-rate master plan or subscribed add-on).
+              Unsubscribed features from the Central Master Catalog (~45 capabilities) are excluded until activated by the workspace.
+            </p>
+
+            <!-- When activePaidFeatures has items -->
+            <div class="scopes-table-wrapper" *ngIf="activePaidFeatures.length > 0">
+              <table class="scopes-matrix-table">
+                <thead>
+                  <tr>
+                    <th class="th-feature">Subscribed Add-On Suite</th>
+                    <th class="th-description">Functional Scope</th>
+                    <th class="th-actions">Assigned Action Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of activePaidFeatures; let i = index">
+                    <td class="td-feature">
+                      <div class="suite-title-row">
+                        <span class="material-symbols-outlined suite-icon paid-feat-icon">{{ item.icon }}</span>
+                        <div>
+                          <strong>{{ item.name }}</strong>
+                          <span class="suite-category-pill paid-cat">{{ item.category }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="td-description">
+                      <span class="scope-description-text">{{ item.description }}</span>
+                    </td>
+                    <td class="td-actions">
+                      <div class="action-role-segmented-control">
+                        <!-- None -->
+                        <button
+                          type="button"
+                          class="segment-btn seg-none"
+                          [class.active]="item.scope === 'None'"
+                          (click)="item.scope = 'None'"
+                          [disabled]="isRootSuperAdmin"
+                          title="No access to this capability suite (hidden from sidebar)"
+                        >
+                          <span class="material-symbols-outlined">block</span>
+                          <span>None</span>
+                        </button>
+
+                        <!-- Read Only -->
+                        <button
+                          type="button"
+                          class="segment-btn seg-readonly"
+                          [class.active]="item.scope === 'ReadOnly'"
+                          (click)="item.scope = 'ReadOnly'"
+                          [disabled]="isRootSuperAdmin"
+                          title="Inspection and audit view only (zero create/edit/delete)"
+                        >
+                          <span class="material-symbols-outlined">visibility</span>
+                          <span>Read Only</span>
+                        </button>
+
+                        <!-- Feature Editor -->
+                        <button
+                          type="button"
+                          class="segment-btn seg-feature"
+                          [class.active]="item.scope === 'FeatureEdit'"
+                          (click)="item.scope = 'FeatureEdit'"
+                          [disabled]="isRootSuperAdmin"
+                          title="Full CRUD authority (Create, Read, Update, Delete) strictly within this suite"
+                        >
+                          <span class="material-symbols-outlined">edit_note</span>
+                          <span>Feature Editor</span>
+                        </button>
+
+                        <!-- Global Editor -->
+                        <button
+                          type="button"
+                          class="segment-btn seg-global"
+                          [class.active]="item.scope === 'GlobalEdit'"
+                          (click)="item.scope = 'GlobalEdit'"
+                          [disabled]="isRootSuperAdmin"
+                          title="Tenant-wide operational authority spanning across connected workflows"
+                        >
+                          <span class="material-symbols-outlined">domain</span>
+                          <span>Global Editor</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty state for activePaidFeatures -->
+            <div class="no-paid-features-box" *ngIf="activePaidFeatures.length === 0">
+              <span class="material-symbols-outlined empty-icon">layers_clear</span>
+              <div class="empty-text">
+                <h5>No Active Paid Capabilities On This Workspace</h5>
+                <p>
+                  This workspace currently does not have active paid modular add-ons unlocked.
+                  When capabilities from the ~45 catalog features (e.g., Staff & Shift Rota, Committees, Store, Events)
+                  are activated or included in your subscription, they will automatically appear here for member role assignment.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -353,15 +477,24 @@ interface CapabilityScope {
                 </div>
               </div>
 
-              <!-- Transactional Email Tile -->
-              <div class="dispatch-tile">
-                <div class="tile-icon-box email-icon">
-                  <span class="material-symbols-outlined">outgoing_mail</span>
+              <!-- Transactional Email Tile with SuperAdmin Suppression Toggle -->
+              <div class="dispatch-tile" [class.tile-suppressed]="!sendEmailNotification">
+                <div class="tile-icon-box email-icon" [class.icon-suppressed]="!sendEmailNotification">
+                  <span class="material-symbols-outlined">{{ sendEmailNotification ? 'outgoing_mail' : 'mail_lock' }}</span>
                 </div>
-                <div class="tile-info">
-                  <strong>Postmark Security Advisory Email</strong>
-                  <p>Dispatches a severity-branded HTML breakdown of assigned access roles & active capability scopes to <strong>{{ user?.email }}</strong>.</p>
-                  <span class="tile-badge badge-active">Enforced • Postmark</span>
+                <div class="tile-info" style="flex: 1;">
+                  <div class="tile-header-row">
+                    <strong>Account Permission Update Email</strong>
+                    <label class="email-toggle-switch" title="Toggle email notification dispatch to user">
+                      <input type="checkbox" [(ngModel)]="sendEmailNotification" [disabled]="isRootSuperAdmin" />
+                      <span class="slider-round"></span>
+                    </label>
+                  </div>
+                  <p *ngIf="sendEmailNotification">Dispatches a severity-branded HTML breakdown of assigned access roles & active capability scopes to <strong>{{ user?.email }}</strong>.</p>
+                  <p *ngIf="!sendEmailNotification" class="text-suppressed">Email dispatch is suppressed. No security update email will be sent to <strong>{{ user?.email }}</strong> (silent update).</p>
+                  <span class="tile-badge" [class.badge-active]="sendEmailNotification" [class.badge-suppressed]="!sendEmailNotification">
+                    {{ sendEmailNotification ? 'Enforced • Postmark' : 'Email Suppressed • Silent Update' }}
+                  </span>
                 </div>
               </div>
 
@@ -386,7 +519,13 @@ interface CapabilityScope {
                 <span>
                   Saving will set Primary Role to <strong>'{{ selectedRole }}'</strong> with
                   <strong>{{ getActiveScopesCount() }}</strong> active modular capability scopes.
-                  User will receive an instant notification bell badge and a Postmark security breakdown email.
+                  <ng-container *ngIf="sendEmailNotification">
+                    User will receive an instant notification bell badge and an Account Permission Update email.
+                  </ng-container>
+                  <ng-container *ngIf="!sendEmailNotification">
+                    <span style="color: #d97706; font-weight: 700;">Email notification is suppressed.</span>
+                    User will not be emailed; changes will apply silently upon their next sign-in.
+                  </ng-container>
                 </span>
               </div>
             </div>
@@ -865,6 +1004,103 @@ interface CapabilityScope {
       display: inline-block;
       margin-top: 2px;
     }
+    .core-cat {
+      background: #eff6ff;
+      color: #0050e5;
+    }
+    .paid-cat {
+      background: #fdf2f8;
+      color: #db2777;
+    }
+    .core-feat-icon {
+      background: #eff6ff !important;
+      color: #0050e5 !important;
+    }
+    .paid-feat-icon {
+      background: #fdf2f8 !important;
+      color: #db2777 !important;
+    }
+    .matrix-subsection-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .subsection-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subsection-title h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sub-icon-core {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .sub-icon-paid {
+      font-size: 18px;
+      color: #db2777;
+    }
+    .core-notice-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .paid-notice-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #fdf2f8;
+      color: #be185d;
+      border: 1px solid #fbcfe8;
+    }
+    .subsection-desc {
+      margin: 0 0 14px 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+    .no-paid-features-box {
+      background: #fafbfc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .no-paid-features-box .empty-icon {
+      font-size: 32px;
+      color: #94a3b8;
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .empty-text h5 {
+      margin: 0 0 4px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .empty-text p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
     .scope-description-text {
       color: #475569;
       font-size: 12px;
@@ -997,6 +1233,72 @@ interface CapabilityScope {
       background: #dcfce7;
       color: #15803d;
     }
+    .badge-suppressed {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .tile-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .tile-suppressed {
+      background: #fffbeb !important;
+      border-color: #fde68a !important;
+    }
+    .icon-suppressed {
+      background: #fef3c7 !important;
+      color: #d97706 !important;
+    }
+    .text-suppressed {
+      color: #b45309 !important;
+    }
+
+    /* Email Notification Toggle Switch */
+    .email-toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .email-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      transition: .2s;
+      border-radius: 20px;
+    }
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .email-toggle-switch input:checked + .slider-round {
+      background-color: #0050e5;
+    }
+    .email-toggle-switch input:checked + .slider-round:before {
+      transform: translateX(16px);
+    }
 
     .preview-notice-box {
       background: #f1f5f9;
@@ -1095,27 +1397,30 @@ export class UserPermissionsComponent implements OnInit {
   user: any = null;
 
   selectedRole = 'Member';
+  sendEmailNotification = true;
   headerButtons: PageHeaderButton[] = [];
 
   /**
-   * Canonical modular capability suites across the BCC architecture.
+   * System-managed core platform capabilities standard on every BCC workspace.
    */
-  capabilitySuites: CapabilityScope[] = [
+  systemFeatures: CapabilityScope[] = [
+    {
+      key: 'Dashboard',
+      name: 'Console Dashboard',
+      category: 'Central Command',
+      icon: 'space_dashboard',
+      description: 'Main workspace executive command center, high-level KPIs, fast actions, system analytics.',
+      scope: 'None',
+      isPaid: false
+    },
     {
       key: 'UserManager',
       name: 'User Management Suite',
       category: 'Governance & Identity',
       icon: 'manage_accounts',
       description: 'User Directory, Member Profiles, Onboarding Custom Attributes, Categories & OTP Verification.',
-      scope: 'None'
-    },
-    {
-      key: 'ContentManager',
-      name: 'Website & CMS Studio',
-      category: 'Content & Publishing',
-      icon: 'web',
-      description: 'Web Pages, Dynamic Blog Articles, Visual Templates, Navigation Menus, and Code Injections.',
-      scope: 'None'
+      scope: 'None',
+      isPaid: false
     },
     {
       key: 'IdentityManager',
@@ -1123,15 +1428,26 @@ export class UserPermissionsComponent implements OnInit {
       category: 'Security & Auth',
       icon: 'admin_panel_settings',
       description: 'System Roles, Fine-Grained Permissions, Member Invitations, Security Rules & Session Audits.',
-      scope: 'None'
+      scope: 'None',
+      isPaid: false
     },
     {
-      key: 'CrmManager',
-      name: 'CRM & Member Relationships',
-      category: 'Member Operations',
-      icon: 'contacts',
-      description: 'Member Dossiers, Activity Histories, Direct Communications & Relationship Telemetry.',
-      scope: 'None'
+      key: 'ContentManager',
+      name: 'Website & CMS Studio',
+      category: 'Content & Publishing',
+      icon: 'web',
+      description: 'Web Pages, Dynamic Blog Articles, Visual Templates, Navigation Menus, and Code Injections.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'Broadcast',
+      name: 'System Broadcasts & Member Notifications',
+      category: 'Communication & Alerts',
+      icon: 'campaign',
+      description: 'Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.',
+      scope: 'None',
+      isPaid: false
     },
     {
       key: 'BillingManager',
@@ -1139,41 +1455,24 @@ export class UserPermissionsComponent implements OnInit {
       category: 'Financial Governance',
       icon: 'credit_card',
       description: 'Workspace Invoicing, Payment Gateways, Subscription Plans & Feature Add-On Entitlements.',
-      scope: 'None'
+      scope: 'None',
+      isPaid: false
     },
     {
-      key: 'StoreManager',
-      name: 'Store & Commerce Catalog',
-      category: 'Commerce Studio',
-      icon: 'storefront',
-      description: 'Product Catalog, Pricing, Inventory Stock, Digital Downloads, and Order Fulfillment.',
-      scope: 'None'
-    },
-    {
-      key: 'EventsManager',
-      name: 'Events & Registrations',
-      category: 'Community & Events',
-      icon: 'event',
-      description: 'Event Schedules, Ticketing, RSVP Registration Lists, and QR Code Attendee Check-Ins.',
-      scope: 'None'
-    },
-    {
-      key: 'FormsManager',
-      name: 'Forms & Survey Studio',
-      category: 'Data & Intake',
-      icon: 'dynamic_form',
-      description: 'Visual Form Builder, Dynamic Fields, Submission Captures, and Intake Export Telemetry.',
-      scope: 'None'
-    },
-    {
-      key: 'TelemetryManager',
-      name: 'System Logs & Telemetry',
-      category: 'Platform Monitoring',
-      icon: 'analytics',
-      description: 'Outbound MX Email Dispatch Logs, BcpActivityLogs Telemetry, and Sentry Crash Alerts.',
-      scope: 'None'
+      key: 'SettingsManager',
+      name: 'System Settings & Audit',
+      category: 'Settings & Audit',
+      icon: 'settings',
+      description: 'Workspace global settings, localization, brand identity, full tamper-proof audit trails.',
+      scope: 'None',
+      isPaid: false
     }
   ];
+
+  /**
+   * Active modular add-on capabilities unlocked / subscribed on this workspace.
+   */
+  activePaidFeatures: CapabilityScope[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -1224,14 +1523,43 @@ export class UserPermissionsComponent implements OnInit {
         this.user = res.data;
         this.selectedRole = this.user?.currentRole || 'Member';
 
-        // Hydrate modular scopes from backend response
+        // 1. Hydrate System Features from backend if returned
+        if (this.user?.systemFeatures && Array.isArray(this.user.systemFeatures)) {
+          this.systemFeatures = this.user.systemFeatures.map((sf: any) => ({
+            key: sf.key || sf.Key,
+            name: sf.name || sf.Name,
+            category: sf.category || sf.Category,
+            icon: sf.icon || sf.Icon,
+            description: sf.description || sf.Description,
+            scope: 'None' as const,
+            isPaid: false
+          }));
+        }
+
+        // 2. Hydrate Active Paid Features (only features active/subscribed on tenant)
+        if (this.user?.activePaidFeatures && Array.isArray(this.user.activePaidFeatures)) {
+          this.activePaidFeatures = this.user.activePaidFeatures.map((pf: any) => ({
+            key: pf.key || pf.Key,
+            name: pf.name || pf.Name,
+            category: pf.category || pf.Category,
+            icon: pf.icon || pf.Icon,
+            description: pf.description || pf.Description,
+            scope: 'None' as const,
+            isPaid: true
+          }));
+        }
+
+        // 3. Hydrate assigned scopes from user's featureRoles
         if (this.user?.featureRoles && Array.isArray(this.user.featureRoles)) {
           for (const fr of this.user.featureRoles) {
-            const suite = this.capabilitySuites.find(
-              s => s.key.toLowerCase() === (fr.featureName || '').toLowerCase()
-            );
-            if (suite) {
-              suite.scope = (fr.scope as any) || 'None';
+            const featName = (fr.featureName || '').toLowerCase();
+            const sysMatch = this.systemFeatures.find(s => s.key.toLowerCase() === featName);
+            if (sysMatch) {
+              sysMatch.scope = (fr.scope as any) || 'None';
+            }
+            const paidMatch = this.activePaidFeatures.find(p => p.key.toLowerCase() === featName);
+            if (paidMatch) {
+              paidMatch.scope = (fr.scope as any) || 'None';
             }
           }
         }
@@ -1244,10 +1572,14 @@ export class UserPermissionsComponent implements OnInit {
             this.user = dossierRes.data;
             this.selectedRole = this.user?.roles?.[0] || 'Member';
             if (this.user?.assignedFeatureArea) {
-              const matchedSuite = this.capabilitySuites.find(
+              const matchedSys = this.systemFeatures.find(
                 s => s.key.toLowerCase() === this.user.assignedFeatureArea.toLowerCase()
               );
-              if (matchedSuite) matchedSuite.scope = 'FeatureEdit';
+              if (matchedSys) matchedSys.scope = 'FeatureEdit';
+              const matchedPaid = this.activePaidFeatures.find(
+                p => p.key.toLowerCase() === this.user.assignedFeatureArea.toLowerCase()
+              );
+              if (matchedPaid) matchedPaid.scope = 'FeatureEdit';
             }
           },
           error: () => {
@@ -1267,13 +1599,17 @@ export class UserPermissionsComponent implements OnInit {
 
   setAllScopes(scope: 'None' | 'ReadOnly' | 'FeatureEdit' | 'GlobalEdit'): void {
     if (this.isRootSuperAdmin) return;
-    for (const suite of this.capabilitySuites) {
+    for (const suite of this.systemFeatures) {
+      suite.scope = scope;
+    }
+    for (const suite of this.activePaidFeatures) {
       suite.scope = scope;
     }
   }
 
   getActiveScopesCount(): number {
-    return this.capabilitySuites.filter(s => s.scope !== 'None').length;
+    return this.systemFeatures.filter(s => s.scope !== 'None').length +
+           this.activePaidFeatures.filter(s => s.scope !== 'None').length;
   }
 
   getUserInitials(): string {
@@ -1307,7 +1643,8 @@ export class UserPermissionsComponent implements OnInit {
 
     this.isSaving = true;
 
-    const featureRolesPayload = this.capabilitySuites.map(s => ({
+    const allFeatures = [...this.systemFeatures, ...this.activePaidFeatures];
+    const featureRolesPayload = allFeatures.map(s => ({
       featureName: s.key,
       scope: s.scope
     }));
@@ -1315,13 +1652,17 @@ export class UserPermissionsComponent implements OnInit {
     const payload = {
       systemRole: this.selectedRole,
       isAdmin: this.selectedRole === 'Admin',
-      featureRoles: featureRolesPayload
+      featureRoles: featureRolesPayload,
+      sendEmailNotification: this.sendEmailNotification
     };
 
     this.api.post<any>(`IdentityApi/users/${this.userId}/feature-roles`, payload).subscribe({
       next: (res) => {
         this.isSaving = false;
-        this.toast.success(res?.message || 'Permissions updated successfully! Real-time alerts and email dispatched.');
+        const msg = this.sendEmailNotification
+          ? (res?.message || 'Permissions updated successfully! Real-time alerts and email dispatched.')
+          : 'Permissions updated successfully (Silent update — email notification suppressed).';
+        this.toast.success(msg);
         setTimeout(() => {
           this.router.navigate([`/users/console/details/${this.userId}`]);
         }, 600);

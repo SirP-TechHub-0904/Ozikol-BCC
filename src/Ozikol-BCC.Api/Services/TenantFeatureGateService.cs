@@ -66,7 +66,7 @@ namespace Ozikol_BCC.Api.Services
 
             var allActiveFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
-                .Where(f => f.IsActive && f.IsPublished && (f.IsCompulsory || (f.MonthlyPrice > 0m && f.YearlyPrice > 0m)))
+                .Where(f => f.IsActive && f.IsPublished)
                 .ToListAsync(cancellationToken);
 
             var entitlements = new TenantFeatureEntitlementsDto
@@ -119,20 +119,20 @@ namespace Ozikol_BCC.Api.Services
 
                 if (isSubscribed && sub != null)
                 {
-                    expiresAt = isFreeCapability ? null : sub.ExpiresAtUtc;
-                    daysRemaining = isFreeCapability ? null : (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
+                    expiresAt = isFreeCapability ? null : (isFlatRateActive ? tenant?.FlatRateExpiresAtUtc : sub.ExpiresAtUtc);
+                    daysRemaining = isFreeCapability ? null : (isFlatRateActive ? flatRateDaysRemaining : (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays));
                     status = string.IsNullOrWhiteSpace(sub.Status) ? (sub.IsActive ? "Active" : "Not Active") : sub.Status;
 
                     if (sub.IsActive &&
                         !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
-                        (feature.IsCompulsory || isFreeCapability || sub.ExpiresAtUtc > now))
+                        (feature.IsCompulsory || isFreeCapability || isFlatRateActive || sub.ExpiresAtUtc > now))
                     {
                         isActive = true;
                         status = "Active";
                     }
-                    else if (!feature.IsCompulsory && !isFreeCapability && sub.IsActive && sub.ExpiresAtUtc <= now)
+                    else if (!feature.IsCompulsory && !isFreeCapability && !isFlatRateActive && sub.IsActive && sub.ExpiresAtUtc <= now)
                     {
                         status = "Expired";
                     }

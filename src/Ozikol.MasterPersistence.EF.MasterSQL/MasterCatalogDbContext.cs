@@ -115,6 +115,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterApiErrorLog> MasterApiErrorLogs { get; set; } = null!;
 
     /// <summary>
+    /// Master database backup and point-in-time disaster recovery snapshots across Master Catalog and all sovereign tenants.
+    /// </summary>
+    public DbSet<MasterBackupRecord> MasterBackupRecords { get; set; } = null!;
+
+    /// <summary>
     /// Central master page-based help instructions and interactive walkthrough guides.
     /// </summary>
     public DbSet<MasterPageHelp> MasterPageHelps { get; set; } = null!;
@@ -928,6 +933,17 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.FeatureSuite);
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.IsPublished);
+        });
+
+        modelBuilder.Entity<MasterBackupRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TenantKey);
+            entity.HasIndex(e => e.DatabaseName);
+            entity.HasIndex(e => e.BackupType);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAtUtc);
+            entity.HasIndex(e => new { e.TenantKey, e.CreatedAtUtc });
         });
     }
 }

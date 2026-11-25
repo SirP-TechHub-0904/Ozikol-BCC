@@ -732,7 +732,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be assigned to members."));
             }
 
-            var password = string.IsNullOrWhiteSpace(request.Password) ? "Member@2026" : request.Password;
+            var isPasswordless = request.CreateWithoutPassword || string.IsNullOrWhiteSpace(request.Password);
+            var password = isPasswordless ? $"Tmp_{Guid.NewGuid():N}!1A" : request.Password;
             var result = await _userManager.CreateAsync(newUser, password);
             if (!result.Succeeded)
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
@@ -749,48 +750,91 @@ namespace Ozikol_BCC.Api.Controllers
                 await _userManager.AddToRoleAsync(newUser, "Member");
             }
 
-            // Dispatch Welcome & Credentials Email via unified CentralNotificationDispatcher
+            // Dispatch Welcome & Activation Email via unified CentralNotificationDispatcher
             try
             {
                 if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(newUser.Email))
                 {
                     var origin = Request.Headers["Origin"].FirstOrDefault() ?? $"{Request.Scheme}://{Request.Host}";
-                    var loginUrl = $"{origin}/login";
 
-                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    if (isPasswordless)
                     {
-                        TargetType = NotificationDispatchTarget.SingleUser,
-                        TargetUserId = newUser.Id,
-                        RecipientEmail = newUser.Email,
-                        RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
-                        Title = "Welcome to Your Portal - Account Credentials",
-                        Message = "Your member account has been registered. Check your email for login credentials.",
-                        EmailSubject = "Welcome to Your Portal - Account Credentials",
-                        EmailHtmlBody = $@"
-                            <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
-                            
-                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
-                                <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
-                            </div>
+                        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(newUser);
+                        var encodedToken = Uri.EscapeDataString(resetToken);
+                        var encodedEmail = Uri.EscapeDataString(newUser.Email);
+                        var setPasswordUrl = $"{origin}/auth/reset-password?token={encodedToken}&email={encodedEmail}&isInvite=true";
 
-                            {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
-                                <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
-                            </div>" : "")}
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = newUser.Id,
+                            RecipientEmail = newUser.Email,
+                            RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
+                            Title = "Welcome to Your Portal - Set Your Account Password",
+                            Message = "Your member account has been registered. Please set your password to activate your account.",
+                            EmailSubject = "Welcome to Your Portal - Set Your Account Password",
+                            EmailHtmlBody = $@"
+                                <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal.</p>
+                                <p style='color:#334155; font-size:14px; line-height:1.6;'>To complete your account activation, please click the secure link below to choose your personal password:</p>
+                                
+                                <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
+                                    <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
+                                    <div><span style='font-size:12px; color:#64748b;'>Registered Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
+                                </div>
 
-                            <div style='text-align:center; margin:24px 0 8px;'>
-                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                            </div>",
-                        ActionUrl = loginUrl,
-                        Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.Urgent,
-                        Severity = NotificationSeverity.Success,
-                        EventType = BcpEventType.PasswordReset,
-                        Channels = NotificationChannels.Email,
-                        SendEmailCopy = true
-                    });
+                                <div style='text-align:center; margin:26px 0 16px;'>
+                                    <a href='{setPasswordUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Activate Account &amp; Set Password</a>
+                                </div>
+
+                                <p style='color:#64748b; font-size:12px; line-height:1.5; margin-top:16px;'>If the button above does not work, copy and paste this link into your browser:<br/><a href='{setPasswordUrl}' style='color:#0050e5; word-break:break-all;'>{setPasswordUrl}</a></p>",
+                            ActionUrl = setPasswordUrl,
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Success,
+                            EventType = BcpEventType.PasswordReset,
+                            Channels = NotificationChannels.Email,
+                            SendEmailCopy = true
+                        });
+                    }
+                    else
+                    {
+                        var loginUrl = $"{origin}/auth/login";
+
+                        await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                        {
+                            TargetType = NotificationDispatchTarget.SingleUser,
+                            TargetUserId = newUser.Id,
+                            RecipientEmail = newUser.Email,
+                            RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
+                            Title = "Welcome to Your Portal - Account Credentials",
+                            Message = "Your member account has been registered. Check your email for login credentials.",
+                            EmailSubject = "Welcome to Your Portal - Account Credentials",
+                            EmailHtmlBody = $@"
+                                <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
+                                
+                                <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
+                                    <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
+                                    <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
+                                    <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
+                                </div>
+
+                                {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                                    <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
+                                    <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
+                                </div>" : "")}
+
+                                <div style='text-align:center; margin:24px 0 8px;'>
+                                    <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
+                                </div>",
+                            ActionUrl = loginUrl,
+                            Category = BcpMessageCategory.Security,
+                            Priority = BcpMessagePriority.Urgent,
+                            Severity = NotificationSeverity.Success,
+                            EventType = BcpEventType.PasswordReset,
+                            Channels = NotificationChannels.Email,
+                            SendEmailCopy = true
+                        });
+                    }
                 }
             }
             catch
@@ -2566,6 +2610,7 @@ namespace Ozikol_BCC.Api.Controllers
         public Guid? BcpUserCategoryId { get; set; }
         public DateTime? JoinDate { get; set; }
         public bool? MustChangePassword { get; set; } = true;
+        public bool CreateWithoutPassword { get; set; } = false;
     }
 
     public class AdminResetPasswordRequest

@@ -1,0 +1,368 @@
+@page "/centralwks/backups"
+@model Ozikol.Central.Areas.Centralwks.Pages.Backups.IndexModel
+@{
+    ViewData["Title"] = "Database Backups & Disaster Recovery Vault";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-container" style="padding: 24px; max-width: 1440px; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: #0050E5;">cloud_sync</span>
+                <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
+                    Database Backups &amp; Disaster Recovery Vault
+                </h1>
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0;">
+                Automated multi-tenant database snapshots, offsite Cloudflare R2 vaulting, inviolable anchor retention, and 1-click point-in-time restores.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" onclick="document.getElementById('backupAllModal').style.display='flex'" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: 1.5px solid #0050E5; background: #ffffff; color: #0050E5; cursor: pointer; transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">inventory_2</span>
+                <span>Backup All Databases</span>
+            </button>
+            <button type="button" onclick="document.getElementById('instantBackupModal').style.display='flex'" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: none; background: #0050E5; color: #ffffff; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25); transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                <span>Create Instant Backup</span>
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 18px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: #065f46; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">check_circle</span>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 18px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: #991b1b; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">error</span>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <!-- KPI Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- Card 1: Total Snapshots -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Total Snapshots</span>
+                <span class="material-symbols-outlined" style="font-size: 20px; color: #0050E5;">database</span>
+            </div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a;">@Model.TotalBackupsCount</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Master &amp; Sovereign Tenants</div>
+        </div>
+
+        <!-- Card 2: Vaulted Storage Size -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Storage Consumed</span>
+                <span class="material-symbols-outlined" style="font-size: 20px; color: #10b981;">pie_chart</span>
+            </div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a;">@IndexModel.FormatBytes(Model.TotalStorageBytes)</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">SQL Compressed (85% savings)</div>
+        </div>
+
+        <!-- Card 3: Cloudflare R2 Vault Status -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Cloudflare R2 Vault</span>
+                <span class="material-symbols-outlined" style="font-size: 20px; color: @(Model.IsCloudflareVaultActive ? "#10b981" : "#f59e0b");">
+                    @(Model.IsCloudflareVaultActive ? "cloud_done" : "cloud_off")
+                </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: @(Model.IsCloudflareVaultActive ? "#10b981" : "#f59e0b");"></span>
+                <span style="font-size: 18px; font-weight: 800; color: #0f172a;">
+                    @(Model.IsCloudflareVaultActive ? "Active & Protected" : "Local Vault Only")
+                </span>
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Bucket: @Model.CloudflareBucketName</div>
+        </div>
+
+        <!-- Card 4: Retention & Inviolable Anchor -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Sacred Anchor Rule</span>
+                <span class="material-symbols-outlined" style="font-size: 20px; color: #0050E5;">shield</span>
+            </div>
+            <div style="font-size: 18px; font-weight: 800; color: #0f172a;">Minimum Floor: 1 Copy</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Local VPS: @Model.LocalRetentionDays Days | Cloud R2: 30 Days</div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Bar -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form method="get" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1;">
+            <div>
+                <select name="FilterTenantKey" onchange="this.form.submit()" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13.5px; background: #ffffff; color: #334155;">
+                    <option value="">-- All Scopes (Master &amp; Tenants) --</option>
+                    <option value="master" selected="@(Model.FilterTenantKey == "master")">Ozikol Master Catalog</option>
+                    @foreach (var tenant in Model.Tenants)
+                    {
+                        <option value="@tenant.TenantKey" selected="@(Model.FilterTenantKey == tenant.TenantKey)">
+                            @tenant.OrganizationName (@tenant.TenantKey)
+                        </option>
+                    }
+                </select>
+            </div>
+            <div style="position: relative; flex: 1; max-width: 380px;">
+                <input type="text" name="SearchTerm" value="@Model.SearchTerm" placeholder="Search by database name, key..." 
+                       style="width: 100%; padding: 8px 12px 8px 36px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13.5px;" />
+                <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 9px; font-size: 18px; color: #94a3b8;">search</span>
+            </div>
+            <button type="submit" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer;">
+                Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.FilterTenantKey) || !string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <a href="/centralwks/backups" style="font-size: 13px; color: #64748b; text-decoration: none; padding: 8px 12px;">Clear</a>
+            }
+        </form>
+    </div>
+
+    <!-- Backup Snapshots Table -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 700;">
+                    <th style="padding: 14px 18px;">Database &amp; Scope</th>
+                    <th style="padding: 14px 18px;">Trigger Type</th>
+                    <th style="padding: 14px 18px;">Compressed Size</th>
+                    <th style="padding: 14px 18px;">Vault Status</th>
+                    <th style="padding: 14px 18px;">Timestamp (UTC)</th>
+                    <th style="padding: 14px 18px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.BackupRecords.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 36px 18px; text-align: center; color: #64748b;">
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: #cbd5e1; display: block; margin-bottom: 8px;">folder_off</span>
+                            No backup snapshots found for the selected criteria. Click "Create Instant Backup" above to generate your first snapshot.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.BackupRecords)
+                    {
+                        var isCloudSynced = item.Status == "SyncedToCloud";
+                        var isFailed = item.Status == "Failed";
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 14px 18px;">
+                                <div style="font-weight: 700; color: #0f172a;">@item.DatabaseName</div>
+                                <div style="font-size: 12px; color: #64748b;">Tenant: @item.TenantKey &bull; <code style="font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">SHA256: @item.ChecksumSha256[..Math.Min(12, item.ChecksumSha256.Length)]...</code></div>
+                            </td>
+                            <td style="padding: 14px 18px;">
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; 
+                                             @(item.BackupType == "PrePurgeArchive" ? "background: #fef3c7; color: #92400e;" :
+                                               item.BackupType == "PreRestoreSafety" ? "background: #f3e8ff; color: #6b21a8;" :
+                                               item.BackupType == "ManualInstant" ? "background: #e0f2fe; color: #0369a1;" :
+                                               "background: #f1f5f9; color: #334155;")">
+                                    @item.BackupType
+                                </span>
+                            </td>
+                            <td style="padding: 14px 18px; font-weight: 600; color: #334155;">
+                                @if (item.Status == "InProgress" || item.Status == "Pending")
+                                {
+                                    <span style="color: #92400e; font-style: italic; font-size: 12.5px;">Compressing...</span>
+                                }
+                                else
+                                {
+                                    @IndexModel.FormatBytes(item.CompressedSizeBytes)
+                                }
+                            </td>
+                            <td style="padding: 14px 18px;">
+                                @if (item.Status == "InProgress" || item.Status == "Pending")
+                                {
+                                    <span class="badge-in-progress" style="display: inline-flex; align-items: center; gap: 6px; background: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 6px;">
+                                        <span class="spinner-border" style="width: 12px; height: 12px; border: 2px solid #92400e; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.75s linear infinite;" role="status"></span>
+                                        <span>In Progress...</span>
+                                    </span>
+                                }
+                                else if (isCloudSynced)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #059669; font-weight: 700; font-size: 12.5px;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">cloud_done</span>
+                                        <span>R2 Vaulted</span>
+                                    </span>
+                                }
+                                else if (isFailed)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #dc2626; font-weight: 700; font-size: 12.5px;" title="@item.ErrorMessage">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+                                        <span>Failed</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #0284c7; font-weight: 700; font-size: 12.5px;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                                        <span>Local Disk</span>
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px 18px; color: #475569; font-size: 13px;">
+                                @item.CreatedAtUtc.ToString("MMM dd, yyyy HH:mm:ss") UTC
+                            </td>
+                            <td style="padding: 14px 18px; text-align: right;">
+                                <div style="display: inline-flex; gap: 8px;">
+                                    <a asp-page-handler="Download" asp-route-id="@item.Id" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 12.5px; font-weight: 700; text-decoration: none;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                                        <span>Download</span>
+                                    </a>
+                                    <button type="button" onclick="confirmRestore('@item.Id', '@item.DatabaseName', '@item.CreatedAtUtc.ToString("MMM dd, yyyy HH:mm")')" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #0050E5; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">history</span>
+                                        <span>Restore</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal 1: Create Instant Backup -->
+<div id="instantBackupModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Create Instant Backup</h2>
+            <button type="button" onclick="document.getElementById('instantBackupModal').style.display='none'" style="border: none; background: transparent; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <p style="font-size: 13.5px; color: #64748b; margin: 0 0 20px 0;">
+            Select a tenant or the central Master Catalog to capture an immediate compressed native SQL snapshot.
+        </p>
+        <form method="post" asp-page-handler="CreateInstantBackup">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Target Database / Scope</label>
+                <select name="tenantKey" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;">
+                    <option value="master">Ozikol Master Catalog (Ozikol_MasterCatalogDb)</option>
+                    @foreach (var tenant in Model.Tenants)
+                    {
+                        <option value="@tenant.TenantKey">@tenant.OrganizationName (@tenant.DatabaseName)</option>
+                    }
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('instantBackupModal').style.display='none'" style="padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 700; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 9px 20px; border-radius: 8px; border: none; background: #0050E5; color: #ffffff; font-weight: 700; cursor: pointer;">
+                    Start Backup
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Confirm Restore -->
+<div id="restoreConfirmModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 520px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">history</span>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Confirm Point-In-Time Restore</h2>
+                <div style="font-size: 13px; color: #64748b;">This will roll back the live database to this snapshot.</div>
+            </div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 13.5px;">
+            <div>Target Database: <strong id="restoreDbNameText" style="color: #0f172a;"></strong></div>
+            <div style="margin-top: 4px;">Snapshot Date: <strong id="restoreDateText" style="color: #0050E5;"></strong></div>
+            <div style="margin-top: 10px; font-size: 12px; color: #059669; font-weight: 600;">
+                🛡️ A safety snapshot of your current live database will automatically be taken before restoring.
+            </div>
+        </div>
+        <form method="post" asp-page-handler="Restore" id="restoreForm">
+            <input type="hidden" name="id" id="restoreRecordIdInput" value="" />
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('restoreConfirmModal').style.display='none'" style="padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 700; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 9px 20px; border-radius: 8px; border: none; background: #dc2626; color: #ffffff; font-weight: 700; cursor: pointer;">
+                    Confirm &amp; Restore Live Database
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 3: Confirm Backup All -->
+<div id="backupAllModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 520px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">inventory_2</span>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Backup All Databases</h2>
+                <div style="font-size: 13px; color: #64748b;">Snapshot Master Catalog &amp; all active sovereign tenants</div>
+            </div>
+        </div>
+        <p style="font-size: 13.5px; color: #475569; margin: 0 0 20px 0; line-height: 1.5;">
+            This will initiate compressed SQL backups and Cloudflare R2 vaulting for:
+            <strong>Ozikol_MasterCatalogDb</strong> and <strong>@Model.Tenants.Count active sovereign tenant databases</strong>.
+            All jobs will run sequentially in the background without blocking the UI.
+        </p>
+        <form method="post" asp-page-handler="BackupAll">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('backupAllModal').style.display='none'" style="padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 700; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 9px 20px; border-radius: 8px; border: none; background: #0050E5; color: #ffffff; font-weight: 700; cursor: pointer;">
+                    Start Full Platform Backup
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+    function confirmRestore(id, dbName, dateStr) {
+        document.getElementById('restoreRecordIdInput').value = id;
+        document.getElementById('restoreDbNameText').textContent = dbName;
+        document.getElementById('restoreDateText').textContent = dateStr;
+        document.getElementById('restoreConfirmModal').style.display = 'flex';
+    }
+
+    // Live background polling for in-progress or pending backups
+    (function () {
+        var inProgressBadges = document.querySelectorAll('.badge-in-progress');
+        if (inProgressBadges.length === 0) return;
+
+        var interval = setInterval(function () {
+            fetch('?handler=ActiveBackups')
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data && data.activeCount === 0) {
+                        clearInterval(interval);
+                        window.location.reload();
+                    }
+                })
+                .catch(function (err) {
+                    console.warn('Backup polling error:', err);
+                });
+        }, 3000);
+    })();
+</script>

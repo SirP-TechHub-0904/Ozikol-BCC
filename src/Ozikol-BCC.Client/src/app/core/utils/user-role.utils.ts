@@ -166,6 +166,18 @@ export function isGlobalAdmin(roles?: string[]): boolean {
 }
 
 /**
+ * Determines whether the user possesses root Super Administrator authority.
+ * 
+ * @param roles - Optional array of roles to evaluate (defaults to stored roles)
+ * @returns True if the user is a SuperAdmin or SystemAdministrator
+ */
+export function isSuperAdmin(roles?: string[]): boolean {
+  const userRoles = roles ?? getStoredUserRoles();
+  const normalized = userRoles.map(normalizeRoleKey);
+  return normalized.some(r => ['superadmin', 'systemadministrator'].includes(r));
+}
+
+/**
  * Determines whether the user holds the Global Editor operational role across all active workspace modules.
  *
  * @param roles - Optional array of roles to evaluate (defaults to stored roles)
@@ -210,6 +222,22 @@ export function isReadOnlyUser(roles?: string[]): boolean {
 function getEquivalentScopeKeys(targetScope: string): string[] {
   const clean = (targetScope || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
   switch (clean) {
+    case 'dashboard':
+    case 'consoledashboard':
+    case 'corecommand':
+      return ['dashboard', 'consoledashboard', 'corecommand'];
+    case 'broadcast':
+    case 'broadcastcommunications':
+    case 'broadcaststudio':
+    case 'systembroadcast':
+    case 'systembroadcasts':
+      return ['broadcast', 'broadcastcommunications', 'broadcaststudio', 'systembroadcast', 'systembroadcasts'];
+    case 'workforceshifts':
+    case 'workforcerotascheduling':
+    case 'bcpstaffrota':
+    case 'staffrota':
+    case 'workforce':
+      return ['workforceshifts', 'workforcerotascheduling', 'bcpstaffrota', 'staffrota', 'workforce'];
     case 'cms':
     case 'cmsmanager':
     case 'cmsstudiomanager':
@@ -236,9 +264,8 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
     case 'crmmanager':
     case 'peoplecommunity':
     case 'communicationsupport':
-    case 'workforceshifts':
     case 'operationsworkflows':
-      return ['crm', 'crmmanager', 'usermanager', 'peoplecommunity', 'communicationsupport'];
+      return ['crm', 'crmmanager', 'peoplecommunity', 'communicationsupport'];
     case 'events':
     case 'eventsmanager':
     case 'eventsticketing':
@@ -251,6 +278,10 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
     case 'billingmanager':
     case 'financebanking':
       return ['billing', 'billingmanager', 'financebanking'];
+    case 'settings':
+    case 'settingsmanager':
+    case 'systemsettings':
+      return ['settings', 'settingsmanager', 'systemsettings'];
     case 'telemetry':
     case 'telemetrymanager':
     case 'demographicscensus':
@@ -270,12 +301,22 @@ function getEquivalentScopeKeys(targetScope: string): string[] {
  */
 export function hasFeatureScope(targetScope: string, roles?: string[]): boolean {
   const userRoles = roles ?? getStoredUserRoles();
-  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles)) return true;
+  if (isSuperAdmin(userRoles)) return true;
 
-  // An unscoped Read-Only Auditor (no specific FeatureAreaKey rows) can view console suites except Settings/Billing
-  if (isReadOnlyUser(userRoles) && !hasScopedFeatureAssignments(userRoles)) {
-    const clean = (targetScope || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
-    return clean !== 'settings' && clean !== 'billingsubscriptions';
+  const cleanTarget = (targetScope || '').trim().toLowerCase().replace(/[\s\-_]/g, '');
+
+  // Broadcast requires explicit grant or root SuperAdmin authority
+  const isBroadcastCheck = ['broadcast', 'broadcastcommunications', 'broadcaststudio', 'systembroadcast', 'systembroadcasts'].includes(cleanTarget);
+
+  // If unscoped global admin / editor (and not checking strict broadcast), grant standard admin access
+  const hasScoped = hasScopedFeatureAssignments(userRoles) || getStoredUserFeatureKeys().length > 0;
+  if (!hasScoped && !isBroadcastCheck && (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles))) {
+    return true;
+  }
+
+  // An unscoped Read-Only Auditor (no specific FeatureAreaKey rows) can view console suites except Settings/Billing/Broadcast
+  if (isReadOnlyUser(userRoles) && !hasScoped) {
+    return cleanTarget !== 'settings' && cleanTarget !== 'billingsubscriptions' && !isBroadcastCheck;
   }
 
   const equivalentTargets = getEquivalentScopeKeys(targetScope);
@@ -288,7 +329,7 @@ export function hasFeatureScope(targetScope: string, roles?: string[]): boolean 
     if (parts.length === 2) {
       const [prefix, scopeKey] = parts;
       if (['featureedit', 'featureeditor', 'readonly', 'globaledit', 'globaleditor'].includes(prefix) &&
-          equivalentTargets.includes(scopeKey)) {
+        equivalentTargets.includes(scopeKey)) {
         return true;
       }
     }
@@ -437,7 +478,10 @@ export function hasUserRole(targetRole: string, roles?: string[]): boolean {
  */
 export function resolveFeatureScopeFromUrl(cleanUrl: string): string | null {
   if (!cleanUrl) return null;
-  if (cleanUrl.startsWith('/settings') || cleanUrl.startsWith('/admin/settings')) return 'settings';
+  if (cleanUrl.startsWith('/dashboard/console') || cleanUrl === '/dashboard/console' || cleanUrl === '/admin/dashboard') return 'dashboard';
+  if (cleanUrl.startsWith('/broadcast') || cleanUrl.startsWith('/admin/broadcast')) return 'broadcast';
+  if (cleanUrl.startsWith('/workforce/console') || cleanUrl.startsWith('/admin/workforce') || cleanUrl.startsWith('/admin/shifts') || cleanUrl.startsWith('/workforce')) return 'workforceshifts';
+  if (cleanUrl.startsWith('/settings') || cleanUrl.startsWith('/admin/settings')) return 'settingsmanager';
   if (cleanUrl.startsWith('/billing') || cleanUrl.startsWith('/admin/billing')) return 'billingmanager';
   if (cleanUrl.startsWith('/identity/console') || cleanUrl.startsWith('/admin/identity')) return 'identitymanager';
   if (cleanUrl.startsWith('/content/console/forms') || cleanUrl.startsWith('/admin/forms')) return 'formsmanager';
@@ -445,6 +489,7 @@ export function resolveFeatureScopeFromUrl(cleanUrl: string): string | null {
   if (cleanUrl.startsWith('/users/console') || cleanUrl.startsWith('/admin/users')) return 'usermanager';
   if (cleanUrl.startsWith('/products/console') || cleanUrl.startsWith('/admin/products')) return 'storemanager';
   if (cleanUrl.startsWith('/groups/console') || cleanUrl.startsWith('/admin/groups') || cleanUrl.startsWith('/admin/alumni') || cleanUrl.startsWith('/admin/messenger')) return 'crmmanager';
+  if (cleanUrl.startsWith('/committees/console') || cleanUrl.startsWith('/admin/committees')) return 'bcp-committees';
   return null;
 }
 
@@ -481,12 +526,15 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
 
   // Allow CMS Studio Manager to access Brand & Settings and Link Domain under Website & CMS
   if ((cleanUrl === '/settings/console' || cleanUrl.startsWith('/settings/console/custom-domain') || cleanUrl === '/admin/settings') &&
-      hasFeatureScope('cmsstudiomanager', userRoles)) {
+    hasFeatureScope('cmsstudiomanager', userRoles)) {
     return true;
   }
 
-  // Settings & Billing remain strictly restricted to SuperAdmin / Admin
-  if (routeScope === 'settings' || routeScope === 'billingmanager') {
+  // Settings & Billing require administrative authority or explicit assigned feature scope
+  if (routeScope === 'settingsmanager' && !hasFeatureScope('settings', userRoles) && !hasFeatureScope('settingsmanager', userRoles)) {
+    return false;
+  }
+  if (routeScope === 'billingmanager' && !hasFeatureScope('billingmanager', userRoles)) {
     return false;
   }
 
@@ -514,9 +562,9 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
   const isMember = isMemberOnly(userRoles);
 
   // 1. Console Isolation: Members cannot access any console or admin routes
-  const isConsoleRoute = cleanUrl.includes('/console') 
-    || cleanUrl.startsWith('/admin') 
-    || cleanUrl.startsWith('/content') 
+  const isConsoleRoute = cleanUrl.includes('/console')
+    || cleanUrl.startsWith('/admin')
+    || cleanUrl.startsWith('/content')
     || cleanUrl.startsWith('/products')
     || cleanUrl.startsWith('/billing')
     || cleanUrl.startsWith('/settings')
