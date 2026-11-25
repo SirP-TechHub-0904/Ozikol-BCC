@@ -71,12 +71,16 @@ public class IndexModel : PageModel
     public string CloudflareBucketName => _settings.CloudflareBucketName;
     public int LocalRetentionDays => _settings.RetentionDays;
     public long MaxLocalStorageMB => _settings.MaxLocalStorageMB;
+    public int ActiveBackupsCount { get; set; }
 
     /// <summary>
     /// Handles HTTP GET requests to populate the backup dashboard and telemetry cards.
     /// </summary>
     public async Task OnGetAsync()
     {
+        // Reconcile any orphaned/stuck InProgress backup jobs older than 10 minutes
+        await _backupService.ReconcileStaleBackupsAsync(timeoutMinutes: 10);
+
         Tenants = await _dbContext.MasterTenantCatalogs
             .AsNoTracking()
             .OrderBy(t => t.OrganizationName)
@@ -122,6 +126,8 @@ public class IndexModel : PageModel
             }
         }
         TotalStorageBytes = BackupRecords.Sum(r => r.CompressedSizeBytes);
+        ActiveBackupsCount = await _dbContext.MasterBackupRecords
+            .CountAsync(r => r.Status == "InProgress" || r.Status == "Pending");
     }
 
     /// <summary>
@@ -191,10 +197,13 @@ public class IndexModel : PageModel
     }
 
     /// <summary>
-    /// JSON polling endpoint returning active in-progress or pending backups.
+    /// JSON polling endpoint returning active in-progress or pending backups with automatic stale reconciliation.
     /// </summary>
     public async Task<IActionResult> OnGetActiveBackupsAsync()
     {
+        // Reconcile any orphaned/stuck InProgress backup jobs older than 10 minutes
+        await _backupService.ReconcileStaleBackupsAsync(timeoutMinutes: 10);
+
         var active = await _dbContext.MasterBackupRecords
             .AsNoTracking()
             .Where(r => r.Status == "InProgress" || r.Status == "Pending")
@@ -208,6 +217,24 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         return new JsonResult(new { activeCount = active.Count, items = active });
+    }
+
+    /// <summary>
+    /// Manually sweeps all active 'InProgress' or 'Pending' backup jobs, resetting queues and halting client polling.
+    /// </summary>
+    public async Task<IActionResult> OnPostClearStuckBackupsAsync()
+    {
+        var cleared = await _backupService.ClearAllActiveBackupsAsync();
+        if (cleared > 0)
+        {
+            TempData["Success"] = $"Successfully cleared {cleared} active or stuck backup queue records.";
+        }
+        else
+        {
+            TempData["Info"] = "No active or stuck backup records were found in the queue.";
+        }
+
+        return RedirectToPage(new { FilterTenantKey, SearchTerm });
     }
 
     /// <summary>

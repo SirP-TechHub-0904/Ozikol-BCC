@@ -186,13 +186,21 @@ public class DatabaseBackupService : IDatabaseBackupService
         _dbContext.MasterBackupRecords.AddRange(queuedRecords);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Process queued backups in background sequentially
+        // Process queued backups in background sequentially with isolated error boundaries
         var jobPayloads = queuedRecords.Select(r => (r.Id, r.TenantKey, r.DatabaseName, r.LocalFilePath)).ToList();
         _ = Task.Run(async () =>
         {
             foreach (var (recId, tKey, dbName, path) in jobPayloads)
             {
-                await ProcessBackupJobAsync(recId, tKey, dbName, path);
+                try
+                {
+                    await ProcessBackupJobAsync(recId, tKey, dbName, path);
+                }
+                catch (Exception batchItemEx)
+                {
+                    _logger.LogError(batchItemEx, "❌ [Backup] Unexpected error processing queued batch backup for [{DatabaseName}]", dbName);
+                    await MarkRecordFailedAsync(recId, $"Batch execution failed: {batchItemEx.Message}");
+                }
             }
         });
 
@@ -207,16 +215,96 @@ public class DatabaseBackupService : IDatabaseBackupService
             .FirstOrDefaultAsync(r => r.Id == backupRecordId, cancellationToken);
     }
 
-    private async Task ProcessBackupJobAsync(Guid recordId, string cleanTenantKey, string cleanDbName, string localFilePath)
+    /// <inheritdoc />
+    public async Task<int> ReconcileStaleBackupsAsync(int timeoutMinutes = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var cutoff = DateTime.UtcNow.AddMinutes(-Math.Max(1, timeoutMinutes));
+            var staleRecords = await _dbContext.MasterBackupRecords
+                .Where(r => r.Status == "InProgress" && r.CreatedAtUtc < cutoff)
+                .ToListAsync(cancellationToken);
+
+            if (!staleRecords.Any()) return 0;
+
+            foreach (var r in staleRecords)
+            {
+                r.Status = "Failed";
+                r.ErrorMessage = $"Operation timed out after {timeoutMinutes} minutes (server restart or process abort).";
+                _logger.LogWarning("⚠️ [Backup] Reconciled stale orphaned backup record {Id} for [{DatabaseName}].", r.Id, r.DatabaseName);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return staleRecords.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reconciling stale backup records: {Message}", ex.Message);
+            return 0;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<int> ClearAllActiveBackupsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var activeRecords = await _dbContext.MasterBackupRecords
+                .Where(r => r.Status == "InProgress" || r.Status == "Pending")
+                .ToListAsync(cancellationToken);
+
+            if (!activeRecords.Any()) return 0;
+
+            foreach (var r in activeRecords)
+            {
+                r.Status = "Cancelled";
+                r.ErrorMessage = "Manually cleared by Central Administrator.";
+                _logger.LogInformation("🧹 [Backup] Manually cleared active backup record {Id} for [{DatabaseName}].", r.Id, r.DatabaseName);
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return activeRecords.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing active backup records: {Message}", ex.Message);
+            return 0;
+        }
+    }
+
+    private async Task MarkRecordFailedAsync(Guid recordId, string errorMessage)
     {
         try
         {
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MasterCatalogDbContext>();
             var record = await db.MasterBackupRecords.FirstOrDefaultAsync(r => r.Id == recordId);
+            if (record != null && (record.Status == "InProgress" || record.Status == "Pending"))
+            {
+                record.Status = "Failed";
+                record.ErrorMessage = errorMessage;
+                await db.SaveChangesAsync(CancellationToken.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist Failed status for backup record {Id}", recordId);
+        }
+    }
+
+    private async Task ProcessBackupJobAsync(Guid recordId, string cleanTenantKey, string cleanDbName, string localFilePath)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(8));
+        var token = cts.Token;
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MasterCatalogDbContext>();
+            var record = await db.MasterBackupRecords.FirstOrDefaultAsync(r => r.Id == recordId, token);
             if (record == null) return;
 
-            string targetConnStr = await ResolveConnectionStringAsync(cleanTenantKey, cleanDbName, CancellationToken.None);
+            string targetConnStr = await ResolveConnectionStringAsync(cleanTenantKey, cleanDbName, token);
 
             // 1. Run SQL Native Backup
             try
@@ -229,13 +317,13 @@ public class DatabaseBackupService : IDatabaseBackupService
                 var sql = $"BACKUP DATABASE [{safeDbBracket}] TO DISK = N'{safePathLiteral}' WITH STATS = 25{compressionClause}{checksumClause};";
 
                 await using var sqlConn = new SqlConnection(targetConnStr);
-                await sqlConn.OpenAsync(CancellationToken.None);
+                await sqlConn.OpenAsync(token);
 
                 await using (var cmd = sqlConn.CreateCommand())
                 {
-                    cmd.CommandTimeout = 600;
+                    cmd.CommandTimeout = 420; // 7 minutes
                     cmd.CommandText = sql;
-                    await cmd.ExecuteNonQueryAsync(CancellationToken.None);
+                    await cmd.ExecuteNonQueryAsync(token);
                 }
 
                 _logger.LogInformation("✅ [Backup] Native SQL backup successfully generated at {LocalFilePath}", localFilePath);
@@ -254,8 +342,8 @@ public class DatabaseBackupService : IDatabaseBackupService
                     p.Value = cleanDbName;
                     sizeCmd.Parameters.Add(p);
 
-                    await using var reader = await sizeCmd.ExecuteReaderAsync(CancellationToken.None);
-                    if (await reader.ReadAsync(CancellationToken.None))
+                    await using var reader = await sizeCmd.ExecuteReaderAsync(token);
+                    if (await reader.ReadAsync(token))
                     {
                         if (!reader.IsDBNull(0)) record.CompressedSizeBytes = reader.GetInt64(0);
                         if (!reader.IsDBNull(1)) record.FileSizeBytes = reader.GetInt64(1);
@@ -286,7 +374,7 @@ public class DatabaseBackupService : IDatabaseBackupService
 
                     using var sha256 = SHA256.Create();
                     await using var fs = File.OpenRead(localFilePath);
-                    var hashBytes = await sha256.ComputeHashAsync(fs, CancellationToken.None);
+                    var hashBytes = await sha256.ComputeHashAsync(fs, token);
                     record.ChecksumSha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
                 }
                 else
@@ -319,7 +407,7 @@ public class DatabaseBackupService : IDatabaseBackupService
                         ContentType = "application/octet-stream",
                         ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
                         DisablePayloadSigning = true
-                    }, CancellationToken.None);
+                    }, token);
 
                     record.Status = "SyncedToCloud";
                     _logger.LogInformation("✅ [Backup] Snapshot successfully vaulted to Cloudflare R2: {CloudStorageKey}", record.CloudStorageKey);
@@ -338,9 +426,15 @@ public class DatabaseBackupService : IDatabaseBackupService
 
             await db.SaveChangesAsync(CancellationToken.None);
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("⏱️ [Backup] Backup operation timed out after 8 minutes for [{DatabaseName}].", cleanDbName);
+            await MarkRecordFailedAsync(recordId, "Backup operation timed out after 8 minutes.");
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Background backup unhandled error for [{DatabaseName}]: {Message}", cleanDbName, ex.Message);
+            _logger.LogError(ex, "❌ [Backup] Unhandled backup failure for [{DatabaseName}]: {Message}", cleanDbName, ex.Message);
+            await MarkRecordFailedAsync(recordId, $"Backup failed: {ex.Message}");
         }
     }
 

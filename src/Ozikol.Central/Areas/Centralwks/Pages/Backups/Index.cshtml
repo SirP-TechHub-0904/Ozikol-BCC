@@ -20,6 +20,16 @@
             </p>
         </div>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            @if (Model.ActiveBackupsCount > 0)
+            {
+                <form method="post" asp-page-handler="ClearStuckBackups" style="margin: 0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 1.5px solid rgba(239, 68, 68, 0.5); color: #dc2626; background: #fff5f5; cursor: pointer;" onclick="return confirm('Clear @Model.ActiveBackupsCount stuck or orphaned backup job(s) from the queue?');">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">mop</span>
+                        <span>Clear Stale Jobs (@Model.ActiveBackupsCount)</span>
+                    </button>
+                </form>
+            }
             <button type="button" onclick="document.getElementById('backupAllModal').style.display='flex'" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: 1.5px solid #0050E5; background: #ffffff; color: #0050E5; cursor: pointer; transition: all 0.15s ease;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">inventory_2</span>
                 <span>Backup All Databases</span>
@@ -125,6 +135,17 @@
                 <a href="/centralwks/backups" style="font-size: 13px; color: #64748b; text-decoration: none; padding: 8px 12px;">Clear</a>
             }
         </form>
+    </div>
+
+    <!-- Polling Circuit Breaker Alert (Shown if automated polling reaches threshold) -->
+    <div id="pollingCircuitBreakerAlert" style="display: none; background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13.5px; color: #b45309; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #f59e0b;">hourglass_top</span>
+            <span>Automated polling paused to conserve server resources. Long-running backups continue in the background.</span>
+        </div>
+        <button type="button" onclick="window.location.reload();" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #f59e0b; background: #ffffff; color: #b45309; font-weight: 700; font-size: 12px; cursor: pointer;">
+            Refresh Status
+        </button>
     </div>
 
     <!-- Backup Snapshots Table -->
@@ -300,23 +321,58 @@
 </style>
 
 <script>
-    // Live background polling for in-progress or pending backups
+    // Resilient background polling for in-progress or pending backups with backoff & circuit breaker
     (function () {
         var inProgressBadges = document.querySelectorAll('.badge-in-progress');
         if (inProgressBadges.length === 0) return;
 
-        var interval = setInterval(function () {
+        var pollCount = 0;
+        var maxPolls = 35; // Maximum ~3.5 minutes total polling duration
+        var currentDelay = 3000;
+        var consecutiveErrors = 0;
+        var timerId = null;
+
+        function runPoll() {
+            pollCount++;
+            if (pollCount > maxPolls) {
+                console.warn('Backup polling circuit breaker triggered: exceeded maximum attempts. Pausing automated polling to preserve server resources.');
+                var banner = document.getElementById('pollingCircuitBreakerAlert');
+                if (banner) banner.style.display = 'flex';
+                return;
+            }
+
             fetch('?handler=ActiveBackups')
-                .then(function (res) { return res.json(); })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
                 .then(function (data) {
+                    consecutiveErrors = 0;
                     if (data && data.activeCount === 0) {
-                        clearInterval(interval);
                         window.location.reload();
+                        return;
                     }
+
+                    // Adaptive backoff: 3s for first 10 polls, 6s for next 10, then 10s
+                    if (pollCount > 20) {
+                        currentDelay = 10000;
+                    } else if (pollCount > 10) {
+                        currentDelay = 6000;
+                    }
+
+                    timerId = setTimeout(runPoll, currentDelay);
                 })
                 .catch(function (err) {
                     console.warn('Backup polling error:', err);
+                    consecutiveErrors++;
+                    if (consecutiveErrors >= 3) {
+                        console.warn('Stopping backup polling due to repeated network errors.');
+                        return;
+                    }
+                    timerId = setTimeout(runPoll, 10000);
                 });
-        }, 3000);
+        }
+
+        timerId = setTimeout(runPoll, currentDelay);
     })();
 </script>
