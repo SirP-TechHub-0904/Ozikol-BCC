@@ -95,4 +95,21 @@ public interface IDatabaseBackupService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>The record if found; otherwise, null.</returns>
     Task<MasterBackupRecord?> GetBackupRecordByIdAsync(Guid backupRecordId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reconciles stale or orphaned 'InProgress' backup records (e.g. from server restarts, deployments,
+    /// or process aborts) exceeding the specified timeout threshold, marking them as 'Failed'.
+    /// </summary>
+    /// <param name="timeoutMinutes">Threshold in minutes after which an InProgress record is considered stale (default 10 minutes).</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The count of orphaned backup records reconciled.</returns>
+    Task<int> ReconcileStaleBackupsAsync(int timeoutMinutes = 10, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Forcefully marks all current 'InProgress' or 'Pending' backup records as 'Failed' or 'Cancelled',
+    /// immediately unblocking client polling and clearing administrative queues.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The count of cleared backup records.</returns>
+    Task<int> ClearAllActiveBackupsAsync(CancellationToken cancellationToken = default);
 }
