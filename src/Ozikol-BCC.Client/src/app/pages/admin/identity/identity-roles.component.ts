@@ -114,7 +114,7 @@ interface CapabilityScope {
               <span class="material-symbols-outlined">shield_person</span>
             </div>
             <div class="stat-meta">
-              <span class="stat-val">{{ systemFeatureRoles.length + systemFeatures.length }}</span>
+              <span class="stat-val">{{ systemFeatureRoles.length }}</span>
               <span class="stat-lbl">{{ 'identity.roles.all_permissions' | translate:'All Permissions' }}</span>
             </div>
           </div>
@@ -167,7 +167,7 @@ interface CapabilityScope {
           (click)="setFilter('permissions')"
         >
           <span class="material-symbols-outlined">shield_person</span>
-          <span>{{ 'identity.roles.tab_all_permissions' | translate:'All Permissions' }}</span>
+          <span>{{ 'identity.roles.tab_all_permissions' | translate:'All Permissions' }} ({{ systemFeatureRoles.length }})</span>
         </button>
         <button 
           type="button" 
@@ -465,9 +465,8 @@ interface CapabilityScope {
         </div>
       </div>
 
-      <!-- Tab 2: All Permissions (Top: System Authority Permissions; Below: Modular Feature Permissions) -->
+      <!-- Tab 2: All Permissions (System Roles & Active Feature Roles) -->
       <div class="permissions-tab-section" *ngIf="!isLoading && activeFilter === 'permissions'">
-        <!-- Top Area: System Authority Permissions -->
         <div class="table-card">
           <div class="table-card-header">
             <div class="card-header-meta">
@@ -476,13 +475,13 @@ interface CapabilityScope {
               </div>
               <div>
                 <div class="header-title-row">
-                  <h3>{{ 'identity.roles.authority_title' | translate:'System Authority Permissions' }}</h3>
+                  <h3>{{ 'identity.roles.authority_title' | translate:'System & Feature Authority Roles' }}</h3>
                   <span class="section-count-badge badge-admin">{{ systemFeatureRoles.length }} Roles</span>
                 </div>
-                <p>{{ 'identity.roles.authority_desc' | translate:'Platform sovereign and administrative authority tiers governing core workspace operations.' }}</p>
+                <p>{{ 'identity.roles.authority_desc' | translate:'Sovereign platform, identity governance, and active feature domain authority roles that govern workspace administration.' }}</p>
               </div>
             </div>
-            <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
+            <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role catalog">
               <span class="material-symbols-outlined">refresh</span>
               <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
             </button>
@@ -492,16 +491,14 @@ interface CapabilityScope {
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="min-width: 220px;">{{ 'identity.roles.th_role_tier' | translate:'Role & Authority Tier' }}</th>
-                  <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Governance Boundaries' }}</th>
-                  <th style="width: 140px; text-align: center;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
-                  <th style="width: 260px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
-                  <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Action' }}</th>
+                  <th style="width: 320px;">{{ 'identity.roles.th_role' | translate:'Role & Authority Tier' }}</th>
+                  <th>{{ 'identity.roles.th_description' | translate:'Scope & Governance Boundaries' }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let role of systemFeatureRoles" [class.locked-row]="!role.canAssign">
-                  <td>
+                <tr *ngFor="let role of systemFeatureRoles">
+                  <!-- Column 1: Role & Authority Tier -->
+                  <td style="vertical-align: top;">
                     <div class="role-cell">
                       <div class="role-icon-box" [ngClass]="role.badge">
                         <span class="material-symbols-outlined">{{ role.icon }}</span>
@@ -509,128 +506,17 @@ interface CapabilityScope {
                       <div class="role-title-box">
                         <span class="role-name">{{ role.name }}</span>
                         <span class="role-pill-badge" [ngClass]="role.badge">
-                          {{ role.canAssign ? ('identity.roles.system_authority' | translate:'System Authority') : ('identity.roles.root_sovereign' | translate:'Root Sovereign') }}
+                          {{ isSystemRole(role.name) ? 'System Authority' : 'Feature Authority' }}
                         </span>
                       </div>
                     </div>
                   </td>
+
+                  <!-- Column 2: Scope & Governance Boundaries -->
                   <td>
                     <div class="scope-cell">
                       <span class="scope-tag">{{ role.scope }}</span>
                       <p class="role-desc">{{ role.description }}</p>
-                    </div>
-                  </td>
-                  <td style="text-align: center;">
-                    <span class="count-badge" [class.count-badge-zero]="role.memberCount === 0">
-                      <strong>{{ role.memberCount }}</strong>
-                      <span>{{ role.memberCount === 1 ? 'user' : 'users' }}</span>
-                    </span>
-                  </td>
-                  <td>
-                    <div class="members-preview-cell" *ngIf="role.memberCount > 0">
-                      <div class="avatar-stack">
-                        <div
-                          class="stack-avatar"
-                          *ngFor="let m of role.members.slice(0, 3); let idx = index"
-                          [title]="m.fullName + ' (' + m.email + ')'"
-                          [style.background]="getMemberGradient(m.fullName, idx)"
-                        >
-                          {{ getInitials(m.fullName) }}
-                        </div>
-                        <div class="stack-avatar stack-more" *ngIf="role.memberCount > 3" [title]="(role.memberCount - 3) + ' more members'">
-                          +{{ role.memberCount - 3 }}
-                        </div>
-                      </div>
-                      <span class="preview-names-text">
-                        {{ getPreviewNames(role.members) }}
-                      </span>
-                    </div>
-                    <div class="no-members-text" *ngIf="role.memberCount === 0">
-                      <span>{{ 'identity.roles.no_members' | translate:'No members assigned' }}</span>
-                    </div>
-                  </td>
-                  <td style="text-align: right; white-space: nowrap;">
-                    <div *ngIf="!role.canAssign" class="locked-chip" title="Root account authority cannot be transferred or assigned to other users.">
-                      <span class="material-symbols-outlined">lock</span>
-                      <span>{{ 'identity.roles.root_account_only' | translate:'Root Account Only' }}</span>
-                    </div>
-                    <button
-                      *ngIf="role.canAssign"
-                      type="button"
-                      class="btn-manage-members"
-                      (click)="openManageModal(role)"
-                    >
-                      <span class="material-symbols-outlined btn-icon">group_add</span>
-                      <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage Members' }}</span>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Below Area: Modular Feature Permissions & Scopes -->
-        <div class="table-card mt-4">
-          <div class="table-card-header">
-            <div class="card-header-meta">
-              <div class="header-icon-pill" style="background: rgba(14,116,144,0.08); color: #0e7490;">
-                <span class="material-symbols-outlined">widgets</span>
-              </div>
-              <div>
-                <div class="header-title-row">
-                  <h3>{{ 'identity.roles.feature_permissions_title' | translate:'Modular Feature Permissions & Scopes' }}</h3>
-                  <span class="section-count-badge badge-cmsmanager">{{ systemFeatures.length }} Modules</span>
-                </div>
-                <p>{{ 'identity.roles.feature_permissions_desc' | translate:'Fine-grained modular domain capability scopes available in this workspace (Workforce & Shift Rotas, User Management, CMS Studio, etc.).' }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="roles-data-table">
-              <thead>
-                <tr>
-                  <th style="min-width: 240px;">Feature Suite</th>
-                  <th style="min-width: 320px;">Functional Scope & Capability</th>
-                  <th style="min-width: 220px;">Permitted Action Scopes</th>
-                  <th style="min-width: 220px;">Enabled in User Groups</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let feat of systemFeatures">
-                  <td>
-                    <div class="role-cell">
-                      <div class="role-icon-box" style="background: rgba(0,80,229,0.08); color: #0050e5;">
-                        <span class="material-symbols-outlined">{{ feat.icon }}</span>
-                      </div>
-                      <div class="role-title-box">
-                        <span class="role-name">{{ feat.name }}</span>
-                        <span class="cat-tag">{{ feat.category }}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="scope-cell">
-                      <p class="role-desc" style="max-width: 520px;">{{ feat.description }}</p>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="action-scopes-pills">
-                      <span class="scope-pill readonly">Read Only</span>
-                      <span class="scope-pill feat-edit">Feature Editor</span>
-                      <span class="scope-pill global-edit">Global Editor</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="group-tags-list">
-                      <span *ngFor="let g of getGroupsWithFeature(feat.key)" class="group-tag-pill" [style.color]="g.colorBadge || '#0050E5'" [style.background]="(g.colorBadge || '#0050E5') + '15'">
-                        <span class="material-symbols-outlined" style="font-size: 13px;">{{ g.icon || 'groups' }}</span>
-                        <span>{{ g.name }}</span>
-                      </span>
-                      <span *ngIf="getGroupsWithFeature(feat.key).length === 0" class="no-groups-text">
-                        None configured
-                      </span>
                     </div>
                   </td>
                 </tr>
@@ -2453,5 +2339,20 @@ export class IdentityRolesComponent implements OnInit {
       }
       return g.permissions.some((p: any) => p.featureAreaKey?.toLowerCase() === featureKey.toLowerCase() && p.actionRole !== 'None');
     });
+  }
+
+  /**
+   * Distinguishes core platform system authority roles from dynamic feature domain roles.
+   */
+  isSystemRole(roleName: string): boolean {
+    const systemRoleNames = [
+      'SuperAdmin',
+      'Admin',
+      'Identity Manager',
+      'User Manager',
+      'CMS Studio Manager',
+      'Member'
+    ];
+    return systemRoleNames.some(name => name.toLowerCase() === (roleName || '').toLowerCase());
   }
 }
