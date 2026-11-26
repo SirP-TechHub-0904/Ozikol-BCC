@@ -2823,6 +2823,7 @@ export class IdentityRolesComponent implements OnInit {
           this.toast.success(`User group '${payload.name}' updated successfully.`);
           this.editingGroup = null;
           this.loadUserGroups();
+          this.loadRoleCatalog();
         },
         error: (err) => {
           this.isSavingGroup = false;
@@ -2836,6 +2837,7 @@ export class IdentityRolesComponent implements OnInit {
           this.toast.success(`User group '${payload.name}' created successfully.`);
           this.editingGroup = null;
           this.loadUserGroups();
+          this.loadRoleCatalog();
         },
         error: (err) => {
           this.isSavingGroup = false;
