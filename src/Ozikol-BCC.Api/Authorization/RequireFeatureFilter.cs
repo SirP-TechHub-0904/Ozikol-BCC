@@ -191,6 +191,46 @@ namespace Ozikol_BCC.Api.Authorization
                 }
             }
 
+            // Direct role claim check: Recognize feature-specific role claims from Identity/JWT
+            if (!isStaffAuthorized)
+            {
+                var targetKey = _featureCode.Replace("-", "").Replace("_", "");
+                foreach (var claim in roleClaims)
+                {
+                    if (claim.StartsWith("featureedit") && claim.Contains(targetKey))
+                    {
+                        isStaffAuthorized = true;
+                        break;
+                    }
+                    if (!isMutation && claim.StartsWith("readonly") && claim.Contains(targetKey))
+                    {
+                        isStaffAuthorized = true;
+                        break;
+                    }
+
+                    if (claim.Contains(targetKey) ||
+                        (_featureCode == "bcp-staff-rota" && (claim.Contains("rota") || claim.Contains("shift") || claim.Contains("workforce"))) ||
+                        (_featureCode == "bcp-attendance-tracking" && (claim.Contains("attendance") || claim.Contains("checkin"))) ||
+                        (_featureCode == "bcp-mass-communication" && (claim.Contains("marketing") || claim.Contains("broadcast"))) ||
+                        (_featureCode == "bcp-social-media" && (claim.Contains("social") || claim.Contains("marketer"))))
+                    {
+                        if (isMutation)
+                        {
+                            if (!roleClaims.Contains("readonly") || roleClaims.Contains("featureeditor") || roleClaims.Contains("globaleditor"))
+                            {
+                                isStaffAuthorized = true;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            isStaffAuthorized = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (isStaffAuthorized)
             {
                 await next();

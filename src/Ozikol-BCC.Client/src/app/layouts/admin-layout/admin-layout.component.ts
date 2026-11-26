@@ -636,10 +636,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')" *ngSwitchCase="'bcp-staff-rota'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event, 'staff_rota')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Workforce, Shifts & Rotas'), $event, 'staff_rota')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">event_note</span>
-                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff Rota & Shifts') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Workforce, Shifts & Rotas') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -731,10 +731,10 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')" *ngSwitchCase="'bcp-attendance-tracking'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event, 'attendance_tracking')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Attendance & QR Check-In'), $event, 'attendance_tracking')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">timer</span>
-                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & Live Duty') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & QR Check-In') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -986,10 +986,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')" *ngSwitchCase="'bcp-mass-communication'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', getFeatureFullTitle('bcp-mass-communication', 'Mass Multi-Channel SMS & Email'), $event, 'notifications')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', getFeatureFullTitle('bcp-mass-communication', 'Marketing Studio & Promotional Campaigns'), $event, 'notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
-                <span>{{ getFeatureMenuTitle('bcp-mass-communication', 'Notification Studio') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-mass-communication', 'Marketing Studio') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-mass-communication') && !isFeatureActive('bcp-mass-communication')"><span class="material-symbols-outlined">lock</span></span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-mass-communication')">{{ 'badge.soon' | translate }}</span>
@@ -4894,8 +4894,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-committees': 'Groups & Committees',
     'bcp-alumni-directory': 'Alumni Network',
     'bcp-whistleblowing': 'Whistleblowing',
-    'bcp-staff-rota': 'Staff Rota & Shifts',
-    'bcp-attendance-tracking': 'Attendance & Clock-In',
+    'bcp-staff-rota': 'Workforce, Shifts & Rotas',
+    'bcp-attendance-tracking': 'Attendance & QR Check-In',
     'bcp-appointment-booking': 'Appointment Booking',
     'bcp-calendar-followups': 'Calendar & Follow-Ups',
     'bcp-interval-reporting': 'Interval Reports',
@@ -4916,10 +4916,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-company-assets': 'Company Assets',
     'bcp-project-tasks': 'Projects & Tasks',
     'bcp-ai-smart-assist': 'AI Smart Assist',
-    'bcp-mass-communication': 'Broadcasts & Alerts',
+    'bcp-mass-communication': 'Marketing Studio',
     'bcp-helpdesk-support': 'Helpdesk & Support',
     'bcp-live-chat': 'Live Chat Widget',
-    'bcp-social-media': 'Social Publisher',
+    'bcp-social-media': 'Social Media Marketer',
     'bcp-bio-link': 'Bio Link Pages',
     'bcp-gocall-ai': 'GoCall Video & Voice',
     'bcp-document-management': 'Document Vault',

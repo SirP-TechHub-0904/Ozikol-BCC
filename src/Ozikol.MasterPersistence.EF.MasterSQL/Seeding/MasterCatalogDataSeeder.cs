@@ -1610,9 +1610,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 new MasterFeatureCatalog
                 {
                     FeatureCode = "bcp-staff-rota",
-                    Name = "Staff Rota & Shift Management",
+                    Name = "Workforce, Shifts & Rotas",
                     Category = "Workforce, Rota & Scheduling",
-                    Description = "Multi-department weekly shift scheduling, recurring duty patterns, 24/7 cross-midnight overnight shifts, peer shift swaps, open-shift claiming, and annual/sick leave management.",
+                    Description = "Unified shift management including multi-site rotas, peer-to-peer shift swaps, leave and vacation time-off approvals, and built-in shift QR clock-ins.",
                     Icon = "calendar_month",
                     RoutePrefix = "/rota",
                     IsCompulsory = false,
@@ -1628,9 +1628,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 new MasterFeatureCatalog
                 {
                     FeatureCode = "bcp-attendance-tracking",
-                    Name = "Biometric & QR Attendance Tracking",
+                    Name = "Attendance & QR Check-In",
                     Category = "Workforce, Rota & Scheduling",
-                    Description = "Clock-in/out via mobile QR codes, biometric device sync, geolocation geofencing, and timesheet reports.",
+                    Description = "Standalone attendance tracking, biometric clock-in, and geofenced QR check-ins for non-shift organizations, gyms, and facilities.",
                     Icon = "fingerprint",
                     RoutePrefix = "/attendance",
                     IsCompulsory = false,
@@ -2029,9 +2029,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 new MasterFeatureCatalog
                 {
                     FeatureCode = "bcp-mass-communication",
-                    Name = "Mass Multi-Channel SMS & Email",
+                    Name = "Marketing Studio & Promotional Campaigns",
                     Category = "Communication, AI & Support",
-                    Description = "Broadcast bulk SMS, targeted email newsletters, WhatsApp announcements, and delivery receipts.",
+                    Description = "Multi-channel promotional marketing broadcasts, drip campaigns, targeted SMS/email blasts, and delivery telemetry.",
                     Icon = "campaign",
                     RoutePrefix = "/communications",
                     IsCompulsory = false,
@@ -2084,9 +2084,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 new MasterFeatureCatalog
                 {
                     FeatureCode = "bcp-social-media",
-                    Name = "Social Media Publisher & Queue",
+                    Name = "Social Media Marketer & Content Scheduler",
                     Category = "Communication, AI & Support",
-                    Description = "Schedule and publish posts to Facebook, X (Twitter), LinkedIn, and Instagram with analytics tracking.",
+                    Description = "Automated social post scheduler, AI content assistant, queue publisher, and multi-network analytics.",
                     Icon = "share",
                     RoutePrefix = "/social",
                     IsCompulsory = false,

@@ -24,6 +24,51 @@ namespace Ozikol_BCC.Domain.Constants
         public const string FeatureEditor = "Feature Editor";
         public const string ReadOnly = "Read Only";
 
+        // =========================================================================
+        // Canonical String Constants for Controller Authorization Attributes
+        // =========================================================================
+        public const string GlobalAdminRoles = "SuperAdmin,Admin";
+        public const string GlobalEditorRoles = "SuperAdmin,Admin,Global Editor";
+
+        // System Platform Modules - Read & Mutate Constants
+        public const string CentralCommandReadRoles = "SuperAdmin,Admin,Central Command Manager,Global Editor,Feature Editor,Read Only";
+        public const string CentralCommandMutateRoles = "SuperAdmin,Admin,Central Command Manager,Global Editor,Feature Editor";
+
+        public const string CmsStudioReadRoles = "SuperAdmin,Admin,CMS Studio Manager,Global Editor,Feature Editor,Read Only";
+        public const string CmsStudioMutateRoles = "SuperAdmin,Admin,CMS Studio Manager,Global Editor,Feature Editor";
+
+        public const string UserDirectoryReadRoles = "SuperAdmin,Admin,User Manager,Identity Manager,Global Editor,Feature Editor,Read Only";
+        public const string UserDirectoryMutateRoles = "SuperAdmin,Admin,User Manager,Identity Manager,Global Editor,Feature Editor";
+
+        public const string IdentityAdminReadRoles = "SuperAdmin,Admin,Identity Manager,Global Editor,Feature Editor,Read Only";
+        public const string IdentityAdminMutateRoles = "SuperAdmin,Admin,Identity Manager,Global Editor,Feature Editor";
+
+        public const string BroadcastReadRoles = "SuperAdmin,Admin,Broadcast Manager,Global Editor,Feature Editor,Read Only";
+        public const string BroadcastMutateRoles = "SuperAdmin,Admin,Broadcast Manager,Global Editor,Feature Editor";
+
+        public const string BillingReadRoles = "SuperAdmin,Admin,Billing Manager,Global Editor,Feature Editor,Read Only";
+        public const string BillingMutateRoles = "SuperAdmin,Admin,Billing Manager,Global Editor,Feature Editor";
+
+        public const string SettingsReadRoles = "SuperAdmin,Admin,Settings & Audit Manager,Global Editor,Feature Editor,Read Only";
+        public const string SettingsMutateRoles = "SuperAdmin,Admin,Settings & Audit Manager,Global Editor,Feature Editor";
+
+        // Paid Feature Specific Roles & Constants
+        public const string WorkforceRotaManager = "Staff Rota & Shifts Manager";
+        public const string WorkforceRotaReadRoles = "SuperAdmin,Admin,Staff Rota & Shifts Manager,Global Editor,Feature Editor,Read Only";
+        public const string WorkforceRotaMutateRoles = "SuperAdmin,Admin,Staff Rota & Shifts Manager,Global Editor,Feature Editor";
+
+        /// <summary>
+        /// Builds an authorization role comma-delimited string allowing SuperAdmin, Admin, assigned feature role,
+        /// Feature Editor, Global Editor, and Read Only users.
+        /// </summary>
+        public static string ForFeatureRead(string featureRole) => $"{SuperAdmin},{Admin},{featureRole},{GlobalEditor},{FeatureEditor},{ReadOnly}";
+
+        /// <summary>
+        /// Builds an authorization role comma-delimited string strictly allowing SuperAdmin, Admin, assigned feature role,
+        /// Feature Editor, and Global Editor (blocking Read Only users from mutating data).
+        /// </summary>
+        public static string ForFeatureMutate(string featureRole) => $"{SuperAdmin},{Admin},{featureRole},{GlobalEditor},{FeatureEditor}";
+
         /// <summary>
         /// Normalizes any role string (spaced, PascalCase, snake_case, kebab-case) into a compact lowercase key
         /// so legacy aliases (e.g. "GlobalEditor" and "Global Editor") resolve identically.
