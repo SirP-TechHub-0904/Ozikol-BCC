@@ -142,7 +142,7 @@ interface UserGroupItem {
                 </div>
                 <div class="top-badges-row">
                   <span class="default-pill" *ngIf="group.isDefault">DEFAULT</span>
-                  <span class="role-pill" [style.color]="group.colorBadge || '#0050E5'">{{ group.baseRole }}</span>
+                  <span class="role-pill" [style.color]="group.colorBadge || '#0050E5'">{{ (group.name === 'Administrator' || group.baseRole === 'Admin') ? 'Admin' : (group.baseRole || 'Member') }}</span>
                   <div class="radio-indicator" [class.checked]="selectedGroupId === group.id">
                     <span class="material-symbols-outlined" *ngIf="selectedGroupId === group.id">check</span>
                   </div>

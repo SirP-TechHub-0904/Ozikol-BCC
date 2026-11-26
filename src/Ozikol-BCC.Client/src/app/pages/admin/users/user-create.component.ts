@@ -113,7 +113,7 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
                   <label>{{ 'user_create.field_role' | translate:'Permission' }}</label>
                   <select [(ngModel)]="model.userGroupId" name="userGroupId" (change)="onUserGroupChange()">
                     <option *ngFor="let g of userGroups" [value]="g.id">
-                      {{ g.name }} ({{ g.baseRole }}){{ g.isDefault ? ' • Default' : '' }}
+                      {{ g.name }} ({{ g.name === 'Administrator' || g.baseRole === 'Admin' ? 'Admin' : (g.baseRole || 'Member') }}){{ g.isDefault ? ' • Default' : '' }}
                     </option>
                   </select>
                 </div>

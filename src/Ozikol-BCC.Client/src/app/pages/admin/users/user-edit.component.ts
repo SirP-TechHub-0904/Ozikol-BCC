@@ -98,7 +98,7 @@ import { TranslationService } from '../../../core/services/translation.service';
                   <label>{{ 'user_edit.field_user_group' | translate:'User Group' }}</label>
                   <select [(ngModel)]="model.userGroupId" name="userGroupId" (change)="onUserGroupChange()">
                     <option [ngValue]="null">{{ 'user_edit.group_unassigned' | translate:'Select User Group (Unassigned)' }}</option>
-                    <option *ngFor="let g of userGroups" [value]="g.id">{{ g.name }} ({{ g.baseRole }}){{ g.isDefault ? ' • Default' : '' }}</option>
+                    <option *ngFor="let g of userGroups" [value]="g.id">{{ g.name }} ({{ g.name === 'Administrator' || g.baseRole === 'Admin' ? 'Admin' : (g.baseRole || 'Member') }}){{ g.isDefault ? ' • Default' : '' }}</option>
                   </select>
                 </div>
 

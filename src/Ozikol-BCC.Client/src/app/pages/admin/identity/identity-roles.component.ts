@@ -514,7 +514,7 @@ interface GroupMemberPreview {
                         <span class="role-name">{{ g.name }}</span>
                         <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
                           <span class="default-pill" *ngIf="g.isDefault">DEFAULT</span>
-                          <span class="role-pill" [style.color]="g.colorBadge || '#0050E5'">{{ g.baseRole }}</span>
+                          <span class="role-pill" [style.color]="g.colorBadge || '#0050E5'">{{ (g.name === 'Administrator' || g.baseRole === 'Admin') ? 'Admin' : (g.baseRole || 'Member') }}</span>
                         </div>
                       </div>
                     </div>

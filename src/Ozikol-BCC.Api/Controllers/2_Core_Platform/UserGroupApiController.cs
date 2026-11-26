@@ -52,6 +52,19 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await EnsureDefaultGroupsSeededAsync(cancellationToken);
 
+                // Ensure Administrator group in database is permanently set to BaseRole = 'Admin'
+                var adminGroupDb = await _dbContext.BcpUserGroups
+                    .FirstOrDefaultAsync(g => g.Name == "Administrator" && g.BaseRole != "Admin", cancellationToken);
+                if (adminGroupDb != null)
+                {
+                    adminGroupDb.BaseRole = "Admin";
+                    if (string.IsNullOrWhiteSpace(adminGroupDb.ColorBadge) || adminGroupDb.ColorBadge == "#64748B")
+                    {
+                        adminGroupDb.ColorBadge = "#0050E5";
+                    }
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+
                 var groups = await _dbContext.BcpUserGroups
                     .AsNoTracking()
                     .Include(g => g.Permissions)
@@ -198,7 +211,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = g.Id,
                         Name = g.Name,
                         Description = g.Description,
-                        BaseRole = g.BaseRole,
+                        BaseRole = g.Name == "Administrator" ? "Admin" : (!string.IsNullOrWhiteSpace(g.BaseRole) ? g.BaseRole : "Member"),
                         IsDefault = g.IsDefault,
                         IsSystem = g.IsSystem,
                         ColorBadge = g.ColorBadge,
@@ -246,7 +259,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = group.Id,
                         Name = group.Name,
                         Description = group.Description,
-                        BaseRole = group.BaseRole,
+                        BaseRole = group.Name == "Administrator" ? "Admin" : (!string.IsNullOrWhiteSpace(group.BaseRole) ? group.BaseRole : "Member"),
                         IsDefault = group.IsDefault,
                         IsSystem = group.IsSystem,
                         ColorBadge = group.ColorBadge,
@@ -631,7 +644,7 @@ namespace Ozikol_BCC.Api.Controllers
                 if (user == null) return;
 
                 var baseRole = group.BaseRole?.Trim();
-                if (string.Equals(baseRole, "Administrator", StringComparison.OrdinalIgnoreCase))
+                if (group.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase) || string.Equals(baseRole, "Administrator", StringComparison.OrdinalIgnoreCase))
                 {
                     baseRole = "Admin";
                 }
