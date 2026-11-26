@@ -4301,7 +4301,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     };
 
   get isConsoleActive(): boolean {
-    return this.isAdmin && this.currentConsoleMode === 'console';
+    if (!this.isAdmin) return false;
+    return this.currentConsoleMode === 'console';
   }
 
   setConsoleMode(mode: 'console' | 'workspace'): void {
@@ -4710,6 +4711,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       },
       error: () => { }
     });
+
+    // Ensure member accounts always default cleanly to workspace mode
+    if (!this.isAdmin) {
+      this.currentConsoleMode = 'workspace';
+      localStorage.setItem('bcp_console_mode', 'workspace');
+      localStorage.removeItem('bcp_user_feature_keys');
+    }
 
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
@@ -5568,6 +5576,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           const freshData = res.data;
           if (freshData.roles) {
             localStorage.setItem('user_roles', JSON.stringify(freshData.roles));
+            const normRoles = (freshData.roles as string[]).map(r => r.trim().toLowerCase());
+            if (normRoles.length === 0 || normRoles.every(r => r === 'member')) {
+              localStorage.removeItem('bcp_user_feature_keys');
+              localStorage.setItem('bcp_console_mode', 'workspace');
+              this.currentConsoleMode = 'workspace';
+            }
           }
           if (freshData.token) {
             localStorage.setItem('access_token', freshData.token);

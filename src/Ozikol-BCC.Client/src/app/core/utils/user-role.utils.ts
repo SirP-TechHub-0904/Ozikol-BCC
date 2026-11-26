@@ -421,6 +421,15 @@ export function canAccessConsole(roles?: string[]): boolean {
   if (isGlobalAdmin(userRoles)) return true;
 
   const normalized = userRoles.map(normalizeRoleKey);
+
+  // A pure member account NEVER accesses the admin console
+  if (normalized.length === 1 && normalized[0] === 'member') {
+    return false;
+  }
+  if (normalized.every(r => r === 'member')) {
+    return false;
+  }
+
   const assignedKeys = getStoredUserFeatureKeys();
   if (assignedKeys.length > 0) return true;
 
