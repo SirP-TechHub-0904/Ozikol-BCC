@@ -379,6 +379,7 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var group = await _dbContext.BcpUserGroups
                 .Include(g => g.Members)
+                .Include(g => g.Permissions)
                 .FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
 
             if (group == null)
@@ -398,6 +399,22 @@ namespace Ozikol_BCC.Api.Controllers
             foreach (var member in group.Members)
             {
                 member.BcpUserGroupId = defaultGroup?.Id;
+            }
+
+            // Cascade delete child permissions to satisfy FK_BcpUserGroupPermissions_BcpUserGroups_BcpUserGroupId
+            if (group.Permissions != null && group.Permissions.Count > 0)
+            {
+                _dbContext.BcpUserGroupPermissions.RemoveRange(group.Permissions);
+            }
+            else
+            {
+                var remainingPermissions = await _dbContext.BcpUserGroupPermissions
+                    .Where(p => p.BcpUserGroupId == id)
+                    .ToListAsync(cancellationToken);
+                if (remainingPermissions.Count > 0)
+                {
+                    _dbContext.BcpUserGroupPermissions.RemoveRange(remainingPermissions);
+                }
             }
 
             _dbContext.BcpUserGroups.Remove(group);
