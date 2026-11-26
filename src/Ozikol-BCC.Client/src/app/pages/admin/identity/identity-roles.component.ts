@@ -296,69 +296,173 @@ interface GroupMemberPreview {
             <div class="blueprint-matrix-section">
               <div class="matrix-header">
                 <h4>Modular Capability Action Scopes</h4>
-                <p>Define which system modules members in this group can access and their permitted action level.</p>
+                <p>Define which system modules and subscribed feature add-ons members in this group can access and their permitted action level.</p>
               </div>
 
-              <div class="blueprint-table-wrap">
-                <table class="blueprint-table">
-                  <thead>
-                    <tr>
-                      <th style="min-width: 240px;">Capability Suite</th>
-                      <th style="min-width: 260px;">Functional Scope</th>
-                      <th style="width: 380px;">Assigned Action Role</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of editingGroupCapabilities">
-                      <td>
-                        <div class="feat-cell">
-                          <span class="material-symbols-outlined feat-icon" [style.color]="editingGroup.colorBadge || '#0050E5'">{{ item.icon }}</span>
-                          <div>
-                            <strong>{{ item.name }}</strong>
-                            <span class="cat-tag">{{ item.category }}</span>
+              <!-- Section 1: System Roles (Core Modules) -->
+              <div class="blueprint-subsection">
+                <div class="subsection-header">
+                  <div class="header-icon-pill" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+                    <span class="material-symbols-outlined">dataset</span>
+                  </div>
+                  <div>
+                    <div class="header-title-row">
+                      <h5>System Roles (Core Modules)</h5>
+                      <span class="section-count-badge badge-identity">{{ editingCoreCapabilities.length }} Roles</span>
+                    </div>
+                    <p class="subsection-desc">Standard built-in platform capabilities matching the core workspace sidebar navigation.</p>
+                  </div>
+                </div>
+
+                <div class="blueprint-table-wrap">
+                  <table class="blueprint-table">
+                    <thead>
+                      <tr>
+                        <th style="min-width: 240px;">System Role</th>
+                        <th style="min-width: 260px;">Description &amp; Operational Scope</th>
+                        <th style="width: 360px;">Assigned Action Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of editingCoreCapabilities">
+                        <td>
+                          <div class="feat-cell">
+                            <span class="material-symbols-outlined feat-icon" [style.color]="editingGroup.colorBadge || '#0050E5'">{{ item.icon }}</span>
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span class="cat-tag">{{ item.category }}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span class="feat-desc">{{ item.description }}</span>
-                      </td>
-                      <td>
-                        <div class="segmented-role-control">
-                          <button
-                            type="button"
-                            class="seg-btn seg-none"
-                            [class.active]="item.scope === 'None'"
-                            (click)="item.scope = 'None'"
-                            title="No access"
-                          >
-                            <span class="material-symbols-outlined">block</span>
-                            <span>None</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="seg-btn seg-readonly"
-                            [class.active]="item.scope === 'ReadOnly'"
-                            (click)="item.scope = 'ReadOnly'"
-                            title="Read Only"
-                          >
-                            <span class="material-symbols-outlined">visibility</span>
-                            <span>Read Only</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="seg-btn seg-feature"
-                            [class.active]="item.scope === 'FeatureEdit'"
-                            (click)="item.scope = 'FeatureEdit'"
-                            title="Feature Editor"
-                          >
-                            <span class="material-symbols-outlined">edit_note</span>
-                            <span>Feature Editor</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        </td>
+                        <td>
+                          <span class="feat-desc">{{ item.description }}</span>
+                        </td>
+                        <td>
+                          <div class="segmented-role-control">
+                            <button
+                              type="button"
+                              class="seg-btn seg-none"
+                              [class.active]="item.scope === 'None'"
+                              (click)="item.scope = 'None'"
+                              title="No access"
+                            >
+                              <span class="material-symbols-outlined">block</span>
+                              <span>None</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-readonly"
+                              [class.active]="item.scope === 'ReadOnly'"
+                              (click)="item.scope = 'ReadOnly'"
+                              title="Read Only access"
+                            >
+                              <span class="material-symbols-outlined">visibility</span>
+                              <span>Read Only</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-feature"
+                              [class.active]="item.scope === 'FeatureEdit'"
+                              (click)="item.scope = 'FeatureEdit'"
+                              title="Feature Editor access"
+                            >
+                              <span class="material-symbols-outlined">edit_note</span>
+                              <span>Feature Editor</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Section 2: Feature & Paid Roles (Subscribed Modular Add-ons) -->
+              <div class="blueprint-subsection mt-4">
+                <div class="subsection-header">
+                  <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                  </div>
+                  <div>
+                    <div class="header-title-row">
+                      <h5>Feature &amp; Paid Roles</h5>
+                      <span class="section-count-badge badge-editor">{{ editingPaidCapabilities.length }} Active</span>
+                    </div>
+                    <p class="subsection-desc">Dynamic domain capabilities unlocked exclusively by active workspace subscription add-ons.</p>
+                  </div>
+                </div>
+
+                <div class="blueprint-table-wrap" *ngIf="editingPaidCapabilities.length > 0">
+                  <table class="blueprint-table">
+                    <thead>
+                      <tr>
+                        <th style="min-width: 240px;">Feature Role</th>
+                        <th style="min-width: 260px;">Description &amp; Modular Scope</th>
+                        <th style="width: 360px;">Assigned Action Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of editingPaidCapabilities">
+                        <td>
+                          <div class="feat-cell">
+                            <span class="material-symbols-outlined feat-icon" style="color: #10b981;">{{ item.icon }}</span>
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span class="role-pill-badge badge-feature" style="margin-left: 0; margin-top: 3px; display: inline-block;">Paid Feature</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="feat-desc">{{ item.description }}</span>
+                        </td>
+                        <td>
+                          <div class="segmented-role-control">
+                            <button
+                              type="button"
+                              class="seg-btn seg-none"
+                              [class.active]="item.scope === 'None'"
+                              (click)="item.scope = 'None'"
+                              title="No access"
+                            >
+                              <span class="material-symbols-outlined">block</span>
+                              <span>None</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-readonly"
+                              [class.active]="item.scope === 'ReadOnly'"
+                              (click)="item.scope = 'ReadOnly'"
+                              title="Read Only access"
+                            >
+                              <span class="material-symbols-outlined">visibility</span>
+                              <span>Read Only</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-feature"
+                              [class.active]="item.scope === 'FeatureEdit'"
+                              (click)="item.scope = 'FeatureEdit'"
+                              title="Feature Editor access"
+                            >
+                              <span class="material-symbols-outlined">edit_note</span>
+                              <span>Feature Editor</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="empty-paid-state-blueprint" *ngIf="editingPaidCapabilities.length === 0">
+                  <div class="empty-paid-icon-sm">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                  </div>
+                  <div>
+                    <h6>No Active Paid Feature Add-Ons Subscribed</h6>
+                    <p>When paid capabilities (such as Workforce, Shifts &amp; Rotas, Commerce Studio, or Marketing Studio) are activated in Billing &amp; Subscriptions, their dedicated authority roles will automatically appear here for blueprint access assignment.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1243,12 +1347,68 @@ interface GroupMemberPreview {
     .blueprint-matrix-section {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
       border-top: 1px solid #f1f5f9;
       padding-top: 18px;
     }
-    .matrix-header h4 { margin: 0; font-size: 14px; font-weight: 700; color: #0f172a; }
+    .matrix-header h4 { margin: 0; font-size: 14.5px; font-weight: 700; color: #0f172a; }
     .matrix-header p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+
+    .blueprint-subsection {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .blueprint-subsection.mt-4 { margin-top: 14px; }
+    .subsection-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .subsection-header .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subsection-header h5 {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .subsection-desc {
+      margin: 2px 0 0;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .empty-paid-state-blueprint {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .empty-paid-icon-sm {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .empty-paid-icon-sm span { font-size: 20px; }
+    .empty-paid-state-blueprint h6 { margin: 0 0 2px; font-size: 12.5px; font-weight: 700; color: #0f172a; }
+    .empty-paid-state-blueprint p { margin: 0; font-size: 11.5px; color: #64748b; line-height: 1.4; }
+
     .blueprint-table-wrap {
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -2001,6 +2161,26 @@ interface GroupMemberPreview {
       background: #1e293b;
       color: #60a5fa;
     }
+    :host-context(.dark-mode) .blueprint-subsection {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .subsection-header h5 {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .subsection-desc {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint h6 {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint p {
+      color: #94a3b8;
+    }
   `]
 })
 export class IdentityRolesComponent implements OnInit {
@@ -2125,14 +2305,29 @@ export class IdentityRolesComponent implements OnInit {
     for (const r of catalogPaid) {
       list.push({
         name: r.name,
-        icon: r.icon || 'extension',
+        icon: r.icon || 'calendar_month',
         badge: r.badge || 'badge-feature-authority',
         scope: r.scope || 'Modular Feature Governance Only',
-        description: r.description
+        description: r.description,
+        featureAreaKey: (r as any).featureAreaKey || r.name
       });
     }
 
     return list;
+  }
+
+  /**
+   * Filtered list of Core System Module capabilities (7 built-in modules).
+   */
+  get editingCoreCapabilities(): CapabilityScope[] {
+    return this.editingGroupCapabilities.filter(c => !c.isPaid);
+  }
+
+  /**
+   * Filtered list of Subscribed Paid Feature capabilities (dynamic add-ons).
+   */
+  get editingPaidCapabilities(): CapabilityScope[] {
+    return this.editingGroupCapabilities.filter(c => !!c.isPaid);
   }
 
   /**
@@ -2201,15 +2396,6 @@ export class IdentityRolesComponent implements OnInit {
       description: 'Workspace global settings, localization, brand identity, full tamper-proof audit trails.',
       scope: 'None',
       isPaid: false
-    },
-    {
-      key: 'Workforce',
-      name: 'Workforce & Shifts',
-      category: 'Paid Feature',
-      icon: 'badge',
-      description: 'Staff directory, shift scheduling, clock-in attendance, timesheets, and self-registration forms.',
-      scope: 'None',
-      isPaid: true
     }
   ];
 
@@ -2268,6 +2454,63 @@ export class IdentityRolesComponent implements OnInit {
   }
 
   /**
+   * Initializes capability scopes separated into Core System Modules and Active Paid Feature Add-ons.
+   * Defaults all unconfigured scopes to 'None'.
+   */
+  private initEditingGroupCapabilities(permissions: any[] = []): void {
+    // 1. Core built-in system modules (7 modules)
+    const coreCaps: CapabilityScope[] = this.systemFeatures.map(f => {
+      const matched = permissions.find((p: any) =>
+        p.featureAreaKey?.toLowerCase() === f.key.toLowerCase() ||
+        p.featureAreaKey?.toLowerCase() === f.name.toLowerCase()
+      );
+      let scope: 'None' | 'ReadOnly' | 'FeatureEdit' = 'None';
+      if (matched) {
+        if (matched.actionRole === 'ReadOnly') scope = 'ReadOnly';
+        else if (matched.actionRole === 'FeatureEdit' || matched.actionRole === 'GlobalEdit') scope = 'FeatureEdit';
+      }
+      return {
+        ...f,
+        isPaid: false,
+        scope
+      };
+    });
+
+    // 2. Active subscribed paid feature add-ons
+    const paidCaps: CapabilityScope[] = this.paidFeatureRoles.map(pf => {
+      const targetKey = pf.featureAreaKey || pf.name;
+      const cleanTarget = (targetKey || '').toLowerCase().replace(/[-_ ]/g, '');
+      const matched = permissions.find((p: any) => {
+        const cleanPerm = (p.featureAreaKey || '').toLowerCase().replace(/[-_ ]/g, '');
+        return cleanPerm === cleanTarget ||
+               cleanPerm.includes(cleanTarget) ||
+               cleanTarget.includes(cleanPerm) ||
+               (cleanTarget.includes('workforce') && (cleanPerm.includes('workforce') || cleanPerm.includes('rota') || cleanPerm.includes('staff')));
+      });
+
+      let scope: 'None' | 'ReadOnly' | 'FeatureEdit' = 'None';
+      if (matched) {
+        if (matched.actionRole === 'ReadOnly') scope = 'ReadOnly';
+        else if (matched.actionRole === 'FeatureEdit' || matched.actionRole === 'GlobalEdit') scope = 'FeatureEdit';
+      }
+
+      const displayName = pf.name.replace(/ Manager$/i, '').trim();
+
+      return {
+        key: pf.featureAreaKey || pf.name,
+        name: displayName,
+        category: 'Paid Feature',
+        icon: pf.icon || 'calendar_month',
+        description: pf.description || `Feature domain capabilities for '${displayName}'.`,
+        scope,
+        isPaid: true
+      };
+    });
+
+    this.editingGroupCapabilities = [...coreCaps, ...paidCaps];
+  }
+
+  /**
    * Opens the blueprint creation view with fresh default values.
    */
   startCreateGroup(): void {
@@ -2279,10 +2522,7 @@ export class IdentityRolesComponent implements OnInit {
       colorBadge: '#0050E5',
       icon: 'groups'
     };
-    this.editingGroupCapabilities = this.systemFeatures.map(f => ({
-      ...f,
-      scope: 'None' as const
-    }));
+    this.initEditingGroupCapabilities([]);
   }
 
   /**
@@ -2309,17 +2549,7 @@ export class IdentityRolesComponent implements OnInit {
         };
 
         const permissions = detail.permissions || [];
-        this.editingGroupCapabilities = this.systemFeatures.map(f => {
-          const matched = permissions.find((p: any) => p.featureAreaKey?.toLowerCase() === f.key.toLowerCase());
-          let scope = matched ? (matched.actionRole as any) : 'None';
-          if (scope === 'GlobalEdit') {
-            scope = 'FeatureEdit';
-          }
-          return {
-            ...f,
-            scope: scope
-          };
-        });
+        this.initEditingGroupCapabilities(permissions);
       },
       error: () => {
         this.isLoadingGroups = false;
