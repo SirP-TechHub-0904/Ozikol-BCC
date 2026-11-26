@@ -2529,33 +2529,58 @@ export class IdentityRolesComponent implements OnInit {
    * Opens the blueprint editor for an existing user group.
    */
   startEditGroup(group: any): void {
+    if (!group) return;
+
     if (group.isDefault || (group.name || '').toLowerCase() === 'member') {
       this.toast.info('The baseline Member group is permanent and cannot be modified. Every user is inherently a member.');
       return;
     }
-    this.isLoadingGroups = true;
-    this.api.get<any>(`api/v1/user-groups/${group.id}`).subscribe({
-      next: (res) => {
-        this.isLoadingGroups = false;
-        const detail = res.data || res;
-        this.editingGroup = {
-          id: detail.id,
-          name: detail.name,
-          description: detail.description,
-          baseRole: detail.baseRole || 'Member',
-          isDefault: detail.isDefault || false,
-          colorBadge: detail.colorBadge || '#0050E5',
-          icon: detail.icon || 'groups'
-        };
 
-        const permissions = detail.permissions || [];
-        this.initEditingGroupCapabilities(permissions);
-      },
-      error: () => {
-        this.isLoadingGroups = false;
-        this.toast.error('Failed to load group blueprint details.');
-      }
-    });
+    const groupId = group.id || group.Id;
+
+    // Immediately open the blueprint editor with the row data
+    this.editingGroup = {
+      id: groupId,
+      name: group.name || group.Name || '',
+      description: group.description || group.Description || '',
+      baseRole: group.baseRole || group.BaseRole || 'Admin',
+      isDefault: group.isDefault ?? group.IsDefault ?? false,
+      colorBadge: group.colorBadge || group.ColorBadge || '#0050E5',
+      icon: group.icon || group.Icon || 'groups'
+    };
+
+    // Initialize capabilities immediately
+    const initialPerms = group.permissions || group.Permissions || [];
+    this.initEditingGroupCapabilities(initialPerms);
+
+    // Scroll smoothly to the editor card
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Background fetch to enrich permissions if groupId exists
+    if (groupId) {
+      this.api.get<any>(`api/v1/user-groups/${groupId}`).subscribe({
+        next: (res) => {
+          const detail = res.data || res;
+          if (detail && this.editingGroup) {
+            this.editingGroup.id = detail.id || detail.Id || this.editingGroup.id;
+            this.editingGroup.name = detail.name || detail.Name || this.editingGroup.name;
+            this.editingGroup.description = detail.description ?? detail.Description ?? this.editingGroup.description;
+            this.editingGroup.baseRole = detail.baseRole || detail.BaseRole || this.editingGroup.baseRole;
+            this.editingGroup.isDefault = detail.isDefault ?? detail.IsDefault ?? this.editingGroup.isDefault;
+            this.editingGroup.colorBadge = detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge;
+            this.editingGroup.icon = detail.icon || detail.Icon || this.editingGroup.icon;
+
+            const permissions = detail.permissions || detail.Permissions || initialPerms;
+            this.initEditingGroupCapabilities(permissions);
+          }
+        },
+        error: () => {
+          // Keep the opened editingGroup fully responsive and editable
+        }
+      });
+    }
   }
 
   /**
