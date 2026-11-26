@@ -4313,10 +4313,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.currentConsoleMode = mode;
     localStorage.setItem('bcp_console_mode', mode);
 
-    if (mode === 'workspace' && (this.currentRoute.startsWith('/dashboard/console') || this.currentRoute.startsWith('/admin/dashboard'))) {
+    if (mode === 'workspace' && (this.currentRoute.startsWith('/dashboard/console') || this.currentRoute.startsWith('/admin/dashboard') || this.currentRoute.includes('/console') || this.currentRoute.startsWith('/admin'))) {
       this.router.navigate(['/dashboard/workspace']);
-    } else if (mode === 'console' && (this.currentRoute.startsWith('/dashboard/workspace') || this.currentRoute.startsWith('/users/workspace/dashboard'))) {
-      this.router.navigate(['/dashboard/console']);
+    } else if (mode === 'console' && (this.currentRoute.includes('/workspace') || this.currentRoute.startsWith('/users/workspace'))) {
+      const targetDashboard = getReturnUrlForRole(this.userRoles);
+      this.router.navigate([targetDashboard]);
     }
   }
 
@@ -5619,7 +5620,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             this.loadFeatureExpirations();
           }
 
-          // Only redirect to personal workspace if the user has NO console-level roles at all (Member only)
+          // 1. If user is Member only (no console access), ensure they cannot stay on console routes
           if (!canAccessConsole(freshData.roles || this.userRoles)) {
             const activeUrl = this.router.url || this.currentRoute || '';
             const isWorkspaceRoute = activeUrl.includes('/workspace');
@@ -5632,6 +5633,24 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             if (isOnAdminRoute) {
               console.warn('[AdminLayout] Member-only user on console route -> Redirecting to workspace:', activeUrl);
               this.router.navigate(['/dashboard/workspace']);
+            }
+          } else {
+            // 2. If user HAS console access:
+            // Ensure console mode is active unless user explicitly set workspace mode
+            const storedMode = localStorage.getItem('bcp_console_mode');
+            if (!storedMode || storedMode === 'console') {
+              this.currentConsoleMode = 'console';
+              localStorage.setItem('bcp_console_mode', 'console');
+            }
+
+            // If the user was elevated into console while sitting on a member workspace page (e.g., /users/workspace/notifications),
+            // auto-redirect them to their designated console landing dashboard
+            const activeUrl = this.router.url || this.currentRoute || '';
+            const isWorkspaceRoute = activeUrl.includes('/workspace') || activeUrl.startsWith('/users/workspace') || activeUrl === '/dashboard/workspace';
+            if (this.currentConsoleMode === 'console' && isWorkspaceRoute) {
+              const targetDashboard = getReturnUrlForRole(freshData.roles || this.userRoles);
+              console.log('[AdminLayout] Console user on workspace route upon elevation -> Navigating to:', targetDashboard);
+              this.router.navigate([targetDashboard]);
             }
           }
         }

@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Dtos;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System;
@@ -26,15 +29,21 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _dbContext;
         private readonly UserManager<Profile> _userManager;
         private readonly RoleManager<AppRole> _roleManager;
+        private readonly IHubContext<GroupChatHub>? _hubContext;
+        private readonly IHubContext<NotificationHub>? _notificationHubContext;
 
         public UserGroupApiController(
             DashboardDbContext dbContext,
             UserManager<Profile> userManager,
-            RoleManager<AppRole> roleManager)
+            RoleManager<AppRole> roleManager,
+            IHubContext<GroupChatHub>? hubContext = null,
+            IHubContext<NotificationHub>? notificationHubContext = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
+            _hubContext = hubContext;
+            _notificationHubContext = notificationHubContext;
         }
 
         /// <summary>
@@ -706,6 +715,36 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
+
+                // Broadcast live real-time SignalR security update to the member's active browser sessions
+                var signalRPayload = new
+                {
+                    userId = user.Id,
+                    email = user.Email,
+                    role = targetRole,
+                    isAdmin = isUnrestrictedAdmin,
+                    timestamp = DateTime.UtcNow
+                };
+
+                if (_hubContext != null)
+                {
+                    try
+                    {
+                        await _hubContext.Clients.Group($"user-{user.Id}").SendAsync("UserPermissionsUpdated", signalRPayload, cancellationToken);
+                        await _hubContext.Clients.Group($"user_{user.Id}").SendAsync("UserPermissionsUpdated", signalRPayload, cancellationToken);
+                    }
+                    catch { }
+                }
+
+                if (_notificationHubContext != null)
+                {
+                    try
+                    {
+                        await _notificationHubContext.Clients.Group($"user-{user.Id}").SendAsync("UserPermissionsUpdated", signalRPayload, cancellationToken);
+                        await _notificationHubContext.Clients.Group($"user_{user.Id}").SendAsync("UserPermissionsUpdated", signalRPayload, cancellationToken);
+                    }
+                    catch { }
+                }
             }
             catch (Exception)
             {
