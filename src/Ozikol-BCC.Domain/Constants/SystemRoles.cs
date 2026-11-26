@@ -12,9 +12,14 @@ namespace Ozikol_BCC.Domain.Constants
     {
         public const string SuperAdmin = "SuperAdmin";
         public const string Admin = "Admin";
-        public const string IdentityManager = "Identity Manager";
-        public const string UserManager = "User Manager";
+        public const string CentralCommandManager = "Central Command Manager";
         public const string CmsStudioManager = "CMS Studio Manager";
+        public const string UserManager = "User Manager";
+        public const string IdentityManager = "Identity Manager";
+        public const string BroadcastManager = "Broadcast Manager";
+        public const string BillingManager = "Billing Manager";
+        public const string SettingsManager = "Settings & Audit Manager";
+        public const string WorkforceManager = "Staff Rota & Shifts Manager";
         public const string Member = "Member";
         public const string GlobalEditor = "Global Editor";
         public const string FeatureEditor = "Feature Editor";
@@ -142,6 +147,30 @@ namespace Ozikol_BCC.Domain.Constants
             "featureeditor",
             "formmanager"
         };
+
+        /// <summary>
+        /// Canonical normalized keys that grant Billing, Subscriptions &amp; Invoice governance access.
+        /// </summary>
+        public static readonly HashSet<string> BillingAccessKeys = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "superadmin",
+            "admin",
+            "billingmanager",
+            "billing",
+            "financebanking"
+        };
+
+        /// <summary>
+        /// Canonical normalized keys that grant Global System Settings &amp; Security Audit access.
+        /// </summary>
+        public static readonly HashSet<string> SettingsAccessKeys = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "superadmin",
+            "admin",
+            "settingsmanager",
+            "settingsauditmanager",
+            "identitymanager"
+        };
     }
 
     /// <summary>
@@ -156,6 +185,8 @@ namespace Ozikol_BCC.Domain.Constants
         public const string CommerceStudio = "Policy.CommerceStudio";
         public const string CommunicationStudio = "Policy.CommunicationStudio";
         public const string FormStudio = "Policy.FormStudio";
+        public const string BillingGovernance = "Policy.BillingGovernance";
+        public const string SettingsGovernance = "Policy.SettingsGovernance";
     }
 }
 

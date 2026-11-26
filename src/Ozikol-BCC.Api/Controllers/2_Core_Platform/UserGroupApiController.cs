@@ -112,8 +112,9 @@ namespace Ozikol_BCC.Api.Controllers
                             if (u.BcpUserGroupId.HasValue) return false;
                             if (!rolesByUser.TryGetValue(u.Id, out var rList)) return g.IsDefault;
                             if (g.Name == "Administrator" || matchingRole == "Admin") return rList.Contains("Admin") || rList.Contains("SuperAdmin");
-                            if (g.Name == "Operations & Workforce Manager" || matchingRole == "Feature Editor") return rList.Contains("Feature Editor") || rList.Contains("UserManager");
+                            if (g.Name == "Operations & Workforce Manager" || matchingRole == "Feature Editor") return rList.Contains("Feature Editor") || rList.Contains("UserManager") || rList.Contains("Staff Rota & Shifts Manager");
                             if (matchingRole == "Read Only") return rList.Contains("Read Only");
+                            if (!string.IsNullOrWhiteSpace(matchingRole) && rList.Contains(matchingRole)) return true;
                             if (g.IsDefault || matchingRole == "Member") return rList.Contains("Member") && !rList.Contains("Admin") && !rList.Contains("SuperAdmin") && !rList.Contains("Feature Editor");
                             return false;
                         }).ToList();

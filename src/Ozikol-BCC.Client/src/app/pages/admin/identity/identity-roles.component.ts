@@ -239,11 +239,27 @@ interface GroupMemberPreview {
               <div class="form-group">
                 <label>Base System Role *</label>
                 <select [(ngModel)]="editingGroup.baseRole" class="form-control">
-                  <option value="Member">Member (Standard Workspace Access)</option>
-                  <option value="FeatureEditor">Feature Editor (Operational Capability Access)</option>
-                  <option value="GlobalEditor">Global Editor (Workspace-Wide Editing)</option>
-                  <option value="ReadOnly">Read Only (Inspection & Audit Observer)</option>
-                  <option value="Admin">Administrator (Full Access)</option>
+                  <optgroup label="Core Platform Governance">
+                    <option value="Admin">Administrator (Full Unrestricted Access)</option>
+                    <option value="Member">Member (Standard Workspace Access)</option>
+                  </optgroup>
+                  <optgroup label="System Module Roles">
+                    <option value="Central Command Manager">Central Command Manager</option>
+                    <option value="CMS Studio Manager">Website &amp; CMS Manager</option>
+                    <option value="User Manager">User Manager</option>
+                    <option value="Identity Manager">Identity &amp; Access Manager</option>
+                    <option value="Broadcast Manager">Broadcast &amp; Communications Manager</option>
+                    <option value="Billing Manager">Billing &amp; Invoices Manager</option>
+                    <option value="Settings &amp; Audit Manager">Settings &amp; Audit Manager</option>
+                  </optgroup>
+                  <optgroup label="Paid &amp; Modular Features">
+                    <option value="Staff Rota &amp; Shifts Manager">Workforce &amp; Shifts Manager (Paid)</option>
+                  </optgroup>
+                  <optgroup label="Operational Action Levels">
+                    <option value="GlobalEditor">Global Editor (Workspace-Wide Editing)</option>
+                    <option value="FeatureEditor">Feature Editor (Scoped Capability Access)</option>
+                    <option value="ReadOnly">Read Only (Inspection &amp; Audit Observer)</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -2007,9 +2023,20 @@ export class IdentityRolesComponent implements OnInit {
   get paidFeatureRoles(): any[] {
     const list: any[] = [];
     
-    // Check active paid feature roles from catalog
+    // Check active paid feature roles from catalog, excluding core platform & system roles
+    const excluded = [
+      'superadmin', 'admin', 'member',
+      'central command manager', 'central command',
+      'cms studio manager', 'website & cms',
+      'user manager', 'user management',
+      'identity manager', 'identity & access control',
+      'broadcast manager', 'broadcast & communications',
+      'billing manager', 'billing & subscriptions', 'billing & invoices',
+      'settings & audit manager', 'settings & audit',
+      'global editor', 'feature editor', 'read only'
+    ];
     const catalogPaid = this.rolesCatalog.filter(r => 
-      !['superadmin', 'admin', 'member', 'identity manager', 'user manager', 'cms studio manager', 'global editor', 'feature editor', 'read only'].includes((r.name || '').toLowerCase())
+      !excluded.includes((r.name || '').toLowerCase())
     );
 
     if (catalogPaid.length > 0) {

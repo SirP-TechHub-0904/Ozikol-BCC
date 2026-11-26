@@ -100,8 +100,16 @@ Chart.register(...registerables);
                 <option value="All">All Roles</option>
                 <option value="SuperAdmin">SuperAdmin</option>
                 <option value="Admin">Admin</option>
-                <option value="Editor">Editor</option>
-                <option value="Moderator">Moderator</option>
+                <option value="Billing Manager">Billing Manager</option>
+                <option value="CMS Studio Manager">CMS Studio Manager</option>
+                <option value="User Manager">User Manager</option>
+                <option value="Identity Manager">Identity Manager</option>
+                <option value="Broadcast Manager">Broadcast Manager</option>
+                <option value="Settings & Audit Manager">Settings & Audit Manager</option>
+                <option value="Staff Rota & Shifts Manager">Staff Rota & Shifts Manager</option>
+                <option value="Global Editor">Global Editor</option>
+                <option value="Feature Editor">Feature Editor</option>
+                <option value="Read Only">Read Only</option>
                 <option value="Member">Member</option>
               </select>
             </div>
@@ -644,9 +652,16 @@ Chart.register(...registerables);
               <select [(ngModel)]="newUser.role">
                 <option value="Member">Member</option>
                 <option value="Admin">Admin</option>
-                <option value="Editor">Editor</option>
-                <option value="Moderator">Moderator</option>
-                <option value="SuperAdmin">SuperAdmin</option>
+                <option value="Billing Manager">Billing Manager</option>
+                <option value="CMS Studio Manager">CMS Studio Manager</option>
+                <option value="User Manager">User Manager</option>
+                <option value="Identity Manager">Identity Manager</option>
+                <option value="Broadcast Manager">Broadcast Manager</option>
+                <option value="Settings & Audit Manager">Settings & Audit Manager</option>
+                <option value="Staff Rota & Shifts Manager">Staff Rota & Shifts Manager</option>
+                <option value="Global Editor">Global Editor</option>
+                <option value="Feature Editor">Feature Editor</option>
+                <option value="Read Only">Read Only</option>
               </select>
             </div>
 
