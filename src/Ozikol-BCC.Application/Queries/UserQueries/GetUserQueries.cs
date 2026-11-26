@@ -76,6 +76,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 .GroupBy(x => x.UserId)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName!).ToList());
 
+            var defaultGroup = await _dbContext.BcpUserGroups.AsNoTracking().FirstOrDefaultAsync(g => g.IsDefault, cancellationToken);
+            var adminGroup = await _dbContext.BcpUserGroups.AsNoTracking().FirstOrDefaultAsync(g => g.Name == "Administrator" || g.BaseRole == "Admin", cancellationToken);
+
             var users = await _dbContext.Users
                 .Include(u => u.BcpUserCategory)
                 .Include(u => u.BcpUserGroup)
@@ -109,6 +112,30 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                     var isLocked = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow;
                     var isSuspicious = isLocked || u.AccessFailedCount > 0;
 
+                    var assignedRoles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" };
+                    var isAdmin = assignedRoles.Contains("Admin") || assignedRoles.Contains("SuperAdmin");
+
+                    // Accurately resolve User Group Title and Color Badge with fallback to system blueprint
+                    var resolvedGroupId = u.BcpUserGroupId;
+                    var resolvedGroupName = u.BcpUserGroup?.Name;
+                    var resolvedGroupColor = u.BcpUserGroup?.ColorBadge;
+
+                    if (string.IsNullOrWhiteSpace(resolvedGroupName))
+                    {
+                        if (isAdmin)
+                        {
+                            resolvedGroupName = adminGroup?.Name ?? "Administrator";
+                            resolvedGroupColor = adminGroup?.ColorBadge ?? "#0050E5";
+                            resolvedGroupId = adminGroup?.Id ?? resolvedGroupId;
+                        }
+                        else
+                        {
+                            resolvedGroupName = defaultGroup?.Name ?? "Member";
+                            resolvedGroupColor = defaultGroup?.ColorBadge ?? "#64748B";
+                            resolvedGroupId = defaultGroup?.Id ?? resolvedGroupId;
+                        }
+                    }
+
                     return new UserDto
                     {
                         Id = u.Id,
@@ -130,12 +157,12 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                         CategoryName = u.BcpUserCategory?.Name,
                         CategoryColor = u.BcpUserCategory?.ColorCode,
                         CategoryIcon = u.BcpUserCategory?.Icon,
-                        BcpUserGroupId = u.BcpUserGroupId,
-                        UserGroupName = u.BcpUserGroup?.Name,
-                        UserGroupColor = u.BcpUserGroup?.ColorBadge,
+                        BcpUserGroupId = resolvedGroupId,
+                        UserGroupName = resolvedGroupName,
+                        UserGroupColor = resolvedGroupColor,
                         EmailConfirmed = u.EmailConfirmed,
                         PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-                        Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" },
+                        Roles = assignedRoles,
                         AccessFailedCount = u.AccessFailedCount,
                         LockoutEnd = u.LockoutEnd,
                         IsLockedOut = isLocked,
@@ -198,6 +225,32 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
             var isLocked = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow;
             var isSuspicious = isLocked || u.AccessFailedCount > 0;
 
+            var assignedRoles = roles.Count > 0 ? roles : new List<string> { "Member" };
+            var isAdmin = assignedRoles.Contains("Admin") || assignedRoles.Contains("SuperAdmin");
+
+            var resolvedGroupId = u.BcpUserGroupId;
+            var resolvedGroupName = u.BcpUserGroup?.Name;
+            var resolvedGroupColor = u.BcpUserGroup?.ColorBadge;
+
+            if (string.IsNullOrWhiteSpace(resolvedGroupName))
+            {
+                var defaultGroup = await _dbContext.BcpUserGroups.AsNoTracking().FirstOrDefaultAsync(g => g.IsDefault, cancellationToken);
+                var adminGroup = await _dbContext.BcpUserGroups.AsNoTracking().FirstOrDefaultAsync(g => g.Name == "Administrator" || g.BaseRole == "Admin", cancellationToken);
+
+                if (isAdmin)
+                {
+                    resolvedGroupName = adminGroup?.Name ?? "Administrator";
+                    resolvedGroupColor = adminGroup?.ColorBadge ?? "#0050E5";
+                    resolvedGroupId = adminGroup?.Id ?? resolvedGroupId;
+                }
+                else
+                {
+                    resolvedGroupName = defaultGroup?.Name ?? "Member";
+                    resolvedGroupColor = defaultGroup?.ColorBadge ?? "#64748B";
+                    resolvedGroupId = defaultGroup?.Id ?? resolvedGroupId;
+                }
+            }
+
             return new UserDto
             {
                 Id = u.Id,
@@ -219,10 +272,10 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 CategoryName = u.BcpUserCategory?.Name,
                 CategoryColor = u.BcpUserCategory?.ColorCode,
                 CategoryIcon = u.BcpUserCategory?.Icon,
-                BcpUserGroupId = u.BcpUserGroupId,
-                UserGroupName = u.BcpUserGroup?.Name,
-                UserGroupColor = u.BcpUserGroup?.ColorBadge,
-                Roles = roles.Count > 0 ? roles : new List<string> { "Member" },
+                BcpUserGroupId = resolvedGroupId,
+                UserGroupName = resolvedGroupName,
+                UserGroupColor = resolvedGroupColor,
+                Roles = assignedRoles,
                 AccessFailedCount = u.AccessFailedCount,
                 LockoutEnd = u.LockoutEnd,
                 IsLockedOut = isLocked,

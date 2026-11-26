@@ -55,16 +55,16 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
             </select>
           </div>
 
-          <!-- 3. Role Filter -->
+          <!-- 3. User Group Filter -->
           <div class="filter-group">
-            <label>{{ 'directory.assigned_role' | translate:'Assigned Role' }}</label>
+            <label>{{ 'directory.assigned_user_group' | translate:'User Group' }}</label>
             <select [(ngModel)]="selectedRoleFilter" (change)="applyFilters()">
-              <option value="All">{{ 'directory.all_roles' | translate:'All Roles' }}</option>
-              <option value="Admin">Admin</option>
-              <option value="Global Editor">Global Editor</option>
-              <option value="Feature Editor">Feature Editor</option>
-              <option value="Read Only">Read Only</option>
-              <option value="Member">Member</option>
+              <option value="All">{{ 'directory.all_groups' | translate:'All Groups' }}</option>
+              <option *ngFor="let g of userGroups" [value]="g.name">{{ g.name }}</option>
+              <ng-container *ngIf="userGroups.length === 0">
+                <option value="Administrator">Administrator</option>
+                <option value="Member">Member</option>
+              </ng-container>
             </select>
           </div>
 
@@ -159,10 +159,10 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
                   <span class="material-symbols-outlined sort-icon">{{ getSortIcon('categoryName') }}</span>
                 </div>
               </th>
-              <th (click)="sortBy('roles')" style="width: 130px;">
+              <th (click)="sortBy('userGroupName')" style="width: 150px;">
                 <div class="th-content">
-                  <span>{{ 'directory.col_role' | translate:'Role' }}</span>
-                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('roles') }}</span>
+                  <span>{{ 'directory.col_user_group' | translate:'User Group' }}</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('userGroupName') }}</span>
                 </div>
               </th>
               <th (click)="sortBy('userStatus')" style="width: 110px;">
@@ -224,10 +224,14 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
                 </span>
               </td>
 
-              <!-- Role -->
+              <!-- User Group -->
               <td>
-                <span class="role-pill" [class.role-admin]="u.roles?.includes('Admin')">
-                  {{ u.roles?.join(', ') || 'Member' }}
+                <span class="user-group-pill"
+                      [style.background]="(u.userGroupColor || (u.roles?.includes('Admin') ? '#0050e5' : '#64748b')) + '18'"
+                      [style.color]="u.userGroupColor || (u.roles?.includes('Admin') ? '#0050e5' : '#334155')"
+                      [style.border-color]="(u.userGroupColor || (u.roles?.includes('Admin') ? '#0050e5' : '#64748b')) + '35'">
+                  <span class="group-dot" [style.background]="u.userGroupColor || (u.roles?.includes('Admin') ? '#0050e5' : '#64748b')"></span>
+                  <span class="group-title">{{ u.userGroupName || (u.roles?.includes('Admin') ? 'Administrator' : 'Member') }}</span>
                 </span>
               </td>
 
@@ -378,6 +382,10 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
     .role-pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 9999px; background: #f1f5f9; color: #475569; }
     .role-admin { background: #eff6ff; color: #0050e5; }
 
+    .user-group-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 9999px; border: 1px solid transparent; letter-spacing: -0.01em; white-space: nowrap; }
+    .group-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .group-title { line-height: 1.2; }
+
     .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; }
     .active-status { color: #10b981; }
@@ -413,6 +421,7 @@ export class UsersListComponent implements OnInit {
   filteredUsers: any[] = [];
   paginatedUsers: any[] = [];
   categories: any[] = [];
+  userGroups: any[] = [];
 
   // Filters
   searchQuery = '';
@@ -474,6 +483,7 @@ export class UsersListComponent implements OnInit {
     });
     this.loadUsers();
     this.loadCategories();
+    this.loadUserGroups();
   }
 
   loadUsers(): void {
@@ -501,6 +511,15 @@ export class UsersListComponent implements OnInit {
     });
   }
 
+  loadUserGroups(): void {
+    this.api.get<any>('v1/user-groups').subscribe({
+      next: (res) => {
+        this.userGroups = res.data || [];
+      },
+      error: () => {}
+    });
+  }
+
   applyFilters(): void {
     let list = [...this.users];
 
@@ -512,6 +531,7 @@ export class UsersListComponent implements OnInit {
         u.memberId?.toLowerCase().includes(q) ||
         u.designation?.toLowerCase().includes(q) ||
         u.categoryName?.toLowerCase().includes(q) ||
+        u.userGroupName?.toLowerCase().includes(q) ||
         u.phoneNumber?.includes(q)
       );
     }
@@ -525,7 +545,11 @@ export class UsersListComponent implements OnInit {
     }
 
     if (this.selectedRoleFilter !== 'All') {
-      list = list.filter(u => u.roles?.includes(this.selectedRoleFilter));
+      const target = this.selectedRoleFilter.toLowerCase();
+      list = list.filter(u => {
+        const gName = (u.userGroupName || (u.roles?.includes('Admin') ? 'Administrator' : 'Member')).toLowerCase();
+        return gName === target || (u.roles && u.roles.some((r: string) => r.toLowerCase() === target));
+      });
     }
 
     if (this.selectedStatusFilter !== 'All') {
@@ -537,9 +561,9 @@ export class UsersListComponent implements OnInit {
       let valA: any = a[this.sortColumn];
       let valB: any = b[this.sortColumn];
 
-      if (this.sortColumn === 'roles') {
-        valA = Array.isArray(a.roles) ? a.roles.join(', ') : (a.roles || '');
-        valB = Array.isArray(b.roles) ? b.roles.join(', ') : (b.roles || '');
+      if (this.sortColumn === 'userGroupName' || this.sortColumn === 'roles') {
+        valA = a.userGroupName || (a.roles?.includes('Admin') ? 'Administrator' : 'Member');
+        valB = b.userGroupName || (b.roles?.includes('Admin') ? 'Administrator' : 'Member');
       }
 
       valA = (valA ?? '').toString().toLowerCase();
@@ -609,7 +633,7 @@ export class UsersListComponent implements OnInit {
       { key: 'email', header: 'Email Address' },
       { key: 'phoneNumber', header: 'Phone Number' },
       { key: 'categoryName', header: 'Category Tier' },
-      { key: 'roles', header: 'Assigned Roles', format: (val) => Array.isArray(val) ? val.join(', ') : (val || 'Member') },
+      { key: 'userGroupName', header: 'User Group', format: (val, row) => row.userGroupName || (row.roles?.includes('Admin') ? 'Administrator' : 'Member') },
       { key: 'designation', header: 'Designation' },
       { key: 'userStatus', header: 'Status' },
       { key: 'joinDate', header: 'Join Date', format: (val) => val ? new Date(val).toLocaleDateString() : '-' }
