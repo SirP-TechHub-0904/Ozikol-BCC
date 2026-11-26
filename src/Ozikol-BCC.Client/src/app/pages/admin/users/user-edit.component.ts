@@ -93,12 +93,22 @@ import { TranslationService } from '../../../core/services/translation.service';
             </div>
 
             <div class="card-body">
-              <div class="form-group">
-                <label>{{ 'user_edit.field_category' | translate:'Category Tier' }}</label>
-                <select [(ngModel)]="model.bcpUserCategoryId" name="bcpUserCategoryId">
-                  <option [ngValue]="null">{{ 'user_edit.category_unassigned' | translate:'Select Category (Unassigned)' }}</option>
-                  <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-                </select>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>{{ 'user_edit.field_user_group' | translate:'User Group' }}</label>
+                  <select [(ngModel)]="model.userGroupId" name="userGroupId" (change)="onUserGroupChange()">
+                    <option [ngValue]="null">{{ 'user_edit.group_unassigned' | translate:'Select User Group (Unassigned)' }}</option>
+                    <option *ngFor="let g of userGroups" [value]="g.id">{{ g.name }} ({{ g.baseRole }}){{ g.isDefault ? ' • Default' : '' }}</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>{{ 'user_edit.field_category' | translate:'Category Tier' }}</label>
+                  <select [(ngModel)]="model.bcpUserCategoryId" name="bcpUserCategoryId">
+                    <option [ngValue]="null">{{ 'user_edit.category_unassigned' | translate:'Select Category (Unassigned)' }}</option>
+                    <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-grid-2">
@@ -218,9 +228,12 @@ export class UserEditComponent implements OnInit {
     phoneNumber: '',
     designation: '',
     role: 'Member',
+    userGroupId: null,
     bcpUserCategoryId: null,
     memberId: ''
   };
+
+  userGroups: any[] = [];
 
   get headerButtons(): PageHeaderButton[] {
     return [
@@ -256,7 +269,24 @@ export class UserEditComponent implements OnInit {
 
     this.loadUserSettings();
     this.loadCategories();
+    this.loadUserGroups();
     this.loadUserData();
+  }
+
+  loadUserGroups(): void {
+    this.api.get<any>('v1/user-groups').subscribe({
+      next: (res) => {
+        this.userGroups = res?.data || [];
+      },
+      error: () => {}
+    });
+  }
+
+  onUserGroupChange(): void {
+    const selected = this.userGroups.find(g => g.id === this.model.userGroupId);
+    if (selected) {
+      this.model.role = selected.baseRole || 'Member';
+    }
   }
 
   loadUserSettings(): void {
@@ -306,6 +336,7 @@ export class UserEditComponent implements OnInit {
             phoneNumber: u.phoneNumber,
             designation: u.designation,
             role: u.roles && u.roles.length > 0 ? u.roles[0] : 'Member',
+            userGroupId: u.bcpUserGroupId || null,
             bcpUserCategoryId: u.bcpUserCategoryId,
             memberId: u.memberId
           };
