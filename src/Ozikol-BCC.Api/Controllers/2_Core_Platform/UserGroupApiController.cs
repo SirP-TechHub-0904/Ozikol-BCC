@@ -82,9 +82,15 @@ namespace Ozikol_BCC.Api.Controllers
                     .ThenBy(g => g.Name)
                     .ToListAsync(cancellationToken);
 
+                // Identify root SuperAdmin account IDs to exclude them from organizational member counts
+                var superAdminRole = await _dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == "SuperAdmin", cancellationToken);
+                var superAdminUserIds = superAdminRole != null
+                    ? (await _dbContext.UserRoles.AsNoTracking().Where(ur => ur.RoleId == superAdminRole.Id).Select(ur => ur.UserId).ToListAsync(cancellationToken)).ToHashSet()
+                    : new HashSet<string>();
+
                 var allActiveUsers = await _dbContext.Users
                     .AsNoTracking()
-                    .Where(u => !u.IsDeleted)
+                    .Where(u => !u.IsDeleted && !superAdminUserIds.Contains(u.Id))
                     .Select(u => new
                     {
                         u.Id,
@@ -154,7 +160,7 @@ namespace Ozikol_BCC.Api.Controllers
                     // Re-query allActiveUsers so in-memory view reflects real persisted DB state
                     allActiveUsers = await _dbContext.Users
                         .AsNoTracking()
-                        .Where(u => !u.IsDeleted)
+                        .Where(u => !u.IsDeleted && !superAdminUserIds.Contains(u.Id))
                         .Select(u => new
                         {
                             u.Id,
@@ -263,6 +269,11 @@ namespace Ozikol_BCC.Api.Controllers
 
                 if (group != null)
                 {
+                    var superAdminRole = await _dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == "SuperAdmin", cancellationToken);
+                    var superAdminUserIds = superAdminRole != null
+                        ? (await _dbContext.UserRoles.AsNoTracking().Where(ur => ur.RoleId == superAdminRole.Id).Select(ur => ur.UserId).ToListAsync(cancellationToken)).ToHashSet()
+                        : new HashSet<string>();
+
                     var dto = new UserGroupDetailDto
                     {
                         Id = group.Id,
@@ -280,14 +291,16 @@ namespace Ozikol_BCC.Api.Controllers
                             FeatureAreaKey = p.FeatureAreaKey,
                             ActionRole = p.ActionRole.ToString()
                         }).ToList(),
-                        Members = group.Members.Select(m => new UserGroupMemberSummaryDto
-                        {
-                            Id = m.Id,
-                            Email = m.Email ?? string.Empty,
-                            FullName = $"{m.FirstName} {m.LastName}".Trim(),
-                            Designation = m.Designation,
-                            MemberId = m.MemberId
-                        }).ToList()
+                        Members = group.Members
+                            .Where(m => !superAdminUserIds.Contains(m.Id))
+                            .Select(m => new UserGroupMemberSummaryDto
+                            {
+                                Id = m.Id,
+                                Email = m.Email ?? string.Empty,
+                                FullName = $"{m.FirstName} {m.LastName}".Trim(),
+                                Designation = m.Designation,
+                                MemberId = m.MemberId
+                            }).ToList()
                     };
 
                     return Ok(ApiResponse<UserGroupDetailDto>.SuccessResponse(dto, "User group blueprint loaded successfully."));
