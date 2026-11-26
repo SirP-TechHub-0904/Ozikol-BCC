@@ -40,6 +40,12 @@ Chart.register(...registerables);
           <span class="count-pill">{{ categories.length }}</span>
         </button>
 
+        <button type="button" class="tab-btn" [class.active]="activeTab === 'groups'" (click)="setTab('groups')">
+          <span class="material-symbols-outlined">group_work</span>
+          <span>User Groups &amp; Permissions</span>
+          <span class="count-pill">{{ userGroups.length }}</span>
+        </button>
+
         <button type="button" class="tab-btn" [class.active]="activeTab === 'kpi'" (click)="setTab('kpi')">
           <span class="material-symbols-outlined">monitoring</span>
           <span>KPIs & Leaderboard</span>
@@ -175,7 +181,7 @@ Chart.register(...registerables);
                   </div>
                 </th>
                 <th>Category Tier</th>
-                <th>Assigned Role</th>
+                <th>User Group</th>
                 <th>Account Status</th>
                 <th style="text-align:right;">Actions</th>
               </tr>
@@ -213,10 +219,10 @@ Chart.register(...registerables);
                   </span>
                 </td>
 
-                <!-- Role -->
+                <!-- User Group -->
                 <td>
-                  <span class="role-pill" [class.role-admin]="u.roles.includes('SuperAdmin') || u.roles.includes('Admin')">
-                    {{ u.roles.join(', ') || 'Member' }}
+                  <span class="role-pill" [class.role-admin]="u.userGroupName ? u.userGroupName.toLowerCase().includes('admin') : (u.roles.includes('SuperAdmin') || u.roles.includes('Admin'))">
+                    {{ u.userGroupName || (u.roles.includes('Admin') ? 'Administrator' : 'Member') }}
                   </span>
                 </td>
 
@@ -319,6 +325,52 @@ Chart.register(...registerables);
             <span class="material-symbols-outlined">add</span>
             <span>Create First Category Tier</span>
           </button>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB: USER GROUPS & PERMISSIONS                                            -->
+      <!-- ========================================================================= -->
+      <div *ngIf="activeTab === 'groups'" class="tab-content-area">
+        <div class="section-topbar">
+          <div>
+            <h2 class="section-title">User Group Permissions</h2>
+            <p class="section-subtitle">Define permission groups and assign different roles so you don't need to configure members one by one.</p>
+          </div>
+          <a routerLink="/users/console/permissions" class="btn btn-primary" style="text-decoration:none;">
+            <span class="material-symbols-outlined">tune</span>
+            <span>Manage Group Blueprints</span>
+          </a>
+        </div>
+
+        <div class="category-cards-grid" *ngIf="userGroups.length > 0">
+          <div class="category-card" *ngFor="let grp of userGroups">
+            <div class="category-card-header">
+              <div class="category-icon-wrap" [style.background]="(grp.colorBadge || '#0050E5') + '20'" [style.color]="grp.colorBadge || '#0050E5'">
+                <span class="material-symbols-outlined">{{ grp.icon || 'group' }}</span>
+              </div>
+              <div class="category-card-actions">
+                <span class="role-badge" [class.badge-admin]="grp.baseRole === 'Admin'">{{ grp.baseRole }}</span>
+              </div>
+            </div>
+            <div class="category-card-body">
+              <h3 class="category-name">
+                {{ grp.name }}
+                <span class="badge" *ngIf="grp.isDefault" style="background:#dcfce7; color:#166534; font-size:10px; margin-left:6px;">DEFAULT</span>
+              </h3>
+              <p class="category-desc">{{ grp.description || 'Pre-configured access control blueprint for workspace members.' }}</p>
+              <div class="category-meta" style="margin-top:12px; display:flex; gap:14px; font-size:12px; color:#64748b;">
+                <span><strong>{{ grp.membersCount }}</strong> member{{ grp.membersCount === 1 ? '' : 's' }}</span>
+                <span><strong>{{ grp.permissionsCount }}</strong> permission rules</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state-card" *ngIf="userGroups.length === 0">
+          <div class="empty-icon-circle"><span class="material-symbols-outlined">group_work</span></div>
+          <h3>No User Groups Configured</h3>
+          <p>Create user groups to assign permissions in bulk to members and administrators.</p>
         </div>
       </div>
 
@@ -1128,6 +1180,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   users: any[] = [];
   filteredUsers: any[] = [];
   categories: any[] = [];
+  userGroups: any[] = [];
   kpiIndicators: any[] = [];
   kpiPeriods: any[] = [];
   leaderboard: any[] = [];
@@ -1209,6 +1262,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     this.isLoading = true;
     this.loadUsers();
     this.loadCategories();
+    this.loadUserGroups();
     this.loadKpiIndicators();
     this.loadKpiPeriods();
     this.loadActivityLogs();
@@ -1232,6 +1286,14 @@ export class UsersComponent implements OnInit, AfterViewInit {
     this.api.get<any>('UsersApi/categories').subscribe({
       next: (res) => {
         this.categories = res?.data || [];
+      }
+    });
+  }
+
+  loadUserGroups(): void {
+    this.api.get<any>('api/v1/user-groups').subscribe({
+      next: (res) => {
+        this.userGroups = res?.data || [];
       }
     });
   }

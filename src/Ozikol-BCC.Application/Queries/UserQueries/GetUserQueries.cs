@@ -26,6 +26,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         public string? CategoryName { get; set; }
         public string? CategoryColor { get; set; }
         public string? CategoryIcon { get; set; }
+        public Guid? BcpUserGroupId { get; set; }
+        public string? UserGroupName { get; set; }
+        public string? UserGroupColor { get; set; }
         public bool EmailConfirmed { get; set; }
         public bool PhoneNumberConfirmed { get; set; }
         public List<string> Roles { get; set; } = new();
@@ -75,6 +78,7 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
 
             var users = await _dbContext.Users
                 .Include(u => u.BcpUserCategory)
+                .Include(u => u.BcpUserGroup)
                 .AsNoTracking()
                 .OrderByDescending(u => u.JoinDate ?? DateTime.MinValue)
                 .ThenBy(u => u.LastName)
@@ -126,6 +130,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                         CategoryName = u.BcpUserCategory?.Name,
                         CategoryColor = u.BcpUserCategory?.ColorCode,
                         CategoryIcon = u.BcpUserCategory?.Icon,
+                        BcpUserGroupId = u.BcpUserGroupId,
+                        UserGroupName = u.BcpUserGroup?.Name,
+                        UserGroupColor = u.BcpUserGroup?.ColorBadge,
                         EmailConfirmed = u.EmailConfirmed,
                         PhoneNumberConfirmed = u.PhoneNumberConfirmed,
                         Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" },
@@ -161,6 +168,7 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         {
             var u = await _dbContext.Users
                 .Include(x => x.BcpUserCategory)
+                .Include(x => x.BcpUserGroup)
                 .FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken);
             if (u == null) return null;
 
@@ -211,6 +219,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 CategoryName = u.BcpUserCategory?.Name,
                 CategoryColor = u.BcpUserCategory?.ColorCode,
                 CategoryIcon = u.BcpUserCategory?.Icon,
+                BcpUserGroupId = u.BcpUserGroupId,
+                UserGroupName = u.BcpUserGroup?.Name,
+                UserGroupColor = u.BcpUserGroup?.ColorBadge,
                 Roles = roles.Count > 0 ? roles : new List<string> { "Member" },
                 AccessFailedCount = u.AccessFailedCount,
                 LockoutEnd = u.LockoutEnd,

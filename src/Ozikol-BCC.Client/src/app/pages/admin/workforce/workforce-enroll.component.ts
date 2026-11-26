@@ -180,125 +180,143 @@ import {
                 ></app-phone-input>
               </div>
 
-              <div class="form-row-dual">
-                <!-- Designated Job Title (Empty until user adds, with (i) info popover) -->
-                <div class="form-group">
-                  <div class="label-with-link">
-                    <div class="label-info-wrap">
-                      <label class="form-label">Designated Job Title</label>
-                      <button
-                        type="button"
-                        class="info-icon-btn"
-                        (click)="showJobTitleInfo = !showJobTitleInfo"
-                        title="Click for Job Title examples & info"
-                      >
-                        <span class="material-symbols-outlined">info</span>
-                      </button>
-                    </div>
-                    <a routerLink="/workforce/console/settings" class="mini-link" title="Add or manage Job Titles">+ Add Job Title</a>
-                  </div>
-
-                  <!-- (i) Contextual Info Popover for Job Title -->
-                  <div class="field-info-popover" *ngIf="showJobTitleInfo">
-                    <div class="popover-head">
-                      <strong>Designated Job Title Guide</strong>
-                      <button type="button" class="popover-close" (click)="showJobTitleInfo = false">&times;</button>
-                    </div>
-                    <p><strong>Purpose:</strong> Defines the staff member's operational role and default pay rate.</p>
-                    <p><strong>Examples you can add:</strong> Operations Supervisor, Security Officer, Registered Nurse, Care Assistant, Receptionist, Field Technician, or Office Administrator.</p>
-                    <p>Click <strong>+ Add Job Title</strong> to create your organization's roles in Workforce Settings.</p>
-                  </div>
-
-                  <select class="form-control" [(ngModel)]="inviteModel.jobTitle" (change)="onJobRoleChange()">
-                    <option value="">-- Select Job Title ({{ jobRoles.length === 0 ? 'None added yet' : 'Optional' }}) --</option>
-                    <option *ngFor="let role of jobRoles" [value]="role.title">
-                      {{ role.title }} ({{ role.code }})
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Staff Classification Type (Empty until user adds, with (i) info popover) -->
-                <div class="form-group">
-                  <div class="label-with-link">
-                    <div class="label-info-wrap">
-                      <label class="form-label">Staff Classification Type</label>
-                      <button
-                        type="button"
-                        class="info-icon-btn"
-                        (click)="showStaffTypeInfo = !showStaffTypeInfo"
-                        title="Click for Staff Classification Type examples & info"
-                      >
-                        <span class="material-symbols-outlined">info</span>
-                      </button>
-                    </div>
-                    <a routerLink="/workforce/console/settings" class="mini-link" title="Add or manage Staff Types">+ Add Staff Type</a>
-                  </div>
-
-                  <!-- (i) Contextual Info Popover for Staff Classification Type -->
-                  <div class="field-info-popover" *ngIf="showStaffTypeInfo">
-                    <div class="popover-head">
-                      <strong>Staff Classification Type Guide</strong>
-                      <button type="button" class="popover-close" (click)="showStaffTypeInfo = false">&times;</button>
-                    </div>
-                    <p><strong>Purpose:</strong> Determines employment contract category and baseline weekly working hours.</p>
-                    <p><strong>Examples you can add:</strong> Full-Time Permanent (40 hrs/wk), Part-Time (20 hrs/wk), Casual / Zero-Hours, Agency Contractor, or Shift Relief.</p>
-                    <p>Click <strong>+ Add Staff Type</strong> to define your contract classifications in Workforce Settings.</p>
-                  </div>
-
-                  <select class="form-control" [(ngModel)]="inviteModel.staffTypeId" (change)="onStaffTypeChange(inviteModel)">
-                    <option value="">-- Select Staff Type ({{ staffTypes.length === 0 ? 'None added yet' : 'Optional' }}) --</option>
-                    <option *ngFor="let st of staffTypes" [value]="st.id">
-                      {{ st.name }} &bull; {{ st.defaultContractedHours }} hrs/wk
-                    </option>
-                  </select>
-                </div>
+              <!-- Optional Operational Details Toggle for Invitation Mode -->
+              <div class="optional-fields-toggle-row" *ngIf="enrollMode === 'invite'">
+                <button
+                  type="button"
+                  class="btn-toggle-optional-fields"
+                  (click)="showOptionalInviteFields = !showOptionalInviteFields"
+                >
+                  <span class="material-symbols-outlined">{{ showOptionalInviteFields ? 'expand_less' : 'tune' }}</span>
+                  <span>{{ showOptionalInviteFields ? 'Hide Operational & Pay Details' : '+ Pre-assign Job Title, Contract & Pay (Optional)' }}</span>
+                </button>
+                <span class="toggle-hint" *ngIf="!showOptionalInviteFields">
+                  Leave collapsed to let the worker complete their own profile during self-registration.
+                </span>
               </div>
 
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Default Hourly Rate ({{ currencySymbol }})</label>
-                  <input
-                    type="number"
-                    step="0.25"
-                    class="form-control"
-                    [(ngModel)]="inviteModel.defaultHourlyRate"
-                    placeholder="e.g. 15.00"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Contracted Hours / Week</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    [(ngModel)]="inviteModel.contractedWeeklyHours"
-                    placeholder="e.g. 40"
-                  />
-                </div>
-              </div>
+              <!-- In-House Full Staff Registration Fields (Hidden by default in invite mode, expandable anytime) -->
+              <ng-container *ngIf="enrollMode === 'direct' || showOptionalInviteFields">
+                <div class="form-row-dual">
+                  <!-- Designated Job Title (Empty until user adds, with (i) info popover) -->
+                  <div class="form-group">
+                    <div class="label-with-link">
+                      <div class="label-info-wrap">
+                        <label class="form-label">Designated Job Title</label>
+                        <button
+                          type="button"
+                          class="info-icon-btn"
+                          (click)="showJobTitleInfo = !showJobTitleInfo"
+                          title="Click for Job Title examples & info"
+                        >
+                          <span class="material-symbols-outlined">info</span>
+                        </button>
+                      </div>
+                      <a routerLink="/workforce/console/settings" class="mini-link" title="Add or manage Job Titles">+ Add Job Title</a>
+                    </div>
 
-              <div class="form-row-dual">
-                <div class="form-group">
-                  <label class="form-label">Preferred Working Time</label>
-                  <select class="form-control" [(ngModel)]="inviteModel.preferredWorkingTime">
-                    <option value="Any">Any Shift (Day &amp; Night)</option>
-                    <option value="Day">Day Shifts Only</option>
-                    <option value="Night">Night Shifts Only</option>
-                  </select>
-                  <span class="field-hint">Day or Night preference for rota assignment.</span>
+                    <!-- (i) Contextual Info Popover for Job Title -->
+                    <div class="field-info-popover" *ngIf="showJobTitleInfo">
+                      <div class="popover-head">
+                        <strong>Designated Job Title Guide</strong>
+                        <button type="button" class="popover-close" (click)="showJobTitleInfo = false">&times;</button>
+                      </div>
+                      <p><strong>Purpose:</strong> Defines the staff member's operational role and default pay rate.</p>
+                      <p><strong>Examples you can add:</strong> Operations Supervisor, Security Officer, Registered Nurse, Care Assistant, Receptionist, Field Technician, or Office Administrator.</p>
+                      <p>Click <strong>+ Add Job Title</strong> to create your organization's roles in Workforce Settings.</p>
+                    </div>
+
+                    <select class="form-control" [(ngModel)]="inviteModel.jobTitle" (change)="onJobRoleChange()">
+                      <option value="">-- Select Job Title ({{ jobRoles.length === 0 ? 'None added yet' : 'Optional' }}) --</option>
+                      <option *ngFor="let role of jobRoles" [value]="role.title">
+                        {{ role.title }} ({{ role.code }})
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Staff Classification Type (Empty until user adds, with (i) info popover) -->
+                  <div class="form-group">
+                    <div class="label-with-link">
+                      <div class="label-info-wrap">
+                        <label class="form-label">Staff Classification Type</label>
+                        <button
+                          type="button"
+                          class="info-icon-btn"
+                          (click)="showStaffTypeInfo = !showStaffTypeInfo"
+                          title="Click for Staff Classification Type examples & info"
+                        >
+                          <span class="material-symbols-outlined">info</span>
+                        </button>
+                      </div>
+                      <a routerLink="/workforce/console/settings" class="mini-link" title="Add or manage Staff Types">+ Add Staff Type</a>
+                    </div>
+
+                    <!-- (i) Contextual Info Popover for Staff Classification Type -->
+                    <div class="field-info-popover" *ngIf="showStaffTypeInfo">
+                      <div class="popover-head">
+                        <strong>Staff Classification Type Guide</strong>
+                        <button type="button" class="popover-close" (click)="showStaffTypeInfo = false">&times;</button>
+                      </div>
+                      <p><strong>Purpose:</strong> Determines employment contract category and baseline weekly working hours.</p>
+                      <p><strong>Examples you can add:</strong> Full-Time Permanent (40 hrs/wk), Part-Time (20 hrs/wk), Casual / Zero-Hours, Agency Contractor, or Shift Relief.</p>
+                      <p>Click <strong>+ Add Staff Type</strong> to define your contract classifications in Workforce Settings.</p>
+                    </div>
+
+                    <select class="form-control" [(ngModel)]="inviteModel.staffTypeId" (change)="onStaffTypeChange(inviteModel)">
+                      <option value="">-- Select Staff Type ({{ staffTypes.length === 0 ? 'None added yet' : 'Optional' }}) --</option>
+                      <option *ngFor="let st of staffTypes" [value]="st.id">
+                        {{ st.name }} &bull; {{ st.defaultContractedHours }} hrs/wk
+                      </option>
+                    </select>
+                  </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Working Availability</label>
-                  <select class="form-control" [(ngModel)]="inviteModel.workingAvailability">
-                    <option value="Available">Available (Full Availability)</option>
-                    <option value="Full-Time">Full-Time (Standard Rota)</option>
-                    <option value="Part-Time">Part-Time (Flexible Rota)</option>
-                    <option value="Weekdays">Weekdays Only (Mon - Fri)</option>
-                    <option value="Weekends">Weekends Only (Sat - Sun)</option>
-                  </select>
-                  <span class="field-hint">Initial availability baseline tied to user account.</span>
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">Default Hourly Rate ({{ currencySymbol }})</label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      class="form-control"
+                      [(ngModel)]="inviteModel.defaultHourlyRate"
+                      placeholder="e.g. 15.00"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Contracted Hours / Week</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      [(ngModel)]="inviteModel.contractedWeeklyHours"
+                      placeholder="e.g. 40"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <div class="form-row-dual">
+                  <div class="form-group">
+                    <label class="form-label">Preferred Working Time</label>
+                    <select class="form-control" [(ngModel)]="inviteModel.preferredWorkingTime">
+                      <option value="Any">Any Shift (Day &amp; Night)</option>
+                      <option value="Day">Day Shifts Only</option>
+                      <option value="Night">Night Shifts Only</option>
+                    </select>
+                    <span class="field-hint">Day or Night preference for rota assignment.</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Working Availability</label>
+                    <select class="form-control" [(ngModel)]="inviteModel.workingAvailability">
+                      <option value="Available">Available (Full Availability)</option>
+                      <option value="Full-Time">Full-Time (Standard Rota)</option>
+                      <option value="Part-Time">Part-Time (Flexible Rota)</option>
+                      <option value="Weekdays">Weekdays Only (Mon - Fri)</option>
+                      <option value="Weekends">Weekends Only (Sat - Sun)</option>
+                    </select>
+                    <span class="field-hint">Initial availability baseline tied to user account.</span>
+                  </div>
+                </div>
+              </ng-container>
 
               <div class="form-group">
                 <label class="form-label">Welcome Note (Optional)</label>
@@ -1176,6 +1194,39 @@ import {
       gap: 24px;
       padding: 0 4px 40px 4px;
       width: 100%;
+    }
+
+    .optional-fields-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 0 16px 0;
+      flex-wrap: wrap;
+    }
+    .btn-toggle-optional-fields {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px dashed #0050e5;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #0050e5;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-toggle-optional-fields:hover {
+      background: #dbeafe;
+      border-style: solid;
+    }
+    .btn-toggle-optional-fields .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .toggle-hint {
+      font-size: 11.5px;
+      color: #64748b;
     }
 
     .enroll-status-banner {
@@ -2499,6 +2550,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
 
   showJobTitleInfo = false;
   showStaffTypeInfo = false;
+  showOptionalInviteFields = false;
   showFullScreenPreview = false;
 
   // International Phone Cleaner State
@@ -2853,8 +2905,36 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const cleanJobTitle = (this.inviteModel.jobTitle && this.inviteModel.jobTitle.trim() !== '' && this.inviteModel.jobTitle !== 'undefined')
+      ? this.inviteModel.jobTitle.trim()
+      : null;
+    const cleanStaffType = (this.inviteModel.staffTypeName && this.inviteModel.staffTypeName.trim() !== '' && this.inviteModel.staffTypeName !== 'undefined')
+      ? this.inviteModel.staffTypeName.trim()
+      : null;
+    const cleanStaffTypeId = (this.inviteModel.staffTypeId && typeof this.inviteModel.staffTypeId === 'string' && this.inviteModel.staffTypeId.trim() !== '' && this.inviteModel.staffTypeId !== 'undefined')
+      ? this.inviteModel.staffTypeId.trim()
+      : null;
+
+    const payload = {
+      fullName: this.inviteModel.fullName.trim(),
+      email: this.inviteModel.email.trim(),
+      phoneNumber: this.inviteModel.phoneNumber ? this.inviteModel.phoneNumber.trim() : null,
+      jobTitle: cleanJobTitle,
+      staffTypeId: cleanStaffTypeId,
+      staffTypeName: cleanStaffType,
+      defaultHourlyRate: (this.inviteModel.defaultHourlyRate !== undefined && this.inviteModel.defaultHourlyRate !== null && String(this.inviteModel.defaultHourlyRate).trim() !== '' && Number(this.inviteModel.defaultHourlyRate) > 0)
+        ? Number(this.inviteModel.defaultHourlyRate)
+        : null,
+      contractedWeeklyHours: (this.inviteModel.contractedWeeklyHours !== undefined && this.inviteModel.contractedWeeklyHours !== null && String(this.inviteModel.contractedWeeklyHours).trim() !== '' && Number(this.inviteModel.contractedWeeklyHours) > 0)
+        ? Number(this.inviteModel.contractedWeeklyHours)
+        : null,
+      preferredWorkingTime: this.inviteModel.preferredWorkingTime || 'Any',
+      workingAvailability: this.inviteModel.workingAvailability || 'Available',
+      welcomeNote: (this.inviteModel.welcomeNote && this.inviteModel.welcomeNote.trim() !== '') ? this.inviteModel.welcomeNote.trim() : null
+    };
+
     this.isSubmitting = true;
-    this.workforceService.inviteMember(this.inviteModel).subscribe({
+    this.workforceService.inviteMember(payload).subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
         const relUrl = res?.data?.onboardingUrl || '';
@@ -2864,11 +2944,11 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
 
         // Snapshot invited member details for the confirmation modal
         this.lastInvitedStaff = {
-          fullName: this.inviteModel.fullName,
-          email: this.inviteModel.email,
-          phoneNumber: this.inviteModel.phoneNumber,
-          jobTitle: this.inviteModel.jobTitle,
-          staffTypeName: this.inviteModel.staffTypeName || this.staffTypes.find(t => t.id === this.inviteModel.staffTypeId)?.name || '',
+          fullName: payload.fullName,
+          email: payload.email,
+          phoneNumber: payload.phoneNumber,
+          jobTitle: payload.jobTitle,
+          staffTypeName: payload.staffTypeName || this.staffTypes.find(t => t.id === payload.staffTypeId)?.name || '',
           emailSent: !!res?.data?.emailSent
         };
 
@@ -2906,6 +2986,9 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
     const cleanStaffType = (this.inviteModel.staffTypeName && this.inviteModel.staffTypeName.trim() !== '' && this.inviteModel.staffTypeName !== 'undefined')
       ? this.inviteModel.staffTypeName.trim()
       : null;
+    const cleanStaffTypeId = (this.inviteModel.staffTypeId && typeof this.inviteModel.staffTypeId === 'string' && this.inviteModel.staffTypeId.trim() !== '' && this.inviteModel.staffTypeId !== 'undefined')
+      ? this.inviteModel.staffTypeId.trim()
+      : null;
 
     const payload = {
       firstName,
@@ -2913,7 +2996,7 @@ export class WorkforceEnrollComponent implements OnInit, OnDestroy {
       email: this.inviteModel.email.trim(),
       phoneNumber: this.inviteModel.phoneNumber.trim(),
       jobTitle: cleanJobTitle,
-      staffTypeId: this.inviteModel.staffTypeId || null,
+      staffTypeId: cleanStaffTypeId,
       staffTypeName: cleanStaffType,
       defaultHourlyRate: this.inviteModel.defaultHourlyRate || 0,
       contractedWeeklyHours: this.inviteModel.contractedWeeklyHours || 0,

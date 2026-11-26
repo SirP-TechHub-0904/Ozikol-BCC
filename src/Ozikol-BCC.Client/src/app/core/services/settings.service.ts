@@ -44,6 +44,12 @@ export interface ClientAppConfig {
   minimumAppVersion: string;
 }
 
+export interface WorkspaceRegionalSettings {
+  currencyCode: string;
+  currencySymbol: string;
+  operatingCountry: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -81,6 +87,13 @@ export class SettingsService {
     minimumAppVersion: '1.0.0'
   });
   public clientConfig$ = this.clientConfigSubject.asObservable();
+
+  private regionalSubject = new BehaviorSubject<WorkspaceRegionalSettings>({
+    currencyCode: 'GBP',
+    currencySymbol: '£',
+    operatingCountry: 'GB'
+  });
+  public regional$ = this.regionalSubject.asObservable();
 
   constructor(private api: ApiService) {}
 
@@ -141,6 +154,20 @@ export class SettingsService {
       },
       error: (err) => console.warn('Using default feature flags.', err)
     });
+
+    // 4. Load Database Currency & Operating Country Defaults
+    this.api.get<any>('SettingsApi/currency').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && res.data) {
+          this.regionalSubject.next({
+            currencyCode: res.data.currencyCode || 'GBP',
+            currencySymbol: res.data.currencySymbol || '£',
+            operatingCountry: res.data.operatingCountry || 'GB'
+          });
+        }
+      },
+      error: (err) => console.warn('Using default regional settings.', err)
+    });
   }
 
   /**
@@ -179,6 +206,10 @@ export class SettingsService {
 
   public get currentFeatures(): FeatureFlags {
     return this.featuresSubject.value;
+  }
+
+  public get currentRegional(): WorkspaceRegionalSettings {
+    return this.regionalSubject.value;
   }
 
   public get currentExpirations(): FeatureExpirationNotice[] {

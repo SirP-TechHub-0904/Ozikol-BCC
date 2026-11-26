@@ -714,6 +714,7 @@ namespace Ozikol_BCC.Api.Controllers
                 MemberId = generatedMemberId,
                 Designation = request.Designation?.Trim() ?? "Member",
                 BcpUserCategoryId = request.BcpUserCategoryId,
+                BcpUserGroupId = request.UserGroupId,
                 UserStatus = UserStatus.Active,
                 JoinDate = request.JoinDate ?? DateTime.UtcNow,
                 EmailConfirmed = false, // Email confirmation required according to policy
@@ -749,6 +750,50 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await _userManager.AddToRoleAsync(newUser, "Member");
             }
+
+            // Sync User Group permissions blueprint if group assigned
+            try
+            {
+                var assignedGroupId = request.UserGroupId;
+                if (!assignedGroupId.HasValue)
+                {
+                    var defaultGroup = await _dbContext.BcpUserGroups.AsNoTracking().FirstOrDefaultAsync(g => g.IsDefault);
+                    if (defaultGroup != null)
+                    {
+                        assignedGroupId = defaultGroup.Id;
+                        newUser.BcpUserGroupId = defaultGroup.Id;
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+
+                if (assignedGroupId.HasValue)
+                {
+                    var groupWithPerms = await _dbContext.BcpUserGroups
+                        .Include(g => g.Permissions)
+                        .FirstOrDefaultAsync(g => g.Id == assignedGroupId.Value);
+
+                    if (groupWithPerms != null && groupWithPerms.Permissions.Count > 0)
+                    {
+                        foreach (var perm in groupWithPerms.Permissions)
+                        {
+                            if (perm.ActionRole != BcpActionRole.None)
+                            {
+                                _dbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                                {
+                                    Id = Guid.NewGuid(),
+                                    ProfileId = newUser.Id,
+                                    FeatureAreaKey = perm.FeatureAreaKey,
+                                    ActionRole = perm.ActionRole,
+                                    IsActive = true,
+                                    Date = DateTime.UtcNow
+                                });
+                            }
+                        }
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+            }
+            catch { }
 
             // Dispatch Welcome & Activation Email via unified CentralNotificationDispatcher
             try
@@ -2607,6 +2652,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? MemberId { get; set; }
         public string? Designation { get; set; }
         public string? Role { get; set; } = "Member";
+        public Guid? UserGroupId { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
         public DateTime? JoinDate { get; set; }
         public bool? MustChangePassword { get; set; } = true;

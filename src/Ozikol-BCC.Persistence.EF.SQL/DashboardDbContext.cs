@@ -101,6 +101,8 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpKpiIndicator> BcpKpiIndicators { get; set; }
     public DbSet<BcpKpiUserScore> BcpKpiUserScores { get; set; }
     public DbSet<BcpKpiPeriod> BcpKpiPeriods { get; set; } = null!;
+    public DbSet<BcpUserGroup> BcpUserGroups { get; set; } = null!;
+    public DbSet<BcpUserGroupPermission> BcpUserGroupPermissions { get; set; } = null!;
     public DbSet<BcpUserFeatureRole> BcpUserFeatureRoles { get; set; }
     public DbSet<BcpUserNote> BcpUserNotes { get; set; }
     public DbSet<BcpActivityLog> BcpActivityLogs { get; set; }
@@ -551,6 +553,8 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         "Blog" or "BlogPost" => "Blog Article",
         "CustomForm" => "Custom Form",
         "BcpUserCategory" => "User Category",
+        "BcpUserGroup" => "User Group",
+        "BcpUserGroupPermission" => "User Group Permission",
         "BcpUserInvitation" => "Member Invitation",
         "BcpUserFeatureRole" => "Feature Permission",
         "BcpKpiIndicator" => "KPI Metric",
@@ -576,6 +580,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     private static string ResolveModuleForEntity(object entity)
     {
         if (entity is Profile || entity is AppRole || entity is BcpUserCategory ||
+            entity is BcpUserGroup || entity is BcpUserGroupPermission ||
             entity is BcpUserFeatureRole || entity is BcpUserNote || entity is BcpKpiUserScore ||
             entity is BcpKpiIndicator || entity is BcpRegistrationFormField)
             return "User Management";
@@ -610,6 +615,8 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         if (entity is Profile p) return !string.IsNullOrWhiteSpace(p.FullName) ? p.FullName : (p.Email ?? p.Id);
         if (entity is AppRole r) return r.Name ?? r.Id;
         if (entity is BcpUserCategory c) return c.Name ?? c.Id.ToString();
+        if (entity is BcpUserGroup ug) return ug.Name;
+        if (entity is BcpUserGroupPermission ugp) return $"{ugp.ActionRole} ({ugp.FeatureAreaKey})";
         if (entity is BcpUserFeatureRole fr) return $"{fr.ActionRole} ({fr.FeatureAreaKey})";
         if (entity is BcpUserNote un) return $"Note ({un.ProfileId})";
         if (entity is BcpKpiUserScore ks) return $"KPI Score ({ks.Period})";
@@ -684,6 +691,19 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         {
             entity.HasQueryFilter(p => !p.IsDeleted);
             entity.HasIndex(p => p.IsDeleted);
+        });
+
+        modelBuilder.Entity<BcpUserGroup>(entity =>
+        {
+            entity.HasMany(g => g.Permissions)
+                  .WithOne(p => p.BcpUserGroup)
+                  .HasForeignKey(p => p.BcpUserGroupId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(g => g.Members)
+                  .WithOne(p => p.BcpUserGroup)
+                  .HasForeignKey(p => p.BcpUserGroupId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // --- Audit & Operational Log Indexes for Fast Telemetry Queries ---

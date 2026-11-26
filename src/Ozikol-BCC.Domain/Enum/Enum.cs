@@ -617,6 +617,9 @@ namespace Ozikol_BCC.Domain.Enum
         /// </summary>
         public enum BcpActionRole
         {
+            [Description("None")]
+            None = 0,
+
             [Description("Global Editor")]
             GlobalEditor = 1,
 
@@ -625,6 +628,9 @@ namespace Ozikol_BCC.Domain.Enum
 
             [Description("Read Only")]
             Readonly = 3,
+
+            [Description("Read Only")]
+            ReadOnly = 3,
         }
 
         /// <summary>

@@ -425,12 +425,12 @@ public class CentralMigrationService : ICentralMigrationService
                 string rawConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
                 var fastConnBuilder = new SqlConnectionStringBuilder(rawConnStr)
                 {
-                    ConnectTimeout = 3
+                    ConnectTimeout = 10
                 };
                 string fastTenantConnStr = fastConnBuilder.ConnectionString;
 
                 var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-                optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(3))
+                optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(15))
                     .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
                 using var scope = _serviceProvider.CreateScope();
@@ -439,7 +439,7 @@ public class CentralMigrationService : ICentralMigrationService
                 using (tenantProvider.BeginScope(fastTenantConnStr))
                 {
                     var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-                    using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
                     using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
 
                     var canConnect = await dbContext.Database.CanConnectAsync(linkedCts.Token);
@@ -447,17 +447,31 @@ public class CentralMigrationService : ICentralMigrationService
 
                     if (canConnect)
                     {
-                        var applied = await dbContext.Database.GetAppliedMigrationsAsync(linkedCts.Token);
-                        var pending = await dbContext.Database.GetPendingMigrationsAsync(linkedCts.Token);
+                        try
+                        {
+                            var applied = await dbContext.Database.GetAppliedMigrationsAsync(linkedCts.Token);
+                            var pending = await dbContext.Database.GetPendingMigrationsAsync(linkedCts.Token);
 
-                        dbStatus.AppliedMigrations = applied.ToList();
-                        dbStatus.PendingMigrations = pending.ToList();
+                            dbStatus.AppliedMigrations = applied.ToList();
+                            dbStatus.PendingMigrations = pending.ToList();
+                        }
+                        catch (Exception exMig)
+                        {
+                            _logger.LogWarning(exMig, "Could not resolve migrations for {TenantKey}", tenant.TenantKey);
+                        }
 
                         // Fast DMV table and row counts
-                        var stats = await GetTableStatsFromConnectionAsync(fastTenantConnStr, linkedCts.Token);
-                        tenantSummary.TotalTablesCount = stats.Count;
-                        tenantSummary.TotalRecordsCount = stats.Sum(s => s.TotalRows);
-                        tenantSummary.TotalStorageKb = stats.Sum(s => s.UsedSpaceKb);
+                        try
+                        {
+                            var stats = await GetTableStatsFromConnectionAsync(fastTenantConnStr, linkedCts.Token);
+                            tenantSummary.TotalTablesCount = stats.Count;
+                            tenantSummary.TotalRecordsCount = stats.Sum(s => s.TotalRows);
+                            tenantSummary.TotalStorageKb = stats.Sum(s => s.UsedSpaceKb);
+                        }
+                        catch (Exception exStats)
+                        {
+                            _logger.LogWarning(exStats, "Could not resolve table stats for {TenantKey}", tenant.TenantKey);
+                        }
                     }
                     else
                     {
@@ -532,12 +546,12 @@ public class CentralMigrationService : ICentralMigrationService
         {
             var fastConnBuilder = new SqlConnectionStringBuilder(tenantConnStr)
             {
-                ConnectTimeout = 5
+                ConnectTimeout = 10
             };
             string fastTenantConnStr = fastConnBuilder.ConnectionString;
 
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-            optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(10))
+            optionsBuilder.UseSqlServer(fastTenantConnStr, sql => sql.MigrationsAssembly(typeof(DashboardDbContext).Assembly.FullName).CommandTimeout(15))
                 .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator, IdempotentSqlServerMigrationsSqlGenerator>()
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
@@ -547,7 +561,7 @@ public class CentralMigrationService : ICentralMigrationService
             using (tenantProvider.BeginScope(fastTenantConnStr))
             {
                 var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 var canConnect = await dbContext.Database.CanConnectAsync(linkedCts.Token);
                 deepDive.IsReachable = canConnect;

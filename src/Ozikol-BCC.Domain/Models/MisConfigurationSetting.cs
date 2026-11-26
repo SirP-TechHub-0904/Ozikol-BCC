@@ -34,6 +34,14 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Currency Symbol")]
         public string CurrencySymbol { get; set; } = "$";
 
+        /// <summary>
+        /// Workspace primary operating country code (ISO 3166-1 alpha-2, e.g. "GB", "NG", "US").
+        /// Dictates phone input country dial code defaults and regional operational presets.
+        /// </summary>
+        [MaxLength(10)]
+        [Display(Name = "Operating Country")]
+        public string OperatingCountry { get; set; } = "GB";
+
         // ── Payment Gateways (Paystack, Flutterwave, Stripe, PayPal, PixelPay) ──
 
         /// <summary>

@@ -45,6 +45,13 @@ namespace Ozikol_BCC.Domain.Models
         public Guid? BcpUserCategoryId { get; set; }
         public BcpUserCategory? BcpUserCategory { get; set; }
 
+        /// <summary>
+        /// Foreign key referencing the assigned User Group permission blueprint.
+        /// </summary>
+        [Display(Name = "User Group")]
+        public Guid? BcpUserGroupId { get; set; }
+        public BcpUserGroup? BcpUserGroup { get; set; }
+
         [Display(Name = "Gender")]
         public GenderStatus Gender { get; set; }
 

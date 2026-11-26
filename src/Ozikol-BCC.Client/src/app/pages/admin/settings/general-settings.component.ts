@@ -381,48 +381,75 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             </div>
           </div>
 
-          <!-- Card 2: Central Platform Billing Context -->
+          <!-- Card 2: Workspace Operating Country & Regional Defaults -->
           <div class="gen-card">
             <div class="gen-card-head">
               <div class="head-icon head-icon-emerald">
-                <span class="material-symbols-outlined">receipt_long</span>
+                <span class="material-symbols-outlined">public</span>
               </div>
               <div>
-                <h3>Platform Billing Currency (Central)</h3>
-                <p>Currency used by Ozikol Central for workspace capability licenses &amp; subscriptions.</p>
+                <h3>Workspace Operating Country &amp; Defaults</h3>
+                <p>Configures your business operating jurisdiction and default international dialing code.</p>
               </div>
             </div>
 
             <div class="gen-card-body">
-              <div class="billing-context-card">
+              <div class="form-group">
+                <label class="form-label">Operating Country</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="currencySettings.operatingCountry"
+                  (ngModelChange)="onOperatingCountryChange()"
+                >
+                  <option value="GB">🇬🇧 United Kingdom (+44)</option>
+                  <option value="NG">🇳🇬 Nigeria (+234)</option>
+                  <option value="US">🇺🇸 United States (+1)</option>
+                  <option value="CA">🇨🇦 Canada (+1)</option>
+                  <option value="GH">🇬🇭 Ghana (+233)</option>
+                  <option value="KE">🇰🇪 Kenya (+254)</option>
+                  <option value="ZA">🇿🇦 South Africa (+27)</option>
+                  <option value="IE">🇮🇪 Ireland (+353)</option>
+                  <option value="DE">🇩🇪 Germany (+49)</option>
+                  <option value="FR">🇫🇷 France (+33)</option>
+                  <option value="AU">🇦🇺 Australia (+61)</option>
+                  <option value="IN">🇮🇳 India (+91)</option>
+                  <option value="AE">🇦🇪 United Arab Emirates (+971)</option>
+                  <option value="EG">🇪🇬 Egypt (+20)</option>
+                </select>
+                <span class="form-hint">Governs the default country flag and calling code for phone number inputs across the workspace.</span>
+              </div>
+
+              <!-- Country Calling Code Preview -->
+              <div class="billing-context-card" style="margin-top: 16px;">
                 <div class="billing-chip-row">
-                  <span class="billing-badge">Central Billing</span>
-                  <span class="billing-curr">{{ currencySettings.platformBillingCurrencyCode }} ({{ currencySettings.platformBillingCurrencySymbol }})</span>
+                  <span class="billing-badge">Country Phone Default</span>
+                  <span class="billing-curr">{{ getCountryCallingCode(currencySettings.operatingCountry) }}</span>
                 </div>
                 <p class="billing-desc">
-                  Ozikol Central invoices and charges your organization in <strong>{{ currencySettings.platformBillingCurrencyCode }}</strong> for platform feature add-ons, monthly plans, and cloud capabilities.
+                  When adding new members, inviting workforce staff, or capturing contact numbers, phone inputs will automatically default to <strong>{{ getCountryCallingCode(currencySettings.operatingCountry) }}</strong>.
                 </p>
                 <div class="billing-rules-list">
                   <div class="rule-item">
                     <span class="material-symbols-outlined rule-check">check_circle</span>
-                    <span><strong>Workspace Running Currency:</strong> Dictates internal commerce, invoices, POS, and payroll.</span>
+                    <span><strong>Workforce Invitations:</strong> Self-registration links automatically pre-populate the business dial code.</span>
                   </div>
                   <div class="rule-item">
                     <span class="material-symbols-outlined rule-check">check_circle</span>
-                    <span><strong>Platform Billing Currency:</strong> Dictates workspace capability licenses billed by Central.</span>
+                    <span><strong>Member Provisioning:</strong> Admin creation forms adapt instantly to your regional jurisdiction.</span>
                   </div>
                 </div>
               </div>
 
               <div class="card-footer-actions">
-                <a
-                  routerLink="/billing/features"
-                  class="btn-outline-action full-width"
-                  style="text-decoration:none;"
+                <button
+                  type="button"
+                  class="btn-primary-action full-width"
+                  [disabled]="savingCurrency"
+                  (click)="saveCurrencySettings()"
                 >
-                  <span class="material-symbols-outlined">auto_awesome</span>
-                  <span>View Features &amp; Capabilities</span>
-                </a>
+                  <span class="material-symbols-outlined">{{ savingCurrency ? 'progress_activity' : 'check' }}</span>
+                  <span>{{ savingCurrency ? 'Saving...' : 'Save' }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -915,9 +942,44 @@ export class GeneralSettingsComponent implements OnInit {
   currencySettings = {
     currencyCode: 'USD',
     currencySymbol: '$',
+    operatingCountry: 'GB',
     platformBillingCurrencyCode: 'USD',
     platformBillingCurrencySymbol: '$'
   };
+
+  private readonly countryDialCodes: { [iso: string]: string } = {
+    'GB': '🇬🇧 +44 (UK)',
+    'NG': '🇳🇬 +234 (Nigeria)',
+    'US': '🇺🇸 +1 (USA)',
+    'CA': '🇨🇦 +1 (Canada)',
+    'GH': '🇬🇭 +233 (Ghana)',
+    'KE': '🇰🇪 +254 (Kenya)',
+    'ZA': '🇿🇦 +27 (South Africa)',
+    'IE': '🇮🇪 +353 (Ireland)',
+    'DE': '🇩🇪 +49 (Germany)',
+    'FR': '🇫🇷 +33 (France)',
+    'AU': '🇦🇺 +61 (Australia)',
+    'IN': '🇮🇳 +91 (India)',
+    'AE': '🇦🇪 +971 (UAE)',
+    'EG': '🇪🇬 +20 (Egypt)'
+  };
+
+  getCountryCallingCode(countryCode?: string): string {
+    const code = (countryCode || 'GB').toUpperCase();
+    return this.countryDialCodes[code] || `${code} (+44)`;
+  }
+
+  onOperatingCountryChange(): void {
+    // Optionally suggest currency if matching
+    const country = this.currencySettings.operatingCountry?.toUpperCase();
+    if (country === 'GB' && this.currencySettings.currencyCode === 'USD') {
+      this.currencySettings.currencyCode = 'GBP';
+      this.currencySettings.currencySymbol = '£';
+    } else if (country === 'NG' && this.currencySettings.currencyCode === 'USD') {
+      this.currencySettings.currencyCode = 'NGN';
+      this.currencySettings.currencySymbol = '₦';
+    }
+  }
 
   private readonly currencySymbols: { [code: string]: string } = {
     'USD': '$',
@@ -1036,6 +1098,7 @@ export class GeneralSettingsComponent implements OnInit {
           this.currencySettings = {
             currencyCode: data.currencyCode || 'USD',
             currencySymbol: data.currencySymbol || '$',
+            operatingCountry: data.operatingCountry || 'GB',
             platformBillingCurrencyCode: data.platformBillingCurrencyCode || 'USD',
             platformBillingCurrencySymbol: data.platformBillingCurrencySymbol || '$'
           };
@@ -1057,7 +1120,8 @@ export class GeneralSettingsComponent implements OnInit {
     this.savingCurrency = true;
     this.api.put<any>('SettingsApi/currency', {
       currencyCode: this.currencySettings.currencyCode.trim(),
-      currencySymbol: this.currencySettings.currencySymbol?.trim() || '$'
+      currencySymbol: this.currencySettings.currencySymbol?.trim() || '$',
+      operatingCountry: this.currencySettings.operatingCountry?.trim() || 'GB'
     }).subscribe({
       next: (res: any) => {
         this.savingCurrency = false;

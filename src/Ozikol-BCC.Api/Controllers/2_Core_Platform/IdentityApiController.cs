@@ -2801,6 +2801,7 @@ namespace Ozikol_BCC.Api.Controllers
                 FullName = $"{user.FirstName} {user.LastName}".Trim(),
                 AvatarUrl = user.AvatarUrl,
                 CurrentRole = primaryRole,
+                UserGroupId = user.BcpUserGroupId,
                 AllRoles = globalRoles,
                 IsAdmin = isAdmin,
                 IsSuperAdmin = isSuperAdmin,
@@ -2929,6 +2930,11 @@ namespace Ozikol_BCC.Api.Controllers
                     };
                     _dbContext.BcpUserFeatureRoles.Add(featureRole);
                 }
+            }
+
+            if (request.UserGroupId.HasValue)
+            {
+                user.BcpUserGroupId = request.UserGroupId.Value;
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -3147,6 +3153,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public bool IsAdmin { get; set; }
         public string? SystemRole { get; set; }
+        public Guid? UserGroupId { get; set; }
         public List<FeatureRoleScopeDto>? FeatureRoles { get; set; }
 
         /// <summary>
