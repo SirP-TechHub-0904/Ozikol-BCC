@@ -50,6 +50,17 @@ interface CapabilityScope {
 }
 
 /**
+ * Interface representing member preview details inside a user group.
+ */
+interface GroupMemberPreview {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  designation?: string;
+  avatarUrl?: string;
+}
+
+/**
  * Role-First Governance Catalog Component.
  * Restructured into two distinct enterprise categories:
  *  1. System & Feature Authority Roles (SuperAdmin, Admin, Identity Manager, User Manager, Member)
@@ -423,11 +434,11 @@ interface CapabilityScope {
                       <div class="avatar-stack">
                         <div
                           class="stack-avatar"
-                          *ngFor="let m of (g.membersPreview || []) | slice:0:3; let idx = index"
-                          [title]="(m.fullName || m.email) + (m.designation ? ' - ' + m.designation : '')"
-                          [style.background]="getMemberGradient(m.fullName || m.email, idx)"
+                          *ngFor="let m of getGroupPreviewMembers(g); let idx = index"
+                          [title]="(m.fullName || m.email || '') + (m.designation ? ' - ' + m.designation : '')"
+                          [style.background]="getMemberGradient(m.fullName || m.email || '', idx)"
                         >
-                          {{ getInitials(m.fullName || m.email) }}
+                          {{ getInitials(m.fullName || m.email || '') }}
                         </div>
                         <div class="stack-avatar stack-more" *ngIf="(g.membersCount || 0) > 3" [title]="((g.membersCount || 0) - 3) + ' more members'">
                           +{{ (g.membersCount || 0) - 3 }}
@@ -2490,6 +2501,14 @@ export class IdentityRolesComponent implements OnInit {
     }
     const hue = Math.abs(hash % 360);
     return `linear-gradient(135deg, hsl(${hue}, 70%, 45%), hsl(${(hue + 40) % 360}, 75%, 55%))`;
+  }
+
+  /**
+   * Returns strongly typed preview members for avatar stacking (up to 3 members).
+   */
+  getGroupPreviewMembers(group: any): GroupMemberPreview[] {
+    if (!group || !Array.isArray(group.membersPreview)) return [];
+    return group.membersPreview.slice(0, 3);
   }
 
   /**
