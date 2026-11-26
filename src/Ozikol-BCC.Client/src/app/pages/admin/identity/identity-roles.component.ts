@@ -573,15 +573,12 @@ interface GroupMemberPreview {
                       </span>
                     </ng-container>
                     <ng-template #editableGroupActions>
-                      <button type="button" class="btn-manage-members" (click)="startEditGroup(g)" title="Configure blueprint capability permissions">
+                      <button type="button" class="btn-manage-members" (click)="startEditGroup(g)" title="Configure group blueprint and capability scopes">
                         <span class="material-symbols-outlined btn-icon">tune</span>
                         <span class="btn-text">Configure Blueprint</span>
                       </button>
                       <div class="quick-icons" style="display: inline-flex; vertical-align: middle; margin-left: 6px;">
-                        <button type="button" class="icon-btn edit-icon-btn" (click)="startEditGroup(g)" title="Edit group identity">
-                          <span class="material-symbols-outlined">edit</span>
-                        </button>
-                        <button type="button" class="icon-btn delete-icon-btn" (click)="deleteGroup(g)" [disabled]="g.isSystem" title="Delete group">
+                        <button type="button" class="icon-btn delete-icon-btn" (click)="deleteGroup(g)" [disabled]="g.isSystem" title="Delete user group">
                           <span class="material-symbols-outlined">delete</span>
                         </button>
                       </div>
@@ -2211,8 +2208,8 @@ export class IdentityRolesComponent implements OnInit {
    * Card 1: Major platform governance and root access levels.
    */
   get majorRoles(): RoleCatalogItem[] {
-    const targetNames = this.isSuperAdmin 
-      ? ['superadmin', 'admin', 'member'] 
+    const targetNames = this.isSuperAdmin
+      ? ['superadmin', 'admin', 'member']
       : ['admin', 'member'];
     return this.rolesCatalog.filter(r => targetNames.includes((r.name || '').toLowerCase()));
   }
@@ -2284,7 +2281,7 @@ export class IdentityRolesComponent implements OnInit {
    */
   get paidFeatureRoles(): any[] {
     const list: any[] = [];
-    
+
     // Check active paid feature roles from catalog, excluding core platform & system roles
     const excluded = [
       'superadmin', 'admin', 'member',
@@ -2297,7 +2294,7 @@ export class IdentityRolesComponent implements OnInit {
       'settings & audit manager', 'settings & audit',
       'global editor', 'feature editor', 'read only'
     ];
-    const catalogPaid = this.rolesCatalog.filter(r => 
+    const catalogPaid = this.rolesCatalog.filter(r =>
       !excluded.includes((r.name || '').toLowerCase())
     );
 
@@ -2420,7 +2417,7 @@ export class IdentityRolesComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService,
     private translationService: TranslationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.checkCurrentUserRole();
@@ -2483,9 +2480,9 @@ export class IdentityRolesComponent implements OnInit {
       const matched = permissions.find((p: any) => {
         const cleanPerm = (p.featureAreaKey || '').toLowerCase().replace(/[-_ ]/g, '');
         return cleanPerm === cleanTarget ||
-               cleanPerm.includes(cleanTarget) ||
-               cleanTarget.includes(cleanPerm) ||
-               (cleanTarget.includes('workforce') && (cleanPerm.includes('workforce') || cleanPerm.includes('rota') || cleanPerm.includes('staff')));
+          cleanPerm.includes(cleanTarget) ||
+          cleanTarget.includes(cleanPerm) ||
+          (cleanTarget.includes('workforce') && (cleanPerm.includes('workforce') || cleanPerm.includes('rota') || cleanPerm.includes('staff')));
       });
 
       let scope: 'None' | 'ReadOnly' | 'FeatureEdit' = 'None';
@@ -2684,7 +2681,7 @@ export class IdentityRolesComponent implements OnInit {
         const u = JSON.parse(userStr);
         const roles: string[] = u.roles || [];
         this.isSuperAdmin = roles.some(r => r.toLowerCase() === 'superadmin');
-      } catch {}
+      } catch { }
     }
   }
 
@@ -2769,7 +2766,7 @@ export class IdentityRolesComponent implements OnInit {
         // Strictly exclude root SuperAdmin users from assignment target dropdown
         this.assignableUsers = (res.data || []).filter((u: any) => !u.roles?.includes('SuperAdmin'));
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
