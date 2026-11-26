@@ -584,7 +584,10 @@ interface GroupMemberPreview {
                         <span class="material-symbols-outlined">{{ role.icon }}</span>
                       </div>
                       <div class="role-title-box">
-                        <span class="role-name">{{ role.name }}</span>
+                        <div class="role-name-row">
+                          <span class="role-name">{{ role.name }}</span>
+                          <span class="role-key-tag" *ngIf="role.roleKey">{{ role.roleKey }}</span>
+                        </div>
                         <span class="role-pill-badge" [ngClass]="role.badge">System Role</span>
                       </div>
                     </div>
@@ -618,11 +621,11 @@ interface GroupMemberPreview {
             </div>
           </div>
 
-          <div class="table-responsive">
+          <div class="table-responsive" *ngIf="paidFeatureRoles.length > 0">
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="width: 320px;">Feature Role</th>
+                  <th style="width: 340px;">Feature Role</th>
                   <th>Description & Modular Scope</th>
                 </tr>
               </thead>
@@ -648,6 +651,18 @@ interface GroupMemberPreview {
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="empty-paid-state" *ngIf="paidFeatureRoles.length === 0">
+            <div class="empty-paid-icon">
+              <span class="material-symbols-outlined">workspace_premium</span>
+            </div>
+            <h4>No Active Paid Feature Add-Ons</h4>
+            <p>This workspace operates on our 7 Core System Modules. When paid capabilities (such as Workforce, Shifts &amp; Rotas, Commerce Studio, or Marketing Studio) are activated in Billing &amp; Subscriptions, their dedicated authority roles will automatically appear here.</p>
+            <a routerLink="/billing/console" class="btn btn-outline btn-sm">
+              <span class="material-symbols-outlined">shopping_bag</span>
+              <span>Explore Add-on Features in Billing</span>
+            </a>
           </div>
         </div>
 
@@ -1454,16 +1469,64 @@ interface GroupMemberPreview {
       flex-shrink: 0;
     }
     .role-icon-box span { font-size: 22px; }
-    .role-title-box { display: flex; flex-direction: column; gap: 3px; }
+    .role-title-box { display: flex; flex-direction: column; gap: 4px; }
+    .role-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .role-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .role-key-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      background: #f1f5f9;
+      padding: 1.5px 7px;
+      border-radius: 5px;
+      border: 1px solid #e2e8f0;
+      font-family: inherit;
+    }
     .role-pill-badge {
       font-size: 10px;
       font-weight: 700;
-      padding: 1px 8px;
+      padding: 2px 8px;
       border-radius: 9999px;
       width: fit-content;
       text-transform: uppercase;
       letter-spacing: 0.04em;
+    }
+
+    /* Empty Paid Features State */
+    .empty-paid-state {
+      padding: 48px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: #fcfdfe;
+      border-top: 1px solid #f1f5f9;
+    }
+    .empty-paid-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(16,185,129,0.08);
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .empty-paid-icon span { font-size: 28px; }
+    .empty-paid-state h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .empty-paid-state p {
+      margin: 0;
+      max-width: 540px;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.55;
     }
 
     /* Badges */
@@ -1968,6 +2031,7 @@ export class IdentityRolesComponent implements OnInit {
   systemModuleRoles = [
     {
       name: 'Central Command',
+      roleKey: 'Central Command Manager',
       icon: 'space_dashboard',
       badge: 'badge-admin',
       scope: 'Dashboard Executive Command',
@@ -1975,6 +2039,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'Website & CMS',
+      roleKey: 'CMS Studio Manager',
       icon: 'web',
       badge: 'badge-cmsmanager',
       scope: 'Website & CMS Studio Governance',
@@ -1982,6 +2047,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'User Management',
+      roleKey: 'User Manager',
       icon: 'manage_accounts',
       badge: 'badge-usermanager',
       scope: 'User Directory & Cohort Management',
@@ -1989,6 +2055,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'Identity & Access Control',
+      roleKey: 'Identity Manager',
       icon: 'admin_panel_settings',
       badge: 'badge-identity',
       scope: 'RBAC Sovereign & Security Governance',
@@ -1996,6 +2063,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'Broadcast & Communications',
+      roleKey: 'Broadcast Manager',
       icon: 'campaign',
       badge: 'badge-feature-authority',
       scope: 'Broadcast Studio & Communications',
@@ -2003,6 +2071,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'Billing & Subscriptions',
+      roleKey: 'Billing Manager',
       icon: 'credit_card',
       badge: 'badge-admin',
       scope: 'Financial & Subscriptions Governance',
@@ -2010,6 +2079,7 @@ export class IdentityRolesComponent implements OnInit {
     },
     {
       name: 'Settings & Audit',
+      roleKey: 'Settings & Audit Manager',
       icon: 'settings',
       badge: 'badge-readonly',
       scope: 'Global System Settings & Audit Logs',

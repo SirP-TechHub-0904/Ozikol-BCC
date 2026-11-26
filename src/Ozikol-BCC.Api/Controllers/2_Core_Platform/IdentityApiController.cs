@@ -445,12 +445,25 @@ namespace Ozikol_BCC.Api.Controllers
                             if (excludedCodes.Contains(pf.FeatureCode))
                                 continue;
 
-                            var sub = masterTenant?.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == pf.Id);
-                            bool isAvailable = masterTenant != null && masterTenant.UseCustomAvailability
-                                ? (sub?.IsAvailableForUseOverride ?? pf.IsAvailableForUse)
-                                : pf.IsAvailableForUse;
+                            // Strictly check active subscription for this tenant
+                            bool isSubscribed = false;
+                            if (_featureGateService != null && !string.IsNullOrEmpty(tenantKey))
+                            {
+                                isSubscribed = await _featureGateService.IsFeatureActiveAsync(tenantKey, pf.FeatureCode);
+                            }
+                            else if (masterTenant != null)
+                            {
+                                var sub = masterTenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == pf.Id);
+                                var now = DateTime.UtcNow;
+                                bool isFlatRateActive = masterTenant.HasFlatRatePlan && (!masterTenant.FlatRateExpiresAtUtc.HasValue || masterTenant.FlatRateExpiresAtUtc.Value > now);
+                                isSubscribed = sub != null && sub.IsActive &&
+                                               !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                               !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                                               !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
+                                               (pf.IsCompulsory || isFlatRateActive || sub.ExpiresAtUtc > now);
+                            }
 
-                            if (!isAvailable)
+                            if (!isSubscribed)
                                 continue;
 
                             var title = !string.IsNullOrWhiteSpace(pf.MenuTitle) ? pf.MenuTitle : pf.Name;
