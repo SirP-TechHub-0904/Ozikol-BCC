@@ -19,7 +19,6 @@ namespace Ozikol_BCC.Domain.Constants
         public const string BroadcastManager = "Broadcast Manager";
         public const string BillingManager = "Billing Manager";
         public const string SettingsManager = "Settings & Audit Manager";
-        public const string WorkforceManager = "Staff Rota & Shifts Manager";
         public const string Member = "Member";
         public const string GlobalEditor = "Global Editor";
         public const string FeatureEditor = "Feature Editor";

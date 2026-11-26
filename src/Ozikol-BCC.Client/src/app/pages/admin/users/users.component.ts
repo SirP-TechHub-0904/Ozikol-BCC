@@ -106,7 +106,6 @@ Chart.register(...registerables);
                 <option value="Identity Manager">Identity Manager</option>
                 <option value="Broadcast Manager">Broadcast Manager</option>
                 <option value="Settings & Audit Manager">Settings & Audit Manager</option>
-                <option value="Staff Rota & Shifts Manager">Staff Rota & Shifts Manager</option>
                 <option value="Global Editor">Global Editor</option>
                 <option value="Feature Editor">Feature Editor</option>
                 <option value="Read Only">Read Only</option>
@@ -652,13 +651,13 @@ Chart.register(...registerables);
               <select [(ngModel)]="newUser.role">
                 <option value="Member">Member</option>
                 <option value="Admin">Admin</option>
+                <option value="Central Command Manager">Central Command Manager</option>
                 <option value="Billing Manager">Billing Manager</option>
                 <option value="CMS Studio Manager">CMS Studio Manager</option>
                 <option value="User Manager">User Manager</option>
                 <option value="Identity Manager">Identity Manager</option>
                 <option value="Broadcast Manager">Broadcast Manager</option>
                 <option value="Settings & Audit Manager">Settings & Audit Manager</option>
-                <option value="Staff Rota & Shifts Manager">Staff Rota & Shifts Manager</option>
                 <option value="Global Editor">Global Editor</option>
                 <option value="Feature Editor">Feature Editor</option>
                 <option value="Read Only">Read Only</option>

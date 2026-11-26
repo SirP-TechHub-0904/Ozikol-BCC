@@ -252,8 +252,8 @@ interface GroupMemberPreview {
                     <option value="Billing Manager">Billing &amp; Invoices Manager</option>
                     <option value="Settings &amp; Audit Manager">Settings &amp; Audit Manager</option>
                   </optgroup>
-                  <optgroup label="Paid &amp; Modular Features">
-                    <option value="Staff Rota &amp; Shifts Manager">Workforce &amp; Shifts Manager (Paid)</option>
+                  <optgroup label="Active Subscribed Feature Roles" *ngIf="paidFeatureRoles.length > 0">
+                    <option *ngFor="let fRole of paidFeatureRoles" [value]="fRole.name">{{ fRole.name }}</option>
                   </optgroup>
                   <optgroup label="Operational Action Levels">
                     <option value="GlobalEditor">Global Editor (Workspace-Wide Editing)</option>
@@ -2039,24 +2039,14 @@ export class IdentityRolesComponent implements OnInit {
       !excluded.includes((r.name || '').toLowerCase())
     );
 
-    if (catalogPaid.length > 0) {
-      for (const r of catalogPaid) {
-        list.push({
-          name: r.name,
-          icon: r.icon || 'calendar_month',
-          badge: r.badge || 'badge-feature-authority',
-          scope: r.scope || 'Modular Feature Governance Only',
-          description: r.description
-        });
-      }
-    } else {
-      // Baseline active paid feature: Workforce & Shifts
+    // Strictly return only dynamic feature roles enabled and returned by the backend catalog for this tenant
+    for (const r of catalogPaid) {
       list.push({
-        name: 'Workforce & Shifts',
-        icon: 'calendar_month',
-        badge: 'badge-feature-authority',
-        scope: 'Staff Rota & Shifts Governance Only',
-        description: "Feature domain administrator authorized strictly and exclusively to govern 'Staff Rota & Shifts' (bcp-staff-rota)."
+        name: r.name,
+        icon: r.icon || 'extension',
+        badge: r.badge || 'badge-feature-authority',
+        scope: r.scope || 'Modular Feature Governance Only',
+        description: r.description
       });
     }
 

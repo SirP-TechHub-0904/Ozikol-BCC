@@ -126,7 +126,6 @@ namespace Ozikol_BCC.Api.Controllers
                     ("Broadcast Manager", RoleCategory.BCP),
                     ("Billing Manager", RoleCategory.BCP),
                     ("Settings & Audit Manager", RoleCategory.BCP),
-                    ("Staff Rota & Shifts Manager", RoleCategory.BCP),
                     ("Global Editor", RoleCategory.BCP),
                     ("Feature Editor", RoleCategory.BCP),
                     ("Read Only", RoleCategory.BCP),
@@ -194,10 +193,9 @@ namespace Ozikol_BCC.Api.Controllers
                               r.Name == "Broadcast Manager" ? 6 :
                               r.Name == "Billing Manager" ? 7 :
                               r.Name == "Settings & Audit Manager" ? 8 :
-                              r.Name == "Staff Rota & Shifts Manager" ? 9 :
-                              r.Name == "Global Editor" ? 10 :
-                              r.Name == "Feature Editor" ? 11 :
-                              r.Name == "Read Only" ? 12 : 13)
+                              r.Name == "Global Editor" ? 9 :
+                              r.Name == "Feature Editor" ? 10 :
+                              r.Name == "Read Only" ? 11 : 12)
                 .Select(r => new
                 {
                     r.Id,
