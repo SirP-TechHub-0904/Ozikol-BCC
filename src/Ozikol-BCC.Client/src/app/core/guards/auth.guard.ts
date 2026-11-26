@@ -85,6 +85,12 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
   if (!isAuthorized) {
     console.warn('[AuthGuard] Insufficient role permissions for route:', state.url, 'UserRoles:', userRoles);
 
+    // If the user is a standard Member attempting to access an administrative console route, seamlessly route them to their workspace home
+    if (isMemberOnly(userRoles)) {
+      router.navigate(['/dashboard/workspace']);
+      return false;
+    }
+
     // Send suspicious access report to backend (debounced 10s per URL)
     const now = Date.now();
     const lastReportTime = recentBlockedReports.get(state.url) || 0;
