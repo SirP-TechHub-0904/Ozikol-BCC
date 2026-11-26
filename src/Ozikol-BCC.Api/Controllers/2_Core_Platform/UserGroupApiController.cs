@@ -644,41 +644,41 @@ namespace Ozikol_BCC.Api.Controllers
                 if (user == null) return;
 
                 var baseRole = group.BaseRole?.Trim();
-                if (group.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase) || string.Equals(baseRole, "Administrator", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseRole = "Admin";
-                }
-
-                // Update primary role if not SuperAdmin
-                var currentRoles = await _userManager.GetRolesAsync(user);
-                if (!currentRoles.Contains("SuperAdmin") && !string.IsNullOrWhiteSpace(baseRole))
-                {
-                    if (!await _roleManager.RoleExistsAsync(baseRole))
-                    {
-                        await _roleManager.CreateAsync(new AppRole(baseRole));
-                    }
-
-                    if (!await _userManager.IsInRoleAsync(user, baseRole))
-                    {
-                        var nonAdminRoles = currentRoles
-                            .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
-                                     && !string.Equals(r, baseRole, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-
-                        if (nonAdminRoles.Count > 0)
-                        {
-                            await _userManager.RemoveFromRolesAsync(user, nonAdminRoles);
-                        }
-
-                        await _userManager.AddToRoleAsync(user, baseRole);
-                    }
-                }
 
                 // Query fresh permissions from DB for this group
                 var activePerms = await _dbContext.BcpUserGroupPermissions
                     .AsNoTracking()
                     .Where(p => p.BcpUserGroupId == group.Id && p.ActionRole != BcpActionRole.None)
                     .ToListAsync(cancellationToken);
+
+                // A group is only unrestricted global admin if it has 0 granular rules configured
+                var isUnrestrictedAdmin = activePerms.Count == 0 && (group.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase) || string.Equals(baseRole, "Admin", StringComparison.OrdinalIgnoreCase));
+                var targetRole = isUnrestrictedAdmin ? "Admin" : (!string.IsNullOrWhiteSpace(baseRole) && baseRole != "Admin" ? baseRole : (activePerms.Count > 0 ? "Feature Editor" : "Member"));
+
+                // Update primary role if not SuperAdmin
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                if (!currentRoles.Contains("SuperAdmin") && !string.IsNullOrWhiteSpace(targetRole))
+                {
+                    if (!await _roleManager.RoleExistsAsync(targetRole))
+                    {
+                        await _roleManager.CreateAsync(new AppRole(targetRole));
+                    }
+
+                    if (!await _userManager.IsInRoleAsync(user, targetRole))
+                    {
+                        var rolesToRemove = currentRoles
+                            .Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+                                     && !string.Equals(r, targetRole, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        if (rolesToRemove.Count > 0)
+                        {
+                            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                        }
+
+                        await _userManager.AddToRoleAsync(user, targetRole);
+                    }
+                }
 
                 var existingRoles = await _dbContext.BcpUserFeatureRoles
                     .Where(r => r.ProfileId == userId)
@@ -689,7 +689,7 @@ namespace Ozikol_BCC.Api.Controllers
                     _dbContext.BcpUserFeatureRoles.RemoveRange(existingRoles);
                 }
 
-                if (baseRole != "Admin" && baseRole != "SuperAdmin" && activePerms.Count > 0)
+                if (!isUnrestrictedAdmin && activePerms.Count > 0)
                 {
                     foreach (var perm in activePerms)
                     {

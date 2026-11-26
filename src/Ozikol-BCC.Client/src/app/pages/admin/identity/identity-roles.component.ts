@@ -2698,7 +2698,9 @@ export class IdentityRolesComponent implements OnInit {
 
     const groupId = group.id || group.Id;
     const baseRole = group.baseRole || group.BaseRole || 'Member';
-    const isAdmin = baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator';
+    const initialPerms = group.permissions || group.Permissions || [];
+    const hasConfiguredRules = (group.permissionsCount ?? group.PermissionsCount ?? initialPerms.length) > 0;
+    const isAdmin = !hasConfiguredRules && (baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator');
 
     // Immediately open the blueprint editor with the row data
     this.editingGroup = {
@@ -2706,14 +2708,13 @@ export class IdentityRolesComponent implements OnInit {
       name: group.name || group.Name || '',
       description: group.description || group.Description || '',
       isAdmin: isAdmin,
-      baseRole: isAdmin ? 'Admin' : 'Member',
+      baseRole: isAdmin ? 'Admin' : (baseRole === 'Admin' ? 'Admin' : 'Member'),
       isDefault: group.isDefault ?? group.IsDefault ?? false,
-      colorBadge: isAdmin ? '#0050E5' : (group.colorBadge || group.ColorBadge || '#64748B'),
-      icon: isAdmin ? 'admin_panel_settings' : (group.icon || group.Icon || 'groups')
+      colorBadge: (isAdmin || baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator') ? '#0050E5' : (group.colorBadge || group.ColorBadge || '#64748B'),
+      icon: (isAdmin || baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator') ? 'admin_panel_settings' : (group.icon || group.Icon || 'groups')
     };
 
     // Initialize capabilities immediately
-    const initialPerms = group.permissions || group.Permissions || [];
     this.initEditingGroupCapabilities(initialPerms);
 
     // Scroll smoothly to the editor card
@@ -2728,18 +2729,19 @@ export class IdentityRolesComponent implements OnInit {
           const detail = res.data || res;
           if (detail && this.editingGroup) {
             const detailRole = detail.baseRole || detail.BaseRole || this.editingGroup.baseRole;
-            const detailIsAdmin = detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator';
+            const permissions = detail.permissions || detail.Permissions || initialPerms;
+            const detailHasRules = permissions.length > 0;
+            const detailIsAdmin = !detailHasRules && (detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator');
 
             this.editingGroup.id = detail.id || detail.Id || this.editingGroup.id;
             this.editingGroup.name = detail.name || detail.Name || this.editingGroup.name;
             this.editingGroup.description = detail.description ?? detail.Description ?? this.editingGroup.description;
             this.editingGroup.isAdmin = detailIsAdmin;
-            this.editingGroup.baseRole = detailIsAdmin ? 'Admin' : 'Member';
+            this.editingGroup.baseRole = detailIsAdmin ? 'Admin' : (detailRole === 'Admin' ? 'Admin' : 'Member');
             this.editingGroup.isDefault = detail.isDefault ?? detail.IsDefault ?? this.editingGroup.isDefault;
-            this.editingGroup.colorBadge = detailIsAdmin ? '#0050E5' : (detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge);
-            this.editingGroup.icon = detailIsAdmin ? 'admin_panel_settings' : (detail.icon || detail.Icon || this.editingGroup.icon);
+            this.editingGroup.colorBadge = (detailIsAdmin || detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator') ? '#0050E5' : (detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge);
+            this.editingGroup.icon = (detailIsAdmin || detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator') ? 'admin_panel_settings' : (detail.icon || detail.Icon || this.editingGroup.icon);
 
-            const permissions = detail.permissions || detail.Permissions || initialPerms;
             this.initEditingGroupCapabilities(permissions);
           }
         },

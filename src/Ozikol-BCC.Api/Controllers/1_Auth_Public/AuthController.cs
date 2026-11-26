@@ -2823,26 +2823,49 @@ namespace Ozikol_BCC.Api.Controllers
                         if (stale.Count > 0)
                         {
                             activeDbContext.BcpUserFeatureRoles.RemoveRange(stale);
-                            await activeDbContext.SaveChangesAsync();
                         }
+
+                        // Ensure all allowed blueprint permissions exist on user
+                        var existingKeys = existingFeatureRoles
+                            .Where(f => !string.IsNullOrEmpty(f.FeatureAreaKey))
+                            .Select(f => f.FeatureAreaKey.Trim().ToLowerInvariant())
+                            .ToHashSet();
+
+                        foreach (var perm in allowedPerms)
+                        {
+                            if (!existingKeys.Contains(perm.FeatureAreaKey.Trim().ToLowerInvariant()))
+                            {
+                                activeDbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                                {
+                                    Id = Guid.NewGuid(),
+                                    ProfileId = user.Id,
+                                    FeatureAreaKey = perm.FeatureAreaKey,
+                                    ActionRole = perm.ActionRole,
+                                    IsActive = true,
+                                    Date = DateTime.UtcNow
+                                });
+                            }
+                        }
+
+                        await activeDbContext.SaveChangesAsync();
                     }
 
                     // Align ASP.NET Identity roles to group base role
                     var baseRole = assignedGroup.BaseRole?.Trim();
-                    if (string.Equals(baseRole, "Administrator", StringComparison.OrdinalIgnoreCase)) baseRole = "Admin";
-                    if (string.IsNullOrWhiteSpace(baseRole)) baseRole = "Member";
+                    var isUnrestrictedAdmin = allowedPerms.Count == 0 && (assignedGroup.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase) || string.Equals(baseRole, "Admin", StringComparison.OrdinalIgnoreCase));
+                    var targetRole = isUnrestrictedAdmin ? "Admin" : (!string.IsNullOrWhiteSpace(baseRole) && baseRole != "Admin" ? baseRole : (allowedPerms.Count > 0 ? "Feature Editor" : "Member"));
 
                     var currentIdentityRoles = await activeUserManager.GetRolesAsync(user);
-                    if (!currentIdentityRoles.Contains("SuperAdmin") && baseRole == "Member" && allowedPerms.Count == 0)
+                    if (!currentIdentityRoles.Contains("SuperAdmin") && !string.IsNullOrWhiteSpace(targetRole))
                     {
-                        var toRemove = currentIdentityRoles.Where(r => !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)).ToList();
-                        if (toRemove.Count > 0)
+                        if (!currentIdentityRoles.Contains(targetRole))
                         {
-                            await activeUserManager.RemoveFromRolesAsync(user, toRemove);
-                        }
-                        if (!currentIdentityRoles.Contains("Member"))
-                        {
-                            await activeUserManager.AddToRoleAsync(user, "Member");
+                            var toRemove = currentIdentityRoles.Where(r => !string.Equals(r, targetRole, StringComparison.OrdinalIgnoreCase)).ToList();
+                            if (toRemove.Count > 0)
+                            {
+                                await activeUserManager.RemoveFromRolesAsync(user, toRemove);
+                            }
+                            await activeUserManager.AddToRoleAsync(user, targetRole);
                         }
                     }
                 }
