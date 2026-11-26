@@ -231,51 +231,30 @@ interface GroupMemberPreview {
           <div class="editor-body">
             <!-- Form Fields Grid -->
             <div class="editor-form-grid">
-              <div class="form-group">
+              <div class="form-group span-full">
                 <label>Group Name *</label>
                 <input type="text" [(ngModel)]="editingGroup.name" placeholder="e.g. Operations & Workforce Manager" class="form-control" />
               </div>
 
-              <div class="form-group">
-                <label>Base System Role *</label>
-                <select [(ngModel)]="editingGroup.baseRole" class="form-control">
-                  <optgroup label="Core Platform Governance">
-                    <option value="Admin">Administrator (Full Unrestricted Access)</option>
-                    <option value="Member">Member (Standard Workspace Access)</option>
-                  </optgroup>
-                  <optgroup label="System Module Roles">
-                    <option value="Central Command Manager">Central Command Manager</option>
-                    <option value="CMS Studio Manager">Website &amp; CMS Manager</option>
-                    <option value="User Manager">User Manager</option>
-                    <option value="Identity Manager">Identity &amp; Access Manager</option>
-                    <option value="Broadcast Manager">Broadcast &amp; Communications Manager</option>
-                    <option value="Billing Manager">Billing &amp; Invoices Manager</option>
-                    <option value="Settings &amp; Audit Manager">Settings &amp; Audit Manager</option>
-                  </optgroup>
-                  <optgroup label="Active Subscribed Feature Roles" *ngIf="paidFeatureRoles.length > 0">
-                    <option *ngFor="let fRole of paidFeatureRoles" [value]="fRole.name">{{ fRole.name }}</option>
-                  </optgroup>
-                  <optgroup label="Operational Action Levels">
-                    <option value="GlobalEditor">Global Editor (Workspace-Wide Editing)</option>
-                    <option value="FeatureEditor">Feature Editor (Scoped Capability Access)</option>
-                    <option value="ReadOnly">Read Only (Inspection &amp; Audit Observer)</option>
-                  </optgroup>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Color Badge</label>
-                <div class="color-picker-row">
-                  <input type="color" [(ngModel)]="editingGroup.colorBadge" class="color-input" />
-                  <input type="text" [(ngModel)]="editingGroup.colorBadge" class="form-control" placeholder="#0050E5" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label>Material Icon</label>
-                <div class="icon-input-row">
-                  <span class="material-symbols-outlined icon-preview" [style.color]="editingGroup.colorBadge || '#0050E5'">{{ editingGroup.icon || 'groups' }}</span>
-                  <input type="text" [(ngModel)]="editingGroup.icon" class="form-control" placeholder="e.g. badge, work, shield" />
+              <!-- Clean Make Admin Toggle Card -->
+              <div class="form-group span-full">
+                <div class="admin-toggle-card" [class.admin-active]="editingGroup.isAdmin" (click)="toggleAdminStatus()">
+                  <div class="admin-toggle-left">
+                    <div class="admin-toggle-icon" [style.background]="editingGroup.isAdmin ? '#0050E5' : 'rgba(100, 116, 139, 0.1)'" [style.color]="editingGroup.isAdmin ? '#ffffff' : '#64748B'">
+                      <span class="material-symbols-outlined">{{ editingGroup.isAdmin ? 'verified_user' : 'shield_person' }}</span>
+                    </div>
+                    <div class="admin-toggle-text">
+                      <div class="admin-toggle-heading">
+                        <strong>Make this an Administrator Group</strong>
+                        <span class="role-pill-badge badge-admin" *ngIf="editingGroup.isAdmin">FULL UNRESTRICTED ACCESS</span>
+                      </div>
+                      <p>When enabled, members in this group automatically receive full global administrator authority across the workspace. All capability scopes below will be disabled.</p>
+                    </div>
+                  </div>
+                  <div class="admin-toggle-switch">
+                    <input type="checkbox" [checked]="editingGroup.isAdmin" (click)="$event.stopPropagation(); toggleAdminStatus()" />
+                    <span class="switch-slider"></span>
+                  </div>
                 </div>
               </div>
 
@@ -299,6 +278,15 @@ interface GroupMemberPreview {
                 <p>Define which system modules and subscribed feature add-ons members in this group can access and their permitted action level.</p>
               </div>
 
+              <!-- Notice when Administrator is enabled -->
+              <div class="admin-authority-banner" *ngIf="editingGroup.isAdmin">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <div>
+                  <strong>Administrator Authority Active</strong>
+                  <p>All system modules and active paid feature add-ons are automatically unlocked with full, unrestricted authority. Granular capability scopes below are disabled for Administrator groups.</p>
+                </div>
+              </div>
+
               <!-- Section 1: System Roles (Core Modules) -->
               <div class="blueprint-subsection">
                 <div class="subsection-header">
@@ -314,7 +302,7 @@ interface GroupMemberPreview {
                   </div>
                 </div>
 
-                <div class="blueprint-table-wrap">
+                <div class="blueprint-table-wrap" [class.table-disabled]="editingGroup.isAdmin">
                   <table class="blueprint-table">
                     <thead>
                       <tr>
@@ -344,6 +332,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-none"
                               [class.active]="item.scope === 'None'"
                               (click)="item.scope = 'None'"
+                              [disabled]="editingGroup.isAdmin"
                               title="No access"
                             >
                               <span class="material-symbols-outlined">block</span>
@@ -354,6 +343,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-readonly"
                               [class.active]="item.scope === 'ReadOnly'"
                               (click)="item.scope = 'ReadOnly'"
+                              [disabled]="editingGroup.isAdmin"
                               title="Read Only access"
                             >
                               <span class="material-symbols-outlined">visibility</span>
@@ -364,6 +354,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-feature"
                               [class.active]="item.scope === 'FeatureEdit'"
                               (click)="item.scope = 'FeatureEdit'"
+                              [disabled]="editingGroup.isAdmin"
                               title="Feature Editor access"
                             >
                               <span class="material-symbols-outlined">edit_note</span>
@@ -392,7 +383,7 @@ interface GroupMemberPreview {
                   </div>
                 </div>
 
-                <div class="blueprint-table-wrap" *ngIf="editingPaidCapabilities.length > 0">
+                <div class="blueprint-table-wrap" [class.table-disabled]="editingGroup.isAdmin" *ngIf="editingPaidCapabilities.length > 0">
                   <table class="blueprint-table">
                     <thead>
                       <tr>
@@ -422,6 +413,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-none"
                               [class.active]="item.scope === 'None'"
                               (click)="item.scope = 'None'"
+                              [disabled]="editingGroup.isAdmin"
                               title="No access"
                             >
                               <span class="material-symbols-outlined">block</span>
@@ -432,6 +424,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-readonly"
                               [class.active]="item.scope === 'ReadOnly'"
                               (click)="item.scope = 'ReadOnly'"
+                              [disabled]="editingGroup.isAdmin"
                               title="Read Only access"
                             >
                               <span class="material-symbols-outlined">visibility</span>
@@ -442,6 +435,7 @@ interface GroupMemberPreview {
                               class="seg-btn seg-feature"
                               [class.active]="item.scope === 'FeatureEdit'"
                               (click)="item.scope = 'FeatureEdit'"
+                              [disabled]="editingGroup.isAdmin"
                               title="Feature Editor access"
                             >
                               <span class="material-symbols-outlined">edit_note</span>
@@ -1500,6 +1494,147 @@ interface GroupMemberPreview {
       gap: 12px;
     }
 
+    /* Admin Toggle Card */
+    .admin-toggle-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.18s ease;
+    }
+    .admin-toggle-card:hover {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+    }
+    .admin-toggle-card.admin-active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 1px rgba(0, 80, 229, 0.2);
+    }
+    .admin-toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .admin-toggle-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.18s ease;
+    }
+    .admin-toggle-icon span { font-size: 22px; }
+    .admin-toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .admin-toggle-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-toggle-heading strong {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .admin-toggle-text p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .admin-toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .admin-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 24px;
+    }
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .admin-active .switch-slider {
+      background-color: #0050e5;
+    }
+    .admin-active .switch-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Admin Authority Banner */
+    .admin-authority-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .admin-authority-banner span.material-symbols-outlined {
+      font-size: 24px;
+      color: #0050e5;
+      flex-shrink: 0;
+    }
+    .admin-authority-banner strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 2px;
+    }
+    .admin-authority-banner p {
+      margin: 0;
+      font-size: 12px;
+      color: #2563eb;
+      line-height: 1.4;
+    }
+
+    /* Disabled table state */
+    .blueprint-table-wrap.table-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+      filter: grayscale(0.6);
+      background: #f8fafc;
+      user-select: none;
+    }
+    .seg-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
     /* Category Tabs Nav */
     .category-tabs-nav {
       display: flex;
@@ -2178,6 +2313,33 @@ interface GroupMemberPreview {
     :host-context(.dark-mode) .empty-paid-state-blueprint p {
       color: #94a3b8;
     }
+    :host-context(.dark-mode) .admin-toggle-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .admin-toggle-card.admin-active {
+      background: rgba(0, 80, 229, 0.15);
+      border-color: #3b82f6;
+    }
+    :host-context(.dark-mode) .admin-toggle-heading strong {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .admin-toggle-text p {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .admin-authority-banner {
+      background: rgba(0, 80, 229, 0.12);
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+    :host-context(.dark-mode) .admin-authority-banner strong {
+      color: #93c5fd;
+    }
+    :host-context(.dark-mode) .admin-authority-banner p {
+      color: #bfdbfe;
+    }
+    :host-context(.dark-mode) .blueprint-table-wrap.table-disabled {
+      background: #0f172a;
+    }
   `]
 })
 export class IdentityRolesComponent implements OnInit {
@@ -2514,9 +2676,10 @@ export class IdentityRolesComponent implements OnInit {
     this.editingGroup = {
       name: '',
       description: '',
+      isAdmin: false,
       baseRole: 'Member',
       isDefault: false,
-      colorBadge: '#0050E5',
+      colorBadge: '#64748B',
       icon: 'groups'
     };
     this.initEditingGroupCapabilities([]);
@@ -2534,16 +2697,19 @@ export class IdentityRolesComponent implements OnInit {
     }
 
     const groupId = group.id || group.Id;
+    const baseRole = group.baseRole || group.BaseRole || 'Member';
+    const isAdmin = baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator';
 
     // Immediately open the blueprint editor with the row data
     this.editingGroup = {
       id: groupId,
       name: group.name || group.Name || '',
       description: group.description || group.Description || '',
-      baseRole: group.baseRole || group.BaseRole || 'Admin',
+      isAdmin: isAdmin,
+      baseRole: isAdmin ? 'Admin' : 'Member',
       isDefault: group.isDefault ?? group.IsDefault ?? false,
-      colorBadge: group.colorBadge || group.ColorBadge || '#0050E5',
-      icon: group.icon || group.Icon || 'groups'
+      colorBadge: isAdmin ? '#0050E5' : (group.colorBadge || group.ColorBadge || '#64748B'),
+      icon: isAdmin ? 'admin_panel_settings' : (group.icon || group.Icon || 'groups')
     };
 
     // Initialize capabilities immediately
@@ -2561,13 +2727,17 @@ export class IdentityRolesComponent implements OnInit {
         next: (res) => {
           const detail = res.data || res;
           if (detail && this.editingGroup) {
+            const detailRole = detail.baseRole || detail.BaseRole || this.editingGroup.baseRole;
+            const detailIsAdmin = detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator';
+
             this.editingGroup.id = detail.id || detail.Id || this.editingGroup.id;
             this.editingGroup.name = detail.name || detail.Name || this.editingGroup.name;
             this.editingGroup.description = detail.description ?? detail.Description ?? this.editingGroup.description;
-            this.editingGroup.baseRole = detail.baseRole || detail.BaseRole || this.editingGroup.baseRole;
+            this.editingGroup.isAdmin = detailIsAdmin;
+            this.editingGroup.baseRole = detailIsAdmin ? 'Admin' : 'Member';
             this.editingGroup.isDefault = detail.isDefault ?? detail.IsDefault ?? this.editingGroup.isDefault;
-            this.editingGroup.colorBadge = detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge;
-            this.editingGroup.icon = detail.icon || detail.Icon || this.editingGroup.icon;
+            this.editingGroup.colorBadge = detailIsAdmin ? '#0050E5' : (detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge);
+            this.editingGroup.icon = detailIsAdmin ? 'admin_panel_settings' : (detail.icon || detail.Icon || this.editingGroup.icon);
 
             const permissions = detail.permissions || detail.Permissions || initialPerms;
             this.initEditingGroupCapabilities(permissions);
@@ -2577,6 +2747,24 @@ export class IdentityRolesComponent implements OnInit {
           // Keep the opened editingGroup fully responsive and editable
         }
       });
+    }
+  }
+
+  /**
+   * Toggles the Administrator status of the currently edited user group.
+   * When enabled, automatically disables granular capability scope selections.
+   */
+  toggleAdminStatus(): void {
+    if (!this.editingGroup) return;
+    this.editingGroup.isAdmin = !this.editingGroup.isAdmin;
+    if (this.editingGroup.isAdmin) {
+      this.editingGroup.baseRole = 'Admin';
+      this.editingGroup.colorBadge = '#0050E5';
+      this.editingGroup.icon = 'admin_panel_settings';
+    } else {
+      this.editingGroup.baseRole = 'Member';
+      this.editingGroup.colorBadge = '#64748B';
+      this.editingGroup.icon = 'groups';
     }
   }
 
@@ -2603,19 +2791,29 @@ export class IdentityRolesComponent implements OnInit {
     }
 
     this.isSavingGroup = true;
+    const isAdmin = !!this.editingGroup.isAdmin;
+    const baseRole = isAdmin ? 'Admin' : 'Member';
+    const colorBadge = isAdmin ? '#0050E5' : (this.editingGroup.colorBadge || '#64748B');
+    const icon = isAdmin ? 'admin_panel_settings' : (this.editingGroup.icon || 'groups');
+
+    // When admin, granular permissions are empty because Admin has sovereign global authority
+    const permissions = isAdmin
+      ? []
+      : this.editingGroupCapabilities
+          .filter(c => c.scope && c.scope !== 'None')
+          .map(c => ({
+            featureAreaKey: c.key,
+            actionRole: c.scope
+          }));
+
     const payload = {
       name: this.editingGroup.name.trim(),
       description: this.editingGroup.description?.trim(),
-      baseRole: this.editingGroup.baseRole || 'Member',
+      baseRole: baseRole,
       isDefault: !!this.editingGroup.isDefault,
-      colorBadge: this.editingGroup.colorBadge || '#0050E5',
-      icon: this.editingGroup.icon || 'groups',
-      permissions: this.editingGroupCapabilities
-        .filter(c => c.scope && c.scope !== 'None')
-        .map(c => ({
-          featureAreaKey: c.key,
-          actionRole: c.scope
-        }))
+      colorBadge: colorBadge,
+      icon: icon,
+      permissions: permissions
     };
 
     if (this.editingGroup.id) {
