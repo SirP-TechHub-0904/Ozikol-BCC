@@ -114,7 +114,7 @@ interface CapabilityScope {
               <span class="material-symbols-outlined">shield_person</span>
             </div>
             <div class="stat-meta">
-              <span class="stat-val">{{ systemFeatureRoles.length }}</span>
+              <span class="stat-val">{{ majorRoles.length + systemModuleRoles.length + paidFeatureRoles.length }}</span>
               <span class="stat-lbl">{{ 'identity.roles.all_permissions' | translate:'All Permissions' }}</span>
             </div>
           </div>
@@ -167,7 +167,7 @@ interface CapabilityScope {
           (click)="setFilter('permissions')"
         >
           <span class="material-symbols-outlined">shield_person</span>
-          <span>{{ 'identity.roles.tab_all_permissions' | translate:'All Permissions' }} ({{ systemFeatureRoles.length }})</span>
+          <span>{{ 'identity.roles.tab_all_permissions' | translate:'All Permissions' }} ({{ majorRoles.length + systemModuleRoles.length + paidFeatureRoles.length }})</span>
         </button>
         <button 
           type="button" 
@@ -465,8 +465,10 @@ interface CapabilityScope {
         </div>
       </div>
 
-      <!-- Tab 2: All Permissions (System Roles & Active Feature Roles) -->
+      <!-- Tab 2: All Permissions (3 Distinct Cards: Major Roles, System Roles, Feature/Paid Roles) -->
       <div class="permissions-tab-section" *ngIf="!isLoading && activeFilter === 'permissions'">
+        
+        <!-- CARD 1: Major Platform Roles -->
         <div class="table-card">
           <div class="table-card-header">
             <div class="card-header-meta">
@@ -475,10 +477,10 @@ interface CapabilityScope {
               </div>
               <div>
                 <div class="header-title-row">
-                  <h3>{{ 'identity.roles.authority_title' | translate:'System & Feature Authority Roles' }}</h3>
-                  <span class="section-count-badge badge-admin">{{ systemFeatureRoles.length }} Roles</span>
+                  <h3>Major Platform Roles</h3>
+                  <span class="section-count-badge badge-admin">{{ majorRoles.length }} Roles</span>
                 </div>
-                <p>{{ 'identity.roles.authority_desc' | translate:'Sovereign platform, identity governance, and active feature domain authority roles that govern workspace administration.' }}</p>
+                <p>Platform foundational governance and root sovereign access levels.</p>
               </div>
             </div>
             <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role catalog">
@@ -491,13 +493,12 @@ interface CapabilityScope {
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="width: 320px;">{{ 'identity.roles.th_role' | translate:'Role & Authority Tier' }}</th>
-                  <th>{{ 'identity.roles.th_description' | translate:'Scope & Governance Boundaries' }}</th>
+                  <th style="width: 320px;">Role</th>
+                  <th>Scope & Governance Boundaries</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let role of systemFeatureRoles">
-                  <!-- Column 1: Role & Authority Tier -->
+                <tr *ngFor="let role of majorRoles">
                   <td style="vertical-align: top;">
                     <div class="role-cell">
                       <div class="role-icon-box" [ngClass]="role.badge">
@@ -506,13 +507,11 @@ interface CapabilityScope {
                       <div class="role-title-box">
                         <span class="role-name">{{ role.name }}</span>
                         <span class="role-pill-badge" [ngClass]="role.badge">
-                          {{ isSystemRole(role.name) ? 'System Authority' : 'Feature Authority' }}
+                          {{ role.name === 'SuperAdmin' ? 'Root Sovereign' : (role.name === 'Admin' ? 'Global Admin' : 'Baseline Member') }}
                         </span>
                       </div>
                     </div>
                   </td>
-
-                  <!-- Column 2: Scope & Governance Boundaries -->
                   <td>
                     <div class="scope-cell">
                       <span class="scope-tag">{{ role.scope }}</span>
@@ -524,6 +523,107 @@ interface CapabilityScope {
             </table>
           </div>
         </div>
+
+        <!-- CARD 2: Core System Roles (Matching Sidebar Navigation) -->
+        <div class="table-card mt-4">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+                <span class="material-symbols-outlined">dataset</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>System Roles (Core Modules)</h3>
+                  <span class="section-count-badge badge-identity">{{ systemModuleRoles.length }} Roles</span>
+                </div>
+                <p>Standard built-in platform capabilities matching the core workspace sidebar navigation.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 320px;">System Role</th>
+                  <th>Description & Operational Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of systemModuleRoles">
+                  <td style="vertical-align: top;">
+                    <div class="role-cell">
+                      <div class="role-icon-box" [ngClass]="role.badge">
+                        <span class="material-symbols-outlined">{{ role.icon }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <span class="role-name">{{ role.name }}</span>
+                        <span class="role-pill-badge" [ngClass]="role.badge">System Role</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="scope-cell">
+                      <span class="scope-tag">{{ role.scope }}</span>
+                      <p class="role-desc">{{ role.description }}</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CARD 3: Feature / Paid Roles (Modular Add-ons) -->
+        <div class="table-card mt-4">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+                <span class="material-symbols-outlined">workspace_premium</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>Feature & Paid Roles</h3>
+                  <span class="section-count-badge badge-editor">{{ paidFeatureRoles.length }} Active</span>
+                </div>
+                <p>Dynamic domain capabilities unlocked exclusively by active workspace subscription add-ons.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 320px;">Feature Role</th>
+                  <th>Description & Modular Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of paidFeatureRoles">
+                  <td style="vertical-align: top;">
+                    <div class="role-cell">
+                      <div class="role-icon-box" [ngClass]="role.badge || 'badge-feature-authority'">
+                        <span class="material-symbols-outlined">{{ role.icon || 'calendar_month' }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <span class="role-name">{{ role.name }}</span>
+                        <span class="role-pill-badge badge-feature">Paid Feature</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="scope-cell">
+                      <span class="scope-tag">{{ role.scope }}</span>
+                      <p class="role-desc">{{ role.description }}</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <!-- Tab 3: Editor Permissions (Operational Access Levels) -->
@@ -1826,58 +1926,149 @@ export class IdentityRolesComponent implements OnInit {
   selectedFeatureName: string = 'UserManager';
 
   /**
+   * Card 1: Major platform governance and root access levels.
+   */
+  get majorRoles(): RoleCatalogItem[] {
+    const targetNames = this.isSuperAdmin 
+      ? ['superadmin', 'admin', 'member'] 
+      : ['admin', 'member'];
+    return this.rolesCatalog.filter(r => targetNames.includes((r.name || '').toLowerCase()));
+  }
+
+  /**
+   * Card 2: Core built-in platform system roles matching the workspace sidebar navigation.
+   */
+  systemModuleRoles = [
+    {
+      name: 'Central Command',
+      icon: 'space_dashboard',
+      badge: 'badge-admin',
+      scope: 'Dashboard Executive Command',
+      description: 'Main workspace executive command center, high-level KPIs, fast actions, system analytics.'
+    },
+    {
+      name: 'Website & CMS',
+      icon: 'web',
+      badge: 'badge-cmsmanager',
+      scope: 'Website & CMS Studio Governance',
+      description: 'Web pages, dynamic blog articles, visual templates, navigation menus, and public forms.'
+    },
+    {
+      name: 'User Management',
+      icon: 'manage_accounts',
+      badge: 'badge-usermanager',
+      scope: 'User Directory & Cohort Management',
+      description: 'User directory, member profiles, onboarding custom attributes, categories, and account verification statuses.'
+    },
+    {
+      name: 'Identity & Access Control',
+      icon: 'admin_panel_settings',
+      badge: 'badge-identity',
+      scope: 'RBAC Sovereign & Security Governance',
+      description: 'System roles, fine-grained permissions, user groups, member invitations, and security policies.'
+    },
+    {
+      name: 'Broadcast & Communications',
+      icon: 'campaign',
+      badge: 'badge-feature-authority',
+      scope: 'Broadcast Studio & Communications',
+      description: 'Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.'
+    },
+    {
+      name: 'Billing & Subscriptions',
+      icon: 'credit_card',
+      badge: 'badge-admin',
+      scope: 'Financial & Subscriptions Governance',
+      description: 'Workspace invoicing, payment gateways, subscription plans, and feature add-on entitlements.'
+    },
+    {
+      name: 'Settings & Audit',
+      icon: 'settings',
+      badge: 'badge-readonly',
+      scope: 'Global System Settings & Audit Logs',
+      description: 'Workspace global settings, localization, brand customization, and tamper-proof security audit trails.'
+    }
+  ];
+
+  /**
+   * Card 3: Feature and paid modular roles unlocked exclusively by active subscriptions.
+   */
+  get paidFeatureRoles(): any[] {
+    const list: any[] = [];
+    
+    // Check active paid feature roles from catalog
+    const catalogPaid = this.rolesCatalog.filter(r => 
+      !['superadmin', 'admin', 'member', 'identity manager', 'user manager', 'cms studio manager', 'global editor', 'feature editor', 'read only'].includes((r.name || '').toLowerCase())
+    );
+
+    if (catalogPaid.length > 0) {
+      for (const r of catalogPaid) {
+        list.push({
+          name: r.name,
+          icon: r.icon || 'calendar_month',
+          badge: r.badge || 'badge-feature-authority',
+          scope: r.scope || 'Modular Feature Governance Only',
+          description: r.description
+        });
+      }
+    } else {
+      // Baseline active paid feature: Workforce & Shifts
+      list.push({
+        name: 'Workforce & Shifts',
+        icon: 'calendar_month',
+        badge: 'badge-feature-authority',
+        scope: 'Staff Rota & Shifts Governance Only',
+        description: "Feature domain administrator authorized strictly and exclusively to govern 'Staff Rota & Shifts' (bcp-staff-rota)."
+      });
+    }
+
+    return list;
+  }
+
+  /**
    * System-managed core platform capabilities standard on every BCC workspace.
    */
   systemFeatures: CapabilityScope[] = [
     {
-      key: 'Workforce',
-      name: 'Workforce & Shift Rotas',
-      category: 'Operations & Rota',
-      icon: 'badge',
-      description: 'Staff Directory, Shift Scheduling, Clock-In Attendance, Timesheets, and Self-Registration Forms.',
-      scope: 'None',
-      isPaid: false
-    },
-    {
       key: 'Dashboard',
-      name: 'Console Dashboard',
-      category: 'Central Command',
+      name: 'Central Command',
+      category: 'Core System Role',
       icon: 'space_dashboard',
       description: 'Main workspace executive command center, high-level KPIs, fast actions, system analytics.',
       scope: 'None',
       isPaid: false
     },
     {
+      key: 'ContentManager',
+      name: 'Website & CMS',
+      category: 'Core System Role',
+      icon: 'web',
+      description: 'Web pages, dynamic blog articles, visual templates, navigation menus, and public forms.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
       key: 'UserManager',
-      name: 'User Management Suite',
-      category: 'Governance & Identity',
+      name: 'User Management',
+      category: 'Core System Role',
       icon: 'manage_accounts',
-      description: 'User Directory, Member Profiles, Onboarding Custom Attributes, Categories & OTP Verification.',
+      description: 'User directory, member profiles, onboarding custom attributes, categories, and account verification statuses.',
       scope: 'None',
       isPaid: false
     },
     {
       key: 'IdentityManager',
-      name: 'Identity & Access Policies',
-      category: 'Security & Auth',
+      name: 'Identity & Access Control',
+      category: 'Core System Role',
       icon: 'admin_panel_settings',
-      description: 'System Roles, Fine-Grained Permissions, Member Invitations, Security Rules & Session Audits.',
-      scope: 'None',
-      isPaid: false
-    },
-    {
-      key: 'ContentManager',
-      name: 'Website & CMS Studio',
-      category: 'Content & Publishing',
-      icon: 'web',
-      description: 'Web Pages, Dynamic Blog Articles, Visual Templates, Navigation Menus, and Code Injections.',
+      description: 'System roles, fine-grained permissions, member invitations, and security policies.',
       scope: 'None',
       isPaid: false
     },
     {
       key: 'Broadcast',
-      name: 'System Broadcasts & Member Notifications',
-      category: 'Communication & Alerts',
+      name: 'Broadcast & Communications',
+      category: 'Core System Role',
       icon: 'campaign',
       description: 'Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.',
       scope: 'None',
@@ -1886,20 +2077,29 @@ export class IdentityRolesComponent implements OnInit {
     {
       key: 'BillingManager',
       name: 'Billing & Subscriptions',
-      category: 'Financial Governance',
+      category: 'Core System Role',
       icon: 'credit_card',
-      description: 'Workspace Invoicing, Payment Gateways, Subscription Plans & Feature Add-On Entitlements.',
+      description: 'Workspace invoicing, payment gateways, subscription plans, and feature add-on entitlements.',
       scope: 'None',
       isPaid: false
     },
     {
       key: 'SettingsManager',
-      name: 'System Settings & Audit',
-      category: 'Settings & Audit',
+      name: 'Settings & Audit',
+      category: 'Core System Role',
       icon: 'settings',
       description: 'Workspace global settings, localization, brand identity, full tamper-proof audit trails.',
       scope: 'None',
       isPaid: false
+    },
+    {
+      key: 'Workforce',
+      name: 'Workforce & Shifts',
+      category: 'Paid Feature',
+      icon: 'badge',
+      description: 'Staff directory, shift scheduling, clock-in attendance, timesheets, and self-registration forms.',
+      scope: 'None',
+      isPaid: true
     }
   ];
 
