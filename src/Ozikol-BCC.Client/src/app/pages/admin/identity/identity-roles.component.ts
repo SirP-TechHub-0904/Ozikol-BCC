@@ -354,16 +354,6 @@ interface GroupMemberPreview {
                             <span class="material-symbols-outlined">edit_note</span>
                             <span>Feature Editor</span>
                           </button>
-                          <button
-                            type="button"
-                            class="seg-btn seg-global"
-                            [class.active]="item.scope === 'GlobalEdit'"
-                            (click)="item.scope = 'GlobalEdit'"
-                            title="Global Editor"
-                          >
-                            <span class="material-symbols-outlined">domain</span>
-                            <span>Global Editor</span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -2321,9 +2311,13 @@ export class IdentityRolesComponent implements OnInit {
         const permissions = detail.permissions || [];
         this.editingGroupCapabilities = this.systemFeatures.map(f => {
           const matched = permissions.find((p: any) => p.featureAreaKey?.toLowerCase() === f.key.toLowerCase());
+          let scope = matched ? (matched.actionRole as any) : 'None';
+          if (scope === 'GlobalEdit') {
+            scope = 'FeatureEdit';
+          }
           return {
             ...f,
-            scope: matched ? (matched.actionRole as any) : 'None'
+            scope: scope
           };
         });
       },

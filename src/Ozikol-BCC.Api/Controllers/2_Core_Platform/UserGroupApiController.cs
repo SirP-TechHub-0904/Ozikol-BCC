@@ -621,10 +621,9 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(roleStr)) return BcpActionRole.ReadOnly;
             var clean = roleStr.Trim().ToLowerInvariant();
-            if (clean.Contains("global") || clean == "globaledit") return BcpActionRole.GlobalEditor;
-            if (clean.Contains("feature") || clean == "featureedit") return BcpActionRole.FeatureEditor;
-            if (clean.Contains("read") || clean == "readonly") return BcpActionRole.ReadOnly;
             if (clean.Contains("none")) return BcpActionRole.None;
+            if (clean.Contains("read") || clean == "readonly") return BcpActionRole.ReadOnly;
+            if (clean.Contains("feature") || clean == "featureedit" || clean.Contains("global") || clean == "globaledit") return BcpActionRole.FeatureEditor;
             return BcpActionRole.ReadOnly;
         }
 
