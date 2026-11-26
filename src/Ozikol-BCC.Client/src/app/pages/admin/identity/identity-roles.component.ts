@@ -472,18 +472,26 @@ interface GroupMemberPreview {
 
                   <!-- Actions -->
                   <td style="text-align: right; white-space: nowrap;">
-                    <button type="button" class="btn-manage-members" (click)="startEditGroup(g)" title="Configure blueprint capability permissions">
-                      <span class="material-symbols-outlined btn-icon">tune</span>
-                      <span class="btn-text">Configure Blueprint</span>
-                    </button>
-                    <div class="quick-icons" style="display: inline-flex; vertical-align: middle; margin-left: 6px;">
-                      <button type="button" class="icon-btn edit-icon-btn" (click)="startEditGroup(g)" title="Edit group identity">
-                        <span class="material-symbols-outlined">edit</span>
+                    <ng-container *ngIf="g.isDefault || g.name === 'Member'; else editableGroupActions">
+                      <span class="immutable-badge" title="Every user is inherently a member. The baseline Member group is permanent and cannot be modified.">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">lock</span>
+                        <span>Baseline Member (Immutable)</span>
+                      </span>
+                    </ng-container>
+                    <ng-template #editableGroupActions>
+                      <button type="button" class="btn-manage-members" (click)="startEditGroup(g)" title="Configure blueprint capability permissions">
+                        <span class="material-symbols-outlined btn-icon">tune</span>
+                        <span class="btn-text">Configure Blueprint</span>
                       </button>
-                      <button type="button" class="icon-btn delete-icon-btn" (click)="deleteGroup(g)" [disabled]="g.isDefault || g.isSystem" title="Delete group">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
+                      <div class="quick-icons" style="display: inline-flex; vertical-align: middle; margin-left: 6px;">
+                        <button type="button" class="icon-btn edit-icon-btn" (click)="startEditGroup(g)" title="Edit group identity">
+                          <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button type="button" class="icon-btn delete-icon-btn" (click)="deleteGroup(g)" [disabled]="g.isSystem" title="Delete group">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </ng-template>
                   </td>
                 </tr>
               </tbody>
@@ -1456,6 +1464,20 @@ interface GroupMemberPreview {
     .roles-data-table tbody tr:last-child td { border-bottom: none; }
     .roles-data-table tbody tr:hover { background: #fafbfc; }
     .locked-row { background: #fafbfc; }
+    .immutable-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
 
     /* Role Cell */
     .role-cell { display: flex; align-items: center; gap: 12px; }
@@ -2277,6 +2299,10 @@ export class IdentityRolesComponent implements OnInit {
    * Opens the blueprint editor for an existing user group.
    */
   startEditGroup(group: any): void {
+    if (group.isDefault || (group.name || '').toLowerCase() === 'member') {
+      this.toast.info('The baseline Member group is permanent and cannot be modified. Every user is inherently a member.');
+      return;
+    }
     this.isLoadingGroups = true;
     this.api.get<any>(`api/v1/user-groups/${group.id}`).subscribe({
       next: (res) => {
@@ -2322,6 +2348,11 @@ export class IdentityRolesComponent implements OnInit {
   saveGroup(): void {
     if (!this.editingGroup || !this.editingGroup.name?.trim()) {
       this.toast.warning('Please enter a user group name.');
+      return;
+    }
+
+    if (this.editingGroup.isDefault || (this.editingGroup.name || '').toLowerCase() === 'member') {
+      this.toast.warning('The baseline Member group is permanent and cannot be modified.');
       return;
     }
 

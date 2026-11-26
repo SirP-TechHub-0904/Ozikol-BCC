@@ -308,6 +308,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse("User group not found."));
             }
 
+            if (group.IsDefault || group.Name.Equals("Member", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The baseline Member group is permanent and cannot be modified. Every user is inherently a member."));
+            }
+
             var trimmedName = request.Name.Trim();
             var nameConflict = await _dbContext.BcpUserGroups.AnyAsync(g => g.Id != id && g.Name.ToLower() == trimmedName.ToLower(), cancellationToken);
             if (nameConflict)
