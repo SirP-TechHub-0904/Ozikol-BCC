@@ -1126,6 +1126,47 @@ namespace Ozikol_BCC.Api.Controllers
                     : null;
             }
 
+            // Update user group assignment if provided
+            if (request.UserGroupId.HasValue && user.BcpUserGroupId != request.UserGroupId.Value)
+            {
+                var targetGroup = await _dbContext.BcpUserGroups
+                    .Include(g => g.Permissions)
+                    .FirstOrDefaultAsync(g => g.Id == request.UserGroupId.Value);
+
+                if (targetGroup != null)
+                {
+                    user.BcpUserGroupId = targetGroup.Id;
+                    profileDiffs.Add($"User Group: '{targetGroup.Name}'");
+
+                    // Immediately synchronize feature roles to group blueprint
+                    var activePerms = targetGroup.Permissions?.Where(p => p.ActionRole != BcpActionRole.None).ToList() ?? new List<BcpUserGroupPermission>();
+                    var existingFeatureRoles = await _dbContext.BcpUserFeatureRoles
+                        .Where(r => r.ProfileId == user.Id)
+                        .ToListAsync();
+
+                    if (existingFeatureRoles.Count > 0)
+                    {
+                        _dbContext.BcpUserFeatureRoles.RemoveRange(existingFeatureRoles);
+                    }
+
+                    if (targetGroup.BaseRole != "Admin" && targetGroup.BaseRole != "SuperAdmin")
+                    {
+                        foreach (var perm in activePerms)
+                        {
+                            _dbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                            {
+                                Id = Guid.NewGuid(),
+                                ProfileId = user.Id,
+                                FeatureAreaKey = perm.FeatureAreaKey,
+                                ActionRole = perm.ActionRole,
+                                IsActive = true,
+                                Date = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+            }
+
             await _dbContext.SaveChangesAsync();
 
             // Update role if provided
@@ -2680,6 +2721,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AvatarUrl { get; set; }
         public string? Role { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
+        public Guid? UserGroupId { get; set; }
     }
 
     public class UpdateUserSettingsRequest

@@ -669,6 +669,8 @@ namespace Ozikol_BCC.Api.Controllers
             user.LastLogin = DateTime.UtcNow;
             await activeUserManager.UpdateAsync(user);
 
+            await SyncUserGroupOnLoginAsync(user, activeUserManager, activeDbContext);
+
             var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
 
@@ -1003,6 +1005,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             user.LastLogin = DateTime.UtcNow;
             await activeUserManager.UpdateAsync(user);
+
+            await SyncUserGroupOnLoginAsync(user, activeUserManager, activeDbContext);
 
             var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
@@ -2763,6 +2767,90 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new { backupCodes = codes }, "Two-factor authentication successfully configured and verified."));
+        }
+
+        private async Task SyncUserGroupOnLoginAsync(Profile user, UserManager<Profile> activeUserManager, DashboardDbContext? activeDbContext)
+        {
+            if (activeDbContext == null) return;
+
+            try
+            {
+                BcpUserGroup? assignedGroup = null;
+                if (user.BcpUserGroupId.HasValue)
+                {
+                    assignedGroup = await activeDbContext.BcpUserGroups
+                        .Include(g => g.Permissions)
+                        .FirstOrDefaultAsync(g => g.Id == user.BcpUserGroupId.Value);
+                }
+                else
+                {
+                    var idRoles = await activeUserManager.GetRolesAsync(user);
+                    var isUserAdmin = idRoles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+                    assignedGroup = isUserAdmin
+                        ? await activeDbContext.BcpUserGroups.Include(g => g.Permissions).FirstOrDefaultAsync(g => g.Name == "Administrator" || g.BaseRole == "Admin")
+                        : await activeDbContext.BcpUserGroups.Include(g => g.Permissions).FirstOrDefaultAsync(g => g.IsDefault)
+                          ?? await activeDbContext.BcpUserGroups.Include(g => g.Permissions).FirstOrDefaultAsync(g => g.Name == "Member");
+
+                    if (assignedGroup != null)
+                    {
+                        user.BcpUserGroupId = assignedGroup.Id;
+                        await activeDbContext.SaveChangesAsync();
+                    }
+                }
+
+                if (assignedGroup != null)
+                {
+                    var allowedPerms = assignedGroup.Permissions?.Where(p => p.ActionRole != BcpActionRole.None).ToList() ?? new List<BcpUserGroupPermission>();
+
+                    // Clean out any stale feature roles in BcpUserFeatureRoles
+                    var existingFeatureRoles = await activeDbContext.BcpUserFeatureRoles
+                        .Where(f => f.ProfileId == user.Id)
+                        .ToListAsync();
+
+                    if (allowedPerms.Count == 0)
+                    {
+                        if (existingFeatureRoles.Count > 0)
+                        {
+                            activeDbContext.BcpUserFeatureRoles.RemoveRange(existingFeatureRoles);
+                            await activeDbContext.SaveChangesAsync();
+                        }
+                    }
+                    else
+                    {
+                        var allowedKeys = allowedPerms.Select(p => p.FeatureAreaKey.Trim().ToLowerInvariant()).ToHashSet();
+                        var stale = existingFeatureRoles.Where(f => string.IsNullOrEmpty(f.FeatureAreaKey) || !allowedKeys.Contains(f.FeatureAreaKey.Trim().ToLowerInvariant())).ToList();
+                        if (stale.Count > 0)
+                        {
+                            activeDbContext.BcpUserFeatureRoles.RemoveRange(stale);
+                            await activeDbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    // Align ASP.NET Identity roles to group base role
+                    var baseRole = assignedGroup.BaseRole?.Trim();
+                    if (string.Equals(baseRole, "Administrator", StringComparison.OrdinalIgnoreCase)) baseRole = "Admin";
+                    if (string.IsNullOrWhiteSpace(baseRole)) baseRole = "Member";
+
+                    var currentIdentityRoles = await activeUserManager.GetRolesAsync(user);
+                    if (!currentIdentityRoles.Contains("SuperAdmin") && baseRole == "Member" && allowedPerms.Count == 0)
+                    {
+                        var toRemove = currentIdentityRoles.Where(r => !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)).ToList();
+                        if (toRemove.Count > 0)
+                        {
+                            await activeUserManager.RemoveFromRolesAsync(user, toRemove);
+                        }
+                        if (!currentIdentityRoles.Contains("Member"))
+                        {
+                            await activeUserManager.AddToRoleAsync(user, "Member");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to synchronize user group blueprint on login.");
+            }
         }
 
         private async Task<string> GenerateJwtTokenAsync(Profile user, string? tenantKey = null, IEnumerable<string>? rolesList = null, string? jwtId = null)

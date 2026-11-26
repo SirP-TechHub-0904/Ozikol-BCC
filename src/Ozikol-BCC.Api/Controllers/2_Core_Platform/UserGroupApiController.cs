@@ -84,6 +84,68 @@ namespace Ozikol_BCC.Api.Controllers
                     .GroupBy(x => x.UserId)
                     .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName!).ToList());
 
+                // Permanently align any unassigned members directly into the database
+                var unassignedProfiles = await _dbContext.Users
+                    .Where(u => !u.IsDeleted && u.BcpUserGroupId == null)
+                    .ToListAsync(cancellationToken);
+
+                if (unassignedProfiles.Count > 0)
+                {
+                    var adminGroup = groups.FirstOrDefault(g => g.Name == "Administrator" || g.BaseRole == "Admin");
+                    var defaultGroup = groups.FirstOrDefault(g => g.IsDefault) ?? groups.FirstOrDefault(g => g.Name == "Member");
+
+                    foreach (var unassigned in unassignedProfiles)
+                    {
+                        var roles = rolesByUser.TryGetValue(unassigned.Id, out var rList) ? rList : new List<string>();
+                        var isAdmin = roles.Contains("Admin") || roles.Contains("SuperAdmin");
+
+                        var targetGroup = isAdmin ? adminGroup : defaultGroup;
+                        if (targetGroup != null)
+                        {
+                            unassigned.BcpUserGroupId = targetGroup.Id;
+
+                            // If assigned to Member, strip obsolete elevated roles and orphan feature assignments
+                            if (!isAdmin)
+                            {
+                                var existingRoles = await _dbContext.BcpUserFeatureRoles
+                                    .Where(r => r.ProfileId == unassigned.Id)
+                                    .ToListAsync(cancellationToken);
+                                if (existingRoles.Count > 0)
+                                {
+                                    _dbContext.BcpUserFeatureRoles.RemoveRange(existingRoles);
+                                }
+                                var idRoles = await _userManager.GetRolesAsync(unassigned);
+                                var toRemove = idRoles.Where(r => !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)).ToList();
+                                if (toRemove.Count > 0)
+                                {
+                                    await _userManager.RemoveFromRolesAsync(unassigned, toRemove);
+                                }
+                                if (!idRoles.Contains("Member") && await _roleManager.RoleExistsAsync("Member"))
+                                {
+                                    await _userManager.AddToRoleAsync(unassigned, "Member");
+                                }
+                            }
+                        }
+                    }
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+
+                    // Re-query allActiveUsers so in-memory view reflects real persisted DB state
+                    allActiveUsers = await _dbContext.Users
+                        .AsNoTracking()
+                        .Where(u => !u.IsDeleted)
+                        .Select(u => new
+                        {
+                            u.Id,
+                            u.BcpUserGroupId,
+                            FullName = ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim(),
+                            u.Email,
+                            u.MemberId,
+                            u.AvatarUrl,
+                            u.Designation
+                        })
+                        .ToListAsync(cancellationToken);
+                }
+
                 var dtos = new List<UserGroupSummaryDto>();
 
                 foreach (var g in groups)

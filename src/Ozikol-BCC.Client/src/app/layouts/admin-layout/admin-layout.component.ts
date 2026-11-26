@@ -27,7 +27,8 @@ import {
   isReadOnlyUser,
   hasFeatureScope,
   hasUserRole,
-  getUserPrimaryRoleName
+  getUserPrimaryRoleName,
+  getReturnUrlForRole
 } from '../../core/utils/user-role.utils';
 
 interface TaskTab {
@@ -4096,10 +4097,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   /// <summary>
   /// Dynamically resolves the appropriate home route based on user privileges and active shell mode.
-  /// Administrators in console mode route to '/admin/dashboard', while members and workspace sessions route to '/dashboard/workspace'.
+  /// If Central Command is disabled, automatically routes to the first accessible system feature dashboard.
   /// </summary>
   get homeRoute(): string {
-    return this.isAdmin && this.isConsoleActive ? '/admin/dashboard' : '/dashboard/workspace';
+    if (!this.isAdmin || !this.isConsoleActive) {
+      return '/dashboard/workspace';
+    }
+    return getReturnUrlForRole(this.userRoles);
   }
 
   get isGlobalAdmin(): boolean {

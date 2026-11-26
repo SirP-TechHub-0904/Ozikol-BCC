@@ -632,6 +632,10 @@ export function getUserPrimaryRoleName(roles?: string[]): string {
 
 /**
  * Computes the optimal post-login or return dashboard URL tailored to the user's authority scope.
+ * If Central Command / Dashboard Console is enabled, returns '/dashboard/console'.
+ * If Central Command is disabled (or not assigned), dynamically lands on the first enabled
+ * feature system dashboard (e.g. User Management, CMS Studio, Workforce & Shifts, Identity, etc.).
+ * Standard self-service members land on '/dashboard/workspace'.
  * 
  * @param roles - Optional array of roles to evaluate (defaults to stored roles)
  * @returns Appropriate dashboard route path
@@ -643,24 +647,55 @@ export function getReturnUrlForRole(roles?: string[]): string {
     return '/dashboard/workspace';
   }
 
-  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles) || isReadOnlyUser(userRoles)) {
+  // 1. If Central Command / Executive Dashboard is accessible, use it
+  const hasScoped = hasScopedFeatureAssignments(userRoles) || getStoredUserFeatureKeys().length > 0;
+  const canAccessCentralCommand = isSuperAdmin(userRoles) || (!hasScoped && isGlobalAdmin(userRoles)) || hasFeatureScope('dashboard', userRoles);
+
+  if (canAccessCentralCommand) {
     return '/dashboard/console';
   }
 
-  const normalized = userRoles.map(normalizeRoleKey);
-
-  // Scoped feature authorities land directly on their relevant management console
-  if (normalized.includes('usermanager') || hasFeatureScope('usermanager', userRoles)) {
+  // 2. Central Command is disabled: dynamically resolve the first enabled feature system dashboard
+  if (hasFeatureScope('usermanager', userRoles)) {
     return '/users/console/dashboard';
   }
 
-  if (normalized.includes('identitymanager') || hasFeatureScope('identitymanager', userRoles)) {
-    return '/identity/console/dashboard';
-  }
-
-  if (normalized.includes('cmsstudiomanager') || normalized.includes('cmsmanager') || normalized.includes('contentmanager') || hasFeatureScope('cms', userRoles)) {
+  if (hasFeatureScope('contentmanager', userRoles) || hasFeatureScope('cms', userRoles)) {
     return '/content/console';
   }
 
-  return '/dashboard/console';
+  if (hasFeatureScope('workforceshifts', userRoles) || hasFeatureScope('bcp-staff-rota', userRoles)) {
+    return '/workforce/console';
+  }
+
+  if (hasFeatureScope('identitymanager', userRoles) || hasFeatureScope('identity', userRoles)) {
+    return '/identity/console/dashboard';
+  }
+
+  if (hasFeatureScope('broadcast', userRoles)) {
+    return '/broadcast/console';
+  }
+
+  if (hasFeatureScope('billingmanager', userRoles) || hasFeatureScope('billing', userRoles)) {
+    return '/billing/console';
+  }
+
+  if (hasFeatureScope('eventsmanager', userRoles)) {
+    return '/events/console';
+  }
+
+  if (hasFeatureScope('storemanager', userRoles)) {
+    return '/store/console';
+  }
+
+  if (hasFeatureScope('settingsmanager', userRoles) || hasFeatureScope('settings', userRoles)) {
+    return '/settings/console';
+  }
+
+  // Fallback for global admin without scoped feature overrides
+  if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles)) {
+    return '/dashboard/console';
+  }
+
+  return '/dashboard/workspace';
 }
