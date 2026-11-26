@@ -580,7 +580,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     if (!await _roleManager.RoleExistsAsync(baseRole))
                     {
-                        await _roleManager.CreateAsync(new IdentityRole(baseRole));
+                        await _roleManager.CreateAsync(new AppRole(baseRole));
                     }
 
                     if (!await _userManager.IsInRoleAsync(user, baseRole))
