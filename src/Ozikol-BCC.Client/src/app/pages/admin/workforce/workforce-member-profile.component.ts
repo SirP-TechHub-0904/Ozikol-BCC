@@ -1104,12 +1104,19 @@ interface StaffMemberDetail {
       gap: 1.25rem;
     }
 
+    .hero-info {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
     .avatar-circle {
       width: 64px;
       height: 64px;
       min-width: 64px;
       min-height: 64px;
-      flex-shrink: 0;
+      max-width: 64px;
+      max-height: 64px;
+      flex: 0 0 64px;
       aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: #eff6ff;
@@ -1336,17 +1343,42 @@ interface StaffMemberDetail {
       }
       .hero-left {
         width: 100%;
-        gap: 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .hero-info {
+        flex: 1 1 0;
+        min-width: 0;
       }
       .avatar-circle {
-        width: 56px;
-        height: 56px;
-        min-width: 56px;
-        min-height: 56px;
-        font-size: 1.1rem;
+        flex: 0 0 54px !important;
+        width: 54px !important;
+        height: 54px !important;
+        min-width: 54px !important;
+        max-width: 54px !important;
+        min-height: 54px !important;
+        max-height: 54px !important;
+        border-radius: 50% !important;
+        font-size: 1.15rem;
+        aspect-ratio: 1 / 1 !important;
+        align-self: flex-start;
+      }
+      .title-row {
+        flex-wrap: wrap;
+        gap: 6px;
       }
       .member-name {
         font-size: 1.15rem;
+      }
+      .meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      .meta-item {
+        word-break: break-all;
+        font-size: 12px;
       }
       .hero-stats {
         width: 100%;
@@ -1362,9 +1394,10 @@ interface StaffMemberDetail {
       .stat-val {
         font-size: 1.15rem;
       }
-      .stat-lbl {
+      .stat-label {
         font-size: 10.5px;
         line-height: 1.2;
+        white-space: normal;
       }
       .profile-tabs-bar {
         padding: 4px;
@@ -1375,6 +1408,30 @@ interface StaffMemberDetail {
         padding: 8px 12px;
         font-size: 12px;
         flex-shrink: 0;
+      }
+      .card-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+      }
+      .header-bar-left {
+        width: 100%;
+        gap: 10px;
+      }
+      .card-header-bar .btn,
+      .card-header-bar .btn-primary {
+        width: 100%;
+        justify-content: center;
+      }
+      .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .settings-table {
+        min-width: 680px;
+        width: 100%;
       }
     }
 
