@@ -180,6 +180,8 @@ export const routes: Routes = [
   { path: 'onboarding', component: RegisterComponent },
   { path: 'workforce/onboarding', component: WorkforceOnboardingComponent },
   { path: 'workforce/onboarding/:token', component: WorkforceOnboardingComponent },
+  { path: 'invite/:token', redirectTo: 'workforce/onboarding/:token', pathMatch: 'full' },
+  { path: 'invite', redirectTo: 'workforce/onboarding', pathMatch: 'full' },
   { path: 'survey/:slug', loadComponent: () => import('./pages/public/public-survey.component').then(m => m.PublicSurveyComponent) },
   { path: 'signup', component: RegisterComponent },
   { path: 'auth/:customSlug', component: RegisterComponent },
