@@ -972,8 +972,9 @@ interface StaffMemberDetail {
   `,
   styles: [`
     .profile-page {
-      padding: 0 4px 40px 4px;
+      padding: 18px 16px 40px;
       min-height: calc(100vh - 70px);
+      box-sizing: border-box;
     }
 
     .page-header {
@@ -1106,6 +1107,10 @@ interface StaffMemberDetail {
     .avatar-circle {
       width: 64px;
       height: 64px;
+      min-width: 64px;
+      min-height: 64px;
+      flex-shrink: 0;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: #eff6ff;
       color: #0050e5;
@@ -1301,6 +1306,75 @@ interface StaffMemberDetail {
         justify-content: space-around;
         border-top: 1px solid #f1f5f9;
         padding-top: 1rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-page {
+        padding: 14px 10px 40px;
+      }
+      .page-header {
+        padding: 14px 16px;
+        gap: 12px;
+      }
+      .title-row h1 {
+        font-size: 20px;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        height: 38px;
+      }
+      .profile-hero-card {
+        padding: 16px 14px;
+      }
+      .hero-left {
+        width: 100%;
+        gap: 14px;
+      }
+      .avatar-circle {
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        min-height: 56px;
+        font-size: 1.1rem;
+      }
+      .member-name {
+        font-size: 1.15rem;
+      }
+      .hero-stats {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+      }
+      .stat-box {
+        padding: 0 4px;
+      }
+      .stat-val {
+        font-size: 1.15rem;
+      }
+      .stat-lbl {
+        font-size: 10.5px;
+        line-height: 1.2;
+      }
+      .profile-tabs-bar {
+        padding: 4px;
+        gap: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex-shrink: 0;
       }
     }
 
