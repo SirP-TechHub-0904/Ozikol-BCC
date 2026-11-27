@@ -694,6 +694,16 @@ import { ApiService } from '../../../core/services/api.service';
     .wa-msg { white-space: pre-wrap; }
     .wa-link { color: #00a884; font-weight: 600; margin-top: 6px; }
     .font-mono { font-family: monospace; font-size: 12px; }
+
+    @media (max-width: 768px) {
+      .studio-card, .history-card { padding: 16px 14px; border-radius: 12px; }
+      .presets-section { padding: 12px 14px; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+      .target-type-selector { flex-direction: column; width: 100%; gap: 8px; }
+      .radio-label { width: 100%; box-sizing: border-box; justify-content: flex-start; }
+      .history-table { min-width: 650px; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    }
   `]
 })
 export class NotificationsManagementComponent implements OnInit {

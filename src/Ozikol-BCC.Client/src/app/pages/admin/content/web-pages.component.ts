@@ -1141,6 +1141,32 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
+
+    @media (max-width: 768px) {
+      .cms-card {
+        padding: 16px 14px;
+        border-radius: 12px;
+      }
+      .filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .filter-group {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+      }
+      .search-box {
+        min-width: 0;
+        width: 100%;
+      }
+      .cms-table {
+        min-width: 680px;
+      }
+    }
   `]
 })
 export class WebPagesComponent implements OnInit {

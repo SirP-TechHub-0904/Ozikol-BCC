@@ -990,6 +990,33 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
+
+    @media (max-width: 768px) {
+      .cms-card {
+        padding: 16px 14px;
+        border-radius: 12px;
+      }
+      .card-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .search-box {
+        min-width: 0;
+        width: 100%;
+      }
+      .filter-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 6px;
+      }
+      .filter-group {
+        flex-wrap: nowrap;
+      }
+      .cms-table {
+        min-width: 620px;
+      }
+    }
   `]
 })
 export class WebCategoriesComponent implements OnInit {

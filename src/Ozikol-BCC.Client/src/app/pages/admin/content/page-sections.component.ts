@@ -746,6 +746,13 @@ import {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @media (max-width: 768px) {
+      .cms-card { padding: 14px; border-radius: 12px; }
+      .cms-table { min-width: 680px; }
+      .filter-toolbar { flex-direction: column; align-items: stretch; gap: 12px; }
+      .filter-group { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+    }
   `]
 })
 export class PageSectionsComponent implements OnInit {

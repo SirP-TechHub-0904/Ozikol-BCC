@@ -1319,6 +1319,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .modal-url-pill:hover { background: #eff6ff; color: #0050e5; border-color: #93c5fd; }
     .modal-footer-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    @media (max-width: 768px) {
+      .cms-card { padding: 14px; border-radius: 12px; }
+      .filter-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+      .search-box { min-width: 0; width: 100%; }
+      .filter-pills { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 4px; }
+      .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch; width: 100%; }
+      .cms-table { min-width: 650px; }
+    }
   `]
 })
 export class FileManagerComponent implements OnInit {

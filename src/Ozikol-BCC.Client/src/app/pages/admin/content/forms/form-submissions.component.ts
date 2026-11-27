@@ -494,6 +494,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .cms-card { padding: 14px; border-radius: 12px; }
+      .submissions-table { min-width: 650px; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+      .header-actions { width: 100%; }
+      .filter-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+    }
   `]
 })
 export class FormSubmissionsComponent implements OnInit {

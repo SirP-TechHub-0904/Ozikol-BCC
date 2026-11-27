@@ -764,6 +764,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .btn-sm { padding: 6px 12px; font-size: 11.5px; }
     .btn-sm span { font-size: 15px; }
+
+    @media (max-width: 480px) {
+      .identity-kpi-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .bcp-card { padding: 14px; border-radius: 12px; }
+      .bcp-table { min-width: 650px; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    }
   `]
 })
 export class DashboardComponent implements OnInit {

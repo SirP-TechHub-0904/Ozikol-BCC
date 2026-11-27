@@ -1386,6 +1386,24 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       cursor: not-allowed;
     }
 
+    @media (max-width: 768px) {
+      .settings-floating-action-bar {
+        position: static;
+        margin-top: 20px;
+        box-shadow: none;
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .floating-bar-info {
+        font-size: 12px;
+      }
+      .btn-save-master {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
 
     /* Studio Navigation Tabs */
     .settings-studio-nav {

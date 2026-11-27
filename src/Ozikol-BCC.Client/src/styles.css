@@ -2839,6 +2839,15 @@ body.sidebar-closed .topbar-brand-logo {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    margin-bottom: 12px;
+  }
+
+  .table-responsive > table,
+  .table-responsive > .cms-table,
+  .table-responsive > .bcp-table,
+  .table-responsive > .table-clean {
+    min-width: 680px;
+    display: table;
   }
 }
 

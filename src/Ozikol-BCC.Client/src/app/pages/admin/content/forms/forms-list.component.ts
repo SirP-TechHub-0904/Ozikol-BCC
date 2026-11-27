@@ -403,6 +403,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
       padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9;
       display: flex; justify-content: flex-end; gap: 12px;
     }
+
+    @media (max-width: 768px) {
+      .cms-card { padding: 14px; border-radius: 12px; }
+      .forms-table { min-width: 650px; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+      .header-actions { width: 100%; }
+      .btn-primary { width: 100%; justify-content: center; }
+    }
   `]
 })
 export class FormsListComponent implements OnInit {
