@@ -165,7 +165,10 @@ namespace Ozikol_BCC.Api.Controllers
                 .AsNoTracking()
                 .Include(s => s.ClientSite)
                 .Include(s => s.AttendanceRecord)
-                .Where(s => s.TenantKey == CurrentTenantKey && s.AssignedUserId == CurrentUserId && s.EndsAtUtc >= nowUtc)
+                .Include(s => s.Assignments)
+                .Where(s => s.TenantKey == CurrentTenantKey &&
+                            s.Assignments.Any(a => a.UserId == CurrentUserId) &&
+                            s.EndsAtUtc >= nowUtc)
                 .OrderBy(s => s.StartsAtUtc)
                 .Select(s => new ShiftDto
                 {
@@ -174,13 +177,35 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
+                    PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
                     FacilityName = s.FacilityName,
                     Address = s.Address,
                     PostCode = s.PostCode,
                     EventTag = s.EventTag,
-                    AssignedUserId = s.AssignedUserId,
-                    AssignedUserName = s.AssignedUserName,
+                    RequiredStaffCount = s.RequiredStaffCount,
+                    AssignedCount = s.Assignments.Count,
+                    OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
+                    IsFull = s.Assignments.Count >= s.RequiredStaffCount,
+                    AssignedUserId = CurrentUserId,
+                    AssignedUserName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.StaffFullName).FirstOrDefault() ?? CurrentUserName,
+                    Assignments = s.Assignments.Select(a => new ShiftAssignmentDto
+                    {
+                        Id = a.Id,
+                        ShiftId = a.ShiftId,
+                        UserId = a.UserId,
+                        StaffProfileId = a.StaffProfileId,
+                        StaffFullName = a.StaffFullName,
+                        DutyPosition = a.DutyPosition,
+                        DutyRole = a.DutyRole,
+                        IsLeadOfficer = a.IsLeadOfficer,
+                        Status = a.Status,
+                        IsConfirmedByGuard = a.IsConfirmedByGuard,
+                        ConfirmedAtUtc = a.ConfirmedAtUtc,
+                        AssignedAtUtc = a.AssignedAtUtc,
+                        IsClaimed = a.IsClaimed,
+                        ClaimApproved = a.ClaimApproved,
+                        Notes = a.Notes
+                    }).ToList(),
                     StartsAtUtc = s.StartsAtUtc,
                     EndsAtUtc = s.EndsAtUtc,
                     IsOvernight = s.IsOvernight,
@@ -191,9 +216,9 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
-                    IsConfirmedByGuard = s.IsConfirmedByGuard,
+                    IsConfirmedByGuard = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.IsConfirmedByGuard).FirstOrDefault(),
                     AssignmentMode = s.AssignmentMode,
-                    ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    ConfirmedAtUtc = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.ConfirmedAtUtc).FirstOrDefault(),
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,
@@ -217,8 +242,10 @@ namespace Ozikol_BCC.Api.Controllers
             var openShifts = await _db.BcpShifts
                 .AsNoTracking()
                 .Include(s => s.ClientSite)
+                .Include(s => s.Assignments)
                 .Where(s => s.TenantKey == CurrentTenantKey &&
-                            (string.IsNullOrEmpty(s.AssignedUserId) || s.Status == "Open" || s.Status == "Draft") &&
+                            (s.Assignments.Count < s.RequiredStaffCount || s.Status == "Open" || s.Status == "PartiallyFilled" || s.Status == "Draft") &&
+                            !s.Assignments.Any(a => a.UserId == CurrentUserId) &&
                             s.EndsAtUtc >= nowUtc)
                 .OrderBy(s => s.StartsAtUtc)
                 .Select(s => new ShiftDto
@@ -233,6 +260,10 @@ namespace Ozikol_BCC.Api.Controllers
                     Address = s.Address,
                     PostCode = s.PostCode,
                     EventTag = s.EventTag,
+                    RequiredStaffCount = s.RequiredStaffCount,
+                    AssignedCount = s.Assignments.Count,
+                    OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
+                    IsFull = s.Assignments.Count >= s.RequiredStaffCount,
                     StartsAtUtc = s.StartsAtUtc,
                     EndsAtUtc = s.EndsAtUtc,
                     IsOvernight = s.IsOvernight,
@@ -241,7 +272,7 @@ namespace Ozikol_BCC.Api.Controllers
                     HourlyPayRate = s.HourlyPayRate,
                     HourlyChargeRate = s.HourlyChargeRate,
                     RequireClaimApproval = s.RequireClaimApproval,
-                    Status = "Open",
+                    Status = s.Assignments.Count > 0 ? "PartiallyFilled" : "Open",
                     Notes = s.Notes,
                     SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
                 })
@@ -257,6 +288,7 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<bool>>> ClaimOpenShiftDirect(Guid id, CancellationToken ct)
         {
             var shift = await _db.BcpShifts
+                .Include(s => s.Assignments)
                 .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
 
             if (shift == null)
@@ -264,18 +296,47 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-4004"));
             }
 
-            if (!string.IsNullOrEmpty(shift.AssignedUserId) && shift.AssignedUserId != CurrentUserId)
+            if (shift.Assignments.Any(a => a.UserId == CurrentUserId))
             {
-                return Conflict(ApiResponse<bool>.FailureResponse("This shift has already been claimed by another officer.", errorCode: "ERR-2005"));
+                return Conflict(ApiResponse<bool>.FailureResponse("You have already claimed or been assigned to this shift.", errorCode: "ERR-2005"));
             }
+
+            if (shift.Assignments.Count >= shift.RequiredStaffCount)
+            {
+                return Conflict(ApiResponse<bool>.FailureResponse("This shift is already fully staffed.", errorCode: "ERR-2006"));
+            }
+
+            var profile = await _db.BcpShiftStaffProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == CurrentUserId, ct);
+
+            var assignment = new BcpShiftAssignment
+            {
+                Id = Guid.NewGuid(),
+                TenantKey = CurrentTenantKey,
+                ShiftId = shift.Id,
+                UserId = CurrentUserId,
+                StaffProfileId = profile?.Id,
+                StaffFullName = CurrentUserName,
+                DutyRole = profile?.JobTitle ?? "Duty Officer",
+                DutyPosition = shift.PostName,
+                IsLeadOfficer = false,
+                Status = shift.RequireClaimApproval ? "ClaimPending" : "Assigned",
+                IsConfirmedByGuard = !shift.RequireClaimApproval,
+                ConfirmedAtUtc = !shift.RequireClaimApproval ? DateTime.UtcNow : null,
+                IsClaimed = true,
+                ClaimApproved = !shift.RequireClaimApproval,
+                AssignedAtUtc = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                UpdatedUtc = DateTime.UtcNow
+            };
+
+            _db.BcpShiftAssignments.Add(assignment);
+            shift.Assignments.Add(assignment);
 
             if (shift.RequireClaimApproval)
             {
-                shift.AssignedUserId = CurrentUserId;
-                shift.AssignedUserName = CurrentUserName;
-                shift.Status = "ClaimPending";
-                shift.IsConfirmedByGuard = false;
-                shift.ConfirmedAtUtc = null;
+                shift.Status = shift.Assignments.Count >= shift.RequiredStaffCount ? "ClaimPending" : "PartiallyFilled";
                 shift.UpdatedUtc = DateTime.UtcNow;
 
                 await _db.SaveChangesAsync(ct);
@@ -324,11 +385,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<bool>.SuccessResponse(true, "Your request to claim this shift has been submitted for supervisor approval."));
             }
 
-            shift.AssignedUserId = CurrentUserId;
-            shift.AssignedUserName = CurrentUserName;
-            shift.Status = "Assigned";
-            shift.IsConfirmedByGuard = true;
-            shift.ConfirmedAtUtc = DateTime.UtcNow;
+            // Direct assignment (No approval required)
+            shift.Status = shift.Assignments.Count >= shift.RequiredStaffCount ? "Scheduled" : "PartiallyFilled";
             shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -359,7 +417,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = "Open Shift Claimed",
-                        Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
+                        Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). ({shift.Assignments.Count}/{shift.RequiredStaffCount} filled)",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -384,6 +442,7 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<bool>>> ConfirmShift(Guid id, CancellationToken ct)
         {
             var shift = await _db.BcpShifts
+                .Include(s => s.Assignments)
                 .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
 
             if (shift == null)
@@ -391,17 +450,27 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
             }
 
-            if (shift.AssignedUserId != CurrentUserId)
+            var myAssignment = shift.Assignments.FirstOrDefault(a => a.UserId == CurrentUserId);
+            if (myAssignment == null)
             {
                 return Forbid();
             }
 
-            shift.IsConfirmedByGuard = true;
-            shift.ConfirmedAtUtc = DateTime.UtcNow;
-            if (shift.Status == "Draft" || shift.Status == "Scheduled")
+            myAssignment.IsConfirmedByGuard = true;
+            myAssignment.ConfirmedAtUtc = DateTime.UtcNow;
+            myAssignment.Status = "Confirmed";
+            myAssignment.UpdatedUtc = DateTime.UtcNow;
+
+            if (shift.Assignments.All(a => a.IsConfirmedByGuard))
             {
-                shift.Status = "Confirmed";
+                shift.IsConfirmedByGuard = true;
+                shift.ConfirmedAtUtc = DateTime.UtcNow;
+                if (shift.Status == "Draft" || shift.Status == "Scheduled")
+                {
+                    shift.Status = "Confirmed";
+                }
             }
+            shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
 
@@ -442,6 +511,7 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<bool>>> DeclineShiftOffer(Guid id, CancellationToken ct)
         {
             var shift = await _db.BcpShifts
+                .Include(s => s.Assignments)
                 .FirstOrDefaultAsync(s => s.Id == id && s.TenantKey == CurrentTenantKey, ct);
 
             if (shift == null)
@@ -449,7 +519,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<bool>.FailureResponse("Shift not found.", errorCode: "ERR-2004"));
             }
 
-            if (shift.AssignedUserId != CurrentUserId)
+            var myAssignment = shift.Assignments.FirstOrDefault(a => a.UserId == CurrentUserId);
+            if (myAssignment == null)
             {
                 return Forbid();
             }
@@ -459,15 +530,15 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<bool>.FailureResponse("This is a mandatory duty and cannot be declined. Please request a shift swap or submit an excuse for approval."));
             }
 
-            if (shift.IsConfirmedByGuard || shift.Status is "InProgress" or "Completed")
+            if (myAssignment.IsConfirmedByGuard || shift.Status is "InProgress" or "Completed")
             {
                 return BadRequest(ApiResponse<bool>.FailureResponse("This shift has already been accepted. Please request a swap or excuse instead."));
             }
 
-            shift.AssignedUserId = null;
-            shift.AssignedUserName = null;
-            shift.Status = "Open";
-            shift.AcceptanceDeadlineUtc = null;
+            _db.BcpShiftAssignments.Remove(myAssignment);
+            shift.Assignments.Remove(myAssignment);
+
+            shift.Status = shift.Assignments.Count == 0 ? "Open" : "PartiallyFilled";
             shift.UpdatedUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 

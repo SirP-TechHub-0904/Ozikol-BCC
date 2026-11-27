@@ -46,16 +46,33 @@ namespace Ozikol_BCC.Domain.Models
         public BcpClientSite? ClientSite { get; set; }
 
         /// <summary>
-        /// User identifier of the guard or staff member assigned to this shift. Null indicates an Open/Unassigned shift.
+        /// Total number of staff members required for this shift (headcount capacity, e.g. 1, 5, 20, 30).
+        /// Default is 1. If assigned staff is less than required, remaining slots are open for claiming.
+        /// All individual assigned personnel are stored in <see cref="Assignments"/>.
         /// </summary>
-        [StringLength(100)]
-        public string? AssignedUserId { get; set; }
+        public int RequiredStaffCount { get; set; } = 1;
 
         /// <summary>
-        /// Full name of the assigned staff member snapshot at scheduling time for quick visual grids.
+        /// In-memory runtime computed lead or primary officer user ID from <see cref="Assignments"/>.
+        /// Not mapped to the database; persists strictly via <see cref="BcpShiftAssignment"/>.
         /// </summary>
-        [StringLength(200)]
-        public string? AssignedUserName { get; set; }
+        [NotMapped]
+        public string? AssignedUserId
+        {
+            get => Assignments?.FirstOrDefault(a => a.IsLeadOfficer)?.UserId ?? Assignments?.FirstOrDefault()?.UserId;
+            set { /* In-memory compatibility setter */ }
+        }
+
+        /// <summary>
+        /// In-memory runtime computed lead or primary officer name from <see cref="Assignments"/>.
+        /// Not mapped to the database; persists strictly via <see cref="BcpShiftAssignment"/>.
+        /// </summary>
+        [NotMapped]
+        public string? AssignedUserName
+        {
+            get => Assignments?.FirstOrDefault(a => a.IsLeadOfficer)?.StaffFullName ?? Assignments?.FirstOrDefault()?.StaffFullName;
+            set { /* In-memory compatibility setter */ }
+        }
 
         /// <summary>
         /// Specific post or duty assignment within the site (e.g., "Main Gatehouse", "Reception Desk", "Patrol Alpha").
@@ -250,6 +267,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Navigation collection of swap or trade requests initiated for this shift.
         /// </summary>
         public ICollection<BcpShiftSwapRequest> SwapRequests { get; set; } = new List<BcpShiftSwapRequest>();
+
+        /// <summary>
+        /// Navigation collection of staff members assigned to or claiming slots on this shift.
+        /// </summary>
+        public ICollection<BcpShiftAssignment> Assignments { get; set; } = new List<BcpShiftAssignment>();
     }
 }
 

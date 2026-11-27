@@ -33,6 +33,20 @@ interface StaffMember {
   preferredWorkingTime?: string;
   workingAvailability?: string;
   weeklyAvailabilityJson?: string;
+  isPendingOnboarding?: boolean;
+}
+
+/**
+ * Interface representing a staff assignment within a shift.
+ */
+export interface ShiftAssignmentItem {
+  id?: string;
+  userId: string;
+  staffFullName: string;
+  dutyPosition?: string;
+  dutyRole?: string;
+  isLeadOfficer?: boolean;
+  status?: string;
 }
 
 /**
@@ -568,44 +582,76 @@ interface StaffMember {
             </div>
           </div>
 
-          <!-- Card 5: Personnel Assignment & Hardware Station -->
+          <!-- Card 5: Personnel, Headcount & Multi-Staff Roster Assignment -->
           <div class="cms-card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div class="card-title-group">
-                <span class="material-symbols-outlined text-blue">person_add</span>
+                <span class="material-symbols-outlined text-blue">badge</span>
                 <div>
-                  <h3>Personnel Assignment</h3>
-                  <p class="card-subtitle">Assign a qualified team member or publish as an Open Shift for claim.</p>
+                  <h3>Personnel &amp; Headcount Capacity</h3>
+                  <p class="card-subtitle">Assign staff to posts or configure multi-staff capacity for open claiming (e.g. 1 guard or 20–30 staff).</p>
                 </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
+                  {{ assignedStaffList.length }} / {{ requiredStaffCount }} Assigned
+                </span>
+                <span class="badge badge-warning" *ngIf="requiredStaffCount > assignedStaffList.length">
+                  {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }} for Claiming
+                </span>
               </div>
             </div>
 
             <div class="card-body">
-              <!-- Staff Availability Matcher & Auto-Skip Notice Banner -->
-              <div class="availability-notice-banner">
-                <div class="notice-main">
-                  <span class="material-symbols-outlined text-success">verified_user</span>
-                  <div class="notice-text">
-                    <div class="notice-title">
-                      <strong>{{ availableStaffList.length }} Qualified Personnel Available</strong>
-                      <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
-                        {{ skippedStaffList.length }} Incompatible Personnel Skipped
-                      </span>
+              <!-- Headcount & Available Qualified Personnel Row -->
+              <div class="form-row-dual mb-3">
+                <div class="form-group">
+                  <label class="form-label font-weight-bold">
+                    Required Staff / Total Headcount <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      [(ngModel)]="requiredStaffCount"
+                      name="requiredStaffCount"
+                      min="1"
+                      max="500"
+                      (change)="onHeadcountChange()"
+                      placeholder="e.g. 1, 5, 20"
+                    />
+                    <div class="input-group-append">
+                      <span class="input-group-text">personnel</span>
                     </div>
-                    <p class="notice-desc">
-                      Staff whose profile availability does not cover this day and time window are automatically skipped.
-                    </p>
                   </div>
+                  <span class="field-hint">e.g. 1 for a single post, or 20–30 for large events, festivals, or stadiums.</span>
                 </div>
-                <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
-                  <button
-                    type="button"
-                    class="btn-text-sm"
-                    (click)="showSkippedList = !showSkippedList"
-                  >
-                    <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
-                    <span>{{ showSkippedList ? 'Hide Skipped Personnel' : 'View Skipped (' + skippedStaffList.length + ')' }}</span>
-                  </button>
+
+                <div class="form-group">
+                  <label class="form-label font-weight-bold">Qualified Personnel Status</label>
+                  <div class="availability-notice-banner mb-0" style="padding: 10px 14px;">
+                    <div class="notice-main">
+                      <span class="material-symbols-outlined text-success">verified_user</span>
+                      <div class="notice-text">
+                        <div class="notice-title">
+                          <strong>{{ availableStaffList.length }} Active Personnel Available</strong>
+                          <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
+                            {{ skippedStaffList.length }} Skipped
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
+                      <button
+                        type="button"
+                        class="btn-text-sm"
+                        (click)="showSkippedList = !showSkippedList"
+                      >
+                        <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
+                        <span>{{ showSkippedList ? 'Hide' : 'View (' + skippedStaffList.length + ')' }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -639,25 +685,129 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Assigned Staff Dropdown -->
-              <div class="form-group">
-                <label class="form-label">Assigned Staff Member</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="assignedUserId"
-                  name="assignedUserId"
-                  (change)="onStaffChange()"
-                >
-                  <option value="">Leave unassigned (Open Shift / Board)</option>
-                  <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
-                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
-                  </option>
-                </select>
-                <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>
+              <!-- Add Personnel Selector (when slots remain) -->
+              <div class="add-staff-section mb-3" *ngIf="assignedStaffList.length < requiredStaffCount">
+                <label class="form-label font-weight-bold">
+                  Assign Staff to Shift (Slot {{ assignedStaffList.length + 1 }} of {{ requiredStaffCount }})
+                </label>
+                <div class="d-flex gap-2">
+                  <select
+                    class="form-control"
+                    [(ngModel)]="pendingStaffToAdd"
+                    name="pendingStaffToAdd"
+                  >
+                    <option value="">Select an available officer to assign...</option>
+                    <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
+                      {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-primary d-flex align-items-center gap-1 text-nowrap"
+                    (click)="addStaffToShift()"
+                    [disabled]="!pendingStaffToAdd"
+                  >
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Assign Staff</span>
+                  </button>
+                </div>
+                <span class="field-hint" *ngIf="requiredStaffCount > assignedStaffList.length">
+                  Unassigned slots ({{ requiredStaffCount - assignedStaffList.length }} remaining) will automatically be published to the Open Shifts board for qualified staff to claim.
+                </span>
+              </div>
+
+              <!-- Capacity Reached Notice -->
+              <div class="alert alert-info d-flex align-items-center gap-2 mb-3" *ngIf="assignedStaffList.length >= requiredStaffCount && requiredStaffCount > 0">
+                <span class="material-symbols-outlined text-info">check_circle</span>
+                <span><strong>Shift Headcount Reached:</strong> All {{ requiredStaffCount }} personnel slots are currently assigned. Increase the Required Staff count above if you need to add more officers.</span>
+              </div>
+
+              <!-- Assigned Multi-Staff Roster Table -->
+              <div class="assigned-roster-list mb-3" *ngIf="assignedStaffList.length > 0">
+                <label class="form-label font-weight-bold mb-2">Assigned Shift Personnel ({{ assignedStaffList.length }})</label>
+                <div class="table-responsive">
+                  <table class="table table-bordered align-middle mb-0" style="font-size: 13px;">
+                    <thead class="bg-light">
+                      <tr>
+                        <th style="width: 28%;">Staff Member</th>
+                        <th style="width: 26%;">Duty Post / Station</th>
+                        <th style="width: 26%;">Role / Rank</th>
+                        <th style="width: 10%; text-align: center;">Lead</th>
+                        <th style="width: 10%; text-align: center;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let a of assignedStaffList; let i = index">
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="staff-avatar-circle" style="width: 28px; height: 28px; border-radius: 50%; background: #0050e5; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">
+                              {{ a.staffFullName ? a.staffFullName.charAt(0) : 'S' }}
+                            </div>
+                            <div>
+                              <strong>{{ a.staffFullName }}</strong>
+                              <div *ngIf="a.isLeadOfficer">
+                                <span class="badge badge-primary" style="font-size: 10px;">Lead Officer</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.dutyPosition"
+                            [name]="'dutyPosition_' + i"
+                            placeholder="e.g. North Gate, Main Pitch"
+                          />
+                        </td>
+                        <td>
+                          <select
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.dutyRole"
+                            [name]="'dutyRole_' + i"
+                          >
+                            <option value="Team Lead">Team Lead</option>
+                            <option value="Senior Officer">Senior Officer</option>
+                            <option value="Duty Officer">Duty Officer</option>
+                            <option value="Security Guard">Security Guard</option>
+                            <option value="Steward">Steward</option>
+                            <option value="Control Room Operator">Control Room Operator</option>
+                            <option value="Supervisor">Supervisor</option>
+                          </select>
+                        </td>
+                        <td style="text-align: center;">
+                          <button
+                            type="button"
+                            class="btn btn-sm"
+                            [ngClass]="a.isLeadOfficer ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleLeadOfficer(i)"
+                            [title]="a.isLeadOfficer ? 'Primary Lead Officer' : 'Click to make Lead Officer'"
+                            style="padding: 2px 6px;"
+                          >
+                            <span class="material-symbols-outlined" style="font-size: 15px;">
+                              {{ a.isLeadOfficer ? 'star' : 'star_outline' }}
+                            </span>
+                          </button>
+                        </td>
+                        <td style="text-align: center;">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            (click)="removeStaffFromShift(i)"
+                            title="Remove staff member"
+                            style="padding: 2px 6px;"
+                          >
+                            <span class="material-symbols-outlined" style="font-size: 15px;">close</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Condition A: Personnel Assigned -> Offer vs Mandatory -->
-              <div class="assignment-condition-panel" *ngIf="assignedUserId">
+              <div class="assignment-condition-panel" *ngIf="assignedStaffList.length > 0">
                 <label class="form-label d-block mb-2">Assignment Mode &amp; Attendance Condition</label>
                 <div class="assignment-mode-options">
                   <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Offer'">
@@ -670,7 +820,7 @@ interface StaffMember {
                       </div>
                     </div>
                     <p class="mode-desc">
-                      Dispatched as a shift offer. The officer can review and <em>Accept</em> or <em>Decline</em>.
+                      Dispatched as a shift offer. Assigned officers can review and <em>Accept</em> or <em>Decline</em>.
                       While pending acceptance, management can <em>Revoke</em> the assignment.
                     </p>
                   </label>
@@ -685,7 +835,7 @@ interface StaffMember {
                       </div>
                     </div>
                     <p class="mode-desc">
-                      Designated as required operational attendance. The officer can only <em>Acknowledge Duty</em>
+                      Designated as required operational attendance. Assigned officers can only <em>Acknowledge Duty</em>
                       and cannot decline without submitting a formal shift swap or excuse request.
                     </p>
                   </label>
@@ -708,9 +858,11 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Condition B: Open Shift (Unassigned) -> Claim Approval Policy -->
-              <div class="open-shift-condition-panel" *ngIf="!assignedUserId">
-                <label class="form-label d-block mb-2">Open Shift Claiming Policy</label>
+              <!-- Condition B: Open Slots Remaining -> Claim Approval Policy -->
+              <div class="open-shift-condition-panel" *ngIf="assignedStaffList.length < requiredStaffCount">
+                <label class="form-label d-block mb-2">
+                  Open Shifts Claiming Policy (for {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }})
+                </label>
                 <label class="claim-policy-checkbox-card">
                   <input
                     type="checkbox"
@@ -721,7 +873,7 @@ interface StaffMember {
                     <strong>Require Management Approval to Claim</strong>
                     <p class="mb-0 text-muted small">
                       When enabled: Officer applies to claim this shift, creating a pending claim that awaits your review (<em>Claim Pending Approval</em>).
-                      When disabled: The first eligible officer to claim is immediately assigned and confirmed on the roster.
+                      When disabled: Any eligible officer claiming a slot is immediately assigned and confirmed on the roster until capacity is filled.
                     </p>
                   </div>
                 </label>
@@ -2162,7 +2314,10 @@ export class WorkforceShiftEditComponent implements OnInit {
   hourlyPayRate: number | null = 15.0;
   hourlyChargeRate: number | null = 22.5;
 
-  // Personnel & Station
+  // Personnel, Headcount & Multi-Staff Roster
+  requiredStaffCount = 1;
+  assignedStaffList: ShiftAssignmentItem[] = [];
+  pendingStaffToAdd = '';
   assignedUserId = '';
   assignedStaffName = '';
   shiftStatus = 'Scheduled';
@@ -2234,12 +2389,17 @@ export class WorkforceShiftEditComponent implements OnInit {
   // --- Availability Checker & Skipping Logic ---
 
   get availableStaffList(): StaffMember[] {
-    return this.staffMembers.filter(m => this.checkStaffAvailability(m).available);
+    return this.staffMembers
+      .filter(m => m.workingAvailability !== 'Pending Onboarding' && !m.isPendingOnboarding)
+      .filter(m => this.checkStaffAvailability(m).available);
   }
 
   get skippedStaffList(): { member: StaffMember; reason: string }[] {
     const list: { member: StaffMember; reason: string }[] = [];
     for (const m of this.staffMembers) {
+      if (m.workingAvailability === 'Pending Onboarding' || m.isPendingOnboarding) {
+        continue; // Never show un-onboarded staff even in skipped list
+      }
       const check = this.checkStaffAvailability(m);
       if (!check.available) {
         list.push({ member: m, reason: check.reason || 'Availability mismatch' });
@@ -2249,10 +2409,17 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   get displayedStaffMembers(): StaffMember[] {
-    return this.overrideAvailabilityFilter ? this.staffMembers : this.availableStaffList;
+    const activePool = this.staffMembers.filter(m => m.workingAvailability !== 'Pending Onboarding' && !m.isPendingOnboarding);
+    const candidates = this.overrideAvailabilityFilter ? activePool : activePool.filter(m => this.checkStaffAvailability(m).available);
+    const assignedIds = new Set(this.assignedStaffList.map(a => a.userId));
+    return candidates.filter(m => !assignedIds.has(m.userId));
   }
 
   checkStaffAvailability(m: StaffMember): { available: boolean; reason?: string } {
+    if (m.workingAvailability === 'Pending Onboarding' || m.isPendingOnboarding) {
+      return { available: false, reason: 'Pending Onboarding (Account not yet activated)' };
+    }
+
     const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -2624,9 +2791,74 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   onStaffChange(): void {
-    const member = this.staffMembers.find((m) => m.userId === this.assignedUserId);
-    this.assignedStaffName = member ? member.fullName : '';
+    if (this.assignedUserId) {
+      this.addStaffToShift(this.assignedUserId);
+      this.assignedUserId = '';
+    }
+  }
+
+  onHeadcountChange(): void {
+    if (!this.requiredStaffCount || this.requiredStaffCount < 1) {
+      this.requiredStaffCount = 1;
+    }
+  }
+
+  addStaffToShift(userId?: string): void {
+    const targetId = userId || this.pendingStaffToAdd;
+    if (!targetId) return;
+
+    if (this.assignedStaffList.some(a => a.userId === targetId)) {
+      this.toast.warning('Staff member is already assigned to this shift.');
+      this.pendingStaffToAdd = '';
+      return;
+    }
+
+    if (this.assignedStaffList.length >= this.requiredStaffCount) {
+      this.toast.info(`Headcount capacity (${this.requiredStaffCount}) reached. Please increase Required Staff count to add more personnel.`);
+      this.pendingStaffToAdd = '';
+      return;
+    }
+
+    const member = this.staffMembers.find(m => m.userId === targetId);
+    if (!member) return;
+
+    const isFirst = this.assignedStaffList.length === 0;
+    this.assignedStaffList.push({
+      userId: member.userId,
+      staffFullName: member.fullName,
+      dutyPosition: this.postName || 'General Post',
+      dutyRole: isFirst ? 'Team Lead' : (member.jobTitle || 'Duty Officer'),
+      isLeadOfficer: isFirst,
+      status: 'Assigned'
+    });
+
+    this.pendingStaffToAdd = '';
+    this.syncLegacyAssignedFields();
     this.validateAssignedStaffAvailability();
+  }
+
+  removeStaffFromShift(index: number): void {
+    if (index >= 0 && index < this.assignedStaffList.length) {
+      const removed = this.assignedStaffList.splice(index, 1)[0];
+      if (removed.isLeadOfficer && this.assignedStaffList.length > 0) {
+        this.assignedStaffList[0].isLeadOfficer = true;
+      }
+      this.syncLegacyAssignedFields();
+      this.validateAssignedStaffAvailability();
+    }
+  }
+
+  toggleLeadOfficer(index: number): void {
+    this.assignedStaffList.forEach((a, i) => {
+      a.isLeadOfficer = (i === index);
+    });
+    this.syncLegacyAssignedFields();
+  }
+
+  syncLegacyAssignedFields(): void {
+    const lead = this.assignedStaffList.find(a => a.isLeadOfficer) || this.assignedStaffList[0];
+    this.assignedUserId = lead ? lead.userId : '';
+    this.assignedStaffName = lead ? lead.staffFullName : '';
   }
 
   private initDefaultDates(): void {
@@ -2700,8 +2932,33 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.address = s.address || '';
         this.postCode = s.postCode || '';
         this.postName = s.postName || 'General Assignment';
+        this.requiredStaffCount = s.requiredStaffCount || 1;
         this.assignedUserId = s.assignedUserId || '';
         this.assignedStaffName = s.assignedUserName || '';
+
+        if (s.assignments && Array.isArray(s.assignments) && s.assignments.length > 0) {
+          this.assignedStaffList = s.assignments.map((a: any) => ({
+            id: a.id,
+            userId: a.userId,
+            staffFullName: a.staffFullName || a.assignedUserName || '',
+            dutyPosition: a.dutyPosition || s.postName || 'General Post',
+            dutyRole: a.dutyRole || 'Duty Officer',
+            isLeadOfficer: !!a.isLeadOfficer,
+            status: a.status || 'Assigned'
+          }));
+        } else if (s.assignedUserId) {
+          this.assignedStaffList = [{
+            userId: s.assignedUserId,
+            staffFullName: s.assignedUserName || '',
+            dutyPosition: s.postName || 'General Post',
+            dutyRole: 'Duty Officer',
+            isLeadOfficer: true,
+            status: 'Assigned'
+          }];
+        } else {
+          this.assignedStaffList = [];
+        }
+        this.syncLegacyAssignedFields();
         this.hourlyPayRate = s.hourlyPayRate;
         this.hourlyChargeRate = s.hourlyChargeRate;
         this.breakMinutes = s.breakMinutes || 0;
@@ -2815,11 +3072,21 @@ export class WorkforceShiftEditComponent implements OnInit {
 
     this.isSaving = true;
 
+    const assignmentsPayload = this.assignedStaffList.map(a => ({
+      userId: a.userId,
+      staffFullName: a.staffFullName,
+      dutyPosition: a.dutyPosition || this.postName || 'General Post',
+      dutyRole: a.dutyRole || 'Duty Officer',
+      isLeadOfficer: !!a.isLeadOfficer
+    }));
+
     if (this.isEditMode && this.shiftId) {
       const payload = {
         clientSiteId: this.selectedSiteId,
+        requiredStaffCount: this.requiredStaffCount,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignments: assignmentsPayload,
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
         postName: this.postName,
@@ -2855,8 +3122,10 @@ export class WorkforceShiftEditComponent implements OnInit {
     if (this.schedulePattern === 'Single') {
       const singlePayload = {
         clientSiteId: this.selectedSiteId,
+        requiredStaffCount: this.requiredStaffCount,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignments: assignmentsPayload,
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
         acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
@@ -2892,8 +3161,10 @@ export class WorkforceShiftEditComponent implements OnInit {
 
     const batchPayload = {
       clientSiteId: this.selectedSiteId,
+      requiredStaffCount: this.requiredStaffCount,
       assignedUserId: this.assignedUserId || null,
       assignedUserName: this.assignedStaffName || null,
+      assignments: assignmentsPayload,
       assignmentMode: this.assignmentMode,
       requireClaimApproval: this.requireClaimApproval,
       acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,

@@ -23,6 +23,24 @@ export interface ClientSite {
   clientOrganizationName?: string;
 }
 
+export interface ShiftAssignmentDto {
+  id?: string;
+  shiftId?: string;
+  userId: string;
+  staffProfileId?: string;
+  staffFullName: string;
+  dutyPosition?: string;
+  dutyRole?: string;
+  isLeadOfficer?: boolean;
+  status?: string;
+  isConfirmedByGuard?: boolean;
+  confirmedAtUtc?: string;
+  assignedAtUtc?: string;
+  isClaimed?: boolean;
+  claimApproved?: boolean;
+  notes?: string;
+}
+
 export interface Shift {
   id: string;
   shiftCode: string;
@@ -36,6 +54,11 @@ export interface Shift {
   eventTag?: string;
   assignedUserId?: string;
   assignedUserName?: string;
+  requiredStaffCount?: number;
+  assignedCount?: number;
+  openSlotsRemaining?: number;
+  isFull?: boolean;
+  assignments?: ShiftAssignmentDto[];
   startsAtUtc: string;
   endsAtUtc: string;
   isOvernight: boolean;
