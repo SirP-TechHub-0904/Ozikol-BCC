@@ -184,6 +184,22 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            string userGroupName = "Member";
+            if (_dbContext != null)
+            {
+                if (user.BcpUserGroupId.HasValue)
+                {
+                    userGroupName = await _dbContext.BcpUserGroups
+                        .Where(g => g.Id == user.BcpUserGroupId.Value)
+                        .Select(g => g.Name)
+                        .FirstOrDefaultAsync() ?? (currentRoles.Contains("SuperAdmin") ? "Super Administrator" : (currentRoles.Contains("Admin") ? "Administrator" : "Member"));
+                }
+                else
+                {
+                    userGroupName = currentRoles.Contains("SuperAdmin") ? "Super Administrator" : (currentRoles.Contains("Admin") ? "Administrator" : "Member");
+                }
+            }
+
             var data = new
             {
                 UserId = user.Id,
@@ -193,6 +209,8 @@ namespace Ozikol_BCC.Api.Controllers
                 MemberId = user.MemberId,
                 Designation = user.Designation,
                 Roles = currentRoles,
+                UserGroupName = userGroupName,
+                UserGroupId = user.BcpUserGroupId,
                 IsAdmin = effectivePerms.IsAdmin,
                 EffectivePermissions = effectivePerms,
                 LicensedTenantFeatures = licensedFeatures,
@@ -742,6 +760,22 @@ namespace Ozikol_BCC.Api.Controllers
                 catch { /* ignore schema drift */ }
             }
 
+            string userGroupName = "Member";
+            if (_dbContext != null)
+            {
+                if (user.BcpUserGroupId.HasValue)
+                {
+                    userGroupName = await _dbContext.BcpUserGroups
+                        .Where(g => g.Id == user.BcpUserGroupId.Value)
+                        .Select(g => g.Name)
+                        .FirstOrDefaultAsync() ?? (userRoles.Contains("SuperAdmin") ? "Super Administrator" : (userRoles.Contains("Admin") ? "Administrator" : "Member"));
+                }
+                else
+                {
+                    userGroupName = userRoles.Contains("SuperAdmin") ? "Super Administrator" : (userRoles.Contains("Admin") ? "Administrator" : "Member");
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -756,6 +790,8 @@ namespace Ozikol_BCC.Api.Controllers
                 RequiresOnboarding = requiresOnboarding,
                 OnboardingStep = onboardingStep,
                 Roles = userRoles,
+                UserGroupName = userGroupName,
+                UserGroupId = user.BcpUserGroupId,
                 EffectivePermissions = effectivePermsOnLogin,
                 LicensedTenantFeatures = licensedFeaturesOnLogin,
                 AssignedFeatureKeys = assignedFeatureKeysOnLogin
@@ -1041,6 +1077,22 @@ namespace Ozikol_BCC.Api.Controllers
                 catch { /* ignore schema drift */ }
             }
 
+            string mfaUserGroupName = "Member";
+            if (_dbContext != null)
+            {
+                if (user.BcpUserGroupId.HasValue)
+                {
+                    mfaUserGroupName = await _dbContext.BcpUserGroups
+                        .Where(g => g.Id == user.BcpUserGroupId.Value)
+                        .Select(g => g.Name)
+                        .FirstOrDefaultAsync() ?? (userRoles.Contains("SuperAdmin") ? "Super Administrator" : (userRoles.Contains("Admin") ? "Administrator" : "Member"));
+                }
+                else
+                {
+                    mfaUserGroupName = userRoles.Contains("SuperAdmin") ? "Super Administrator" : (userRoles.Contains("Admin") ? "Administrator" : "Member");
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -1051,6 +1103,8 @@ namespace Ozikol_BCC.Api.Controllers
                 TenantKey = resolvedTenantKey,
                 MustChangePassword = user.MustChangePassword,
                 Roles = userRoles,
+                UserGroupName = mfaUserGroupName,
+                UserGroupId = user.BcpUserGroupId,
                 EffectivePermissions = effectivePermsOnLogin,
                 LicensedTenantFeatures = licensedFeaturesOnLogin,
                 AssignedFeatureKeys = assignedFeatureKeysOnMfa
@@ -3039,6 +3093,16 @@ namespace Ozikol_BCC.Api.Controllers
         /// When present on a non-admin account, the user is strictly scoped to these feature areas.
         /// </summary>
         public List<string> AssignedFeatureKeys { get; set; } = new();
+
+        /// <summary>
+        /// Display name of the user's assigned User Group (e.g. "Administrator", "Member", "Operations Manager").
+        /// </summary>
+        public string? UserGroupName { get; set; }
+
+        /// <summary>
+        /// Unique identifier of the user's assigned User Group.
+        /// </summary>
+        public Guid? UserGroupId { get; set; }
     }
 
     /// <summary>

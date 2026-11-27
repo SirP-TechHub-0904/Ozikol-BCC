@@ -4129,6 +4129,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   }
 
   get userRoleBadge(): string {
+    const groupName = typeof window !== 'undefined' ? localStorage.getItem('user_group_name') : null;
+    if (groupName && groupName.trim()) {
+      return groupName.trim();
+    }
     return getUserPrimaryRoleName(this.userRoles);
   }
 
@@ -4718,6 +4722,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       this.currentConsoleMode = 'workspace';
       localStorage.setItem('bcp_console_mode', 'workspace');
       localStorage.removeItem('bcp_user_feature_keys');
+    } else {
+      const stored = localStorage.getItem('bcp_console_mode');
+      if (!stored || stored === 'console') {
+        this.currentConsoleMode = 'console';
+        localStorage.setItem('bcp_console_mode', 'console');
+      }
     }
 
     // 1. Live verify and refresh session against backend DB
@@ -5584,6 +5594,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
               this.currentConsoleMode = 'workspace';
             }
           }
+          if (freshData.userGroupName) {
+            localStorage.setItem('user_group_name', freshData.userGroupName);
+          }
           if (freshData.token) {
             localStorage.setItem('access_token', freshData.token);
           }
@@ -5636,18 +5649,15 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             }
           } else {
             // 2. If user HAS console access:
-            // Ensure console mode is active unless user explicitly set workspace mode
-            const storedMode = localStorage.getItem('bcp_console_mode');
-            if (!storedMode || storedMode === 'console') {
-              this.currentConsoleMode = 'console';
-              localStorage.setItem('bcp_console_mode', 'console');
-            }
+            // Ensure console mode is active
+            this.currentConsoleMode = 'console';
+            localStorage.setItem('bcp_console_mode', 'console');
 
-            // If the user was elevated into console while sitting on a member workspace page (e.g., /users/workspace/notifications),
+            // If the user is sitting on a member workspace page (e.g., /dashboard/workspace or /users/workspace/notifications),
             // auto-redirect them to their designated console landing dashboard
             const activeUrl = this.router.url || this.currentRoute || '';
             const isWorkspaceRoute = activeUrl.includes('/workspace') || activeUrl.startsWith('/users/workspace') || activeUrl === '/dashboard/workspace';
-            if (this.currentConsoleMode === 'console' && isWorkspaceRoute) {
+            if (isWorkspaceRoute) {
               const targetDashboard = getReturnUrlForRole(freshData.roles || this.userRoles);
               console.log('[AdminLayout] Console user on workspace route upon elevation -> Navigating to:', targetDashboard);
               this.router.navigate([targetDashboard]);
