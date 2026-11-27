@@ -1428,6 +1428,23 @@ export interface ShiftAssignmentItem {
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
     }
 
+    /* Professional Dropdown Styling with Inset Chevron */
+    select.form-control {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem 1rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    select.form-control::-ms-expand {
+      display: none;
+    }
+
     .field-hint {
       font-size: 0.75rem;
       color: #64748b;
