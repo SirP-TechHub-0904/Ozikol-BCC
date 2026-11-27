@@ -42,10 +42,13 @@ interface StaffMember {
 export interface ShiftAssignmentItem {
   id?: string;
   userId: string;
+  staffProfileId?: string;
   staffFullName: string;
   dutyPosition?: string;
   dutyRole?: string;
   isLeadOfficer?: boolean;
+  hourlyPayRateOverride?: number | null;
+  profileHourlyRate?: number | null;
   status?: string;
 }
 
@@ -535,19 +538,6 @@ export interface ShiftAssignmentItem {
                 </select>
               </div>
 
-              <!-- Position Title Override -->
-              <div class="form-group">
-                <label class="form-label">Designated Duty Title / Post Name <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="postName"
-                  name="postName"
-                  placeholder="e.g. Front Desk Officer, Project Lead, Duty Supervisor"
-                  required
-                />
-              </div>
-
               <!-- Compensation Status Notice Card -->
               <div class="compensation-info-banner" *ngIf="selectedRole">
                 <div class="banner-top">
@@ -592,12 +582,12 @@ export interface ShiftAssignmentItem {
                   <p class="card-subtitle">Assign staff to posts or configure multi-staff capacity for open claiming (e.g. 1 guard or 20–30 staff).</p>
                 </div>
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
+              <div class="d-flex align-items-center gap-1 flex-nowrap">
+                <span class="badge nowrap-badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
                   {{ assignedStaffList.length }} / {{ requiredStaffCount }} Assigned
                 </span>
-                <span class="badge badge-warning" *ngIf="requiredStaffCount > assignedStaffList.length">
-                  {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }} for Claiming
+                <span class="badge badge-warning nowrap-badge" *ngIf="requiredStaffCount > assignedStaffList.length">
+                  {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }}
                 </span>
               </div>
             </div>
@@ -729,11 +719,12 @@ export interface ShiftAssignmentItem {
                   <table class="table table-bordered align-middle mb-0" style="font-size: 13px;">
                     <thead class="bg-light">
                       <tr>
-                        <th style="width: 28%;">Staff Member</th>
-                        <th style="width: 26%;">Duty Post / Station</th>
-                        <th style="width: 26%;">Role / Rank</th>
-                        <th style="width: 10%; text-align: center;">Lead</th>
-                        <th style="width: 10%; text-align: center;">Action</th>
+                        <th style="width: 25%;">Staff Member</th>
+                        <th style="width: 23%;">Duty Post / Station</th>
+                        <th style="width: 21%;">Role / Rank</th>
+                        <th style="width: 17%;">Rate ({{ currencySymbol }}/hr)</th>
+                        <th style="width: 7%; text-align: center;">Lead</th>
+                        <th style="width: 7%; text-align: center;">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -774,6 +765,17 @@ export interface ShiftAssignmentItem {
                             <option value="Control Room Operator">Control Room Operator</option>
                             <option value="Supervisor">Supervisor</option>
                           </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="0.25"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.hourlyPayRateOverride"
+                            [name]="'hourlyPayRateOverride_' + i"
+                            [placeholder]="((a.profileHourlyRate || hourlyPayRate || 15) | number:'1.2-2') || '15.00'"
+                            title="Staff Pay Rate Override for this shift"
+                          />
                         </td>
                         <td style="text-align: center;">
                           <button
@@ -1072,6 +1074,54 @@ export interface ShiftAssignmentItem {
       background-color: #f8fafc;
       min-height: calc(100vh - 70px);
       box-sizing: border-box;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .input-group .form-control {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      flex: 1 1 auto;
+    }
+
+    .input-group-append {
+      display: flex;
+    }
+
+    .input-group-text {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 0;
+      border-top-right-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
+    }
+
+    .nowrap-badge {
+      white-space: nowrap;
+      font-size: 11px;
+      padding: 4px 8px;
+      flex-shrink: 0;
+    }
+
+    .rate-input-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .rate-hint {
+      font-size: 10px;
+      color: #64748b;
     }
 
     .breadcrumb {
@@ -1644,6 +1694,43 @@ export interface ShiftAssignmentItem {
       color: #334155;
       margin: 0;
       line-height: 1.4;
+    }
+
+    .nowrap-badge {
+      white-space: nowrap !important;
+      flex-shrink: 0;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .input-group .form-control {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      flex: 1 1 auto;
+    }
+
+    .input-group-append {
+      display: flex;
+    }
+
+    .input-group-text {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 0;
+      border-top-right-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
     }
 
     /* Summary Card */
@@ -2823,12 +2910,17 @@ export class WorkforceShiftEditComponent implements OnInit {
     if (!member) return;
 
     const isFirst = this.assignedStaffList.length === 0;
+    const profileRate = (member as any).defaultHourlyRate ?? (member as any).hourlyRate ?? this.hourlyPayRate ?? 15.0;
+
     this.assignedStaffList.push({
       userId: member.userId,
+      staffProfileId: (member as any).staffProfileId || (member as any).profileId,
       staffFullName: member.fullName,
-      dutyPosition: this.postName || 'General Post',
+      dutyPosition: this.selectedRole ? this.selectedRole.title : 'General Post',
       dutyRole: isFirst ? 'Team Lead' : (member.jobTitle || 'Duty Officer'),
       isLeadOfficer: isFirst,
+      hourlyPayRateOverride: profileRate,
+      profileHourlyRate: profileRate,
       status: 'Assigned'
     });
 
@@ -2931,19 +3023,30 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.facilityName = s.facilityName || '';
         this.address = s.address || '';
         this.postCode = s.postCode || '';
-        this.postName = s.postName || 'General Assignment';
+        this.postName = s.jobRoleTitle || s.postName || 'General Assignment';
         this.requiredStaffCount = s.requiredStaffCount || 1;
         this.assignedUserId = s.assignedUserId || '';
         this.assignedStaffName = s.assignedUserName || '';
+
+        if (s.jobRoleId) {
+          this.selectedRoleId = s.jobRoleId;
+          this.selectedRole = this.jobRoles.find(r => r.id === s.jobRoleId) || null;
+        } else if (s.jobRoleTitle) {
+          this.selectedRole = this.jobRoles.find(r => r.title.toLowerCase() === s.jobRoleTitle.toLowerCase()) || null;
+          if (this.selectedRole) this.selectedRoleId = this.selectedRole.id;
+        }
 
         if (s.assignments && Array.isArray(s.assignments) && s.assignments.length > 0) {
           this.assignedStaffList = s.assignments.map((a: any) => ({
             id: a.id,
             userId: a.userId,
+            staffProfileId: a.staffProfileId,
             staffFullName: a.staffFullName || a.assignedUserName || '',
-            dutyPosition: a.dutyPosition || s.postName || 'General Post',
+            dutyPosition: a.dutyPosition || s.jobRoleTitle || s.postName || 'General Post',
             dutyRole: a.dutyRole || 'Duty Officer',
             isLeadOfficer: !!a.isLeadOfficer,
+            hourlyPayRateOverride: a.hourlyPayRateOverride ?? s.hourlyPayRate,
+            profileHourlyRate: a.hourlyPayRateOverride ?? s.hourlyPayRate,
             status: a.status || 'Assigned'
           }));
         } else if (s.assignedUserId) {
@@ -3065,19 +3168,22 @@ export class WorkforceShiftEditComponent implements OnInit {
       return;
     }
 
-    if (!this.postName) {
-      this.toast.error('Please specify a Job Role or Duty Title.');
+    if (!this.selectedRoleId && !this.isEditMode) {
+      this.toast.error('Please select a Job Role / Position.');
       return;
     }
 
     this.isSaving = true;
 
+    const defaultPosition = this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post');
     const assignmentsPayload = this.assignedStaffList.map(a => ({
       userId: a.userId,
+      staffProfileId: a.staffProfileId,
       staffFullName: a.staffFullName,
-      dutyPosition: a.dutyPosition || this.postName || 'General Post',
+      dutyPosition: a.dutyPosition || defaultPosition,
       dutyRole: a.dutyRole || 'Duty Officer',
-      isLeadOfficer: !!a.isLeadOfficer
+      isLeadOfficer: !!a.isLeadOfficer,
+      hourlyPayRateOverride: a.hourlyPayRateOverride || null
     }));
 
     if (this.isEditMode && this.shiftId) {
@@ -3089,7 +3195,9 @@ export class WorkforceShiftEditComponent implements OnInit {
         assignments: assignmentsPayload,
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
-        postName: this.postName,
+        jobRoleId: this.selectedRoleId || null,
+        jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+        postName: defaultPosition,
         facilityName: this.facilityName,
         address: this.address,
         postCode: this.postCode,
@@ -3129,7 +3237,9 @@ export class WorkforceShiftEditComponent implements OnInit {
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
         acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
-        postName: this.postName,
+        jobRoleId: this.selectedRoleId || null,
+        jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+        postName: defaultPosition,
         facilityName: this.facilityName,
         address: this.address,
         postCode: this.postCode,
@@ -3168,7 +3278,9 @@ export class WorkforceShiftEditComponent implements OnInit {
       assignmentMode: this.assignmentMode,
       requireClaimApproval: this.requireClaimApproval,
       acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
-      postName: this.postName,
+      jobRoleId: this.selectedRoleId || null,
+      jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+      postName: defaultPosition,
       facilityName: this.facilityName,
       address: this.address,
       postCode: this.postCode,

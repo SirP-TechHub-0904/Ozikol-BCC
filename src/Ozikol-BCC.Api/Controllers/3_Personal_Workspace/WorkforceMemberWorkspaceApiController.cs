@@ -179,7 +179,7 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -252,7 +252,7 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -322,7 +322,7 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.PostName,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -364,7 +364,7 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.PostName,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -429,7 +429,8 @@ namespace Ozikol_BCC.Api.Controllers
                 StaffProfileId = profile?.Id,
                 StaffFullName = CurrentUserName,
                 DutyRole = profile?.JobTitle ?? "Duty Officer",
-                DutyPosition = shift.PostName,
+                DutyPosition = shift.JobRoleTitle ?? "General Duty",
+                HourlyPayRateOverride = profile?.DefaultHourlyRate ?? shift.HourlyPayRate,
                 IsLeadOfficer = false,
                 Status = shift.RequireClaimApproval ? "ClaimPending" : "Assigned",
                 IsConfirmedByGuard = !shift.RequireClaimApproval,
@@ -463,7 +464,7 @@ namespace Ozikol_BCC.Api.Controllers
                             TargetUserId = CurrentUserId,
                             TenantKey = CurrentTenantKey,
                             Title = "Shift Claim Submitted",
-                            Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName} has been submitted for supervisor approval.",
+                            Message = $"Your request to claim open shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.JobRoleTitle ?? "Duty"} has been submitted for supervisor approval.",
                             Category = BcpMessageCategory.General,
                             Severity = NotificationSeverity.Update,
                             Channels = channels | NotificationChannels.InApp,
@@ -477,7 +478,7 @@ namespace Ozikol_BCC.Api.Controllers
                         {
                             TenantKey = CurrentTenantKey,
                             Title = "Shift Claim Awaiting Approval",
-                            Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
+                            Message = $"Officer {CurrentUserName} requested to claim open shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Supervisor review required.",
                             Category = BcpMessageCategory.General,
                             Severity = NotificationSeverity.Update,
                             Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -513,7 +514,7 @@ namespace Ozikol_BCC.Api.Controllers
                         TargetUserId = CurrentUserId,
                         TenantKey = CurrentTenantKey,
                         Title = "Shift Claim Confirmed",
-                        Message = $"You have successfully claimed shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.PostName}. It has been added to your roster.",
+                        Message = $"You have successfully claimed shift {shift.ShiftCode} ({shift.StartsAtUtc:ddd, dd MMM HH:mm} - {shift.EndsAtUtc:HH:mm}) at {shift.JobRoleTitle ?? "Duty"}. It has been added to your roster.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = channels | NotificationChannels.InApp,
@@ -527,7 +528,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = "Open Shift Claimed",
-                        Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). ({shift.Assignments.Count}/{shift.RequiredStaffCount} filled)",
+                        Message = $"Officer {CurrentUserName} has claimed open shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). ({shift.Assignments.Count}/{shift.RequiredStaffCount} filled)",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -594,7 +595,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = "Duty Confirmed by Officer",
-                        Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
+                        Message = $"Officer {CurrentUserName} has confirmed duty for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -661,7 +662,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = $"Shift Offer Declined ({shift.ShiftCode})",
-                        Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
+                        Message = $"{CurrentUserName} declined shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). It is open again.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -709,7 +710,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
+                    PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                     FacilityName = s.FacilityName,
                     StartsAtUtc = s.StartsAtUtc,
                     EndsAtUtc = s.EndsAtUtc,
@@ -807,7 +808,7 @@ namespace Ozikol_BCC.Api.Controllers
                             TargetType = NotificationDispatchTarget.BroadcastAll,
                             TenantKey = CurrentTenantKey,
                             Title = "Available Shift Swap",
-                            Message = $"A shift swap is available for shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Tap to review and claim.",
+                            Message = $"A shift swap is available for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM HH:mm}). Tap to review and claim.",
                             Category = BcpMessageCategory.General,
                             Severity = NotificationSeverity.Update,
                             Channels = NotificationChannels.InApp,
@@ -1501,8 +1502,8 @@ namespace Ozikol_BCC.Api.Controllers
                         TenantKey = CurrentTenantKey,
                         Title = isFlagged ? "Duty Clock-In (Notice Recorded)" : "Duty Clock-In Confirmed",
                         Message = isFlagged
-                            ? $"Clock-in recorded for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}) with notice: {flagReason}."
-                            : $"You have clocked in on-site for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}). Active duty begun.",
+                            ? $"Clock-in recorded for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({nowUtc:HH:mm}) with notice: {flagReason}."
+                            : $"You have clocked in on-site for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({nowUtc:HH:mm}). Active duty begun.",
                         Category = BcpMessageCategory.General,
                         Severity = isFlagged ? NotificationSeverity.Warning : NotificationSeverity.Success,
                         Channels = NotificationChannels.InApp,
@@ -1520,8 +1521,8 @@ namespace Ozikol_BCC.Api.Controllers
                             ? "⚠️ Duty Clock-In Alert: " + (isLate && !isInsideGeofence ? "Out of Geofence & Late" : !isInsideGeofence ? "Out of Geofence" : "Late Arrival")
                             : $"Officer On Duty ({shift.ShiftCode})",
                         Message = isFlagged
-                            ? $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.PostName} with notice: {flagReason}."
-                            : $"Officer {CurrentUserName} clocked in on schedule for shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}).",
+                            ? $"Officer {CurrentUserName} clocked in for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} with notice: {flagReason}."
+                            : $"Officer {CurrentUserName} clocked in on schedule for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({nowUtc:HH:mm}).",
                         Category = BcpMessageCategory.General,
                         Severity = isFlagged ? NotificationSeverity.Error : NotificationSeverity.Update,
                         Channels = isFlagged
@@ -1604,7 +1605,7 @@ namespace Ozikol_BCC.Api.Controllers
                         TargetUserId = CurrentUserId,
                         TenantKey = CurrentTenantKey,
                         Title = "Duty Clock-Out Confirmed",
-                        Message = $"You have successfully clocked out of shift {shift.ShiftCode} at {shift.PostName}. Total duration: {Math.Round(actualTotalHours, 2)} hrs ({Math.Round(netBillableHours, 2)} billable).",
+                        Message = $"You have successfully clocked out of shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"}. Total duration: {Math.Round(actualTotalHours, 2)} hrs ({Math.Round(netBillableHours, 2)} billable).",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Success,
                         Channels = NotificationChannels.InApp,
@@ -1619,7 +1620,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = $"Duty Concluded ({shift.ShiftCode})",
-                        Message = $"Officer {CurrentUserName} has clocked out of shift {shift.ShiftCode} at {shift.PostName} ({nowUtc:HH:mm}). Total duty duration: {Math.Round(actualTotalHours, 2)} hrs.",
+                        Message = $"Officer {CurrentUserName} has clocked out of shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({nowUtc:HH:mm}). Total duty duration: {Math.Round(actualTotalHours, 2)} hrs.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -1755,7 +1756,7 @@ namespace Ozikol_BCC.Api.Controllers
                         TargetUserId = CurrentUserId,
                         TenantKey = CurrentTenantKey,
                         Title = "Duty Report Submitted",
-                        Message = $"Your shift report and occurrence log for {shift.ShiftCode} at {shift.PostName} has been submitted for supervisor review.",
+                        Message = $"Your shift report and occurrence log for {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} has been submitted for supervisor review.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Success,
                         Channels = NotificationChannels.InApp,
@@ -1770,7 +1771,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         TenantKey = CurrentTenantKey,
                         Title = $"Duty Report Submitted ({shift.ShiftCode})",
-                        Message = $"Officer {CurrentUserName} has submitted a duty occurrence report for shift {shift.ShiftCode} at {shift.PostName}.",
+                        Message = $"Officer {CurrentUserName} has submitted a duty occurrence report for shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"}.",
                         Category = BcpMessageCategory.General,
                         Severity = NotificationSeverity.Update,
                         Channels = NotificationChannels.InApp | NotificationChannels.Push,
@@ -1808,7 +1809,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var siteName = shift.ClientSite?.SiteName ?? "Assigned Site";
-            var postName = shift.PostName ?? "Main Post";
+            var postName = shift.JobRoleTitle ?? "Main Post";
             var categoryName = !string.IsNullOrWhiteSpace(request.CategoryName) ? request.CategoryName.Trim() : "Security Incident";
             var timeUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
 

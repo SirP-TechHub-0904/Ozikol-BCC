@@ -53,11 +53,15 @@ namespace Ozikol_BCC.Domain.Models
         public int RequiredStaffCount { get; set; } = 1;
 
         /// <summary>
-        /// Specific post or duty assignment within the site (e.g., "Main Gatehouse", "Reception Desk", "Patrol Alpha").
+        /// Optional foreign key linking this shift to the primary job role specialization (<see cref="BcpJobRole"/>).
         /// </summary>
-        [Required]
+        public Guid? JobRoleId { get; set; }
+
+        /// <summary>
+        /// Primary job role or operational category for this shift (e.g., "Static Security Guard", "Door Supervisor", "Event Steward").
+        /// </summary>
         [StringLength(150)]
-        public string PostName { get; set; } = "General Post";
+        public string? JobRoleTitle { get; set; }
 
         /// <summary>
         /// Shift start date and time in UTC.

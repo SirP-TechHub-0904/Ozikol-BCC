@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,24 +11,75 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_BcpShifts_TenantKey_AssignedUserId_StartsAtUtc",
-                table: "BcpShifts");
+            // Safely drop index if it exists (prevents SQL 3701 error when index was not physically created)
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BcpShifts_TenantKey_AssignedUserId_StartsAtUtc' AND object_id = OBJECT_ID('BcpShifts'))
+                BEGIN
+                    DROP INDEX [IX_BcpShifts_TenantKey_AssignedUserId_StartsAtUtc] ON [BcpShifts];
+                END
+            ");
 
-            migrationBuilder.DropColumn(
-                name: "AssignedUserId",
-                table: "BcpShifts");
+            // Safely drop any other indexes referencing AssignedUserId and drop the column
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE name = 'AssignedUserId' AND object_id = OBJECT_ID('BcpShifts'))
+                BEGIN
+                    DECLARE @idxName NVARCHAR(256);
+                    DECLARE idx_cursor CURSOR FOR
+                    SELECT i.name
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('BcpShifts') AND c.name = 'AssignedUserId' AND i.is_primary_key = 0;
 
-            migrationBuilder.DropColumn(
-                name: "AssignedUserName",
-                table: "BcpShifts");
+                    OPEN idx_cursor;
+                    FETCH NEXT FROM idx_cursor INTO @idxName;
+                    WHILE @@FETCH_STATUS = 0
+                    BEGIN
+                        EXEC('DROP INDEX [' + @idxName + '] ON [BcpShifts]');
+                        FETCH NEXT FROM idx_cursor INTO @idxName;
+                    END
+                    CLOSE idx_cursor;
+                    DEALLOCATE idx_cursor;
+
+                    ALTER TABLE [BcpShifts] DROP COLUMN [AssignedUserId];
+                END
+            ");
+
+            // Safely drop AssignedUserName if it exists
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE name = 'AssignedUserName' AND object_id = OBJECT_ID('BcpShifts'))
+                BEGIN
+                    ALTER TABLE [BcpShifts] DROP COLUMN [AssignedUserName];
+                END
+            ");
+
+            // Safely drop legacy PostName if it exists
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE name = 'PostName' AND object_id = OBJECT_ID('BcpShifts'))
+                BEGIN
+                    ALTER TABLE [BcpShifts] DROP COLUMN [PostName];
+                END
+            ");
 
             migrationBuilder.AddColumn<int>(
                 name: "RequiredStaffCount",
                 table: "BcpShifts",
                 type: "int",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 1);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "JobRoleId",
+                table: "BcpShifts",
+                type: "uniqueidentifier",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "JobRoleTitle",
+                table: "BcpShifts",
+                type: "nvarchar(150)",
+                maxLength: 150,
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "BcpShiftAssignments",
@@ -43,6 +94,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     DutyPosition = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
                     DutyRole = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     IsLeadOfficer = table.Column<bool>(type: "bit", nullable: false),
+                    HourlyPayRateOverride = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IsConfirmedByGuard = table.Column<bool>(type: "bit", nullable: false),
                     ConfirmedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -101,6 +153,22 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             migrationBuilder.DropColumn(
                 name: "RequiredStaffCount",
                 table: "BcpShifts");
+
+            migrationBuilder.DropColumn(
+                name: "JobRoleId",
+                table: "BcpShifts");
+
+            migrationBuilder.DropColumn(
+                name: "JobRoleTitle",
+                table: "BcpShifts");
+
+            migrationBuilder.AddColumn<string>(
+                name: "PostName",
+                table: "BcpShifts",
+                type: "nvarchar(150)",
+                maxLength: 150,
+                nullable: false,
+                defaultValue: "General Post");
 
             migrationBuilder.AddColumn<string>(
                 name: "AssignedUserId",

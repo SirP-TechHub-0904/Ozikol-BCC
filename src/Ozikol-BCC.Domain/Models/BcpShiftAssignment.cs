@@ -79,6 +79,13 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsLeadOfficer { get; set; } = false;
 
         /// <summary>
+        /// Optional custom hourly pay rate for this specific assigned officer (e.g. higher rate for supervisor or emergency bonus).
+        /// If null, the system automatically uses the staff member's contracted profile rate or the shift's base HourlyPayRate.
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? HourlyPayRateOverride { get; set; }
+
+        /// <summary>
         /// Shift lifecycle assignment status: "Scheduled", "Confirmed", "InProgress", "Completed", "Cancelled", "Absent".
         /// </summary>
         [Required]

@@ -636,7 +636,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = site.SiteName,
                     SiteAddress = site.Address,
-                    PostName = s.PostName,
+                    JobRoleId = s.JobRoleId,
+                    JobRoleTitle = s.JobRoleTitle,
+                    PostName = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.DutyPosition).FirstOrDefault() ?? s.Assignments.Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                     FacilityName = s.FacilityName,
                     Address = s.Address,
                     PostCode = s.PostCode,
@@ -809,7 +811,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Venue",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
+                    JobRoleId = s.JobRoleId,
+                    JobRoleTitle = s.JobRoleTitle,
+                    PostName = s.Assignments.Where(a => a.UserId == userId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                     FacilityName = s.FacilityName,
                     Address = s.Address,
                     PostCode = s.PostCode,
@@ -999,7 +1003,9 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.PostName,
+                        JobRoleId = s.JobRoleId,
+                        JobRoleTitle = s.JobRoleTitle,
+                        PostName = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.DutyPosition).FirstOrDefault() ?? s.Assignments.Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -1020,6 +1026,7 @@ namespace Ozikol_BCC.Api.Controllers
                             DutyPosition = a.DutyPosition,
                             DutyRole = a.DutyRole,
                             IsLeadOfficer = a.IsLeadOfficer,
+                            HourlyPayRateOverride = a.HourlyPayRateOverride,
                             Status = a.Status,
                             IsConfirmedByGuard = a.IsConfirmedByGuard,
                             ConfirmedAtUtc = a.ConfirmedAtUtc,
@@ -1107,7 +1114,9 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.PostName,
+                        JobRoleId = s.JobRoleId,
+                        JobRoleTitle = s.JobRoleTitle,
+                        PostName = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.DutyPosition).FirstOrDefault() ?? s.Assignments.Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
@@ -1128,6 +1137,7 @@ namespace Ozikol_BCC.Api.Controllers
                             DutyPosition = a.DutyPosition,
                             DutyRole = a.DutyRole,
                             IsLeadOfficer = a.IsLeadOfficer,
+                            HourlyPayRateOverride = a.HourlyPayRateOverride,
                             Status = a.Status
                         }).ToList(),
                         StartsAtUtc = s.StartsAtUtc,
@@ -1501,7 +1511,8 @@ namespace Ozikol_BCC.Api.Controllers
                 ShiftCode = shiftCode,
                 ClientSiteId = request.ClientSiteId,
                 RequiredStaffCount = reqCount,
-                PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Post" : request.PostName.Trim(),
+                JobRoleId = request.JobRoleId,
+                JobRoleTitle = !string.IsNullOrWhiteSpace(request.JobRoleTitle) ? request.JobRoleTitle.Trim() : (!string.IsNullOrWhiteSpace(request.PostName) ? request.PostName.Trim() : null),
                 FacilityName = request.FacilityName?.Trim(),
                 Address = request.Address?.Trim(),
                 PostCode = request.PostCode?.Trim(),
@@ -1527,20 +1538,25 @@ namespace Ozikol_BCC.Api.Controllers
 
             _db.BcpShifts.Add(shift);
 
-            // Persist individual shift assignments with position, rank, and lead flags
+            // Persist individual shift assignments with position, rank, lead flags, and resolved pay rates
             foreach (var item in targetAssignments)
             {
+                var profile = await _db.BcpShiftStaffProfiles.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == item.UserId, ct);
+                var resolvedRate = item.HourlyPayRateOverride ?? profile?.DefaultHourlyRate ?? request.HourlyPayRate;
+
                 var assign = new BcpShiftAssignment
                 {
                     Id = Guid.CreateVersion7(),
                     TenantKey = CurrentTenantKey,
                     ShiftId = shift.Id,
                     UserId = item.UserId,
-                    StaffProfileId = item.StaffProfileId,
+                    StaffProfileId = item.StaffProfileId ?? profile?.Id,
                     StaffFullName = item.StaffFullName,
-                    DutyPosition = string.IsNullOrWhiteSpace(item.DutyPosition) ? shift.PostName : item.DutyPosition.Trim(),
-                    DutyRole = string.IsNullOrWhiteSpace(item.DutyRole) ? "Duty Officer" : item.DutyRole.Trim(),
+                    DutyPosition = string.IsNullOrWhiteSpace(item.DutyPosition) ? (shift.JobRoleTitle ?? "General Duty") : item.DutyPosition.Trim(),
+                    DutyRole = string.IsNullOrWhiteSpace(item.DutyRole) ? (profile?.JobTitle ?? "Duty Officer") : item.DutyRole.Trim(),
                     IsLeadOfficer = item.IsLeadOfficer,
+                    HourlyPayRateOverride = resolvedRate,
                     Status = "Scheduled",
                     IsConfirmedByGuard = false,
                     AssignedAtUtc = DateTime.UtcNow,
@@ -1569,7 +1585,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var siteEntity = await _db.BcpClientSites.AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == shift.ClientSiteId, ct);
-            var venueDisplayName = siteEntity?.SiteName ?? shift.FacilityName ?? shift.PostName;
+            var venueDisplayName = siteEntity?.SiteName ?? shift.FacilityName ?? shift.JobRoleTitle ?? "Site";
             var timeWindowStr = $"{startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}";
 
             // Dispatch In-App + Push + Email notification:
@@ -1581,8 +1597,8 @@ namespace Ozikol_BCC.Api.Controllers
                     assigned.UserId,
                     shift.AssignmentMode == "Mandatory" ? $"Mandatory Duty Assigned ({shift.ShiftCode})" : $"Shift Offer – Please Accept or Decline ({shift.ShiftCode})",
                     shift.AssignmentMode == "Mandatory"
-                        ? $"You have been assigned mandatory duty {shift.ShiftCode} at {venueDisplayName} ({assigned.DutyPosition ?? shift.PostName}) for {timeWindowStr}. Position: {assigned.DutyRole ?? "Duty Officer"}. Please acknowledge this duty in your workspace."
-                        : $"You have been offered shift {shift.ShiftCode} at {venueDisplayName} ({assigned.DutyPosition ?? shift.PostName}) for {timeWindowStr}. Position: {assigned.DutyRole ?? "Duty Officer"}. Please accept or decline it in your workspace.",
+                        ? $"You have been assigned mandatory duty {shift.ShiftCode} at {venueDisplayName} ({assigned.DutyPosition ?? shift.JobRoleTitle ?? "Duty"}) for {timeWindowStr}. Position: {assigned.DutyRole ?? "Duty Officer"}. Please acknowledge this duty in your workspace."
+                        : $"You have been offered shift {shift.ShiftCode} at {venueDisplayName} ({assigned.DutyPosition ?? shift.JobRoleTitle ?? "Duty"}) for {timeWindowStr}. Position: {assigned.DutyRole ?? "Duty Officer"}. Please accept or decline it in your workspace.",
                     "/workforce/workspace/my-shifts",
                     "calendar_month",
                     NotificationSeverity.NewFeature,
@@ -1594,7 +1610,7 @@ namespace Ozikol_BCC.Api.Controllers
                 var remaining = reqCount - targetAssignments.Count;
                 await NotifyAllActiveWorkforceStaffAsync(
                     $"New Open Shifts Available ({remaining} Slots at {venueDisplayName})",
-                    $"A new shift ({shift.ShiftCode}) with {remaining} open slot(s) has been posted at {venueDisplayName} ({shift.PostName}) for {timeWindowStr}. Open your workspace to claim a slot.",
+                    $"A new shift ({shift.ShiftCode}) with {remaining} open slot(s) has been posted at {venueDisplayName} for {timeWindowStr}. Open your workspace to claim a slot.",
                     "/workforce/workspace/open-shifts",
                     "campaign",
                     NotificationSeverity.NewFeature,
@@ -1632,7 +1648,7 @@ namespace Ozikol_BCC.Api.Controllers
             shift.UpdatedUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
-            var siteName = shift.ClientSite?.SiteName ?? shift.FacilityName ?? shift.PostName;
+            var siteName = shift.ClientSite?.SiteName ?? shift.FacilityName ?? shift.JobRoleTitle ?? "Site";
             var timeStr = $"{shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm} – {shift.EndsAtUtc:HH:mm}";
             var venueStr = shift.Address ?? shift.FacilityName ?? siteName;
 
@@ -1801,7 +1817,7 @@ namespace Ozikol_BCC.Api.Controllers
                     await NotifySingleWorkforceStaffAsync(
                         claimingUserId,
                         $"Shift Claim Approved ({shift.ShiftCode})",
-                        $"Your request to claim shift {shift.ShiftCode} at {shift.PostName} ({shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm}) has been approved. You are now officially scheduled.",
+                        $"Your request to claim shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} ({shift.StartsAtUtc:ddd, dd MMM yyyy HH:mm}) has been approved. You are now officially scheduled.",
                         "/workforce/workspace/my-shifts",
                         "check_circle",
                         NotificationSeverity.Update,
@@ -1874,7 +1890,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
+                    JobRoleId = s.JobRoleId,
+                    JobRoleTitle = s.JobRoleTitle,
+                    PostName = s.Assignments?.Where(a => a.IsLeadOfficer).Select(a => a.DutyPosition).FirstOrDefault() ?? s.Assignments?.Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
                     FacilityName = s.FacilityName,
                     Address = s.Address,
                     PostCode = s.PostCode,
@@ -1895,6 +1913,7 @@ namespace Ozikol_BCC.Api.Controllers
                         DutyPosition = a.DutyPosition,
                         DutyRole = a.DutyRole,
                         IsLeadOfficer = a.IsLeadOfficer,
+                        HourlyPayRateOverride = a.HourlyPayRateOverride,
                         Status = a.Status,
                         IsConfirmedByGuard = a.IsConfirmedByGuard,
                         ConfirmedAtUtc = a.ConfirmedAtUtc,
@@ -1969,7 +1988,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
                     SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
+                    JobRoleId = s.JobRoleId,
+                    JobRoleTitle = s.JobRoleTitle,
+                    PostName = s.JobRoleTitle ?? "General Duty",
                     FacilityName = s.FacilityName,
                     Address = s.Address,
                     PostCode = s.PostCode,
@@ -2129,7 +2150,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             shift.ClientSiteId = request.ClientSiteId;
             shift.RequiredStaffCount = reqCount;
-            shift.PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Assignment" : request.PostName.Trim();
+            shift.JobRoleId = request.JobRoleId ?? shift.JobRoleId;
+            shift.JobRoleTitle = !string.IsNullOrWhiteSpace(request.JobRoleTitle) ? request.JobRoleTitle.Trim() : (!string.IsNullOrWhiteSpace(request.PostName) ? request.PostName.Trim() : shift.JobRoleTitle);
             shift.FacilityName = request.FacilityName?.Trim();
             shift.Address = request.Address?.Trim();
             shift.PostCode = request.PostCode?.Trim();
@@ -2168,22 +2190,28 @@ namespace Ozikol_BCC.Api.Controllers
                     existing.DutyPosition = incoming.DutyPosition;
                     existing.DutyRole = incoming.DutyRole;
                     existing.IsLeadOfficer = incoming.IsLeadOfficer;
+                    existing.HourlyPayRateOverride = incoming.HourlyPayRateOverride ?? existing.HourlyPayRateOverride;
                     existing.StaffFullName = incoming.StaffFullName ?? existing.StaffFullName;
                     existing.UpdatedUtc = DateTime.UtcNow;
                 }
                 else
                 {
+                    var staffProfile = await _db.BcpShiftStaffProfiles.AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.TenantKey == CurrentTenantKey && p.UserId == incoming.UserId, ct);
+                    var rateOverride = incoming.HourlyPayRateOverride ?? staffProfile?.DefaultHourlyRate ?? shift.HourlyPayRate;
+
                     var newAssign = new BcpShiftAssignment
                     {
                         Id = Guid.CreateVersion7(),
                         TenantKey = CurrentTenantKey,
                         ShiftId = shift.Id,
                         UserId = incoming.UserId,
-                        StaffProfileId = incoming.StaffProfileId,
+                        StaffProfileId = incoming.StaffProfileId ?? staffProfile?.Id,
                         StaffFullName = incoming.StaffFullName,
-                        DutyPosition = string.IsNullOrWhiteSpace(incoming.DutyPosition) ? shift.PostName : incoming.DutyPosition.Trim(),
+                        DutyPosition = string.IsNullOrWhiteSpace(incoming.DutyPosition) ? (shift.JobRoleTitle ?? "General Duty") : incoming.DutyPosition.Trim(),
                         DutyRole = string.IsNullOrWhiteSpace(incoming.DutyRole) ? "Duty Officer" : incoming.DutyRole.Trim(),
                         IsLeadOfficer = incoming.IsLeadOfficer,
+                        HourlyPayRateOverride = rateOverride,
                         Status = "Scheduled",
                         IsConfirmedByGuard = false,
                         AssignedAtUtc = DateTime.UtcNow,
@@ -2227,7 +2255,7 @@ namespace Ozikol_BCC.Api.Controllers
                 await NotifySingleWorkforceStaffAsync(
                     unassignedId,
                     $"Shift Reassigned ({shift.ShiftCode})",
-                    $"You have been unassigned from shift {shift.ShiftCode} at {shift.PostName}.",
+                    $"You have been unassigned from shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"}.",
                     "/workforce/workspace/my-shifts",
                     "event_busy",
                     NotificationSeverity.Update,
@@ -2240,7 +2268,7 @@ namespace Ozikol_BCC.Api.Controllers
                 await NotifySingleWorkforceStaffAsync(
                     newUserId,
                     $"New Shift Assigned ({shift.ShiftCode})",
-                    $"You have been assigned to shift {shift.ShiftCode} ({startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}) at {shift.PostName}. Position: {assignDto?.DutyRole ?? "Duty Officer"}. Please review and confirm.",
+                    $"You have been assigned to shift {shift.ShiftCode} ({startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}) at {shift.JobRoleTitle ?? "Duty"}. Position: {assignDto?.DutyRole ?? "Duty Officer"}. Please review and confirm.",
                     "/workforce/workspace/my-shifts",
                     "calendar_month",
                     NotificationSeverity.NewFeature,
@@ -2254,7 +2282,7 @@ namespace Ozikol_BCC.Api.Controllers
                     await NotifySingleWorkforceStaffAsync(
                         continuingId,
                         $"Shift Schedule Rescheduled ({shift.ShiftCode})",
-                        $"Your shift {shift.ShiftCode} at {shift.PostName} has been rescheduled to {startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}.",
+                        $"Your shift {shift.ShiftCode} at {shift.JobRoleTitle ?? "Duty"} has been rescheduled to {startUtc:ddd, dd MMM yyyy HH:mm} – {endUtc:HH:mm}.",
                         "/workforce/workspace/my-shifts",
                         "schedule",
                         NotificationSeverity.Update,
@@ -2439,7 +2467,8 @@ namespace Ozikol_BCC.Api.Controllers
                         ShiftCode = shiftCode,
                         ClientSiteId = request.ClientSiteId,
                         RequiredStaffCount = reqCount,
-                        PostName = string.IsNullOrWhiteSpace(request.PostName) ? "General Assignment" : request.PostName.Trim(),
+                        JobRoleId = request.JobRoleId,
+                        JobRoleTitle = !string.IsNullOrWhiteSpace(request.JobRoleTitle) ? request.JobRoleTitle.Trim() : (!string.IsNullOrWhiteSpace(request.PostName) ? request.PostName.Trim() : "General Shift"),
                         FacilityName = request.FacilityName?.Trim(),
                         Address = request.Address?.Trim(),
                         PostCode = request.PostCode?.Trim(),
@@ -2475,7 +2504,7 @@ namespace Ozikol_BCC.Api.Controllers
                             UserId = ta.UserId,
                             StaffProfileId = ta.StaffProfileId,
                             StaffFullName = ta.StaffFullName ?? request.AssignedUserName ?? "Staff Member",
-                            DutyPosition = ta.DutyPosition ?? shift.PostName,
+                            DutyPosition = ta.DutyPosition ?? shift.JobRoleTitle ?? "General Duty",
                             DutyRole = ta.DutyRole ?? "Duty Officer",
                             IsLeadOfficer = ta.IsLeadOfficer,
                             Status = "Scheduled",
@@ -2518,7 +2547,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var batchSite = await _db.BcpClientSites.AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == request.ClientSiteId, ct);
-            var batchVenueName = batchSite?.SiteName ?? request.FacilityName ?? request.PostName;
+            var batchVenueName = batchSite?.SiteName ?? request.FacilityName ?? request.JobRoleTitle ?? request.PostName ?? "Site";
 
             // Notify assigned member or all active workforce staff (for Open Recurring Shifts) across In-App, Push, and Email
             if (!string.IsNullOrWhiteSpace(request.AssignedUserId))
@@ -2526,7 +2555,7 @@ namespace Ozikol_BCC.Api.Controllers
                 await NotifySingleWorkforceStaffAsync(
                     request.AssignedUserId,
                     $"New Recurring Schedule Assigned ({generatedShifts.Count} Shifts)",
-                    $"You have been assigned {generatedShifts.Count} scheduled working shifts at {batchVenueName} ({request.PostName}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
+                    $"You have been assigned {generatedShifts.Count} scheduled working shifts at {batchVenueName} ({request.JobRoleTitle ?? "Duty"}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}.",
                     "/workforce/workspace/my-shifts",
                     "calendar_month",
                     NotificationSeverity.NewFeature,
@@ -2536,7 +2565,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await NotifyAllActiveWorkforceStaffAsync(
                     $"New Open Shifts Posted ({generatedShifts.Count} Shifts)",
-                    $"{generatedShifts.Count} new open shifts have been posted at {batchVenueName} ({request.PostName}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}. Visit Open Shifts in your workspace to claim them.",
+                    $"{generatedShifts.Count} new open shifts have been posted at {batchVenueName} ({request.JobRoleTitle ?? "Duty"}) between {request.StartDate:dd MMM yyyy} and {request.EndDate:dd MMM yyyy}. Visit Open Shifts in your workspace to claim them.",
                     "/workforce/workspace/open-shifts",
                     "campaign",
                     NotificationSeverity.NewFeature,
@@ -2599,7 +2628,7 @@ namespace Ozikol_BCC.Api.Controllers
                             ShiftId = swap.ShiftId,
                             UserId = swap.OfferedToUserId,
                             StaffFullName = swap.OfferedToUserName,
-                            DutyPosition = swap.Shift.PostName,
+                            DutyPosition = swap.Shift.JobRoleTitle ?? "General Duty",
                             DutyRole = "Duty Officer",
                             Status = "Scheduled",
                             IsConfirmedByGuard = false,
@@ -2671,7 +2700,7 @@ namespace Ozikol_BCC.Api.Controllers
                     s.Id,
                     s.ShiftId,
                     ShiftCode = s.Shift != null ? s.Shift.ShiftCode : "Unknown",
-                    PostName = s.Shift != null ? s.Shift.PostName : "Duty",
+                    PostName = s.Shift != null ? (s.Shift.JobRoleTitle ?? "Duty") : "Duty",
                     SiteName = s.Shift != null && s.Shift.ClientSite != null ? s.Shift.ClientSite.SiteName : "Site",
                     StartsAtUtc = s.Shift != null ? s.Shift.StartsAtUtc : (DateTime?)null,
                     EndsAtUtc = s.Shift != null ? s.Shift.EndsAtUtc : (DateTime?)null,
@@ -5646,7 +5675,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientSiteId = s.ClientSiteId,
                     SiteName = s.ClientSite?.SiteName ?? "Unassigned Site",
                     ClientSiteName = s.ClientSite?.SiteName ?? "Unassigned Site",
-                    PostName = s.PostName,
+                    PostName = s.JobRoleTitle ?? "General Duty",
                     StartsAtUtc = s.StartsAtUtc,
                     EndsAtUtc = s.EndsAtUtc,
                     PlannedDurationHours = s.PlannedDurationHours,
@@ -6208,6 +6237,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string SiteName { get; set; } = string.Empty;
         public string? ClientSiteName { get; set; }
         public string SiteAddress { get; set; } = string.Empty;
+        public Guid? JobRoleId { get; set; }
+        public string? JobRoleTitle { get; set; }
         public string PostName { get; set; } = string.Empty;
         public string? FacilityName { get; set; }
         public string? Address { get; set; }
@@ -6280,6 +6311,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? DutyPosition { get; set; }
         public string? DutyRole { get; set; }
         public bool IsLeadOfficer { get; set; }
+        public decimal? HourlyPayRateOverride { get; set; }
         public string Status { get; set; } = "Scheduled";
         public bool IsConfirmedByGuard { get; set; }
         public DateTime? ConfirmedAtUtc { get; set; }
@@ -6296,7 +6328,9 @@ namespace Ozikol_BCC.Api.Controllers
         public List<ShiftAssignmentDto>? Assignments { get; set; }
         public string? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
-        public string PostName { get; set; } = "General Post";
+        public Guid? JobRoleId { get; set; }
+        public string? JobRoleTitle { get; set; }
+        public string? PostName { get; set; }
         public string? FacilityName { get; set; }
         public string? Address { get; set; }
         public string? PostCode { get; set; }
@@ -6326,7 +6360,9 @@ namespace Ozikol_BCC.Api.Controllers
         public List<ShiftAssignmentDto>? Assignments { get; set; }
         public string AssignmentMode { get; set; } = "Offer";
         public bool RequireClaimApproval { get; set; } = false;
-        public string PostName { get; set; } = "General Assignment";
+        public Guid? JobRoleId { get; set; }
+        public string? JobRoleTitle { get; set; }
+        public string? PostName { get; set; }
         public string? FacilityName { get; set; }
         public string? Address { get; set; }
         public string? PostCode { get; set; }
@@ -6353,7 +6389,9 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
         public List<ShiftAssignmentDto>? Assignments { get; set; }
-        public string PostName { get; set; } = "General Assignment";
+        public Guid? JobRoleId { get; set; }
+        public string? JobRoleTitle { get; set; }
+        public string? PostName { get; set; }
         public string? FacilityName { get; set; }
         public string? Address { get; set; }
         public string? PostCode { get; set; }
