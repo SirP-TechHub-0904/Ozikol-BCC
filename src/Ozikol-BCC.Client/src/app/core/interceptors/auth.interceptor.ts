@@ -9,13 +9,20 @@ import { WebsiteSyncService } from '../services/website-sync.service';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  // These paths are always public and should never redirect to login
+  // These paths are always public and should never redirect to login or send stale tokens
   private readonly publicPaths = [
     '/api/Auth',
     '/api/WebsiteContent',
     '/api/WebsiteContentApi',
     '/api/SettingsApi/brand',
-    '/api/SettingsApi/public-details'
+    '/api/SettingsApi/public-details',
+    '/api/RegistrationFormApi/public-schema',
+    '/api/RegistrationFormApi/public-submit',
+    '/api/workforce/members/verify-token',
+    '/api/workforce/members/complete-onboarding',
+    '/api/workforce/rota/members/verify-token',
+    '/api/workforce/rota/members/complete-onboarding',
+    '/api/workforce/invitations'
   ];
 
   constructor(
@@ -45,13 +52,46 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private isPublicUrl(url: string): boolean {
-    return this.publicPaths.some(path => url.includes(path));
+    const lower = url.toLowerCase();
+    return this.publicPaths.some(path => lower.includes(path.toLowerCase()));
+  }
+
+  /**
+   * Evaluates whether the currently active browser route is a public or self-service flow
+   * that should never be forcefully bounced to /auth/login upon background 401s.
+   */
+  private isPublicClientRoute(currentUrl: string): boolean {
+    if (!currentUrl) return false;
+    const lower = currentUrl.toLowerCase();
+    return (
+      lower === '/' ||
+      lower.startsWith('/?') ||
+      lower.startsWith('/auth') ||
+      lower.startsWith('/login') ||
+      lower.startsWith('/signin') ||
+      lower.startsWith('/sign-in') ||
+      lower.startsWith('/register') ||
+      lower.startsWith('/join') ||
+      lower.startsWith('/apply') ||
+      lower.startsWith('/enroll') ||
+      lower.startsWith('/get-started') ||
+      lower.startsWith('/onboarding') ||
+      lower.startsWith('/workforce/onboarding') ||
+      lower.startsWith('/invite') ||
+      lower.startsWith('/survey') ||
+      lower.startsWith('/page/') ||
+      lower.startsWith('/p/') ||
+      lower.startsWith('/store') ||
+      lower.startsWith('/shop') ||
+      lower.startsWith('/form-success')
+    );
   }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = localStorage.getItem('access_token');
     const tenantKey = localStorage.getItem('tenant_key');
     const hostname = window.location.hostname;
+    const isPublic = this.isPublicUrl(request.url);
 
     const trustToken = localStorage.getItem('device_trust_token');
 
@@ -68,7 +108,9 @@ export class AuthInterceptor implements HttpInterceptor {
       'X-System-Id': systemDeviceId,
       'X-Platform': 'Web'
     };
-    if (token) {
+
+    // Attach Authorization header for protected endpoints, avoiding contaminating public onboarding/auth calls with stale tokens
+    if (token && !isPublic) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     let resolvedTenantKey = tenantKey;
@@ -124,13 +166,7 @@ export class AuthInterceptor implements HttpInterceptor {
           localStorage.removeItem('user_profile');
           if (!isPublic) {
             const currentUrl = this.router.url || '';
-            const isPublicRoute = currentUrl === '/' ||
-                                  currentUrl.startsWith('/?') ||
-                                  currentUrl.startsWith('/auth') ||
-                                  currentUrl.startsWith('/page/') ||
-                                  currentUrl.startsWith('/p/') ||
-                                  currentUrl.startsWith('/store') ||
-                                  currentUrl.startsWith('/shop');
+            const isPublicRoute = this.isPublicClientRoute(currentUrl);
 
             if (!isPublicRoute) {
               this.router.navigate(['/auth/login'], { queryParams: { returnUrl: currentUrl } });
