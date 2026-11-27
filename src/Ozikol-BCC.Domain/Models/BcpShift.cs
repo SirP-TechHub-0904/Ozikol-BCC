@@ -46,23 +46,22 @@ namespace Ozikol_BCC.Domain.Models
         public BcpClientSite? ClientSite { get; set; }
 
         /// <summary>
-        /// User identifier of the guard or staff member assigned to this shift. Null indicates an Open/Unassigned shift.
+        /// Total number of staff members required for this shift (headcount capacity, e.g. 1, 5, 20, 30).
+        /// Default is 1. If assigned staff is less than required, remaining slots are open for claiming.
+        /// All individual assigned personnel are stored in <see cref="Assignments"/>.
         /// </summary>
-        [StringLength(100)]
-        public string? AssignedUserId { get; set; }
+        public int RequiredStaffCount { get; set; } = 1;
 
         /// <summary>
-        /// Full name of the assigned staff member snapshot at scheduling time for quick visual grids.
+        /// Optional foreign key linking this shift to the primary job role specialization (<see cref="BcpJobRole"/>).
         /// </summary>
-        [StringLength(200)]
-        public string? AssignedUserName { get; set; }
+        public Guid? JobRoleId { get; set; }
 
         /// <summary>
-        /// Specific post or duty assignment within the site (e.g., "Main Gatehouse", "Reception Desk", "Patrol Alpha").
+        /// Primary job role or operational category for this shift (e.g., "Static Security Guard", "Door Supervisor", "Event Steward").
         /// </summary>
-        [Required]
         [StringLength(150)]
-        public string PostName { get; set; } = "General Post";
+        public string? JobRoleTitle { get; set; }
 
         /// <summary>
         /// Shift start date and time in UTC.
@@ -250,6 +249,11 @@ namespace Ozikol_BCC.Domain.Models
         /// Navigation collection of swap or trade requests initiated for this shift.
         /// </summary>
         public ICollection<BcpShiftSwapRequest> SwapRequests { get; set; } = new List<BcpShiftSwapRequest>();
+
+        /// <summary>
+        /// Navigation collection of staff members assigned to or claiming slots on this shift.
+        /// </summary>
+        public ICollection<BcpShiftAssignment> Assignments { get; set; } = new List<BcpShiftAssignment>();
     }
 }
 

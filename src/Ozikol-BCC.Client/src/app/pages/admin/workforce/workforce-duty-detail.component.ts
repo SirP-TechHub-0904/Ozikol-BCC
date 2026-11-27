@@ -116,6 +116,19 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
 
                 <div class="info-item">
+                  <span class="info-label">Required Headcount &amp; Capacity:</span>
+                  <span class="info-value">
+                    <strong>{{ shift.assignedCount || (shift.assignedUserId ? 1 : 0) }} / {{ shift.requiredStaffCount || 1 }} Personnel</strong>
+                    <span *ngIf="(shift.requiredStaffCount || 1) > 1 && (shift.openSlotsRemaining ?? ((shift.requiredStaffCount || 1) - (shift.assignedCount || 0))) > 0" class="text-amber" style="margin-left: 6px; font-size: 12px; font-weight: 700;">
+                      ({{ shift.openSlotsRemaining ?? ((shift.requiredStaffCount || 1) - (shift.assignedCount || 0)) }} open slots remaining)
+                    </span>
+                    <span *ngIf="(shift.requiredStaffCount || 1) > 1 && (shift.openSlotsRemaining ?? ((shift.requiredStaffCount || 1) - (shift.assignedCount || 0))) === 0" style="color: #16a34a; margin-left: 6px; font-size: 12px; font-weight: 700;">
+                      (Fully Staffed)
+                    </span>
+                  </span>
+                </div>
+
+                <div class="info-item">
                   <span class="info-label">Site Address:</span>
                   <span class="info-value">{{ shift.address || shift.siteAddress || 'No address specified' }}</span>
                 </div>

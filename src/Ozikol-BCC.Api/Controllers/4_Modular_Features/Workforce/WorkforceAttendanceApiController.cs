@@ -115,9 +115,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ShiftId = s.Id,
                     ShiftCode = s.ShiftCode,
                     SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Unknown Site",
-                    PostName = s.PostName,
-                    GuardName = s.AssignedUserName ?? "Unassigned",
-                    GuardId = s.AssignedUserId,
+                    PostName = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.DutyPosition).FirstOrDefault() ?? s.Assignments.Select(a => a.DutyPosition).FirstOrDefault() ?? s.JobRoleTitle ?? "General Duty",
+                    GuardName = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.StaffFullName).FirstOrDefault() ?? s.Assignments.Select(a => a.StaffFullName).FirstOrDefault() ?? "Unassigned",
+                    GuardId = s.Assignments.Where(a => a.IsLeadOfficer).Select(a => a.UserId).FirstOrDefault() ?? s.Assignments.Select(a => a.UserId).FirstOrDefault(),
                     StartsAtUtc = s.StartsAtUtc,
                     EndsAtUtc = s.EndsAtUtc,
                     IsOvernight = s.IsOvernight,
@@ -171,16 +171,17 @@ namespace Ozikol_BCC.Api.Controllers
                 var windowStart = nowUtc.AddHours(-18);
                 var windowEnd = nowUtc.AddHours(12);
 
-                targetUserIds = await _db.BcpShifts
+                targetUserIds = await _db.BcpShiftAssignments
                     .AsNoTracking()
-                    .Where(s => s.TenantKey == CurrentTenantKey &&
-                                s.AssignedUserId != null &&
-                                s.AssignedUserId != "" &&
-                                s.StartsAtUtc >= windowStart &&
-                                s.StartsAtUtc <= windowEnd &&
-                                s.Status != "Cancelled" &&
-                                s.Status != "Completed")
-                    .Select(s => s.AssignedUserId!)
+                    .Include(a => a.Shift)
+                    .Where(a => a.TenantKey == CurrentTenantKey &&
+                                !string.IsNullOrWhiteSpace(a.UserId) &&
+                                a.Shift != null &&
+                                a.Shift.StartsAtUtc >= windowStart &&
+                                a.Shift.StartsAtUtc <= windowEnd &&
+                                a.Shift.Status != "Cancelled" &&
+                                a.Shift.Status != "Completed")
+                    .Select(a => a.UserId)
                     .Distinct()
                     .ToListAsync(ct);
             }
@@ -333,7 +334,7 @@ namespace Ozikol_BCC.Api.Controllers
                     a.Id,
                     a.ShiftId,
                     ShiftCode = a.Shift != null ? a.Shift.ShiftCode : "Unknown",
-                    PostName = a.Shift != null ? a.Shift.PostName : "Post",
+                    PostName = a.Shift != null ? (a.Shift.Assignments.Where(asgn => asgn.UserId == a.UserId).Select(asgn => asgn.DutyPosition).FirstOrDefault() ?? a.Shift.JobRoleTitle ?? "Duty") : "Duty",
                     SiteName = a.Shift != null && a.Shift.ClientSite != null ? a.Shift.ClientSite.SiteName : "Site",
                     a.UserId,
                     a.ClockInUtc,
@@ -397,9 +398,10 @@ namespace Ozikol_BCC.Api.Controllers
             // Find shifts requiring this station scheduled around current time (+/- 1 hour buffer)
             var activeShift = await _db.BcpShifts
                 .Include(s => s.AttendanceRecord)
+                .Include(s => s.Assignments)
                 .Where(s => s.TenantKey == CurrentTenantKey &&
                             s.RequiredWorkspaceStationId == stationId &&
-                            s.AssignedUserId == CurrentUserId &&
+                            s.Assignments.Any(a => a.UserId == CurrentUserId) &&
                             s.StartsAtUtc <= nowUtc.AddMinutes(30) &&
                             s.EndsAtUtc >= nowUtc.AddMinutes(-30))
                 .FirstOrDefaultAsync(ct);

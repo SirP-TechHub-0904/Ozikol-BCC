@@ -256,7 +256,9 @@ interface YearMonthGrid {
                   [class.chip-archived]="s.assignedUserName === 'Archived Staff'"
                 >
                   <span class="ev-time">{{ s.startsAtUtc | date:'HH:mm' }}</span>
-                  <span class="ev-title" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">{{ s.siteName || s.postName }} &bull; {{ s.assignedUserName || 'Open' }}</span>
+                  <span class="ev-title" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
+                    {{ s.siteName || s.postName }} &bull; {{ getAssignedCount(s) }}/{{ getRequiredCount(s) }} {{ getRequiredCount(s) > 1 ? 'staff' : (s.assignedUserName || 'Open') }}
+                  </span>
                 </div>
                 <div class="more-events-link" *ngIf="cell.shifts.length > 2">
                   +{{ cell.shifts.length - 2 }} more on this day
@@ -311,7 +313,10 @@ interface YearMonthGrid {
                 >
                   <div class="tev-time">{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }}</div>
                   <div class="tev-venue">{{ s.siteName }} ({{ s.postName }})</div>
-                  <div class="tev-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">{{ s.assignedUserName || 'Open Shift' }}</div>
+                  <div class="tev-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
+                    <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">{{ getRequiredCount(s) > 1 ? 'group' : 'person' }}</span>
+                    {{ s.assignedUserName || 'Open' }} ({{ getAssignedCount(s) }}/{{ getRequiredCount(s) }})
+                  </div>
                 </div>
               </div>
             </div>
@@ -388,8 +393,8 @@ interface YearMonthGrid {
                   <strong>{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }}</strong>
                   <span class="dts-site">{{ s.siteName }} &bull; {{ s.postName }}</span>
                   <span class="dts-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
-                    <span class="material-symbols-outlined">{{ isOpenShift(s) ? 'person_search' : (s.assignedUserName === 'Archived Staff' ? 'person_off' : 'person') }}</span>
-                    {{ s.assignedUserName || 'Open Shift (Unassigned)' }}
+                    <span class="material-symbols-outlined">{{ getAssignedCount(s) === 0 ? 'person_search' : (getRequiredCount(s) > 1 ? 'group' : 'person') }}</span>
+                    <span>{{ s.assignedUserName || 'Open Shift' }} &bull; {{ getAssignedCount(s) }}/{{ getRequiredCount(s) }} staff</span>
                   </span>
                 </div>
                 <div class="dts-actions">
@@ -544,7 +549,19 @@ interface YearMonthGrid {
               >
                 <div class="dsc-top">
                   <span class="sn-badge">#{{ i + 1 }} &bull; {{ s.shiftCode }}</span>
-                  <span class="status-pill" [ngClass]="getStatusClass(s)">{{ getDisplayStatus(s) }}</span>
+                  <div class="dsc-top-badges">
+                    <span
+                      class="headcount-pill"
+                      [class.solo]="getRequiredCount(s) === 1"
+                      [class.partial]="getAssignedCount(s) > 0 && getOpenSlots(s) > 0"
+                      [class.full]="getAssignedCount(s) >= getRequiredCount(s)"
+                      [title]="getAssignedCount(s) + ' of ' + getRequiredCount(s) + ' personnel assigned (' + getOpenSlots(s) + ' open slots)'"
+                    >
+                      <span class="material-symbols-outlined">{{ getRequiredCount(s) > 1 ? 'group' : 'person' }}</span>
+                      <span>{{ getAssignedCount(s) }}/{{ getRequiredCount(s) }} Personnel</span>
+                    </span>
+                    <span class="status-pill" [ngClass]="getStatusClass(s)">{{ getDisplayStatus(s) }}</span>
+                  </div>
                 </div>
                 <div class="dsc-venue">{{ s.siteName }}</div>
                 <div class="dsc-post">Post: {{ s.postName || s.facilityName || 'General Post' }}</div>
@@ -553,8 +570,26 @@ interface YearMonthGrid {
                   <span>{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours || 8 }}h)</span>
                 </div>
                 <div class="dsc-staff" [class.archived-ev]="s.assignedUserName === 'Archived Staff'">
-                  <span class="material-symbols-outlined">{{ isOpenShift(s) ? 'person_search' : (s.assignedUserName === 'Archived Staff' ? 'person_off' : 'person') }}</span>
-                  <strong>{{ s.assignedUserName || 'Open Shift — Unassigned' }}</strong>
+                  <span class="material-symbols-outlined">{{ getAssignedCount(s) === 0 ? 'person_search' : (s.assignedUserName === 'Archived Staff' ? 'person_off' : (getRequiredCount(s) > 1 ? 'group' : 'person')) }}</span>
+                  <div class="dsc-staff-info">
+                    <div class="staff-primary-line">
+                      <strong *ngIf="getAssignedCount(s) === 0">
+                        Open Shift &bull; {{ getRequiredCount(s) }} Personnel Required
+                      </strong>
+                      <strong *ngIf="getAssignedCount(s) > 0">
+                        {{ s.assignedUserName || (getAssignedCount(s) + ' Staff Assigned') }}
+                        <span *ngIf="getAssignedCount(s) > 1" class="more-staff-count">(+{{ getAssignedCount(s) - 1 }} more)</span>
+                      </strong>
+                    </div>
+                    <div class="staff-sub-line" *ngIf="getRequiredCount(s) > 1">
+                      <span *ngIf="getOpenSlots(s) > 0" class="slots-pill-sub">
+                        {{ getOpenSlots(s) }} open slot{{ getOpenSlots(s) > 1 ? 's' : '' }} remaining
+                      </span>
+                      <span *ngIf="getOpenSlots(s) === 0" class="slots-pill-sub full">
+                        Fully staffed ({{ getRequiredCount(s) }}/{{ getRequiredCount(s) }})
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div class="dsc-actions">
                   <a *ngIf="!isShiftDone(s)" [routerLink]="['/workforce/console/schedule/edit', s.id]" class="btn btn-outline btn-sm">
@@ -578,7 +613,7 @@ interface YearMonthGrid {
                     <th>Shift Code</th>
                     <th>Time &amp; Hours</th>
                     <th>Venue &amp; Post</th>
-                    <th>Assigned Staff</th>
+                    <th>Headcount &amp; Staff</th>
                     <th>Pay Rate</th>
                     <th>Status</th>
                     <th class="text-right">Actions</th>
@@ -591,8 +626,25 @@ interface YearMonthGrid {
                     <td>{{ s.startsAtUtc | date:'HH:mm' }} – {{ s.endsAtUtc | date:'HH:mm' }} ({{ s.plannedDurationHours || 8 }}h)</td>
                     <td><strong>{{ s.siteName }}</strong> &bull; {{ s.postName }}</td>
                     <td>
-                      <strong *ngIf="!isOpenShift(s)">{{ s.assignedUserName }}</strong>
-                      <span *ngIf="isOpenShift(s)" class="metric-pill pill-orange">Open Shift</span>
+                      <div class="staff-headcount-cell">
+                        <span
+                          class="headcount-pill"
+                          [class.solo]="getRequiredCount(s) === 1"
+                          [class.partial]="getAssignedCount(s) > 0 && getOpenSlots(s) > 0"
+                          [class.full]="getAssignedCount(s) >= getRequiredCount(s)"
+                          [title]="getAssignedCount(s) + ' of ' + getRequiredCount(s) + ' personnel assigned'"
+                        >
+                          <span class="material-symbols-outlined">{{ getRequiredCount(s) > 1 ? 'group' : 'person' }}</span>
+                          <span>{{ getAssignedCount(s) }}/{{ getRequiredCount(s) }}</span>
+                        </span>
+                        <div class="staff-cell-info">
+                          <strong *ngIf="getAssignedCount(s) === 0" class="text-amber">Open ({{ getRequiredCount(s) }} required)</strong>
+                          <strong *ngIf="getAssignedCount(s) > 0">{{ s.assignedUserName || (getAssignedCount(s) + ' assigned') }}</strong>
+                          <span *ngIf="getRequiredCount(s) > 1 && getOpenSlots(s) > 0 && getAssignedCount(s) > 0" class="open-slots-hint">
+                            {{ getOpenSlots(s) }} open slot{{ getOpenSlots(s) > 1 ? 's' : '' }}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td>{{ currencySymbol }}{{ (s.hourlyPayRate || 0) | number:'1.2-2' }}/hr</td>
                     <td><span class="status-pill" [ngClass]="getStatusClass(s)">{{ getDisplayStatus(s) }}</span></td>
@@ -1321,12 +1373,43 @@ interface YearMonthGrid {
       background: #fffbeb;
       border-color: #fde68a;
     }
-    .dsc-top { display: flex; justify-content: space-between; align-items: center; }
+    .dsc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .dsc-top-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .headcount-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+    .headcount-pill .material-symbols-outlined { font-size: 14px; }
+    .headcount-pill.solo { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+    .headcount-pill.partial { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+    .headcount-pill.full { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+
     .dsc-venue { font-size: 14px; font-weight: 800; color: #0f172a; }
     .dsc-post { font-size: 12px; font-weight: 700; color: #0050e5; }
-    .dsc-time, .dsc-staff { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #334155; }
-    .dsc-time .material-symbols-outlined, .dsc-staff .material-symbols-outlined { font-size: 16px; color: #64748b; }
+    .dsc-time { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #334155; }
+    .dsc-time .material-symbols-outlined { font-size: 16px; color: #64748b; }
+    .dsc-staff { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #334155; }
+    .dsc-staff .material-symbols-outlined { font-size: 18px; color: #64748b; margin-top: 1px; }
+    .dsc-staff-info { display: flex; flex-direction: column; gap: 2px; }
+    .staff-primary-line { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .more-staff-count { font-size: 11px; font-weight: normal; color: #64748b; margin-left: 3px; }
+    .staff-sub-line { font-size: 11px; }
+    .slots-pill-sub { color: #b45309; font-weight: 700; }
+    .slots-pill-sub.full { color: #15803d; font-weight: 700; }
     .dsc-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+    .staff-headcount-cell { display: flex; align-items: center; gap: 10px; }
+    .staff-cell-info { display: flex; flex-direction: column; gap: 1px; }
+    .open-slots-hint { font-size: 10.5px; color: #b45309; font-weight: 700; }
+    .text-amber { color: #b45309; }
 
     .compact-item-list { display: flex; flex-direction: column; gap: 8px; }
     .compact-item {
@@ -1768,7 +1851,27 @@ export class WorkforceScheduleComponent implements OnInit {
     return `${String(hr).padStart(2, '0')}:00`;
   }
 
+  getRequiredCount(shift: any): number {
+    return shift?.requiredStaffCount && shift.requiredStaffCount > 0 ? shift.requiredStaffCount : 1;
+  }
+
+  getAssignedCount(shift: any): number {
+    if (typeof shift?.assignedCount === 'number') return shift.assignedCount;
+    if (Array.isArray(shift?.assignments)) return shift.assignments.length;
+    return shift?.assignedUserId ? 1 : 0;
+  }
+
+  getOpenSlots(shift: any): number {
+    if (typeof shift?.openSlotsRemaining === 'number') return shift.openSlotsRemaining;
+    const req = this.getRequiredCount(shift);
+    const assigned = this.getAssignedCount(shift);
+    return Math.max(0, req - assigned);
+  }
+
   isOpenShift(shift: any): boolean {
+    const assigned = this.getAssignedCount(shift);
+    const req = this.getRequiredCount(shift);
+    if (assigned < req) return true;
     return !shift?.assignedUserId || String(shift.assignedUserId).trim() === '' || (shift.status || '').toLowerCase() === 'open';
   }
 

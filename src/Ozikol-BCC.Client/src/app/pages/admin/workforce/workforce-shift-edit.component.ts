@@ -33,6 +33,23 @@ interface StaffMember {
   preferredWorkingTime?: string;
   workingAvailability?: string;
   weeklyAvailabilityJson?: string;
+  isPendingOnboarding?: boolean;
+}
+
+/**
+ * Interface representing a staff assignment within a shift.
+ */
+export interface ShiftAssignmentItem {
+  id?: string;
+  userId: string;
+  staffProfileId?: string;
+  staffFullName: string;
+  dutyPosition?: string;
+  dutyRole?: string;
+  isLeadOfficer?: boolean;
+  hourlyPayRateOverride?: number | null;
+  profileHourlyRate?: number | null;
+  status?: string;
 }
 
 /**
@@ -492,120 +509,93 @@ interface StaffMember {
           </div>
         </div>
 
-        <!-- Right Column: Role, Compensation, Personnel & Live Summary -->
+        <!-- Right Column: Role, Personnel & Multi-Staff Roster Assignment -->
         <div class="form-column">
-          <!-- Card 4: Job Role & Compensation Model -->
+          <!-- Card: Personnel, Role & Headcount Capacity -->
           <div class="cms-card">
-            <div class="card-header">
+            <div class="card-header card-header-split">
               <div class="card-title-group">
                 <span class="material-symbols-outlined text-blue">badge</span>
                 <div>
-                  <h3>Job Role &amp; Compensation Model</h3>
-                  <p class="card-subtitle">Determines hourly wage or monthly salaried status.</p>
+                  <h3>Personnel, Role &amp; Headcount</h3>
+                  <p class="card-subtitle">Define required duty role, staffing headcount, and assign personnel to slots.</p>
                 </div>
+              </div>
+              <div class="header-badges">
+                <span class="badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
+                  {{ assignedStaffList.length }} / {{ requiredStaffCount }} Assigned
+                </span>
+                <span class="badge badge-warning" *ngIf="requiredStaffCount > assignedStaffList.length">
+                  {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }}
+                </span>
               </div>
             </div>
 
             <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Job Role / Position <span class="required">*</span></label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="selectedRoleId"
-                  name="selectedRoleId"
-                  (change)="onRoleChange()"
-                  required
-                >
-                  <option value="">Select job position...</option>
-                  <option *ngFor="let r of jobRoles" [value]="r.id">{{ r.title }} ({{ r.code }})</option>
-                </select>
-              </div>
-
-              <!-- Position Title Override -->
-              <div class="form-group">
-                <label class="form-label">Designated Duty Title / Post Name <span class="required">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="postName"
-                  name="postName"
-                  placeholder="e.g. Front Desk Officer, Project Lead, Duty Supervisor"
-                  required
-                />
-              </div>
-
-              <!-- Compensation Status Notice Card -->
-              <div class="compensation-info-banner" *ngIf="selectedRole">
-                <div class="banner-top">
-                  <span class="material-symbols-outlined">
-                    {{ selectedRole.compensationBasis === 'Monthly' ? 'calendar_today' : 'payments' }}
-                  </span>
-                  <div>
-                    <strong>{{ selectedRole.compensationBasis === 'Monthly' ? 'Monthly Salaried Position' : 'Hourly Wage Position' }}</strong>
-                    <p *ngIf="selectedRole.compensationBasis === 'Monthly'">
-                      Staff member receives fixed base salary of <strong>{{ currencySymbol }}{{ (selectedRole.monthlySalary || 0) | number:'1.0-0' }}/month</strong>. Scheduled hours track toward monthly contracted target ({{ selectedRole.contractedWeeklyHours || 40 }} hrs/wk).
-                    </p>
-                    <p *ngIf="selectedRole.compensationBasis !== 'Monthly'">
-                      Staff member is compensated per billable hour worked. Default rate: <strong>{{ currencySymbol }}{{ (selectedRole.defaultHourlyRate || 0) | number:'1.2-2' }}/hr</strong>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Hourly Pay Rate (Editable when hourly) -->
-              <div class="form-group" *ngIf="!selectedRole || selectedRole.compensationBasis !== 'Monthly'">
-                <label class="form-label">Hourly Pay Rate ({{ currencySymbol }}/hr)</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  class="form-control"
-                  [(ngModel)]="hourlyPayRate"
-                  (ngModelChange)="recalculateScheduleMetrics()"
-                  name="hourlyPayRate"
-                  placeholder="e.g. 15.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 5: Personnel Assignment & Hardware Station -->
-          <div class="cms-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="material-symbols-outlined text-blue">person_add</span>
-                <div>
-                  <h3>Personnel Assignment</h3>
-                  <p class="card-subtitle">Assign a qualified team member or publish as an Open Shift for claim.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="card-body">
-              <!-- Staff Availability Matcher & Auto-Skip Notice Banner -->
-              <div class="availability-notice-banner">
-                <div class="notice-main">
-                  <span class="material-symbols-outlined text-success">verified_user</span>
-                  <div class="notice-text">
-                    <div class="notice-title">
-                      <strong>{{ availableStaffList.length }} Qualified Personnel Available</strong>
-                      <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
-                        {{ skippedStaffList.length }} Incompatible Personnel Skipped
-                      </span>
-                    </div>
-                    <p class="notice-desc">
-                      Staff whose profile availability does not cover this day and time window are automatically skipped.
-                    </p>
-                  </div>
-                </div>
-                <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
-                  <button
-                    type="button"
-                    class="btn-text-sm"
-                    (click)="showSkippedList = !showSkippedList"
+              <!-- Row 1: Job Role & Headcount Capacity (Side by Side) -->
+              <div class="form-row-dual mb-3">
+                <div class="form-group">
+                  <label class="form-label font-weight-bold">Job Role / Position <span class="required">*</span></label>
+                  <select
+                    class="form-control"
+                    [(ngModel)]="selectedRoleId"
+                    name="selectedRoleId"
+                    (change)="onRoleChange()"
+                    required
                   >
-                    <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
-                    <span>{{ showSkippedList ? 'Hide Skipped Personnel' : 'View Skipped (' + skippedStaffList.length + ')' }}</span>
-                  </button>
+                    <option value="">Select job position...</option>
+                    <option *ngFor="let r of jobRoles" [value]="r.id">{{ r.title }} ({{ r.code }})</option>
+                  </select>
+                  <span class="field-hint">Defines qualifying position &amp; standard pay scale.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label font-weight-bold">
+                    Required Staff / Headcount <span class="required">*</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      [(ngModel)]="requiredStaffCount"
+                      name="requiredStaffCount"
+                      min="1"
+                      max="500"
+                      (change)="onHeadcountChange()"
+                      placeholder="e.g. 1, 5, 20"
+                    />
+                    <div class="input-group-append">
+                      <span class="input-group-text">personnel</span>
+                    </div>
+                  </div>
+                  <span class="field-hint">Capacity for single post or multi-officer event.</span>
+                </div>
+              </div>
+
+              <!-- Row 2: Qualified Personnel Status Banner -->
+              <div class="availability-status-wrapper mb-3">
+                <div class="availability-notice-banner">
+                  <div class="notice-main">
+                    <span class="material-symbols-outlined text-success">verified_user</span>
+                    <div class="notice-text">
+                      <div class="notice-title">
+                        <strong>{{ availableStaffList.length }} Active Personnel Available</strong>
+                        <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
+                          {{ skippedStaffList.length }} Skipped
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
+                    <button
+                      type="button"
+                      class="btn-text-sm"
+                      (click)="showSkippedList = !showSkippedList"
+                    >
+                      <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
+                      <span>{{ showSkippedList ? 'Hide' : 'View (' + skippedStaffList.length + ')' }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -639,25 +629,143 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Assigned Staff Dropdown -->
-              <div class="form-group">
-                <label class="form-label">Assigned Staff Member</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="assignedUserId"
-                  name="assignedUserId"
-                  (change)="onStaffChange()"
-                >
-                  <option value="">Leave unassigned (Open Shift / Board)</option>
-                  <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
-                    {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
-                  </option>
-                </select>
-                <span class="field-hint">If left unassigned, this schedule appears on the Open Shift Claim Board.</span>
+              <!-- Add Personnel Selector (when slots remain) -->
+              <div class="add-staff-section mb-3" *ngIf="assignedStaffList.length < requiredStaffCount">
+                <label class="form-label font-weight-bold">
+                  Assign Staff to Shift (Slot {{ assignedStaffList.length + 1 }} of {{ requiredStaffCount }})
+                </label>
+                <div class="assign-staff-inline-group">
+                  <div class="select-container">
+                    <select
+                      class="form-control"
+                      [(ngModel)]="pendingStaffToAdd"
+                      name="pendingStaffToAdd"
+                    >
+                      <option value="">Select an available officer to assign...</option>
+                      <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
+                        {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
+                      </option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-assign-inline"
+                    (click)="addStaffToShift()"
+                    [disabled]="!pendingStaffToAdd"
+                  >
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Assign Staff</span>
+                  </button>
+                </div>
+                <span class="field-hint" *ngIf="requiredStaffCount > assignedStaffList.length">
+                  Unassigned slots ({{ requiredStaffCount - assignedStaffList.length }} remaining) will automatically be published to the Open Shifts board for qualified staff to claim.
+                </span>
+              </div>
+
+              <!-- Capacity Reached Notice -->
+              <div class="alert alert-info d-flex align-items-center gap-2 mb-3" *ngIf="assignedStaffList.length >= requiredStaffCount && requiredStaffCount > 0">
+                <span class="material-symbols-outlined text-info">check_circle</span>
+                <span><strong>Shift Headcount Reached:</strong> All {{ requiredStaffCount }} personnel slots are currently assigned. Increase the Required Staff count above if you need to add more officers.</span>
+              </div>
+
+              <!-- Assigned Multi-Staff Roster Table -->
+              <div class="assigned-roster-list mb-3" *ngIf="assignedStaffList.length > 0">
+                <label class="form-label font-weight-bold mb-2">Assigned Shift Personnel ({{ assignedStaffList.length }})</label>
+                <div class="table-responsive">
+                  <table class="table table-bordered align-middle mb-0" style="font-size: 13px;">
+                    <thead class="bg-light">
+                      <tr>
+                        <th style="width: 25%;">Staff Member</th>
+                        <th style="width: 23%;">Duty Post / Station</th>
+                        <th style="width: 21%;">Role / Rank</th>
+                        <th style="width: 17%;">Rate ({{ currencySymbol }}/hr)</th>
+                        <th style="width: 7%; text-align: center;">Lead</th>
+                        <th style="width: 7%; text-align: center;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let a of assignedStaffList; let i = index">
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="staff-avatar-circle" style="width: 28px; height: 28px; border-radius: 50%; background: #0050e5; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">
+                              {{ a.staffFullName ? a.staffFullName.charAt(0) : 'S' }}
+                            </div>
+                            <div>
+                              <strong>{{ a.staffFullName }}</strong>
+                              <div *ngIf="a.isLeadOfficer">
+                                <span class="badge badge-primary" style="font-size: 10px;">Lead Officer</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.dutyPosition"
+                            [name]="'dutyPosition_' + i"
+                            placeholder="e.g. North Gate, Main Pitch"
+                          />
+                        </td>
+                        <td>
+                          <select
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.dutyRole"
+                            [name]="'dutyRole_' + i"
+                          >
+                            <option value="Team Lead">Team Lead</option>
+                            <option value="Senior Officer">Senior Officer</option>
+                            <option value="Duty Officer">Duty Officer</option>
+                            <option value="Security Guard">Security Guard</option>
+                            <option value="Steward">Steward</option>
+                            <option value="Control Room Operator">Control Room Operator</option>
+                            <option value="Supervisor">Supervisor</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="0.25"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="a.hourlyPayRateOverride"
+                            [name]="'hourlyPayRateOverride_' + i"
+                            [placeholder]="((a.profileHourlyRate || hourlyPayRate || 15) | number:'1.2-2') || '15.00'"
+                            title="Staff Pay Rate Override for this shift"
+                          />
+                        </td>
+                        <td style="text-align: center;">
+                          <button
+                            type="button"
+                            class="btn btn-sm"
+                            [ngClass]="a.isLeadOfficer ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleLeadOfficer(i)"
+                            [title]="a.isLeadOfficer ? 'Primary Lead Officer' : 'Click to make Lead Officer'"
+                            style="padding: 2px 6px;"
+                          >
+                            <span class="material-symbols-outlined" style="font-size: 15px;">
+                              {{ a.isLeadOfficer ? 'star' : 'star_outline' }}
+                            </span>
+                          </button>
+                        </td>
+                        <td style="text-align: center;">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            (click)="removeStaffFromShift(i)"
+                            title="Remove staff member"
+                            style="padding: 2px 6px;"
+                          >
+                            <span class="material-symbols-outlined" style="font-size: 15px;">close</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Condition A: Personnel Assigned -> Offer vs Mandatory -->
-              <div class="assignment-condition-panel" *ngIf="assignedUserId">
+              <div class="assignment-condition-panel" *ngIf="assignedStaffList.length > 0">
                 <label class="form-label d-block mb-2">Assignment Mode &amp; Attendance Condition</label>
                 <div class="assignment-mode-options">
                   <label class="assignment-mode-card" [class.selected]="assignmentMode === 'Offer'">
@@ -670,7 +778,7 @@ interface StaffMember {
                       </div>
                     </div>
                     <p class="mode-desc">
-                      Dispatched as a shift offer. The officer can review and <em>Accept</em> or <em>Decline</em>.
+                      Dispatched as a shift offer. Assigned officers can review and <em>Accept</em> or <em>Decline</em>.
                       While pending acceptance, management can <em>Revoke</em> the assignment.
                     </p>
                   </label>
@@ -685,7 +793,7 @@ interface StaffMember {
                       </div>
                     </div>
                     <p class="mode-desc">
-                      Designated as required operational attendance. The officer can only <em>Acknowledge Duty</em>
+                      Designated as required operational attendance. Assigned officers can only <em>Acknowledge Duty</em>
                       and cannot decline without submitting a formal shift swap or excuse request.
                     </p>
                   </label>
@@ -708,9 +816,11 @@ interface StaffMember {
                 </div>
               </div>
 
-              <!-- Condition B: Open Shift (Unassigned) -> Claim Approval Policy -->
-              <div class="open-shift-condition-panel" *ngIf="!assignedUserId">
-                <label class="form-label d-block mb-2">Open Shift Claiming Policy</label>
+              <!-- Condition B: Open Slots Remaining -> Claim Approval Policy -->
+              <div class="open-shift-condition-panel" *ngIf="assignedStaffList.length < requiredStaffCount">
+                <label class="form-label d-block mb-2">
+                  Open Shifts Claiming Policy (for {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }})
+                </label>
                 <label class="claim-policy-checkbox-card">
                   <input
                     type="checkbox"
@@ -721,7 +831,7 @@ interface StaffMember {
                     <strong>Require Management Approval to Claim</strong>
                     <p class="mb-0 text-muted small">
                       When enabled: Officer applies to claim this shift, creating a pending claim that awaits your review (<em>Claim Pending Approval</em>).
-                      When disabled: The first eligible officer to claim is immediately assigned and confirmed on the roster.
+                      When disabled: Any eligible officer claiming a slot is immediately assigned and confirmed on the roster until capacity is filled.
                     </p>
                   </div>
                 </label>
@@ -760,7 +870,7 @@ interface StaffMember {
               </div>
 
               <div class="form-group">
-                <label class="form-label">Designated Workstation (Optional)</label>
+                <label class="form-label font-weight-bold">Designated Workstation (Optional)</label>
                 <input
                   type="text"
                   class="form-control"
@@ -771,8 +881,8 @@ interface StaffMember {
                 <span class="field-hint">Hardware terminal locked to this shift for automated login validation.</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Duty Notes &amp; Shift Instructions</label>
+              <div class="form-group mb-0">
+                <label class="form-label font-weight-bold">Duty Notes &amp; Shift Instructions</label>
                 <textarea
                   class="form-control"
                   rows="3"
@@ -783,83 +893,24 @@ interface StaffMember {
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Card 6: Live Schedule Impact & Summary Widget -->
-          <div class="summary-card">
-            <div class="summary-header">
-              <span class="material-symbols-outlined">analytics</span>
-              <h4>Schedule Impact &amp; Calculation Summary</h4>
-            </div>
-
-            <div class="summary-metrics-grid">
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedTotalDays }}</span>
-                <span class="metric-txt">Scheduled Days</span>
-              </div>
-
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedDailyHours | number:'1.1-1' }}h</span>
-                <span class="metric-txt">Net Daily Hours</span>
-              </div>
-
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedTotalHours | number:'1.1-1' }}h</span>
-                <span class="metric-txt">Total Net Hours</span>
-              </div>
-            </div>
-
-            <div class="summary-details-list">
-              <div class="detail-row" *ngIf="isOvernightShift">
-                <span class="badge-overnight">
-                  <span class="material-symbols-outlined">bedtime</span> Overnight Window (Crosses Midnight)
-                </span>
-              </div>
-
-              <div class="detail-row">
-                <span class="detail-label">Time Frame:</span>
-                <span class="detail-value">{{ summaryTimeFrame }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="hasBreak && breakMinutes > 0">
-                <span class="detail-label">Unpaid Break:</span>
-                <span class="detail-value">{{ breakMinutes }} mins ({{ formatTime12(breakStartTime) }} – {{ formatTime12(breakEndTime) }})</span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly'">
-                <span class="detail-label">Hourly Rate:</span>
-                <span class="detail-value">{{ currencySymbol }}{{ (hourlyPayRate || 0) | number:'1.2-2' }}/hr</span>
-              </div>
-
-              <div class="detail-row">
-                <span class="detail-label">Compensation Basis:</span>
-                <span class="detail-value">
-                  {{ selectedRole?.compensationBasis === 'Monthly' ? 'Monthly Salaried' : 'Hourly Wage' }}
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly' && (hourlyPayRate || 0) > 0">
-                <span class="detail-label">Est. Scheduled Gross Wage:</span>
-                <span class="detail-value font-bold text-success">
-                  {{ currencySymbol }}{{ ((hourlyPayRate || 0) * calculatedTotalHours) | number:'1.2-2' }}
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis === 'Monthly'">
-                <span class="detail-label">Monthly Fixed Salary:</span>
-                <span class="detail-value font-bold text-primary">
-                  {{ currencySymbol }}{{ (selectedRole?.monthlySalary || 0) | number:'1.0-0' }}/mo
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="assignedStaffName">
-                <span class="detail-label">Assigned Member:</span>
-                <span class="detail-value text-blue">{{ assignedStaffName }}</span>
-              </div>
-            </div>
-
+        <!-- Form Actions Footer (Spans Both Columns) -->
+        <div class="form-actions-footer">
+          <div class="footer-left-info" *ngIf="!isEditMode">
+            <span class="material-symbols-outlined text-blue">info</span>
+            <span class="text-muted">
+              {{ schedulePattern === 'Single' ? 'Configuring 1 ad-hoc duty assignment.' : 'Configuring recurring multi-day duty schedule.' }}
+            </span>
+          </div>
+          <div class="footer-btn-group">
+            <button type="button" class="btn btn-secondary" routerLink="/workforce/console/shifts">
+              <span class="material-symbols-outlined">arrow_back</span>
+              <span>Cancel</span>
+            </button>
             <button
               type="button"
-              class="btn btn-primary btn-block btn-generate"
+              class="btn btn-primary btn-save-action"
               (click)="saveSchedule()"
               [disabled]="isSaving || isLoading"
             >
@@ -920,6 +971,54 @@ interface StaffMember {
       background-color: #f8fafc;
       min-height: calc(100vh - 70px);
       box-sizing: border-box;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .input-group .form-control {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      flex: 1 1 auto;
+    }
+
+    .input-group-append {
+      display: flex;
+    }
+
+    .input-group-text {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 0;
+      border-top-right-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
+    }
+
+    .nowrap-badge {
+      white-space: nowrap;
+      font-size: 11px;
+      padding: 4px 8px;
+      flex-shrink: 0;
+    }
+
+    .rate-input-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .rate-hint {
+      font-size: 10px;
+      color: #64748b;
     }
 
     .breadcrumb {
@@ -1090,7 +1189,7 @@ interface StaffMember {
     /* 2-Column Responsive Layout */
     .schedule-form-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
       align-items: start;
     }
@@ -1119,6 +1218,51 @@ interface StaffMember {
       padding: 1.25rem 1.5rem;
       border-bottom: 1px solid #f1f5f9;
       background: #ffffff;
+    }
+
+    .card-header-split {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      line-height: 1.2;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-primary {
+      background-color: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+
+    .badge-success {
+      background-color: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-warning {
+      background-color: #fefce8;
+      color: #a16207;
+      border: 1px solid #fde047;
     }
 
     .card-title-group {
@@ -1282,6 +1426,23 @@ interface StaffMember {
     .form-control:focus {
       border-color: #0050e5;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+
+    /* Professional Dropdown Styling with Inset Chevron */
+    select.form-control {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem 1rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    select.form-control::-ms-expand {
+      display: none;
     }
 
     .field-hint {
@@ -1494,119 +1655,79 @@ interface StaffMember {
       line-height: 1.4;
     }
 
-    /* Summary Card */
-    .summary-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
+    .nowrap-badge {
+      white-space: nowrap !important;
+      flex-shrink: 0;
+      font-size: 11px;
+      padding: 4px 8px;
     }
 
-    .summary-header {
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .input-group .form-control {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      flex: 1 1 auto;
+    }
+
+    .input-group-append {
+      display: flex;
+    }
+
+    .input-group-text {
       display: flex;
       align-items: center;
-      gap: 0.625rem;
-      color: #0050e5;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 0.875rem;
-    }
-
-    .summary-header h4 {
-      font-size: 0.9375rem;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0;
-    }
-
-    .summary-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      text-align: center;
-    }
-
-    .summary-metric {
-      padding: 0.875rem 0.5rem;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-    }
-
-    .metric-num {
-      display: block;
-      font-size: 1.375rem;
-      font-weight: 800;
-      color: #0050e5;
-      letter-spacing: -0.02em;
-    }
-
-    .metric-txt {
-      display: block;
-      font-size: 0.6875rem;
-      font-weight: 600;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 500;
       color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      margin-top: 0.25rem;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 0;
+      border-top-right-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
     }
 
-    .summary-details-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.625rem;
-      padding: 0.875rem 0;
-      border-top: 1px dashed #e2e8f0;
-      border-bottom: 1px dashed #e2e8f0;
-    }
-
-    .detail-row {
+    /* Form Actions Footer (Clean Bottom Toolbar) */
+    .form-actions-footer {
+      grid-column: 1 / -1;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8125rem;
+      padding: 1.25rem 1.75rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
-    .detail-label {
-      color: #64748b;
+    .footer-left-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
     }
 
-    .detail-value {
-      color: #0f172a;
+    .footer-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .btn-save-action {
+      padding: 0.625rem 1.35rem;
       font-weight: 600;
-    }
-
-    .font-bold {
-      font-weight: 700;
-    }
-
-    .text-success {
-      color: #059669;
-    }
-
-    .text-primary {
-      color: #7c3aed;
-    }
-
-    .badge-overnight {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.5rem;
-      background: #f5f3ff;
-      border: 1px solid #ddd6fe;
-      color: #6d28d9;
-      border-radius: 0.375rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .btn-generate {
-      padding: 0.75rem 1.25rem;
-      font-size: 0.9375rem;
+      gap: 0.5rem;
     }
 
     /* Modal */
@@ -1925,6 +2046,30 @@ interface StaffMember {
       cursor: pointer;
     }
 
+    /* Assign Staff Inline Group */
+    .assign-staff-inline-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .assign-staff-inline-group .select-container {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .btn-assign-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      padding: 0.625rem 1.15rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      border-radius: 0.5rem;
+    }
+
     .staff-conflict-alert {
       display: flex;
       align-items: flex-start;
@@ -2162,7 +2307,10 @@ export class WorkforceShiftEditComponent implements OnInit {
   hourlyPayRate: number | null = 15.0;
   hourlyChargeRate: number | null = 22.5;
 
-  // Personnel & Station
+  // Personnel, Headcount & Multi-Staff Roster
+  requiredStaffCount = 1;
+  assignedStaffList: ShiftAssignmentItem[] = [];
+  pendingStaffToAdd = '';
   assignedUserId = '';
   assignedStaffName = '';
   shiftStatus = 'Scheduled';
@@ -2234,12 +2382,17 @@ export class WorkforceShiftEditComponent implements OnInit {
   // --- Availability Checker & Skipping Logic ---
 
   get availableStaffList(): StaffMember[] {
-    return this.staffMembers.filter(m => this.checkStaffAvailability(m).available);
+    return this.staffMembers
+      .filter(m => m.workingAvailability !== 'Pending Onboarding' && !m.isPendingOnboarding)
+      .filter(m => this.checkStaffAvailability(m).available);
   }
 
   get skippedStaffList(): { member: StaffMember; reason: string }[] {
     const list: { member: StaffMember; reason: string }[] = [];
     for (const m of this.staffMembers) {
+      if (m.workingAvailability === 'Pending Onboarding' || m.isPendingOnboarding) {
+        continue; // Never show un-onboarded staff even in skipped list
+      }
       const check = this.checkStaffAvailability(m);
       if (!check.available) {
         list.push({ member: m, reason: check.reason || 'Availability mismatch' });
@@ -2249,10 +2402,17 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   get displayedStaffMembers(): StaffMember[] {
-    return this.overrideAvailabilityFilter ? this.staffMembers : this.availableStaffList;
+    const activePool = this.staffMembers.filter(m => m.workingAvailability !== 'Pending Onboarding' && !m.isPendingOnboarding);
+    const candidates = this.overrideAvailabilityFilter ? activePool : activePool.filter(m => this.checkStaffAvailability(m).available);
+    const assignedIds = new Set(this.assignedStaffList.map(a => a.userId));
+    return candidates.filter(m => !assignedIds.has(m.userId));
   }
 
   checkStaffAvailability(m: StaffMember): { available: boolean; reason?: string } {
+    if (m.workingAvailability === 'Pending Onboarding' || m.isPendingOnboarding) {
+      return { available: false, reason: 'Pending Onboarding (Account not yet activated)' };
+    }
+
     const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -2624,9 +2784,79 @@ export class WorkforceShiftEditComponent implements OnInit {
   }
 
   onStaffChange(): void {
-    const member = this.staffMembers.find((m) => m.userId === this.assignedUserId);
-    this.assignedStaffName = member ? member.fullName : '';
+    if (this.assignedUserId) {
+      this.addStaffToShift(this.assignedUserId);
+      this.assignedUserId = '';
+    }
+  }
+
+  onHeadcountChange(): void {
+    if (!this.requiredStaffCount || this.requiredStaffCount < 1) {
+      this.requiredStaffCount = 1;
+    }
+  }
+
+  addStaffToShift(userId?: string): void {
+    const targetId = userId || this.pendingStaffToAdd;
+    if (!targetId) return;
+
+    if (this.assignedStaffList.some(a => a.userId === targetId)) {
+      this.toast.warning('Staff member is already assigned to this shift.');
+      this.pendingStaffToAdd = '';
+      return;
+    }
+
+    if (this.assignedStaffList.length >= this.requiredStaffCount) {
+      this.toast.info(`Headcount capacity (${this.requiredStaffCount}) reached. Please increase Required Staff count to add more personnel.`);
+      this.pendingStaffToAdd = '';
+      return;
+    }
+
+    const member = this.staffMembers.find(m => m.userId === targetId);
+    if (!member) return;
+
+    const isFirst = this.assignedStaffList.length === 0;
+    const profileRate = (member as any).defaultHourlyRate ?? (member as any).hourlyRate ?? this.hourlyPayRate ?? 15.0;
+
+    this.assignedStaffList.push({
+      userId: member.userId,
+      staffProfileId: (member as any).staffProfileId || (member as any).profileId,
+      staffFullName: member.fullName,
+      dutyPosition: this.selectedRole ? this.selectedRole.title : 'General Post',
+      dutyRole: isFirst ? 'Team Lead' : (member.jobTitle || 'Duty Officer'),
+      isLeadOfficer: isFirst,
+      hourlyPayRateOverride: profileRate,
+      profileHourlyRate: profileRate,
+      status: 'Assigned'
+    });
+
+    this.pendingStaffToAdd = '';
+    this.syncLegacyAssignedFields();
     this.validateAssignedStaffAvailability();
+  }
+
+  removeStaffFromShift(index: number): void {
+    if (index >= 0 && index < this.assignedStaffList.length) {
+      const removed = this.assignedStaffList.splice(index, 1)[0];
+      if (removed.isLeadOfficer && this.assignedStaffList.length > 0) {
+        this.assignedStaffList[0].isLeadOfficer = true;
+      }
+      this.syncLegacyAssignedFields();
+      this.validateAssignedStaffAvailability();
+    }
+  }
+
+  toggleLeadOfficer(index: number): void {
+    this.assignedStaffList.forEach((a, i) => {
+      a.isLeadOfficer = (i === index);
+    });
+    this.syncLegacyAssignedFields();
+  }
+
+  syncLegacyAssignedFields(): void {
+    const lead = this.assignedStaffList.find(a => a.isLeadOfficer) || this.assignedStaffList[0];
+    this.assignedUserId = lead ? lead.userId : '';
+    this.assignedStaffName = lead ? lead.staffFullName : '';
   }
 
   private initDefaultDates(): void {
@@ -2699,9 +2929,45 @@ export class WorkforceShiftEditComponent implements OnInit {
         this.facilityName = s.facilityName || '';
         this.address = s.address || '';
         this.postCode = s.postCode || '';
-        this.postName = s.postName || 'General Assignment';
+        this.postName = s.jobRoleTitle || s.postName || 'General Assignment';
+        this.requiredStaffCount = s.requiredStaffCount || 1;
         this.assignedUserId = s.assignedUserId || '';
         this.assignedStaffName = s.assignedUserName || '';
+
+        if (s.jobRoleId) {
+          this.selectedRoleId = s.jobRoleId;
+          this.selectedRole = this.jobRoles.find(r => r.id === s.jobRoleId) || null;
+        } else if (s.jobRoleTitle) {
+          this.selectedRole = this.jobRoles.find(r => r.title.toLowerCase() === s.jobRoleTitle.toLowerCase()) || null;
+          if (this.selectedRole) this.selectedRoleId = this.selectedRole.id;
+        }
+
+        if (s.assignments && Array.isArray(s.assignments) && s.assignments.length > 0) {
+          this.assignedStaffList = s.assignments.map((a: any) => ({
+            id: a.id,
+            userId: a.userId,
+            staffProfileId: a.staffProfileId,
+            staffFullName: a.staffFullName || a.assignedUserName || '',
+            dutyPosition: a.dutyPosition || s.jobRoleTitle || s.postName || 'General Post',
+            dutyRole: a.dutyRole || 'Duty Officer',
+            isLeadOfficer: !!a.isLeadOfficer,
+            hourlyPayRateOverride: a.hourlyPayRateOverride ?? s.hourlyPayRate,
+            profileHourlyRate: a.hourlyPayRateOverride ?? s.hourlyPayRate,
+            status: a.status || 'Assigned'
+          }));
+        } else if (s.assignedUserId) {
+          this.assignedStaffList = [{
+            userId: s.assignedUserId,
+            staffFullName: s.assignedUserName || '',
+            dutyPosition: s.postName || 'General Post',
+            dutyRole: 'Duty Officer',
+            isLeadOfficer: true,
+            status: 'Assigned'
+          }];
+        } else {
+          this.assignedStaffList = [];
+        }
+        this.syncLegacyAssignedFields();
         this.hourlyPayRate = s.hourlyPayRate;
         this.hourlyChargeRate = s.hourlyChargeRate;
         this.breakMinutes = s.breakMinutes || 0;
@@ -2808,21 +3074,36 @@ export class WorkforceShiftEditComponent implements OnInit {
       return;
     }
 
-    if (!this.postName) {
-      this.toast.error('Please specify a Job Role or Duty Title.');
+    if (!this.selectedRoleId && !this.isEditMode) {
+      this.toast.error('Please select a Job Role / Position.');
       return;
     }
 
     this.isSaving = true;
 
+    const defaultPosition = this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post');
+    const assignmentsPayload = this.assignedStaffList.map(a => ({
+      userId: a.userId,
+      staffProfileId: a.staffProfileId,
+      staffFullName: a.staffFullName,
+      dutyPosition: a.dutyPosition || defaultPosition,
+      dutyRole: a.dutyRole || 'Duty Officer',
+      isLeadOfficer: !!a.isLeadOfficer,
+      hourlyPayRateOverride: a.hourlyPayRateOverride || null
+    }));
+
     if (this.isEditMode && this.shiftId) {
       const payload = {
         clientSiteId: this.selectedSiteId,
+        requiredStaffCount: this.requiredStaffCount,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignments: assignmentsPayload,
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
-        postName: this.postName,
+        jobRoleId: this.selectedRoleId || null,
+        jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+        postName: defaultPosition,
         facilityName: this.facilityName,
         address: this.address,
         postCode: this.postCode,
@@ -2855,12 +3136,16 @@ export class WorkforceShiftEditComponent implements OnInit {
     if (this.schedulePattern === 'Single') {
       const singlePayload = {
         clientSiteId: this.selectedSiteId,
+        requiredStaffCount: this.requiredStaffCount,
         assignedUserId: this.assignedUserId || null,
         assignedUserName: this.assignedStaffName || null,
+        assignments: assignmentsPayload,
         assignmentMode: this.assignmentMode,
         requireClaimApproval: this.requireClaimApproval,
         acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
-        postName: this.postName,
+        jobRoleId: this.selectedRoleId || null,
+        jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+        postName: defaultPosition,
         facilityName: this.facilityName,
         address: this.address,
         postCode: this.postCode,
@@ -2892,12 +3177,16 @@ export class WorkforceShiftEditComponent implements OnInit {
 
     const batchPayload = {
       clientSiteId: this.selectedSiteId,
+      requiredStaffCount: this.requiredStaffCount,
       assignedUserId: this.assignedUserId || null,
       assignedUserName: this.assignedStaffName || null,
+      assignments: assignmentsPayload,
       assignmentMode: this.assignmentMode,
       requireClaimApproval: this.requireClaimApproval,
       acceptanceDeadlineUtc: (this.assignmentMode === 'Offer' && this.acceptanceDeadlineLocal) ? new Date(this.acceptanceDeadlineLocal).toISOString() : null,
-      postName: this.postName,
+      jobRoleId: this.selectedRoleId || null,
+      jobRoleTitle: this.selectedRole ? this.selectedRole.title : (this.postName || 'General Post'),
+      postName: defaultPosition,
       facilityName: this.facilityName,
       address: this.address,
       postCode: this.postCode,

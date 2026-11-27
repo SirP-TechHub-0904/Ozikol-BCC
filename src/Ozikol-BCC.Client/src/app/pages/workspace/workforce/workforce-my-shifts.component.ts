@@ -1677,8 +1677,13 @@ interface YearMonthGrid {
               <div class="shift-card" *ngFor="let os of openShifts">
                 <div class="shift-card-header">
                   <span class="shift-code-badge">{{ os.shiftCode }}</span>
-                  <span class="status-pill status-active" *ngIf="!os.requireClaimApproval">Open to Claim</span>
-                  <span class="status-pill status-pending" *ngIf="os.requireClaimApproval" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">Requires Approval</span>
+                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <span class="badge badge-info" *ngIf="os.requiredStaffCount && os.requiredStaffCount > 1" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                      {{ os.openSlotsRemaining !== undefined ? os.openSlotsRemaining : (os.requiredStaffCount - (os.assignedCount || 0)) }} of {{ os.requiredStaffCount }} slots open
+                    </span>
+                    <span class="status-pill status-active" *ngIf="!os.requireClaimApproval">Open to Claim</span>
+                    <span class="status-pill status-pending" *ngIf="os.requireClaimApproval" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">Requires Approval</span>
+                  </div>
                 </div>
 
                 <div class="shift-venue-info">
@@ -1693,6 +1698,12 @@ interface YearMonthGrid {
                   <div class="meta-row">
                     <span class="meta-label">Post / Role:</span>
                     <span class="meta-val">{{ os.postName }}</span>
+                  </div>
+                  <div class="meta-row" *ngIf="os.requiredStaffCount && os.requiredStaffCount > 1">
+                    <span class="meta-label">Total Capacity:</span>
+                    <span class="meta-val" style="color: #0369a1; font-weight: 600;">
+                      {{ os.assignedCount || 0 }}/{{ os.requiredStaffCount }} filled ({{ os.openSlotsRemaining !== undefined ? os.openSlotsRemaining : (os.requiredStaffCount - (os.assignedCount || 0)) }} open slots)
+                    </span>
                   </div>
                   <div class="meta-row">
                     <span class="meta-label">Starts:</span>
@@ -9138,8 +9149,8 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     const ok = await this.confirmDialog.confirm({
       title: isApproval ? 'Apply to Claim Shift?' : 'Claim Open Shift?',
       message: isApproval
-        ? `Submit an application to claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? Management will review and approve your request.`
-        : `Claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? You will be immediately assigned and scheduled on the duty roster.`,
+        ? `Submit an application to claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? ${(shift.requiredStaffCount && shift.requiredStaffCount > 1) ? `(${shift.openSlotsRemaining ?? (shift.requiredStaffCount - (shift.assignedCount || 0))} open slots remaining). ` : ''}Management will review and approve your request.`
+        : `Claim shift ${shift.shiftCode} at ${shift.facilityName || shift.siteName}? ${(shift.requiredStaffCount && shift.requiredStaffCount > 1) ? `(${shift.openSlotsRemaining ?? (shift.requiredStaffCount - (shift.assignedCount || 0))} open slots remaining). ` : ''}You will be immediately assigned and scheduled on the duty roster.`,
       confirmLabel: isApproval ? 'Submit Application' : 'Claim Shift',
       cancelLabel: 'Cancel',
       isDestructive: false

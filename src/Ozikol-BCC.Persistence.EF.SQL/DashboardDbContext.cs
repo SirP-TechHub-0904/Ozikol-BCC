@@ -127,6 +127,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     // --- BCP: Unified Workforce, Rota & Attendance Suite (bcp-staff-rota & bcp-attendance-tracking) ---
     public DbSet<BcpClientSite> BcpClientSites { get; set; } = null!;
     public DbSet<BcpShift> BcpShifts { get; set; } = null!;
+    public DbSet<BcpShiftAssignment> BcpShiftAssignments { get; set; } = null!;
     public DbSet<BcpShiftAttendance> BcpShiftAttendances { get; set; } = null!;
     public DbSet<BcpShiftSwapRequest> BcpShiftSwapRequests { get; set; } = null!;
     public DbSet<BcpShiftLeaveRequest> BcpShiftLeaveRequests { get; set; } = null!;
@@ -1070,13 +1071,26 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         modelBuilder.Entity<BcpShift>(entity =>
         {
             entity.HasIndex(s => new { s.TenantKey, s.StartsAtUtc, s.EndsAtUtc });
-            entity.HasIndex(s => new { s.TenantKey, s.AssignedUserId, s.StartsAtUtc });
             entity.HasIndex(s => new { s.TenantKey, s.ClientSiteId, s.StartsAtUtc });
             entity.HasIndex(s => new { s.TenantKey, s.Status });
             entity.HasOne(s => s.ClientSite)
                 .WithMany(cs => cs.Shifts)
                 .HasForeignKey(s => s.ClientSiteId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BcpShiftAssignment>(entity =>
+        {
+            entity.HasIndex(a => new { a.TenantKey, a.ShiftId, a.UserId });
+            entity.HasIndex(a => new { a.TenantKey, a.UserId, a.Status });
+            entity.HasOne(a => a.Shift)
+                .WithMany(s => s.Assignments)
+                .HasForeignKey(a => a.ShiftId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.StaffProfile)
+                .WithMany()
+                .HasForeignKey(a => a.StaffProfileId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<BcpShiftAttendance>(entity =>

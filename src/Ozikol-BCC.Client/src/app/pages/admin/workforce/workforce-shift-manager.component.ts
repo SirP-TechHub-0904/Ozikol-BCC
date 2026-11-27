@@ -250,7 +250,7 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
                   <span class="th-sort-wrap">Venue / Client Site <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'siteName') }}</span></span>
                 </th>
                 <th class="sortable-th" [class.active-sort]="shiftSortCol === 'assignedUserName'" (click)="toggleShiftSort('assignedUserName')">
-                  <span class="th-sort-wrap">Assigned User / Staff <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'assignedUserName') }}</span></span>
+                  <span class="th-sort-wrap">Assigned Staff &amp; Headcount <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'assignedUserName') }}</span></span>
                 </th>
                 <th class="sortable-th" [class.active-sort]="shiftSortCol === 'hourlyPayRate'" (click)="toggleShiftSort('hourlyPayRate')">
                   <span class="th-sort-wrap">Duration &amp; Pay Rate <span class="material-symbols-outlined sort-icon">{{ getSortIcon(shiftSortCol, shiftSortDir, 'hourlyPayRate') }}</span></span>
@@ -297,34 +297,53 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
                   </div>
                 </td>
                 <td>
-                  <div *ngIf="!isOpenShift(shift)" class="staff-cell">
-                    <div class="staff-avatar" [class.archived-avatar]="shift.assignedUserName === 'Archived Staff'">
-                      <span *ngIf="shift.assignedUserName === 'Archived Staff'" class="material-symbols-outlined" style="font-size: 16px;">person_off</span>
-                      <span *ngIf="shift.assignedUserName !== 'Archived Staff'">{{ getInitials(shift.assignedUserName || shift.assignedUserEmail || 'S') }}</span>
-                    </div>
-                    <div class="staff-details">
-                      <strong class="staff-name" [class.archived-name]="shift.assignedUserName === 'Archived Staff'">{{ shift.assignedUserName || shift.assignedUserEmail || 'Assigned Staff' }}</strong>
-                      <span class="staff-sub" *ngIf="shift.assignedUserName === 'Archived Staff'">Former Staff &bull; Archived</span>
-                      <span class="staff-sub" *ngIf="shift.assignedUserEmail && shift.assignedUserName !== 'Archived Staff'">{{ shift.assignedUserEmail }}</span>
-                    </div>
-                  </div>
-
-                  <div *ngIf="isOpenShift(shift)" class="open-shift-cell">
-                    <span class="open-shift-badge">
-                      <span class="material-symbols-outlined">person_add</span>
-                      <span>Open Shift — Unassigned</span>
-                    </span>
-                    <button
-                      *ngIf="!isShiftDone(shift)"
-                      type="button"
-                      class="btn-broadcast-mini"
-                      (click)="broadcastShift(shift)"
-                      [disabled]="broadcastingId === shift.id"
-                      title="Broadcast push/email notification to available staff"
+                  <div class="headcount-staff-wrapper">
+                    <!-- Headcount & Capacity Badge -->
+                    <div
+                      class="headcount-meta-pill"
+                      [class.solo]="getRequiredCount(shift) === 1"
+                      [class.partial]="getAssignedCount(shift) > 0 && getOpenSlots(shift) > 0"
+                      [class.full]="getAssignedCount(shift) >= getRequiredCount(shift)"
+                      [title]="getAssignedCount(shift) + ' of ' + getRequiredCount(shift) + ' staff assigned'"
                     >
-                      <span class="material-symbols-outlined">campaign</span>
-                      <span>{{ broadcastingId === shift.id ? 'Sending...' : 'Notify Staff' }}</span>
-                    </button>
+                      <span class="material-symbols-outlined">{{ getRequiredCount(shift) > 1 ? 'group' : 'person' }}</span>
+                      <span>{{ getAssignedCount(shift) }}/{{ getRequiredCount(shift) }} Personnel</span>
+                      <span *ngIf="getRequiredCount(shift) > 1 && getOpenSlots(shift) > 0" class="open-tag">({{ getOpenSlots(shift) }} open)</span>
+                    </div>
+
+                    <!-- Staff Details or Open Shift Notification -->
+                    <div *ngIf="getAssignedCount(shift) > 0" class="staff-cell">
+                      <div class="staff-avatar" [class.archived-avatar]="shift.assignedUserName === 'Archived Staff'">
+                        <span *ngIf="shift.assignedUserName === 'Archived Staff'" class="material-symbols-outlined" style="font-size: 16px;">person_off</span>
+                        <span *ngIf="shift.assignedUserName !== 'Archived Staff'">{{ getInitials(shift.assignedUserName || shift.assignedUserEmail || 'S') }}</span>
+                      </div>
+                      <div class="staff-details">
+                        <strong class="staff-name" [class.archived-name]="shift.assignedUserName === 'Archived Staff'">
+                          {{ shift.assignedUserName || shift.assignedUserEmail || 'Assigned Staff' }}
+                          <span *ngIf="getAssignedCount(shift) > 1" class="more-staff-chip">(+{{ getAssignedCount(shift) - 1 }} more)</span>
+                        </strong>
+                        <span class="staff-sub" *ngIf="shift.assignedUserName === 'Archived Staff'">Former Staff &bull; Archived</span>
+                        <span class="staff-sub" *ngIf="shift.assignedUserEmail && shift.assignedUserName !== 'Archived Staff'">{{ shift.assignedUserEmail }}</span>
+                      </div>
+                    </div>
+
+                    <div *ngIf="getAssignedCount(shift) === 0" class="open-shift-cell">
+                      <span class="open-shift-badge">
+                        <span class="material-symbols-outlined">{{ getRequiredCount(shift) > 1 ? 'group_add' : 'person_add' }}</span>
+                        <span>Open &bull; {{ getRequiredCount(shift) }} Required</span>
+                      </span>
+                      <button
+                        *ngIf="!isShiftDone(shift)"
+                        type="button"
+                        class="btn-broadcast-mini"
+                        (click)="broadcastShift(shift)"
+                        [disabled]="broadcastingId === shift.id"
+                        title="Broadcast push/email notification to available staff"
+                      >
+                        <span class="material-symbols-outlined">campaign</span>
+                        <span>{{ broadcastingId === shift.id ? 'Sending...' : 'Notify Staff' }}</span>
+                      </button>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -953,6 +972,27 @@ import { ConfirmDialogService } from '../../../core/services/confirm-dialog.serv
     .post-text { font-size: 12px; color: #0050e5; font-weight: 600; }
     .addr-text { font-size: 11.5px; color: #64748b; }
 
+    .headcount-staff-wrapper { display: flex; flex-direction: column; gap: 6px; }
+    .headcount-meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      width: fit-content;
+    }
+    .headcount-meta-pill .material-symbols-outlined { font-size: 14px; }
+    .headcount-meta-pill.solo { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+    .headcount-meta-pill.partial { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+    .headcount-meta-pill.full { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+    .headcount-meta-pill .open-tag { font-size: 10px; font-weight: 800; color: #b45309; margin-left: 2px; }
+    .more-staff-chip { font-size: 11px; font-weight: normal; color: #64748b; margin-left: 3px; }
+
     .staff-cell { display: flex; align-items: center; gap: 10px; }
     .staff-avatar { width: 34px; height: 34px; border-radius: 50%; background: #eff6ff; color: #0050e5; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #bfdbfe; flex-shrink: 0; }
     .staff-avatar.archived-avatar { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
@@ -1469,7 +1509,27 @@ export class WorkforceShiftManagerComponent implements OnInit {
     });
   }
 
+  getRequiredCount(shift: any): number {
+    return shift?.requiredStaffCount && shift.requiredStaffCount > 0 ? shift.requiredStaffCount : 1;
+  }
+
+  getAssignedCount(shift: any): number {
+    if (typeof shift?.assignedCount === 'number') return shift.assignedCount;
+    if (Array.isArray(shift?.assignments)) return shift.assignments.length;
+    return shift?.assignedUserId ? 1 : 0;
+  }
+
+  getOpenSlots(shift: any): number {
+    if (typeof shift?.openSlotsRemaining === 'number') return shift.openSlotsRemaining;
+    const req = this.getRequiredCount(shift);
+    const assigned = this.getAssignedCount(shift);
+    return Math.max(0, req - assigned);
+  }
+
   isOpenShift(shift: any): boolean {
+    const assigned = this.getAssignedCount(shift);
+    const req = this.getRequiredCount(shift);
+    if (assigned < req) return true;
     return !shift?.assignedUserId || String(shift.assignedUserId).trim() === '' || (shift.status || '').toLowerCase() === 'open';
   }
 
