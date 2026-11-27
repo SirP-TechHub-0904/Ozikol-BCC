@@ -258,7 +258,7 @@ interface SiteStaffRosterItem {
                       </div>
                       <div class="staff-info">
                         <strong>{{ s.assignedUserName || 'Open Shift (Unassigned)' }}</strong>
-                        <span class="staff-post">{{ s.postName }}</span>
+                        <span class="staff-post">{{ s.postName }} &bull; {{ s.assignedCount || (s.assignedUserId ? 1 : 0) }}/{{ s.requiredStaffCount || 1 }} personnel</span>
                       </div>
                     </div>
                   </td>
@@ -336,7 +336,7 @@ interface SiteStaffRosterItem {
               </div>
               <div>
                 <h4 class="duty-staff-name">{{ s.assignedUserName || 'Open Shift (Unassigned)' }}</h4>
-                <span class="duty-staff-role">{{ s.postName }}</span>
+                <span class="duty-staff-role">{{ s.postName }} &bull; {{ s.assignedCount || (s.assignedUserId ? 1 : 0) }}/{{ s.requiredStaffCount || 1 }} personnel</span>
               </div>
             </div>
 
