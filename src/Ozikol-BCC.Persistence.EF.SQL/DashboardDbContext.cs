@@ -1072,6 +1072,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         {
             entity.HasIndex(s => new { s.TenantKey, s.StartsAtUtc, s.EndsAtUtc });
             entity.HasIndex(s => new { s.TenantKey, s.ClientSiteId, s.StartsAtUtc });
+            entity.HasIndex(s => new { s.TenantKey, s.AssignedUserId });
             entity.HasIndex(s => new { s.TenantKey, s.Status });
             entity.HasOne(s => s.ClientSite)
                 .WithMany(cs => cs.Shifts)

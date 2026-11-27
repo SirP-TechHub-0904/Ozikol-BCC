@@ -12,8 +12,8 @@ using Ozikol_BCC.Persistence.EF.SQL;
 namespace OzikolBCC.Persistence.EF.SQL.Migrations
 {
     [DbContext(typeof(DashboardDbContext))]
-    [Migration("20261127063255_RemoveShiftAssignedUserAndAddShiftAssignments")]
-    partial class RemoveShiftAssignedUserAndAddShiftAssignments
+    [Migration("20261127075306_AddShiftAssignmentsAndHeadcountCapacity")]
+    partial class AddShiftAssignmentsAndHeadcountCapacity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -4494,6 +4494,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<string>("AssignedUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AssignedUserName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("AssignmentMode")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -4621,6 +4629,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClientSiteId");
+
+                    b.HasIndex("TenantKey", "AssignedUserId");
 
                     b.HasIndex("TenantKey", "Status");
 

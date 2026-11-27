@@ -161,75 +161,142 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<List<ShiftDto>>>> GetMyShifts(CancellationToken ct)
         {
             var nowUtc = DateTime.UtcNow.AddHours(-12);
-            var myShifts = await _db.BcpShifts
-                .AsNoTracking()
-                .Include(s => s.ClientSite)
-                .Include(s => s.AttendanceRecord)
-                .Include(s => s.Assignments)
-                .Where(s => s.TenantKey == CurrentTenantKey &&
-                            s.Assignments.Any(a => a.UserId == CurrentUserId) &&
-                            s.EndsAtUtc >= nowUtc)
-                .OrderBy(s => s.StartsAtUtc)
-                .Select(s => new ShiftDto
-                {
-                    Id = s.Id,
-                    ShiftCode = s.ShiftCode,
-                    ClientSiteId = s.ClientSiteId,
-                    SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
-                    SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
-                    FacilityName = s.FacilityName,
-                    Address = s.Address,
-                    PostCode = s.PostCode,
-                    EventTag = s.EventTag,
-                    RequiredStaffCount = s.RequiredStaffCount,
-                    AssignedCount = s.Assignments.Count,
-                    OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
-                    IsFull = s.Assignments.Count >= s.RequiredStaffCount,
-                    AssignedUserId = CurrentUserId,
-                    AssignedUserName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.StaffFullName).FirstOrDefault() ?? CurrentUserName,
-                    Assignments = s.Assignments.Select(a => new ShiftAssignmentDto
+            try
+            {
+                var myShifts = await _db.BcpShifts
+                    .AsNoTracking()
+                    .Include(s => s.ClientSite)
+                    .Include(s => s.AttendanceRecord)
+                    .Include(s => s.Assignments)
+                    .Where(s => s.TenantKey == CurrentTenantKey &&
+                                (s.AssignedUserId == CurrentUserId || s.Assignments.Any(a => a.UserId == CurrentUserId)) &&
+                                s.EndsAtUtc >= nowUtc)
+                    .OrderBy(s => s.StartsAtUtc)
+                    .Select(s => new ShiftDto
                     {
-                        Id = a.Id,
-                        ShiftId = a.ShiftId,
-                        UserId = a.UserId,
-                        StaffProfileId = a.StaffProfileId,
-                        StaffFullName = a.StaffFullName,
-                        DutyPosition = a.DutyPosition,
-                        DutyRole = a.DutyRole,
-                        IsLeadOfficer = a.IsLeadOfficer,
-                        Status = a.Status,
-                        IsConfirmedByGuard = a.IsConfirmedByGuard,
-                        ConfirmedAtUtc = a.ConfirmedAtUtc,
-                        AssignedAtUtc = a.AssignedAtUtc,
-                        IsClaimed = a.IsClaimed,
-                        ClaimApproved = a.ClaimApproved,
-                        Notes = a.Notes
-                    }).ToList(),
-                    StartsAtUtc = s.StartsAtUtc,
-                    EndsAtUtc = s.EndsAtUtc,
-                    IsOvernight = s.IsOvernight,
-                    BreakMinutes = s.BreakMinutes,
-                    PlannedDurationHours = s.PlannedDurationHours,
-                    HourlyPayRate = s.HourlyPayRate,
-                    HourlyChargeRate = s.HourlyChargeRate,
-                    RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
-                    RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
-                    Status = s.Status,
-                    IsConfirmedByGuard = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.IsConfirmedByGuard).FirstOrDefault(),
-                    AssignmentMode = s.AssignmentMode,
-                    ConfirmedAtUtc = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.ConfirmedAtUtc).FirstOrDefault(),
-                    AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
-                    AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
-                    Notes = s.Notes,
-                    SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null,
-                    EmergencyContactPhone = s.ClientSite != null ? s.ClientSite.EmergencyContactPhone : null,
-                    IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
-                    IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
-                })
-                .ToListAsync(ct);
+                        Id = s.Id,
+                        ShiftCode = s.ShiftCode,
+                        ClientSiteId = s.ClientSiteId,
+                        SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                        SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
+                        FacilityName = s.FacilityName,
+                        Address = s.Address,
+                        PostCode = s.PostCode,
+                        EventTag = s.EventTag,
+                        RequiredStaffCount = s.RequiredStaffCount,
+                        AssignedCount = s.Assignments.Count,
+                        OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
+                        IsFull = s.Assignments.Count >= s.RequiredStaffCount,
+                        AssignedUserId = CurrentUserId,
+                        AssignedUserName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.StaffFullName).FirstOrDefault() ?? CurrentUserName,
+                        Assignments = s.Assignments.Select(a => new ShiftAssignmentDto
+                        {
+                            Id = a.Id,
+                            ShiftId = a.ShiftId,
+                            UserId = a.UserId,
+                            StaffProfileId = a.StaffProfileId,
+                            StaffFullName = a.StaffFullName,
+                            DutyPosition = a.DutyPosition,
+                            DutyRole = a.DutyRole,
+                            IsLeadOfficer = a.IsLeadOfficer,
+                            Status = a.Status,
+                            IsConfirmedByGuard = a.IsConfirmedByGuard,
+                            ConfirmedAtUtc = a.ConfirmedAtUtc,
+                            AssignedAtUtc = a.AssignedAtUtc,
+                            IsClaimed = a.IsClaimed,
+                            ClaimApproved = a.ClaimApproved,
+                            Notes = a.Notes
+                        }).ToList(),
+                        StartsAtUtc = s.StartsAtUtc,
+                        EndsAtUtc = s.EndsAtUtc,
+                        IsOvernight = s.IsOvernight,
+                        BreakMinutes = s.BreakMinutes,
+                        PlannedDurationHours = s.PlannedDurationHours,
+                        HourlyPayRate = s.HourlyPayRate,
+                        HourlyChargeRate = s.HourlyChargeRate,
+                        RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
+                        RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
+                        Status = s.Status,
+                        IsConfirmedByGuard = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.IsConfirmedByGuard).FirstOrDefault() || s.IsConfirmedByGuard,
+                        AssignmentMode = s.AssignmentMode,
+                        ConfirmedAtUtc = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.ConfirmedAtUtc).FirstOrDefault() ?? s.ConfirmedAtUtc,
+                        AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                        AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
+                        Notes = s.Notes,
+                        SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null,
+                        EmergencyContactPhone = s.ClientSite != null ? s.ClientSite.EmergencyContactPhone : null,
+                        IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
+                        IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
+                    })
+                    .ToListAsync(ct);
 
-            return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(myShifts, "Personal shift roster retrieved."));
+                return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(myShifts, "Personal shift roster retrieved."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[WorkforceMemberWorkspaceApi] Fallback for GetMyShifts triggered: {Message}", ex.Message);
+                var fallbackShifts = await _db.BcpShifts
+                    .AsNoTracking()
+                    .Include(s => s.ClientSite)
+                    .Include(s => s.AttendanceRecord)
+                    .Where(s => s.TenantKey == CurrentTenantKey &&
+                                s.AssignedUserId == CurrentUserId &&
+                                s.EndsAtUtc >= nowUtc)
+                    .OrderBy(s => s.StartsAtUtc)
+                    .Select(s => new ShiftDto
+                    {
+                        Id = s.Id,
+                        ShiftCode = s.ShiftCode,
+                        ClientSiteId = s.ClientSiteId,
+                        SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                        SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                        PostName = s.PostName,
+                        FacilityName = s.FacilityName,
+                        Address = s.Address,
+                        PostCode = s.PostCode,
+                        EventTag = s.EventTag,
+                        RequiredStaffCount = 1,
+                        AssignedCount = 1,
+                        OpenSlotsRemaining = 0,
+                        IsFull = true,
+                        AssignedUserId = CurrentUserId,
+                        AssignedUserName = s.AssignedUserName ?? CurrentUserName,
+                        Assignments = new List<ShiftAssignmentDto>
+                        {
+                            new ShiftAssignmentDto
+                            {
+                                UserId = CurrentUserId,
+                                StaffFullName = s.AssignedUserName ?? CurrentUserName,
+                                IsLeadOfficer = true,
+                                Status = s.Status
+                            }
+                        },
+                        StartsAtUtc = s.StartsAtUtc,
+                        EndsAtUtc = s.EndsAtUtc,
+                        IsOvernight = s.IsOvernight,
+                        BreakMinutes = s.BreakMinutes,
+                        PlannedDurationHours = s.PlannedDurationHours,
+                        HourlyPayRate = s.HourlyPayRate,
+                        HourlyChargeRate = s.HourlyChargeRate,
+                        RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
+                        RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
+                        Status = s.Status,
+                        IsConfirmedByGuard = s.IsConfirmedByGuard,
+                        AssignmentMode = s.AssignmentMode,
+                        ConfirmedAtUtc = s.ConfirmedAtUtc,
+                        AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
+                        AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
+                        Notes = s.Notes,
+                        SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null,
+                        EmergencyContactPhone = s.ClientSite != null ? s.ClientSite.EmergencyContactPhone : null,
+                        IsClockedIn = s.AttendanceRecord != null && s.AttendanceRecord.ClockInUtc.HasValue && !s.AttendanceRecord.ClockOutUtc.HasValue,
+                        IsClockedOut = s.AttendanceRecord != null && s.AttendanceRecord.ClockOutUtc.HasValue
+                    })
+                    .ToListAsync(ct);
+
+                return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(fallbackShifts, "Personal shift roster retrieved."));
+            }
         }
 
         /// <summary>
@@ -239,46 +306,91 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<ActionResult<ApiResponse<List<ShiftDto>>>> GetOpenShifts(CancellationToken ct)
         {
             var nowUtc = DateTime.UtcNow;
-            var openShifts = await _db.BcpShifts
-                .AsNoTracking()
-                .Include(s => s.ClientSite)
-                .Include(s => s.Assignments)
-                .Where(s => s.TenantKey == CurrentTenantKey &&
-                            (s.Assignments.Count < s.RequiredStaffCount || s.Status == "Open" || s.Status == "PartiallyFilled" || s.Status == "Draft") &&
-                            !s.Assignments.Any(a => a.UserId == CurrentUserId) &&
-                            s.EndsAtUtc >= nowUtc)
-                .OrderBy(s => s.StartsAtUtc)
-                .Select(s => new ShiftDto
-                {
-                    Id = s.Id,
-                    ShiftCode = s.ShiftCode,
-                    ClientSiteId = s.ClientSiteId,
-                    SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
-                    SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                    PostName = s.PostName,
-                    FacilityName = s.FacilityName,
-                    Address = s.Address,
-                    PostCode = s.PostCode,
-                    EventTag = s.EventTag,
-                    RequiredStaffCount = s.RequiredStaffCount,
-                    AssignedCount = s.Assignments.Count,
-                    OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
-                    IsFull = s.Assignments.Count >= s.RequiredStaffCount,
-                    StartsAtUtc = s.StartsAtUtc,
-                    EndsAtUtc = s.EndsAtUtc,
-                    IsOvernight = s.IsOvernight,
-                    BreakMinutes = s.BreakMinutes,
-                    PlannedDurationHours = s.PlannedDurationHours,
-                    HourlyPayRate = s.HourlyPayRate,
-                    HourlyChargeRate = s.HourlyChargeRate,
-                    RequireClaimApproval = s.RequireClaimApproval,
-                    Status = s.Assignments.Count > 0 ? "PartiallyFilled" : "Open",
-                    Notes = s.Notes,
-                    SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
-                })
-                .ToListAsync(ct);
+            try
+            {
+                var openShifts = await _db.BcpShifts
+                    .AsNoTracking()
+                    .Include(s => s.ClientSite)
+                    .Include(s => s.Assignments)
+                    .Where(s => s.TenantKey == CurrentTenantKey &&
+                                (s.Assignments.Count < s.RequiredStaffCount || s.Status == "Open" || s.Status == "PartiallyFilled" || s.Status == "Draft") &&
+                                !s.Assignments.Any(a => a.UserId == CurrentUserId) &&
+                                s.EndsAtUtc >= nowUtc)
+                    .OrderBy(s => s.StartsAtUtc)
+                    .Select(s => new ShiftDto
+                    {
+                        Id = s.Id,
+                        ShiftCode = s.ShiftCode,
+                        ClientSiteId = s.ClientSiteId,
+                        SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                        SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                        PostName = s.PostName,
+                        FacilityName = s.FacilityName,
+                        Address = s.Address,
+                        PostCode = s.PostCode,
+                        EventTag = s.EventTag,
+                        RequiredStaffCount = s.RequiredStaffCount,
+                        AssignedCount = s.Assignments.Count,
+                        OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
+                        IsFull = s.Assignments.Count >= s.RequiredStaffCount,
+                        StartsAtUtc = s.StartsAtUtc,
+                        EndsAtUtc = s.EndsAtUtc,
+                        IsOvernight = s.IsOvernight,
+                        BreakMinutes = s.BreakMinutes,
+                        PlannedDurationHours = s.PlannedDurationHours,
+                        HourlyPayRate = s.HourlyPayRate,
+                        HourlyChargeRate = s.HourlyChargeRate,
+                        RequireClaimApproval = s.RequireClaimApproval,
+                        Status = s.Assignments.Count > 0 ? "PartiallyFilled" : "Open",
+                        Notes = s.Notes,
+                        SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
+                    })
+                    .ToListAsync(ct);
 
-            return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(openShifts, "Open shifts retrieved."));
+                return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(openShifts, "Open shifts retrieved."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[WorkforceMemberWorkspaceApi] Fallback for GetOpenShifts triggered: {Message}", ex.Message);
+                var fallbackOpen = await _db.BcpShifts
+                    .AsNoTracking()
+                    .Include(s => s.ClientSite)
+                    .Where(s => s.TenantKey == CurrentTenantKey &&
+                                (s.AssignedUserId == null || s.AssignedUserId == "" || s.Status == "Open") &&
+                                s.EndsAtUtc >= nowUtc)
+                    .OrderBy(s => s.StartsAtUtc)
+                    .Select(s => new ShiftDto
+                    {
+                        Id = s.Id,
+                        ShiftCode = s.ShiftCode,
+                        ClientSiteId = s.ClientSiteId,
+                        SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
+                        SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
+                        PostName = s.PostName,
+                        FacilityName = s.FacilityName,
+                        Address = s.Address,
+                        PostCode = s.PostCode,
+                        EventTag = s.EventTag,
+                        RequiredStaffCount = 1,
+                        AssignedCount = 0,
+                        OpenSlotsRemaining = 1,
+                        IsFull = false,
+                        StartsAtUtc = s.StartsAtUtc,
+                        EndsAtUtc = s.EndsAtUtc,
+                        IsOvernight = s.IsOvernight,
+                        BreakMinutes = s.BreakMinutes,
+                        PlannedDurationHours = s.PlannedDurationHours,
+                        HourlyPayRate = s.HourlyPayRate,
+                        HourlyChargeRate = s.HourlyChargeRate,
+                        RequireClaimApproval = s.RequireClaimApproval,
+                        Status = "Open",
+                        Notes = s.Notes,
+                        SiteAssignmentInstructions = s.ClientSite != null ? s.ClientSite.SiteAssignmentInstructions : null
+                    })
+                    .ToListAsync(ct);
+
+                return Ok(ApiResponse<List<ShiftDto>>.SuccessResponse(fallbackOpen, "Open shifts retrieved."));
+            }
         }
 
         /// <summary>
