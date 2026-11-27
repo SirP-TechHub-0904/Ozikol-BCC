@@ -1387,6 +1387,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
 
     @media (max-width: 768px) {
+      .settings-page {
+        padding: 0 0 80px;
+      }
       .settings-floating-action-bar {
         position: static;
         margin-top: 20px;
@@ -1401,6 +1404,86 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       .btn-save-master {
         width: 100%;
         justify-content: center;
+      }
+      .settings-studio-nav {
+        gap: 6px;
+        padding: 6px;
+        margin-bottom: 16px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .settings-studio-nav::-webkit-scrollbar {
+        display: none;
+      }
+      .studio-nav-btn {
+        min-width: auto !important;
+        flex: 0 0 auto !important;
+        padding: 8px 12px;
+        gap: 8px;
+        border-radius: 8px;
+      }
+      .nav-tab-icon {
+        font-size: 18px;
+      }
+      .tab-title {
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .tab-sub {
+        display: none !important;
+      }
+      .tab-mode-mini-pill {
+        font-size: 9px;
+        padding: 1px 5px;
+        white-space: nowrap;
+      }
+      .widget-head {
+        padding: 14px 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .widget-head .btn, .widget-head a.btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .widget-body {
+        padding: 14px 12px;
+      }
+      .console-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .span-7, .span-5 {
+        grid-column: span 1 !important;
+      }
+      .form-row-2, .form-grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .website-modes-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .website-mode-card {
+        padding: 14px 14px;
+      }
+      .asset-preview-card-active {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .preview-meta-info {
+        min-width: 0;
+        flex: 1 1 140px;
+      }
+      .preview-file-name {
+        font-size: 12.5px;
+      }
+      .preview-file-url {
+        font-size: 11px;
+        word-break: break-all;
+      }
+      .aliases-grid {
+        grid-template-columns: 1fr !important;
       }
     }
 
@@ -3050,6 +3133,88 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     }
     .btn-demo-wa:hover {
       background: #20ba59;
+    }
+
+    /* Mobile Edge-to-Edge and Grid Overhauls (<= 768px) */
+    @media (max-width: 768px) {
+      .settings-page {
+        padding: 0 0 100px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .settings-studio-nav {
+        gap: 6px !important;
+        padding: 6px !important;
+        margin-bottom: 14px !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .settings-studio-nav::-webkit-scrollbar {
+        display: none;
+      }
+      .studio-nav-btn {
+        min-width: auto !important;
+        flex: 0 0 auto !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+      }
+      .website-modes-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+      }
+      .website-mode-card {
+        width: 100% !important;
+        padding: 16px 14px !important;
+        box-sizing: border-box !important;
+      }
+      .store-master-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        padding: 14px !important;
+        box-sizing: border-box !important;
+      }
+      .store-banner-left {
+        gap: 10px !important;
+      }
+      .store-banner-actions {
+        width: 100% !important;
+      }
+      .store-banner-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .widget-title {
+        word-break: break-word !important;
+        white-space: normal !important;
+      }
+      .widget-head {
+        padding: 14px 12px !important;
+      }
+      .widget-body {
+        padding: 14px 12px !important;
+      }
+      .settings-floating-action-bar {
+        position: static !important;
+        margin-top: 20px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+      }
+      .btn-save-master {
+        width: 100% !important;
+        justify-content: center !important;
+      }
     }
   `]
 })

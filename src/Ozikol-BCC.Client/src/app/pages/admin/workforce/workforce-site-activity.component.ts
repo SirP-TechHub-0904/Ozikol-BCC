@@ -507,6 +507,38 @@ interface SiteStaffRosterItem {
       box-sizing: border-box;
     }
 
+    @media (max-width: 768px) {
+      .bcp-page-container {
+        padding: 8px 6px;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 1rem;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .header-actions .btn {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        height: 36px;
+        padding: 0 0.6rem;
+        font-size: 12px;
+        justify-content: center;
+      }
+      .header-actions .btn-primary {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        height: 38px;
+        font-size: 13px;
+      }
+    }
+
     .breadcrumb {
       display: flex;
       align-items: center;
@@ -677,9 +709,35 @@ interface SiteStaffRosterItem {
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .metrics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .kpi-card {
+        padding: 10px 12px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+      }
+      .kpi-icon-box {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 6px !important;
+      }
+      .kpi-icon-box .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .kpi-value {
+        font-size: 1.25rem !important;
+        line-height: 1.15 !important;
+      }
+      .kpi-label {
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+      }
+      .kpi-sub {
+        display: none !important;
       }
     }
 

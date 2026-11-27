@@ -260,6 +260,23 @@ export interface PageHeaderButton {
       border: 1px solid rgba(15, 23, 42, 0.12);
       box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(0, 80, 229, 0.12);
       animation: floatingSaveSlideUp 0.18s ease-out;
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+    }
+    @media (max-width: 640px) {
+      .bcp-floating-save-bar {
+        bottom: 14px;
+        padding: 5px 6px;
+        gap: 6px;
+      }
+      .bcp-floating-save-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+      }
+      .bcp-floating-top-btn {
+        width: 32px;
+        height: 32px;
+      }
     }
     .bcp-floating-save-btn {
       background: #0050e5;

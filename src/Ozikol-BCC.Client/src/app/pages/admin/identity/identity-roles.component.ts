@@ -6,7 +6,6 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
-import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * Interface representing a seeded system role in the identity governance catalog.
@@ -72,18 +71,37 @@ interface GroupMemberPreview {
 @Component({
   selector: 'app-identity-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="identity-roles-page">
-      <!-- Standardized Page Header -->
-      <app-page-header
-        [eyebrow]="'identity.roles.eyebrow' | translate:'ACCESS CONTROL & GOVERNANCE'"
-        icon="shield_person"
-        [title]="'identity.roles.title' | translate:'System Roles & Authority Matrix'"
-        [subtitle]="('identity.roles.subtitle_prefix' | translate:'Manage the ') + (rolesCatalog.length || (isSuperAdmin ? 8 : 7)) + ('identity.roles.subtitle_suffix' | translate:' enterprise roles organized into System & Feature Authority and Operational Access Levels.')"
-        [buttons]="headerButtons"
-        [loading]="isLoading"
-      ></app-page-header>
+      <!-- Canonical Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <a routerLink="/identity/console">Identity &amp; Access</a>
+            <span class="sep">/</span>
+            <span class="current">System Roles &amp; Permissions</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">shield_person</span>
+            <h1>{{ 'identity.roles.title' | translate:'System Roles & Authority Matrix' }}</h1>
+            <span class="badge-suite">SUITE: IDENTITY &amp; ACCESS</span>
+          </div>
+          <p class="subtitle">{{ ('identity.roles.subtitle_prefix' | translate:'Manage the ') + (rolesCatalog.length || (isSuperAdmin ? 8 : 7)) + ('identity.roles.subtitle_suffix' | translate:' enterprise roles organized into System & Feature Authority and Operational Access Levels.') }}</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/identity/console" class="btn-header-link">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span>{{ 'nav.identity_dashboard' | translate:'Identity Dashboard' }}</span>
+          </a>
+          <a routerLink="/users/console/list" class="btn-header-link">
+            <span class="material-symbols-outlined">groups</span>
+            <span>{{ 'identity.roles.btn_user_directory' | translate:'User Directory' }}</span>
+          </a>
+        </div>
+      </div>
 
       <!-- Overview Stats Strip (Clickable Filter Cards) -->
       <div class="stats-strip" *ngIf="!isLoading">
@@ -613,7 +631,7 @@ interface GroupMemberPreview {
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="width: 320px;">Role</th>
+                  <th class="th-role-col">Role</th>
                   <th>Scope & Governance Boundaries</th>
                 </tr>
               </thead>
@@ -665,7 +683,7 @@ interface GroupMemberPreview {
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="width: 320px;">System Role</th>
+                  <th class="th-role-col">System Role</th>
                   <th>Description & Operational Scope</th>
                 </tr>
               </thead>
@@ -718,7 +736,7 @@ interface GroupMemberPreview {
             <table class="roles-data-table">
               <thead>
                 <tr>
-                  <th style="width: 340px;">Feature Role</th>
+                  <th class="th-role-col">Feature Role</th>
                   <th>Description & Modular Scope</th>
                 </tr>
               </thead>
@@ -994,6 +1012,13 @@ interface GroupMemberPreview {
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
     .identity-roles-page {
       display: flex;
       flex-direction: column;
@@ -1001,6 +1026,66 @@ interface GroupMemberPreview {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #0f172a;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .permissions-tab-section,
+    .user-groups-section {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .th-role-col {
+      width: 320px;
+    }
+
+    /* Canonical Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn-header-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+    .btn-header-link:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
     }
 
     /* Stats Strip (Clickable Interactive Filter Cards) */
@@ -2340,6 +2425,258 @@ interface GroupMemberPreview {
     :host-context(.dark-mode) .blueprint-table-wrap.table-disabled {
       background: #0f172a;
     }
+
+    @media (max-width: 768px) {
+      :host {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+      }
+      .identity-roles-page {
+        gap: 14px;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .permissions-tab-section,
+      .user-groups-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .table-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px 14px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+      }
+      .title-row h1 {
+        font-size: 19px !important;
+      }
+      .breadcrumb {
+        font-size: 11px;
+        flex-wrap: wrap;
+      }
+      .header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      .btn-header-link {
+        width: 100%;
+        height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+        justify-content: center;
+      }
+      .stats-strip {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 8px !important;
+        padding-bottom: 4px;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .stats-strip::-webkit-scrollbar {
+        display: none;
+      }
+      .stat-card {
+        flex: 0 0 145px !important;
+        max-width: 145px !important;
+        min-width: 145px !important;
+        padding: 10px 12px !important;
+        gap: 8px;
+        box-sizing: border-box;
+      }
+      .stat-card-main {
+        gap: 10px !important;
+      }
+      .stat-icon-wrap {
+        width: 34px !important;
+        height: 34px !important;
+      }
+      .stat-icon-wrap span {
+        font-size: 18px !important;
+      }
+      .stat-val {
+        font-size: 17px !important;
+      }
+      .stat-lbl {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .active-indicator-pill {
+        display: none !important;
+      }
+      .category-tabs-nav {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 6px !important;
+        padding: 4px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .category-tabs-nav::-webkit-scrollbar {
+        display: none;
+      }
+      .filter-tab-btn {
+        flex: 0 0 auto !important;
+        padding: 7px 11px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+      }
+      .groups-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 14px 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .banner-icon-wrap {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 8px !important;
+      }
+      .banner-icon-wrap .material-symbols-outlined {
+        font-size: 20px !important;
+      }
+      .banner-body {
+        width: 100% !important;
+      }
+      .banner-body h4 {
+        font-size: 14px !important;
+        margin-bottom: 4px !important;
+      }
+      .banner-body p {
+        font-size: 12px !important;
+        line-height: 1.45 !important;
+      }
+      .banner-actions {
+        width: 100% !important;
+        margin-top: 4px;
+      }
+      .banner-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 38px !important;
+        font-size: 13px !important;
+      }
+      .table-card-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 12px 12px !important;
+      }
+      .card-header-meta {
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .header-title-row {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .header-title-row h3 {
+        font-size: 14px !important;
+      }
+      .table-card-header .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 34px !important;
+        font-size: 12px !important;
+      }
+      .table-responsive {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: block !important;
+        box-sizing: border-box !important;
+      }
+      .roles-data-table {
+        min-width: 440px !important;
+      }
+      .th-role-col {
+        width: 140px !important;
+        min-width: 140px !important;
+      }
+      .group-editor-card {
+        margin-bottom: 12px;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .editor-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 12px 14px !important;
+      }
+      .editor-header .btn {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .editor-body {
+        padding: 14px 12px !important;
+        gap: 16px !important;
+      }
+      .editor-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .admin-toggle-card {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        padding: 12px 12px !important;
+      }
+      .admin-toggle-left {
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .admin-toggle-switch {
+        align-self: flex-end;
+      }
+      .editor-footer {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+      }
+      .editor-footer .btn {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+    }
   `]
 })
 export class IdentityRolesComponent implements OnInit {
@@ -2557,23 +2894,6 @@ export class IdentityRolesComponent implements OnInit {
       isPaid: false
     }
   ];
-
-  get headerButtons(): PageHeaderButton[] {
-    return [
-      {
-        text: this.translationService.translate('identity.roles.btn_user_directory', 'User Directory'),
-        icon: 'groups',
-        isPrimary: false,
-        routerLink: '/admin/users/list'
-      },
-      {
-        text: this.translationService.translate('nav.identity_dashboard', 'Identity Dashboard'),
-        icon: 'admin_panel_settings',
-        isPrimary: false,
-        routerLink: '/identity/console'
-      }
-    ];
-  }
 
   constructor(
     private api: ApiService,

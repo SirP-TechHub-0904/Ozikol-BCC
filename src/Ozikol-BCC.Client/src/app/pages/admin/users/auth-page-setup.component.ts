@@ -1349,6 +1349,56 @@ interface WallpaperPreset {
         position: static;
       }
     }
+
+    @media (max-width: 768px) {
+      .auth-setup-page {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .setup-layout {
+        gap: 16px;
+      }
+      .card-header {
+        padding: 14px 16px;
+        gap: 12px;
+      }
+      .card-header .header-icon-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+      .card-header .header-icon-box .material-symbols-outlined {
+        font-size: 20px;
+      }
+      .card-body {
+        padding: 14px 16px !important;
+      }
+      .layout-options-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+      .layout-option-card {
+        padding: 14px;
+      }
+      .presets-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+      }
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+      .wallpaper-action-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .wallpaper-action-row .btn,
+      .wallpaper-action-row button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   `]
 })
 export class AuthPageSetupComponent implements OnInit {

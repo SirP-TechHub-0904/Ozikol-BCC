@@ -1521,10 +1521,10 @@ export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | '
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
-      height: 40px;
-      padding: 0 1rem;
-      font-size: 0.875rem;
+      gap: 0.35rem;
+      height: 36px;
+      padding: 0 0.85rem;
+      font-size: 0.8125rem;
       font-weight: 600;
       line-height: 1;
       white-space: nowrap;
@@ -1536,7 +1536,7 @@ export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | '
       transition: all 0.15s ease;
     }
     .btn .material-symbols-outlined {
-      font-size: 18px;
+      font-size: 16px;
     }
 
     .btn-outline {
@@ -1560,62 +1560,75 @@ export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | '
     }
 
     .btn-sm {
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      height: 32px;
     }
 
     /* Tabs Bar */
     .settings-tabs-bar {
       display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-      margin-bottom: 1.5rem;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 5px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1.25rem;
       overflow-x: auto;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      &::-webkit-scrollbar {
-        display: none;
-      }
+      -webkit-overflow-scrolling: touch;
+    }
+    .settings-tabs-bar::-webkit-scrollbar {
+      display: none;
     }
 
     .tab-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
+      gap: 6px;
+      padding: 6px 12px;
       background: transparent;
       border: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      font-size: 0.875rem;
+      border-radius: 7px;
+      margin: 0;
+      font-size: 12.5px;
       font-weight: 600;
-      color: #64748b;
+      color: #475569;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
 
     .tab-btn:hover {
+      background: #e2e8f0;
       color: #0f172a;
     }
 
     .tab-btn.active {
-      color: #0050e5;
-      border-bottom-color: #0050e5;
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 80, 229, 0.25);
+    }
+
+    .tab-btn .material-symbols-outlined {
+      font-size: 16px;
     }
 
     .tab-count {
-      font-size: 0.6875rem;
-      background: #e2e8f0;
-      color: #475569;
-      padding: 0.1rem 0.45rem;
+      font-size: 11px;
+      background: #cbd5e1;
+      color: #334155;
+      padding: 1px 6px;
       border-radius: 9999px;
       font-weight: 700;
     }
 
     .tab-btn.active .tab-count {
-      background: #eff6ff;
-      color: #0050e5;
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
     }
 
     /* Metrics Grid */
@@ -1991,21 +2004,37 @@ export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | '
       }
       .header-actions {
         width: 100%;
-        justify-content: stretch;
-        gap: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
       }
       .header-actions .btn {
-        flex: 1 1 calc(50% - 0.5rem);
+        flex: 1 1 calc(50% - 4px);
         min-width: 0;
-        padding: 0 0.75rem;
+        height: 36px;
+        padding: 0 0.6rem;
+        font-size: 12px;
       }
       .header-actions .btn-primary {
-        flex-basis: 100%;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        height: 38px;
+        font-size: 13px;
+      }
+      .settings-tabs-bar {
+        padding: 4px;
+        gap: 4px;
+        margin-bottom: 1rem;
       }
       .tab-btn {
         flex-shrink: 0;
         white-space: nowrap;
-        padding: 0.65rem 0.9rem;
+        padding: 5px 10px;
+        font-size: 12px;
+        gap: 5px;
+      }
+      .tab-btn .material-symbols-outlined {
+        font-size: 15px;
       }
       .card-header-bar {
         flex-wrap: wrap;
@@ -2014,6 +2043,37 @@ export type WorkforceSettingsTab = 'roles' | 'shift-id' | 'breaks' | 'forms' | '
       }
       .header-bar-left {
         min-width: 0;
+      }
+      .policy-form {
+        padding: 1rem 0.85rem !important;
+      }
+      .content-card .p-4 {
+        padding: 1rem 0.85rem !important;
+      }
+      .radio-option-card {
+        padding: 0.75rem !important;
+      }
+      .radio-option-card .w-100 .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 4px !important;
+      }
+      .code-badge {
+        font-size: 11px;
+        word-break: break-all;
+      }
+      .policy-form .d-flex.border-top {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .policy-form .d-flex.border-top .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .preview-box .d-flex.justify-content-between {
+        flex-wrap: wrap;
+        gap: 4px;
       }
       .table-responsive {
         overflow-x: auto;

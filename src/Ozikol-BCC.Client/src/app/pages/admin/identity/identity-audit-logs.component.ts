@@ -47,51 +47,58 @@ export interface WorkspaceAuditLogItem {
   imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="audit-page-container">
-      <section class="card-section animate-fade">
-        <!-- Card Header matching Manage My Account -> My Activity -->
-        <div class="section-card-head">
-          <div class="card-title-group">
-            <span class="material-symbols-outlined head-icon text-primary">security</span>
-            <div>
-              <h2 class="card-title">{{ 'audit.console_title' | translate:'Security Audit & Log Activity (All Workspace Users)' }}</h2>
-              <p class="card-desc">
-                {{ 'audit.console_desc' | translate:'Complete workspace audit trail of tasks, operational changes, and authentication events across all users and historical archives.' }}
-              </p>
-            </div>
+      <!-- Canonical Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <span>Identity &amp; Users</span>
+            <span class="sep">/</span>
+            <span class="current">Security Audit Logs</span>
           </div>
-
-          <div class="head-actions-wrap">
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">security</span>
+            <h1>{{ 'audit.console_title' | translate:'Security Audit & Log Activity' }}</h1>
+            <span class="badge-suite">SUITE: IDENTITY &amp; ACCESS</span>
             <span class="counter-badge" *ngIf="totalCount > 0">{{ totalCount }} {{ 'audit.logs_count' | translate:'Audit Logs' }}</span>
-
-            <a
-              routerLink="/identity/console/error-codes"
-              class="btn-secondary"
-              style="text-decoration: none;">
-              <span class="material-symbols-outlined">menu_book</span>
-              <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
-            </a>
-
-            <button
-              type="button"
-              class="btn-danger-outline"
-              *ngIf="selectedIds.size > 0"
-              (click)="deleteSelectedLogs()"
-              [disabled]="isDeleting">
-              <span class="material-symbols-outlined">delete_sweep</span>
-              <span>{{ 'audit.delete_selected' | translate:'Delete Selected' }} ({{ selectedIds.size }})</span>
-            </button>
-
-            <button
-              type="button"
-              class="btn-secondary"
-              (click)="loadLogs(page)"
-              [disabled]="isLoading">
-              <span class="material-symbols-outlined" [class.spin-icon]="isLoading">refresh</span>
-              <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
-            </button>
           </div>
+          <p class="subtitle">
+            {{ 'audit.console_desc' | translate:'Complete workspace audit trail of tasks, operational changes, and authentication events across all users and historical archives.' }}
+          </p>
         </div>
 
+        <div class="header-actions">
+          <a
+            routerLink="/identity/console/error-codes"
+            class="btn-secondary"
+            style="text-decoration: none;">
+            <span class="material-symbols-outlined">menu_book</span>
+            <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
+          </a>
+
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="loadLogs(page)"
+            [disabled]="isLoading">
+            <span class="material-symbols-outlined" [class.spin-icon]="isLoading">refresh</span>
+            <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn-danger-outline"
+            *ngIf="selectedIds.size > 0"
+            (click)="deleteSelectedLogs()"
+            [disabled]="isDeleting">
+            <span class="material-symbols-outlined">delete_sweep</span>
+            <span>{{ 'audit.delete_selected' | translate:'Delete Selected' }} ({{ selectedIds.size }})</span>
+          </button>
+        </div>
+      </div>
+
+      <section class="card-section animate-fade">
         <div class="card-body">
           <!-- Severity Quick Tiers & Clear Actions Bar -->
           <div class="severity-tier-bar">
@@ -141,7 +148,7 @@ export interface WorkspaceAuditLogItem {
                 type="text"
                 [(ngModel)]="searchTerm"
                 (keyup.enter)="onSearchChange()"
-                [placeholder]="'audit.search_placeholder' | translate:'Search by user, email, action, description, or IP...'"
+                [placeholder]="'audit.search_placeholder' | translate:'Search logs by user, action, IP...'"
                 class="search-input" />
               <button
                 type="button"
@@ -153,15 +160,17 @@ export interface WorkspaceAuditLogItem {
               </button>
             </div>
 
-            <select [(ngModel)]="selectedModule" (ngModelChange)="onModuleChange()" class="module-select">
-              <option value="all">{{ 'audit.all_modules' | translate:'All Modules' }} ({{ modules.length }})</option>
-              <option *ngFor="let mod of modules" [value]="mod">{{ translationService.translateDynamic(mod) }}</option>
-            </select>
+            <div class="filter-controls-wrap">
+              <select [(ngModel)]="selectedModule" (ngModelChange)="onModuleChange()" class="module-select">
+                <option value="all">{{ 'audit.all_modules' | translate:'All Modules' }} ({{ modules.length }})</option>
+                <option *ngFor="let mod of modules" [value]="mod">{{ translationService.translateDynamic(mod) }}</option>
+              </select>
 
-            <button type="button" class="btn-secondary btn-filter" (click)="onSearchChange()">
-              <span class="material-symbols-outlined">filter_list</span>
-              <span>{{ 'audit.filter' | translate:'Filter' }}</span>
-            </button>
+              <button type="button" class="btn-secondary btn-filter" (click)="onSearchChange()">
+                <span class="material-symbols-outlined">filter_list</span>
+                <span>{{ 'audit.filter' | translate:'Filter' }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Empty State -->
@@ -308,6 +317,31 @@ export interface WorkspaceAuditLogItem {
       width: 100%;
       box-sizing: border-box;
     }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      margin-bottom: 18px;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { font-size: 13px; color: #64748b; margin: 0; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .filter-controls-wrap { display: flex; align-items: center; gap: 10px; }
     .card-section {
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -866,6 +900,133 @@ export interface WorkspaceAuditLogItem {
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px !important;
+        gap: 12px !important;
+        margin-bottom: 12px;
+      }
+      .title-row h1 { font-size: 19px !important; }
+      .breadcrumb { font-size: 11px; flex-wrap: wrap; }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .header-actions .btn-secondary {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+        justify-content: center;
+      }
+      .header-actions .btn-danger-outline {
+        width: 100%;
+        height: 36px;
+        justify-content: center;
+      }
+      .card-body {
+        padding: 12px 10px 16px;
+      }
+      .severity-tier-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 10px;
+      }
+      .tier-buttons {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        width: 100%;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+      .tier-buttons::-webkit-scrollbar {
+        display: none;
+      }
+      .tier-pill {
+        flex: 0 0 auto;
+        padding: 5px 10px;
+        font-size: 11.5px;
+      }
+      .clear-actions-group {
+        display: flex;
+        width: 100%;
+        gap: 6px;
+      }
+      .btn-clear-cat {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 6px 4px;
+        font-size: 10.5px;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .btn-clear-cat span.material-symbols-outlined {
+        font-size: 14px;
+      }
+      .filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .search-box-wrap {
+        width: 100%;
+        max-width: 100%;
+        flex: 1 1 100%;
+      }
+      .filter-controls-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+      .module-select {
+        flex: 1 1 auto;
+        width: 0;
+        min-width: 0;
+        height: 36px;
+        font-size: 12px;
+      }
+      .btn-filter {
+        flex: 0 0 auto;
+        height: 36px;
+        padding: 0 12px;
+        font-size: 12px;
+      }
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+      }
+      .account-table {
+        min-width: 780px;
+      }
+      .pagination-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px;
+      }
+      .page-size-selector {
+        flex-wrap: wrap;
+        font-size: 11.5px;
+      }
+      .pagination-controls {
+        justify-content: center;
+        width: 100%;
+        overflow-x: auto;
+      }
     }
   `]
 })

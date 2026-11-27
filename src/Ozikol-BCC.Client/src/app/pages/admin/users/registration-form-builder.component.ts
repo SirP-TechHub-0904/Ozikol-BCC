@@ -114,12 +114,18 @@ interface IndustryTemplate {
       <!-- Page Header -->
       <div class="rf-header">
         <div class="rf-header-left">
-          <div class="rf-eyebrow">
-            <span class="material-symbols-outlined">how_to_reg</span>
-            <span>USER MANAGEMENT &amp; ONBOARDING</span>
+          <div class="breadcrumb" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#64748b; margin-bottom:6px;">
+            <a routerLink="/admin/dashboard" style="color:#0050e5; text-decoration:none; font-weight:500;">Command Center</a>
+            <span style="color:#cbd5e1;">/</span>
+            <span>Identity &amp; Users</span>
+            <span style="color:#cbd5e1;">/</span>
+            <span style="color:#0f172a; font-weight:600;">Registration Form Builder</span>
           </div>
-          <h1 class="rf-title">Registration Form Builder</h1>
-          <p class="rf-subtitle">
+          <div class="rf-title-row" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 class="rf-title" style="margin:0;">Registration Form Builder</h1>
+            <span class="badge-suite" style="background:#eff6ff; color:#0050e5; border:1px solid #bfdbfe; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; text-transform:uppercase;">SUITE: IDENTITY &amp; ACCESS</span>
+          </div>
+          <p class="rf-subtitle" style="margin-top:4px;">
             Configure custom onboarding questions, field types, and registration rules for your business.
             Unlike CMS inquiry forms, questions configured here extend authenticated member accounts.
           </p>
@@ -3001,7 +3007,7 @@ interface IndustryTemplate {
   `,
   styles: [`
     .rf-builder-container {
-      padding: 24px 32px 60px;
+      padding: 0 0 60px;
       font-family: inherit;
       color: #0f172a;
       max-width: 1480px;
@@ -3012,11 +3018,17 @@ interface IndustryTemplate {
     .rf-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 24px;
-      margin-bottom: 24px;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
     }
+    .rf-header-left { min-width: 0; }
     .rf-eyebrow {
       display: inline-flex;
       align-items: center;
@@ -3030,10 +3042,10 @@ interface IndustryTemplate {
     }
     .rf-eyebrow span { font-size: 16px; }
     .rf-title {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
       color: #0f172a;
-      margin: 0 0 6px;
+      margin: 0;
       letter-spacing: -0.02em;
     }
     .rf-subtitle {
@@ -3046,7 +3058,76 @@ interface IndustryTemplate {
     .rf-header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .rf-builder-container {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .rf-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px 12px !important;
+        gap: 12px !important;
+      }
+      .rf-title {
+        font-size: 19px !important;
+      }
+      .rf-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      .rf-header-actions .rf-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0 8px;
+        font-size: 11.5px;
+      }
+      .rf-header-actions a.rf-btn {
+        grid-column: span 2;
+      }
+      .rf-header-actions .rf-btn-primary {
+        grid-column: span 2;
+        height: 38px;
+        font-size: 13px;
+      }
+      .rf-policy-card {
+        padding: 12px !important;
+        box-sizing: border-box;
+        width: 100%;
+      }
+      .rf-policy-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .rf-policy-header .rf-btn-save {
+        width: 100%;
+        justify-content: center;
+      }
+      .rf-policy-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+      .rf-toggle-box {
+        padding: 10px 12px !important;
+        box-sizing: border-box;
+        width: 100%;
+      }
+      .rf-slug-input-wrap {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .rf-slug-input-wrap .rf-input {
+        min-width: 0;
+        flex: 1 1 0;
+        width: 100%;
+      }
     }
 
     /* Buttons */
@@ -4385,6 +4466,8 @@ interface IndustryTemplate {
       border-radius: 8px;
       overflow: hidden;
       background: #ffffff;
+      width: 100%;
+      box-sizing: border-box;
     }
     .rf-slug-prefix {
       padding: 0 12px;
@@ -4396,11 +4479,15 @@ interface IndustryTemplate {
       height: 40px;
       display: flex;
       align-items: center;
+      flex-shrink: 0;
     }
     .rf-slug-input-wrap .rf-input {
       border: none !important;
       border-radius: 0 !important;
       box-shadow: none !important;
+      flex: 1 1 0;
+      min-width: 0;
+      width: 100%;
     }
     .rf-live-url-pill {
       margin-top: 8px;

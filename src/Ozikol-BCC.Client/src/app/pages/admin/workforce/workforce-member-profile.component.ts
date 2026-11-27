@@ -593,10 +593,12 @@ interface StaffMemberDetail {
         <!-- ========================================================================= -->
         <div class="tab-pane" *ngIf="activeTab === 'custom-forms'">
           <div class="onboarding-info-banner">
-            <span class="material-symbols-outlined">fact_check</span>
-            <div class="banner-text">
-              <strong>Registration Form Onboarding Responses:</strong>
-              These questions are dynamically synced from your <strong>Registration Form Builder</strong>. They are filled by the staff member during self-onboarding (via invitation link) or completed in-house by an administrator during Full Staff Registration. Administrators can review or update any response below.
+            <div class="banner-top-row">
+              <span class="material-symbols-outlined banner-icon">fact_check</span>
+              <div class="banner-text">
+                <strong>Registration Form Onboarding Responses:</strong>
+                These questions are dynamically synced from your <strong>Registration Form Builder</strong>. They are filled by the staff member during self-onboarding (via invitation link) or completed in-house by an administrator during Full Staff Registration. Administrators can review or update any response below.
+              </div>
             </div>
             <a routerLink="/users/console/registration-form" class="btn btn-outline btn-sm">
               <span class="material-symbols-outlined">tune</span>
@@ -1424,14 +1426,49 @@ interface StaffMemberDetail {
         width: 100%;
         justify-content: center;
       }
+      .view-mode-toggle {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .view-mode-toggle .view-btn {
+        justify-content: center;
+        padding: 0.5rem;
+      }
       .table-responsive {
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
       .settings-table {
-        min-width: 680px;
+        min-width: 760px;
         width: 100%;
+      }
+      .onboarding-info-banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+      }
+      .banner-top-row {
+        width: 100%;
+      }
+      .banner-text,
+      .onboarding-info-text {
+        width: 100%;
+        flex: 1 1 auto;
+      }
+      .onboarding-info-banner .btn,
+      .onboarding-info-banner a.btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .save-bar {
+        width: 100%;
+      }
+      .save-bar .btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -1880,11 +1917,27 @@ interface StaffMemberDetail {
       display: flex;
       align-items: flex-start;
       gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
       padding: 16px 20px;
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       margin-bottom: 1.5rem;
+    }
+    .banner-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .banner-icon {
+      font-size: 24px;
+      color: #0050e5;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
     .onboarding-info-icon {
       width: 38px;
@@ -1897,18 +1950,27 @@ interface StaffMemberDetail {
       justify-content: center;
       flex-shrink: 0;
     }
+    .banner-text,
     .onboarding-info-text {
       flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       font-size: 13px;
       color: #1e3a8a;
       line-height: 1.5;
     }
+    .banner-text strong,
     .onboarding-info-text strong {
       display: block;
       font-size: 14px;
       font-weight: 700;
       color: #0f172a;
       margin-bottom: 3px;
+    }
+    .onboarding-info-banner .btn,
+    .onboarding-info-banner a.btn {
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .onboarding-info-text p {
       margin: 0;
@@ -1965,9 +2027,35 @@ interface StaffMemberDetail {
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .staff-kpi-summary-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .staff-kpi-card {
+        padding: 10px 12px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+      }
+      .kpi-icon-box {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 6px !important;
+      }
+      .kpi-icon-box .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .kpi-value {
+        font-size: 1.25rem !important;
+        line-height: 1.15 !important;
+      }
+      .kpi-label {
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+      }
+      .kpi-sub {
+        display: none !important;
       }
     }
 
@@ -2235,7 +2323,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
     private workforceService: WorkforceService,
     private api: ApiService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
@@ -2396,7 +2484,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.staffDutyHistory = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -2407,7 +2495,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.jobRoles = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getStaffTypes().subscribe({
@@ -2416,7 +2504,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.staffTypes = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getDocumentCategories().subscribe({
@@ -2425,7 +2513,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.documentCategories = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -2458,7 +2546,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           return d;
         });
         return;
-      } catch {}
+      } catch { }
     }
     this.weeklySchedule = defaults;
   }

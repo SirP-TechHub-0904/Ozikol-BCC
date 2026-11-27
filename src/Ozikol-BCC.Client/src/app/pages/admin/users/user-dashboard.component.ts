@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../../../core/services/api.service';
-import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 
@@ -12,18 +11,37 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-user-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageHeaderComponent, TranslatePipe],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <div class="user-dashboard-page">
-      <!-- Standardized Page Header -->
-      <app-page-header
-        [eyebrow]="'dashboard.eyebrow' | translate:'USER MANAGEMENT & DIRECTORY'"
-        icon="groups"
-        [title]="'dashboard.title' | translate:'Member Management & Directory Hub'"
-        [subtitle]="'dashboard.subtitle' | translate:'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.'"
-        [buttons]="headerButtons"
-        [loading]="isLoading"
-      ></app-page-header>
+      <!-- Canonical Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <span>Identity &amp; Users</span>
+            <span class="sep">/</span>
+            <span class="current">Member Directory</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">groups</span>
+            <h1>{{ 'dashboard.title' | translate:'Member Management & Directory Hub' }}</h1>
+            <span class="badge-suite">SUITE: IDENTITY &amp; ACCESS</span>
+          </div>
+          <p class="subtitle">{{ 'dashboard.subtitle' | translate:'Executive real-time intelligence, demographic distributions, category tiers, and scorecards.' }}</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/users/console/list" class="btn btn-outline">
+            <span class="material-symbols-outlined">table_view</span>
+            <span>{{ 'dashboard.directory_register' | translate:'Directory Register' }}</span>
+          </a>
+          <a routerLink="/users/console/create" class="btn btn-primary">
+            <span class="material-symbols-outlined">person_add</span>
+            <span>{{ 'dashboard.add_member' | translate:'Add Member' }}</span>
+          </a>
+        </div>
+      </div>
 
       <!-- =================================================================== -->
       <!-- ROW 1: CORE OPERATIONAL METRICS (4 EQUAL CARDS - CLICKABLE)          -->
@@ -428,10 +446,95 @@ Chart.register(...registerables);
   styles: [`
     .user-dashboard-page { display: flex; flex-direction: column; gap: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; width: 100%; box-sizing: border-box; }
 
+    /* Canonical Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent; }
+    .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
+    .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-primary { background: #0050e5; color: #ffffff; }
+    .btn-primary:hover { background: #003ebd; }
+
     /* Row 1 Metrics (4 Equal Cards) */
     .row-1-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; width: 100%; box-sizing: border-box; }
     @media (max-width: 1024px) { .row-1-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 600px) { .row-1-metrics-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px !important;
+        gap: 12px !important;
+      }
+      .title-row h1 {
+        font-size: 19px !important;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .header-actions .btn {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        height: 36px;
+        padding: 0 0.5rem;
+        font-size: 12px;
+      }
+      .header-actions .btn-primary {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        height: 38px;
+        font-size: 13px;
+        order: 2;
+      }
+      .row-1-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+      }
+      .stat-card {
+        padding: 12px 10px !important;
+        gap: 6px !important;
+      }
+      .stat-icon-box {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+      }
+      .stat-icon-box span {
+        font-size: 18px !important;
+      }
+      .stat-value {
+        font-size: 20px !important;
+      }
+      .stat-label {
+        font-size: 11px !important;
+      }
+      .stat-subtext {
+        font-size: 10px !important;
+      }
+    }
 
     .stat-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); min-width: 0; box-sizing: border-box; text-decoration: none; color: inherit; }
     .stat-card.clickable { cursor: pointer; }
@@ -577,23 +680,6 @@ export class UserDashboardComponent implements OnInit, AfterViewInit {
   isLoading = false;
   stats: any = null;
 
-  get headerButtons(): PageHeaderButton[] {
-    return [
-      {
-        text: this.translationService.translate('dashboard.add_member', 'Add Member'),
-        icon: 'person_add',
-        isPrimary: true,
-        routerLink: '/users/console/create'
-      },
-      {
-        text: this.translationService.translate('dashboard.directory_register', 'Directory Register'),
-        icon: 'table_view',
-        isPrimary: false,
-        routerLink: '/users/console/list'
-      }
-    ];
-  }
-
   @ViewChild('growthLineCanvas') growthCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('kpiBarCanvas') kpiBarCanvasRef!: ElementRef<HTMLCanvasElement>;
   private growthChart: Chart | null = null;
@@ -602,7 +688,7 @@ export class UserDashboardComponent implements OnInit, AfterViewInit {
   constructor(
     private api: ApiService,
     private translationService: TranslationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadStats();
