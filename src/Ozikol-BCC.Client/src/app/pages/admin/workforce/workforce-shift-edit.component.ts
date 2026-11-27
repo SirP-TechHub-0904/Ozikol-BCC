@@ -509,95 +509,49 @@ export interface ShiftAssignmentItem {
           </div>
         </div>
 
-        <!-- Right Column: Role, Compensation, Personnel & Live Summary -->
+        <!-- Right Column: Role, Personnel & Multi-Staff Roster Assignment -->
         <div class="form-column">
-          <!-- Card 4: Job Role & Compensation Model -->
+          <!-- Card: Personnel, Role & Headcount Capacity -->
           <div class="cms-card">
-            <div class="card-header">
+            <div class="card-header card-header-split">
               <div class="card-title-group">
                 <span class="material-symbols-outlined text-blue">badge</span>
                 <div>
-                  <h3>Job Role &amp; Compensation Model</h3>
-                  <p class="card-subtitle">Determines hourly wage or monthly salaried status.</p>
+                  <h3>Personnel, Role &amp; Headcount</h3>
+                  <p class="card-subtitle">Define required duty role, staffing headcount, and assign personnel to slots.</p>
                 </div>
               </div>
-            </div>
-
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Job Role / Position <span class="required">*</span></label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="selectedRoleId"
-                  name="selectedRoleId"
-                  (change)="onRoleChange()"
-                  required
-                >
-                  <option value="">Select job position...</option>
-                  <option *ngFor="let r of jobRoles" [value]="r.id">{{ r.title }} ({{ r.code }})</option>
-                </select>
-              </div>
-
-              <!-- Compensation Status Notice Card -->
-              <div class="compensation-info-banner" *ngIf="selectedRole">
-                <div class="banner-top">
-                  <span class="material-symbols-outlined">
-                    {{ selectedRole.compensationBasis === 'Monthly' ? 'calendar_today' : 'payments' }}
-                  </span>
-                  <div>
-                    <strong>{{ selectedRole.compensationBasis === 'Monthly' ? 'Monthly Salaried Position' : 'Hourly Wage Position' }}</strong>
-                    <p *ngIf="selectedRole.compensationBasis === 'Monthly'">
-                      Staff member receives fixed base salary of <strong>{{ currencySymbol }}{{ (selectedRole.monthlySalary || 0) | number:'1.0-0' }}/month</strong>. Scheduled hours track toward monthly contracted target ({{ selectedRole.contractedWeeklyHours || 40 }} hrs/wk).
-                    </p>
-                    <p *ngIf="selectedRole.compensationBasis !== 'Monthly'">
-                      Staff member is compensated per billable hour worked. Default rate: <strong>{{ currencySymbol }}{{ (selectedRole.defaultHourlyRate || 0) | number:'1.2-2' }}/hr</strong>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Hourly Pay Rate (Editable when hourly) -->
-              <div class="form-group" *ngIf="!selectedRole || selectedRole.compensationBasis !== 'Monthly'">
-                <label class="form-label">Hourly Pay Rate ({{ currencySymbol }}/hr)</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  class="form-control"
-                  [(ngModel)]="hourlyPayRate"
-                  (ngModelChange)="recalculateScheduleMetrics()"
-                  name="hourlyPayRate"
-                  placeholder="e.g. 15.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 5: Personnel, Headcount & Multi-Staff Roster Assignment -->
-          <div class="cms-card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div class="card-title-group">
-                <span class="material-symbols-outlined text-blue">badge</span>
-                <div>
-                  <h3>Personnel &amp; Headcount Capacity</h3>
-                  <p class="card-subtitle">Assign staff to posts or configure multi-staff capacity for open claiming (e.g. 1 guard or 20–30 staff).</p>
-                </div>
-              </div>
-              <div class="d-flex align-items-center gap-1 flex-nowrap">
-                <span class="badge nowrap-badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
+              <div class="header-badges">
+                <span class="badge" [ngClass]="assignedStaffList.length >= requiredStaffCount ? 'badge-success' : 'badge-primary'">
                   {{ assignedStaffList.length }} / {{ requiredStaffCount }} Assigned
                 </span>
-                <span class="badge badge-warning nowrap-badge" *ngIf="requiredStaffCount > assignedStaffList.length">
+                <span class="badge badge-warning" *ngIf="requiredStaffCount > assignedStaffList.length">
                   {{ requiredStaffCount - assignedStaffList.length }} Open Slot{{ (requiredStaffCount - assignedStaffList.length) > 1 ? 's' : '' }}
                 </span>
               </div>
             </div>
 
             <div class="card-body">
-              <!-- Headcount & Available Qualified Personnel Row -->
+              <!-- Row 1: Job Role & Headcount Capacity (Side by Side) -->
               <div class="form-row-dual mb-3">
                 <div class="form-group">
+                  <label class="form-label font-weight-bold">Job Role / Position <span class="required">*</span></label>
+                  <select
+                    class="form-control"
+                    [(ngModel)]="selectedRoleId"
+                    name="selectedRoleId"
+                    (change)="onRoleChange()"
+                    required
+                  >
+                    <option value="">Select job position...</option>
+                    <option *ngFor="let r of jobRoles" [value]="r.id">{{ r.title }} ({{ r.code }})</option>
+                  </select>
+                  <span class="field-hint">Defines qualifying position &amp; standard pay scale.</span>
+                </div>
+
+                <div class="form-group">
                   <label class="form-label font-weight-bold">
-                    Required Staff / Total Headcount <span class="text-danger">*</span>
+                    Required Staff / Headcount <span class="required">*</span>
                   </label>
                   <div class="input-group">
                     <input
@@ -614,33 +568,33 @@ export interface ShiftAssignmentItem {
                       <span class="input-group-text">personnel</span>
                     </div>
                   </div>
-                  <span class="field-hint">e.g. 1 for a single post, or 20–30 for large events, festivals, or stadiums.</span>
+                  <span class="field-hint">Capacity for single post or multi-officer event.</span>
                 </div>
+              </div>
 
-                <div class="form-group">
-                  <label class="form-label font-weight-bold">Qualified Personnel Status</label>
-                  <div class="availability-notice-banner mb-0" style="padding: 10px 14px;">
-                    <div class="notice-main">
-                      <span class="material-symbols-outlined text-success">verified_user</span>
-                      <div class="notice-text">
-                        <div class="notice-title">
-                          <strong>{{ availableStaffList.length }} Active Personnel Available</strong>
-                          <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
-                            {{ skippedStaffList.length }} Skipped
-                          </span>
-                        </div>
+              <!-- Row 2: Qualified Personnel Status Banner -->
+              <div class="availability-status-wrapper mb-3">
+                <div class="availability-notice-banner">
+                  <div class="notice-main">
+                    <span class="material-symbols-outlined text-success">verified_user</span>
+                    <div class="notice-text">
+                      <div class="notice-title">
+                        <strong>{{ availableStaffList.length }} Active Personnel Available</strong>
+                        <span class="skipped-tag" *ngIf="skippedStaffList.length > 0">
+                          {{ skippedStaffList.length }} Skipped
+                        </span>
                       </div>
                     </div>
-                    <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
-                      <button
-                        type="button"
-                        class="btn-text-sm"
-                        (click)="showSkippedList = !showSkippedList"
-                      >
-                        <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
-                        <span>{{ showSkippedList ? 'Hide' : 'View (' + skippedStaffList.length + ')' }}</span>
-                      </button>
-                    </div>
+                  </div>
+                  <div class="notice-actions" *ngIf="skippedStaffList.length > 0">
+                    <button
+                      type="button"
+                      class="btn-text-sm"
+                      (click)="showSkippedList = !showSkippedList"
+                    >
+                      <span class="material-symbols-outlined">{{ showSkippedList ? 'expand_less' : 'expand_more' }}</span>
+                      <span>{{ showSkippedList ? 'Hide' : 'View (' + skippedStaffList.length + ')' }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -680,20 +634,22 @@ export interface ShiftAssignmentItem {
                 <label class="form-label font-weight-bold">
                   Assign Staff to Shift (Slot {{ assignedStaffList.length + 1 }} of {{ requiredStaffCount }})
                 </label>
-                <div class="d-flex gap-2">
-                  <select
-                    class="form-control"
-                    [(ngModel)]="pendingStaffToAdd"
-                    name="pendingStaffToAdd"
-                  >
-                    <option value="">Select an available officer to assign...</option>
-                    <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
-                      {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
-                    </option>
-                  </select>
+                <div class="assign-staff-inline-group">
+                  <div class="select-container">
+                    <select
+                      class="form-control"
+                      [(ngModel)]="pendingStaffToAdd"
+                      name="pendingStaffToAdd"
+                    >
+                      <option value="">Select an available officer to assign...</option>
+                      <option *ngFor="let m of displayedStaffMembers" [value]="m.userId">
+                        {{ m.fullName }} ({{ m.jobTitle || 'General Staff' }}) &bull; [{{ m.preferredWorkingTime || 'Any' }} Shift]
+                      </option>
+                    </select>
+                  </div>
                   <button
                     type="button"
-                    class="btn btn-primary d-flex align-items-center gap-1 text-nowrap"
+                    class="btn btn-primary btn-assign-inline"
                     (click)="addStaffToShift()"
                     [disabled]="!pendingStaffToAdd"
                   >
@@ -1262,6 +1218,51 @@ export interface ShiftAssignmentItem {
       padding: 1.25rem 1.5rem;
       border-bottom: 1px solid #f1f5f9;
       background: #ffffff;
+    }
+
+    .card-header-split {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      line-height: 1.2;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-primary {
+      background-color: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+    }
+
+    .badge-success {
+      background-color: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-warning {
+      background-color: #fefce8;
+      color: #a16207;
+      border: 1px solid #fde047;
     }
 
     .card-title-group {
@@ -2026,6 +2027,30 @@ export interface ShiftAssignmentItem {
       font-size: 0.75rem;
       color: #475569;
       cursor: pointer;
+    }
+
+    /* Assign Staff Inline Group */
+    .assign-staff-inline-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .assign-staff-inline-group .select-container {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .btn-assign-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      padding: 0.625rem 1.15rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      border-radius: 0.5rem;
     }
 
     .staff-conflict-alert {
