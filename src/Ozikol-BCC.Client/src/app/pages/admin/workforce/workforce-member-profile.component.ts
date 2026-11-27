@@ -593,10 +593,12 @@ interface StaffMemberDetail {
         <!-- ========================================================================= -->
         <div class="tab-pane" *ngIf="activeTab === 'custom-forms'">
           <div class="onboarding-info-banner">
-            <span class="material-symbols-outlined">fact_check</span>
-            <div class="banner-text">
-              <strong>Registration Form Onboarding Responses:</strong>
-              These questions are dynamically synced from your <strong>Registration Form Builder</strong>. They are filled by the staff member during self-onboarding (via invitation link) or completed in-house by an administrator during Full Staff Registration. Administrators can review or update any response below.
+            <div class="banner-top-row">
+              <span class="material-symbols-outlined banner-icon">fact_check</span>
+              <div class="banner-text">
+                <strong>Registration Form Onboarding Responses:</strong>
+                These questions are dynamically synced from your <strong>Registration Form Builder</strong>. They are filled by the staff member during self-onboarding (via invitation link) or completed in-house by an administrator during Full Staff Registration. Administrators can review or update any response below.
+              </div>
             </div>
             <a routerLink="/users/console/registration-form" class="btn btn-outline btn-sm">
               <span class="material-symbols-outlined">tune</span>
@@ -972,8 +974,9 @@ interface StaffMemberDetail {
   `,
   styles: [`
     .profile-page {
-      padding: 0 4px 40px 4px;
+      padding: 18px 16px 40px;
       min-height: calc(100vh - 70px);
+      box-sizing: border-box;
     }
 
     .page-header {
@@ -1103,9 +1106,20 @@ interface StaffMemberDetail {
       gap: 1.25rem;
     }
 
+    .hero-info {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
     .avatar-circle {
       width: 64px;
       height: 64px;
+      min-width: 64px;
+      min-height: 64px;
+      max-width: 64px;
+      max-height: 64px;
+      flex: 0 0 64px;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
       background: #eff6ff;
       color: #0050e5;
@@ -1301,6 +1315,160 @@ interface StaffMemberDetail {
         justify-content: space-around;
         border-top: 1px solid #f1f5f9;
         padding-top: 1rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-page {
+        padding: 14px 10px 40px;
+      }
+      .page-header {
+        padding: 14px 16px;
+        gap: 12px;
+      }
+      .title-row h1 {
+        font-size: 20px;
+      }
+      .header-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        height: 38px;
+      }
+      .profile-hero-card {
+        padding: 16px 14px;
+      }
+      .hero-left {
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .hero-info {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .avatar-circle {
+        flex: 0 0 54px !important;
+        width: 54px !important;
+        height: 54px !important;
+        min-width: 54px !important;
+        max-width: 54px !important;
+        min-height: 54px !important;
+        max-height: 54px !important;
+        border-radius: 50% !important;
+        font-size: 1.15rem;
+        aspect-ratio: 1 / 1 !important;
+        align-self: flex-start;
+      }
+      .title-row {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .member-name {
+        font-size: 1.15rem;
+      }
+      .meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      .meta-item {
+        word-break: break-all;
+        font-size: 12px;
+      }
+      .hero-stats {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+      }
+      .stat-box {
+        padding: 0 4px;
+      }
+      .stat-val {
+        font-size: 1.15rem;
+      }
+      .stat-label {
+        font-size: 10.5px;
+        line-height: 1.2;
+        white-space: normal;
+      }
+      .profile-tabs-bar {
+        padding: 4px;
+        gap: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      .card-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+      }
+      .header-bar-left {
+        width: 100%;
+        gap: 10px;
+      }
+      .card-header-bar .btn,
+      .card-header-bar .btn-primary {
+        width: 100%;
+        justify-content: center;
+      }
+      .view-mode-toggle {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .view-mode-toggle .view-btn {
+        justify-content: center;
+        padding: 0.5rem;
+      }
+      .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .settings-table {
+        min-width: 760px;
+        width: 100%;
+      }
+      .onboarding-info-banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+      }
+      .banner-top-row {
+        width: 100%;
+      }
+      .banner-text,
+      .onboarding-info-text {
+        width: 100%;
+        flex: 1 1 auto;
+      }
+      .onboarding-info-banner .btn,
+      .onboarding-info-banner a.btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .save-bar {
+        width: 100%;
+      }
+      .save-bar .btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -1749,11 +1917,27 @@ interface StaffMemberDetail {
       display: flex;
       align-items: flex-start;
       gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
       padding: 16px 20px;
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       margin-bottom: 1.5rem;
+    }
+    .banner-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .banner-icon {
+      font-size: 24px;
+      color: #0050e5;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
     .onboarding-info-icon {
       width: 38px;
@@ -1766,18 +1950,27 @@ interface StaffMemberDetail {
       justify-content: center;
       flex-shrink: 0;
     }
+    .banner-text,
     .onboarding-info-text {
       flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       font-size: 13px;
       color: #1e3a8a;
       line-height: 1.5;
     }
+    .banner-text strong,
     .onboarding-info-text strong {
       display: block;
       font-size: 14px;
       font-weight: 700;
       color: #0f172a;
       margin-bottom: 3px;
+    }
+    .onboarding-info-banner .btn,
+    .onboarding-info-banner a.btn {
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .onboarding-info-text p {
       margin: 0;
@@ -1834,9 +2027,35 @@ interface StaffMemberDetail {
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .staff-kpi-summary-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .staff-kpi-card {
+        padding: 10px 12px !important;
+        gap: 4px !important;
+        border-radius: 8px !important;
+      }
+      .kpi-icon-box {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 6px !important;
+      }
+      .kpi-icon-box .material-symbols-outlined {
+        font-size: 16px !important;
+      }
+      .kpi-value {
+        font-size: 1.25rem !important;
+        line-height: 1.15 !important;
+      }
+      .kpi-label {
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+      }
+      .kpi-sub {
+        display: none !important;
       }
     }
 
@@ -2104,7 +2323,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
     private workforceService: WorkforceService,
     private api: ApiService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
@@ -2265,7 +2484,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.staffDutyHistory = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -2276,7 +2495,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.jobRoles = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getStaffTypes().subscribe({
@@ -2285,7 +2504,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.staffTypes = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
 
     this.workforceService.getDocumentCategories().subscribe({
@@ -2294,7 +2513,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           this.documentCategories = res.data;
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -2327,7 +2546,7 @@ export class WorkforceMemberProfileComponent implements OnInit {
           return d;
         });
         return;
-      } catch {}
+      } catch { }
     }
     this.weeklySchedule = defaults;
   }

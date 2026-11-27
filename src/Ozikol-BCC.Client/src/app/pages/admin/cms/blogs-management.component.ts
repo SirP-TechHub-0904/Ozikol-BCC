@@ -605,6 +605,33 @@ import { getSavedPageSize, savePageSizePreference } from '../../../core/utils/pa
       font-weight: 600;
       font-size: 12px;
     }
+
+    @media (max-width: 768px) {
+      .card-filters-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .search-box {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .filter-controls {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      .filter-select {
+        flex: 1;
+      }
+      .data-table {
+        min-width: 650px;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
   `]
 })
 export class BlogsManagementComponent implements OnInit {

@@ -2108,9 +2108,18 @@ export interface SuiteInfoDetail {
       display: none;
     }
     @media (max-width: 900px) {
+      .bcp-workspace-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        gap: 0 !important;
+      }
       .bcp-page-shell,
       .bcp-page-shell.is-workspace-mode {
-        padding: 14px 12px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
         overflow-x: hidden !important;
       }
       .sidebar-close-btn {
@@ -3731,6 +3740,38 @@ export interface SuiteInfoDetail {
     }
     :host-context(.dark-mode) .btn-secondary:hover {
       background: #475569;
+    }
+
+    /* Mobile Edge-to-Edge Clean Shell Overhaul (<= 900px) */
+    @media (max-width: 900px) {
+      .bcp-workspace-container,
+      .bcp-workspace-container.is-workspace-mode,
+      .bcp-workspace-container.ai-docked-bottom,
+      .bcp-workspace-container.ai-docked-right-active {
+        padding: 0 !important;
+        margin: 0 !important;
+        gap: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        border: none !important;
+      }
+      .bcp-page-shell,
+      .bcp-page-shell.is-workspace-mode,
+      .bcp-page-shell.ai-split-70,
+      .bcp-page-shell.ai-split-bottom {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        background-color: var(--md-sys-color-background) !important;
+      }
     }
   `]
 })

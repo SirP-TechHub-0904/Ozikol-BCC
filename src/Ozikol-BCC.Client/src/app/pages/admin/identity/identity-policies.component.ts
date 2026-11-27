@@ -1,26 +1,42 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
-import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-identity-policies',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="identity-page">
-      <app-page-header
-        [eyebrow]="'identity.policy.eyebrow' | translate:'SECURITY STANDARDS'"
-        icon="policy"
-        [title]="'identity.policy.title' | translate:'Global Security Policies'"
-        [subtitle]="'identity.policy.subtitle' | translate:'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.'"
-        [buttons]="headerButtons"
-        [loading]="isLoading"
-      ></app-page-header>
+      <!-- Canonical BCC Enterprise Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <a routerLink="/identity/console">Identity &amp; Access</a>
+            <span class="sep">/</span>
+            <span class="current">Security Policies</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">policy</span>
+            <h1>{{ 'identity.policy.title' | translate:'Global Security Policies' }}</h1>
+            <span class="badge-suite">SUITE: SECURITY &amp; COMPLIANCE</span>
+          </div>
+          <p class="subtitle">{{ 'identity.policy.subtitle' | translate:'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.' }}</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-header-link" (click)="loadPolicies()">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>{{ 'identity.policy.btn_reset' | translate:'Reset Settings' }}</span>
+          </button>
+        </div>
+      </div>
 
       <div class="policies-grid">
         <!-- Panel 1: Password Complexity Policies -->
@@ -176,6 +192,69 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .identity-page {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn-header-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+    .btn-header-link:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
     .policies-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
@@ -353,6 +432,67 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       color: #10b981;
       font-weight: 600;
     }
+
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px 14px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+      }
+      .title-row h1 {
+        font-size: 19px !important;
+      }
+      .breadcrumb {
+        font-size: 11px;
+        flex-wrap: wrap;
+      }
+      .header-actions {
+        width: 100%;
+      }
+      .btn-header-link {
+        width: 100%;
+        justify-content: center;
+      }
+      .policies-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+        width: 100% !important;
+        padding: 0 10px 24px 10px !important;
+        box-sizing: border-box !important;
+      }
+        gap: 14px !important;
+        width: 100% !important;
+      }
+      .console-widget {
+        padding: 16px 14px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .form-group-2row {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .switch-label-wrap {
+        max-width: 72% !important;
+      }
+      .switch-item {
+        gap: 10px;
+      }
+      .btn-primary {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+    }
   `]
 })
 export class IdentityPoliciesComponent implements OnInit {
@@ -381,16 +521,6 @@ export class IdentityPoliciesComponent implements OnInit {
     private toast: ToastService,
     private translationService: TranslationService
   ) {}
-
-  get headerButtons(): PageHeaderButton[] {
-    return [
-      {
-        text: this.translationService.translate('identity.policy.btn_reset', 'Reset Settings'),
-        icon: 'refresh',
-        action: () => { this.loadPolicies(); }
-      }
-    ];
-  }
 
   ngOnInit(): void {
     this.loadPolicies();

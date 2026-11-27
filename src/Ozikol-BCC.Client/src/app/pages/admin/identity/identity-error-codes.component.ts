@@ -27,23 +27,26 @@ export interface ClientErrorCodeItem {
   imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="error-codes-page">
-      <!-- Page Header -->
-      <div class="ec-header">
-        <div class="ec-title-group">
-          <div class="ec-breadcrumb">
-            <a routerLink="/identity/console/audit-logs" class="ec-back-link">
-              <span class="material-symbols-outlined">security</span>
-              <span>{{ 'nav.security_audit' | translate:'Security & Audit Logs' }}</span>
-            </a>
-            <span class="ec-sep">/</span>
-            <span class="ec-current">{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
+      <!-- Canonical Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <a routerLink="/identity/console/audit-logs">Security &amp; Audit Logs</a>
+            <span class="sep">/</span>
+            <span class="current">Error Codes</span>
           </div>
-          <h1 class="ec-title">{{ 'err_ref.title' | translate:'Standard Error Codes & Meanings' }}</h1>
-          <p class="ec-subtitle">
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">menu_book</span>
+            <h1>{{ 'err_ref.title' | translate:'Standard Error Codes & Meanings' }}</h1>
+            <span class="badge-suite">SUITE: SECURITY &amp; TELEMETRY</span>
+          </div>
+          <p class="subtitle">
             {{ 'err_ref.subtitle' | translate:'Look up any error code shown in your workspace to understand what it means and how to resolve it.' }}
           </p>
         </div>
-        <div class="ec-actions">
+        <div class="header-actions">
           <a routerLink="/identity/console/audit-logs" class="ec-btn-secondary">
             <span class="material-symbols-outlined">history</span>
             <span>{{ 'nav.security_audit' | translate:'Audit Logs' }}</span>
@@ -135,6 +138,29 @@ export interface ClientErrorCodeItem {
       flex-direction: column;
       gap: 18px;
     }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { font-size: 13px; color: #64748b; margin: 0; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .ec-header {
       display: flex;
       align-items: flex-start;
@@ -323,6 +349,66 @@ export interface ClientErrorCodeItem {
       font-size: 32px;
       margin-bottom: 6px;
       color: #94a3b8;
+    }
+
+    @media (max-width: 768px) {
+      .error-codes-page {
+        gap: 14px;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px !important;
+        gap: 10px !important;
+      }
+      .title-row h1 { font-size: 19px !important; }
+      .breadcrumb { font-size: 11px; flex-wrap: wrap; }
+      .header-actions {
+        width: 100%;
+      }
+      .header-actions .ec-btn-secondary {
+        width: 100%;
+        justify-content: center;
+        height: 36px;
+      }
+      .ec-toolbar {
+        padding: 12px 10px;
+        gap: 10px;
+      }
+      .ec-search-wrap {
+        max-width: 100%;
+        width: 100%;
+      }
+      .ec-category-pills {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+      .ec-category-pills::-webkit-scrollbar {
+        display: none;
+      }
+      .ec-cat-pill {
+        flex: 0 0 auto;
+        height: 28px;
+        padding: 0 10px;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .ec-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+      }
+      .ec-table {
+        min-width: 720px;
+      }
+      .ec-table th, .ec-table td {
+        padding: 10px 12px;
+      }
     }
   `]
 })

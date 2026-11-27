@@ -10,10 +10,22 @@ import { ApiService } from '../../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="notif-mgmt-container">
+      <!-- Canonical Page Header Card -->
       <div class="page-header">
-        <div>
-          <h1 class="page-title">Notification Studio</h1>
-          <p class="page-sub">Send targeted security notices, member account alerts, and workspace broadcast announcements.</p>
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <span>Broadcasts &amp; Alerts</span>
+            <span class="sep">/</span>
+            <span class="current">Notification Studio</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">campaign</span>
+            <h1>Notification Studio</h1>
+            <span class="badge-suite">SUITE: COMMUNICATIONS &amp; BROADCASTS</span>
+          </div>
+          <p class="subtitle">Send targeted security notices, member account alerts, and workspace broadcast announcements.</p>
         </div>
       </div>
 
@@ -388,7 +400,28 @@ import { ApiService } from '../../../core/services/api.service';
   `,
   styles: [`
     .notif-mgmt-container { display: flex; flex-direction: column; gap: 20px; }
-    .page-header { margin-bottom: 4px; }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { font-size: 13px; color: #64748b; margin: 0; }
     .page-title { font-size: 22px; font-weight: 800; color: var(--md-sys-color-on-surface, #0f172a); margin: 0 0 4px; }
     .page-sub { font-size: 13px; color: #64748b; margin: 0; }
     .tabs-bar {
@@ -461,6 +494,7 @@ import { ApiService } from '../../../core/services/api.service';
     }
     .form-col { display: flex; flex-direction: column; gap: 16px; }
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label {
       font-size: 12px;
@@ -694,6 +728,56 @@ import { ApiService } from '../../../core/services/api.service';
     .wa-msg { white-space: pre-wrap; }
     .wa-link { color: #00a884; font-weight: 600; margin-top: 6px; }
     .font-mono { font-family: monospace; font-size: 12px; }
+
+    @media (max-width: 768px) {
+      .notif-mgmt-container { gap: 14px; }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px !important;
+        gap: 10px !important;
+      }
+      .title-row h1 { font-size: 19px !important; }
+      .breadcrumb { font-size: 11px; flex-wrap: wrap; }
+      .tabs-bar { gap: 6px; flex-direction: column; }
+      .tab-item { width: 100%; justify-content: center; padding: 8px 14px; font-size: 12.5px; }
+      .studio-card, .history-card { padding: 14px 12px; border-radius: 12px; }
+      .presets-section { padding: 10px 12px; margin-bottom: 16px; }
+      .preset-chips { gap: 6px; }
+      .preset-btn { font-size: 11.5px; padding: 5px 10px; }
+      .form-layout { grid-template-columns: 1fr !important; gap: 16px !important; margin-bottom: 16px; }
+      .form-col { gap: 12px; }
+      .form-grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .form-grid-2 { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .target-type-selector { flex-direction: column; width: 100%; gap: 6px; }
+      .radio-label { width: 100%; box-sizing: border-box; justify-content: flex-start; padding: 7px 12px; font-size: 12.5px; }
+      .form-group label { font-size: 11px; letter-spacing: 0.3px; }
+      .form-input, .form-select, .form-textarea { padding: 8px 12px; font-size: 13px; }
+      .preview-card { padding: 12px; }
+      .preview-title { font-size: 12.5px; }
+      .preview-msg { font-size: 11px; }
+      .channel-custom-panel { margin-top: 14px; margin-bottom: 14px; }
+      .btn-toggle-channel-custom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 12px;
+        text-align: left;
+      }
+      .btn-toggle-channel-custom div {
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .custom-badge { align-self: flex-start; font-size: 10.5px; padding: 3px 8px; }
+      .channel-custom-body { padding: 12px 10px; }
+      .channel-tabs { gap: 6px; }
+      .ch-tab { padding: 5px 8px; font-size: 11.5px; }
+      .wa-preview-bubble, .sms-preview-bubble, .lockscreen-preview { max-width: 100%; box-sizing: border-box; }
+      .form-actions { flex-direction: column; align-items: stretch; gap: 10px; padding-top: 14px; }
+      .btn-dispatch { width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px; }
+      .history-table { min-width: 650px; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    }
   `]
 })
 export class NotificationsManagementComponent implements OnInit {

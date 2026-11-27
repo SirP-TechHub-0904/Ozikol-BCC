@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * General Settings Console Component (located under Security & Audit).
@@ -14,15 +13,27 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 @Component({
   selector: 'app-general-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="gen-settings-page">
-      <app-page-header
-        eyebrow="SECURITY & AUDIT · SYSTEM GOVERNANCE"
-        icon="settings"
-        title="System Settings"
-        subtitle="Configure core workspace-wide governance policies, currency, and notification infrastructure."
-      ></app-page-header>
+      <!-- Canonical Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <span>Security &amp; Audit</span>
+            <span class="sep">/</span>
+            <span class="current">System Settings</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">settings</span>
+            <h1>System Settings</h1>
+            <span class="badge-suite">SUITE: SECURITY &amp; SYSTEM GOVERNANCE</span>
+          </div>
+          <p class="subtitle">Configure core workspace-wide governance policies, currency, and notification infrastructure.</p>
+        </div>
+      </div>
 
       <!-- Modular System Settings Navigation Bar -->
       <div class="gen-tabs-bar">
@@ -113,13 +124,13 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
 
           <div class="gen-card-body">
-            <div style="padding: 16px 20px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px;">
-              <div>
-                <strong style="font-size: 14px; color: #9b2c2c; display: block;">Enable User Account Deletion</strong>
-                <span style="font-size: 12.5px; color: #742a2a;">When turned on, administrators can permanently delete user profiles after confirmation.</span>
+            <div class="deletion-toggle-box">
+              <div class="deletion-toggle-info">
+                <strong class="deletion-toggle-title">Enable User Account Deletion</strong>
+                <span class="deletion-toggle-desc">When turned on, administrators can permanently delete user profiles after confirmation.</span>
               </div>
-              <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; font-size: 13px; color: #0f172a;">
-                <input type="checkbox" [(ngModel)]="enableUserDeletion" style="width: 18px; height: 18px; accent-color: #0050e5; cursor: pointer;" />
+              <label class="deletion-toggle-control">
+                <input type="checkbox" [(ngModel)]="enableUserDeletion" />
                 <span>{{ enableUserDeletion ? 'Enabled' : 'Disabled' }}</span>
               </label>
             </div>
@@ -464,6 +475,71 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       gap: 20px;
       padding: 0 4px 40px 4px;
       width: 100%;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .subtitle { font-size: 13px; color: #64748b; margin: 0; }
+
+    .deletion-toggle-box {
+      padding: 16px 20px;
+      background: #fff5f5;
+      border: 1px solid #fed7d7;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .deletion-toggle-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .deletion-toggle-title {
+      font-size: 14px;
+      color: #9b2c2c;
+      display: block;
+    }
+    .deletion-toggle-desc {
+      font-size: 12.5px;
+      color: #742a2a;
+    }
+    .deletion-toggle-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      color: #0f172a;
+      flex-shrink: 0;
+    }
+    .deletion-toggle-control input {
+      width: 18px;
+      height: 18px;
+      accent-color: #0050e5;
+      cursor: pointer;
     }
 
     .gen-tabs-bar {
@@ -927,6 +1003,212 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       color: #10b981;
       flex-shrink: 0;
       margin-top: 1px;
+    }
+
+    @media (max-width: 768px) {
+      .gen-settings-page {
+        gap: 14px;
+        padding: 0 0 24px 0;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px !important;
+        gap: 10px !important;
+      }
+      .title-row h1 { font-size: 19px !important; }
+      .breadcrumb { font-size: 11px; flex-wrap: wrap; }
+      .gen-tabs-bar {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        scrollbar-width: none;
+      }
+      .gen-tabs-bar::-webkit-scrollbar {
+        display: none;
+      }
+      .gen-tab-btn {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        gap: 8px;
+        border-radius: 10px;
+      }
+      .tab-icon {
+        font-size: 18px;
+        padding: 5px;
+        border-radius: 8px;
+      }
+      .tab-title-row {
+        gap: 6px;
+      }
+      .tab-title {
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .tab-sub {
+        display: none !important;
+      }
+      .status-pill {
+        font-size: 9px;
+        padding: 2px 6px;
+        white-space: nowrap;
+      }
+      .status-banner {
+        padding: 12px 14px;
+        gap: 12px;
+        border-radius: 12px;
+      }
+      .banner-icon-wrap {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+      }
+      .banner-icon-wrap .material-symbols-outlined {
+        font-size: 22px;
+      }
+      .banner-body {
+        min-width: 0;
+      }
+      .banner-body h4 {
+        font-size: 13.5px;
+        margin-bottom: 2px;
+      }
+      .banner-body p {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .banner-actions {
+        width: 100%;
+        margin-top: 6px;
+      }
+      .banner-actions .btn-primary-action {
+        width: 100%;
+      }
+      .gen-card {
+        padding: 14px 12px;
+        border-radius: 12px;
+        gap: 12px;
+      }
+      .gen-card-head {
+        gap: 10px;
+        padding-bottom: 10px;
+      }
+      .head-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+      }
+      .head-icon span {
+        font-size: 20px;
+      }
+      .gen-card-head h3 {
+        font-size: 14px;
+      }
+      .gen-card-head p {
+        font-size: 11.5px;
+      }
+      .deletion-toggle-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+      }
+      .deletion-toggle-title {
+        font-size: 13px;
+      }
+      .deletion-toggle-desc {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .deletion-toggle-control {
+        width: 100%;
+        padding-top: 10px;
+        border-top: 1px solid #fed7d7;
+        justify-content: space-between;
+      }
+      .btn-primary-action, .btn-outline-action {
+        width: 100%;
+        justify-content: center;
+        height: 40px;
+        font-size: 13px;
+      }
+      .readonly-input-box {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 8px 12px;
+      }
+      .email-mono {
+        font-size: 11.5px;
+        word-break: break-all;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .verified-chip {
+        flex-shrink: 0;
+        font-size: 10px;
+        padding: 2px 7px;
+      }
+      .channel-tags-box {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .channel-item {
+        font-size: 11.5px;
+        gap: 6px;
+      }
+      .info-callout {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .info-callout strong {
+        font-size: 12px;
+      }
+      .info-callout p {
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .gen-cards-grid {
+        gap: 14px !important;
+        margin-top: 12px !important;
+      }
+      .currency-live-price {
+        font-size: 22px;
+      }
+      .currency-live-box {
+        padding: 12px;
+        margin: 2px 0 6px;
+      }
+      .form-control {
+        height: 38px;
+        font-size: 13px;
+        padding: 0 12px;
+      }
+      .form-hint {
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .billing-context-card {
+        padding: 12px;
+        gap: 10px;
+      }
+      .billing-curr {
+        font-size: 14px;
+      }
+      .billing-desc {
+        font-size: 11.5px;
+      }
+      .card-footer-actions {
+        margin-top: 8px;
+        width: 100%;
+      }
     }
   `]
 })

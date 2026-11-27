@@ -4,23 +4,41 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PageFormsService, PageFormItem } from '../../../../core/services/page-forms.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="cms-page-container">
-      <!-- Standardized Reusable Page Header -->
-      <app-page-header
-        eyebrow="CMS Studio"
-        icon="dynamic_form"
-        title="Dynamic Page Forms & Lead Intake"
-        subtitle="Configure dynamic contact forms, subscription boxes, and intake questionnaires embedded across your website sections."
-        [buttons]="headerButtons"
-        [loading]="loading"
-      ></app-page-header>
+      <!-- Canonical BCC Enterprise Page Header Card -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/admin/dashboard">Command Center</a>
+            <span class="sep">/</span>
+            <a routerLink="/content/console">CMS Studio</a>
+            <span class="sep">/</span>
+            <span class="current">Page Forms</span>
+          </div>
+          <div class="title-row">
+            <span class="material-symbols-outlined header-icon text-blue">dynamic_form</span>
+            <h1>Dynamic Page Forms &amp; Lead Intake</h1>
+            <span class="badge-suite">SUITE: CMS STUDIO</span>
+          </div>
+          <p class="subtitle">Configure dynamic contact forms, subscription boxes, and intake questionnaires embedded across your website sections.</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/content/console/forms/create" class="btn-primary-action">
+            <span class="material-symbols-outlined">add_circle</span>
+            <span>Create New Form</span>
+          </a>
+          <button type="button" class="btn-outline-action" (click)="loadForms()" [disabled]="loading">
+            <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Quick Metrics Summary Cards -->
       <div class="metrics-grid">
@@ -225,17 +243,39 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
     .cms-page-container { display: flex; flex-direction: column; gap: 24px; }
     
     .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      background: #fff; padding: 24px 28px; border-radius: 16px; border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff; padding: 18px 22px; border-radius: 14px; border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02); gap: 16px; flex-wrap: wrap; width: 100%; box-sizing: border-box;
     }
-    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 6px; }
-    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 600; }
-    .breadcrumb .sep { margin: 0 6px; }
-    .title-with-badge { display: flex; align-items: center; gap: 12px; }
-    .page-header h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-    .header-actions { display: flex; gap: 12px; }
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; margin: 0; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+    .header-icon { font-size: 28px; }
+    .badge-suite {
+      background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px;
+      font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;
+    }
+    .subtitle { color: #64748b; font-size: 13.5px; margin: 0; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .btn-primary-action {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      background: #0050e5; color: #ffffff; text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.25); transition: all 0.15s ease;
+    }
+    .btn-primary-action:hover { background: #003ebd; }
+    .btn-outline-action {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 38px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: #ffffff; border: 1px solid #cbd5e1; color: #334155; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-outline-action:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -403,6 +443,118 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../../shared/compon
       padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9;
       display: flex; justify-content: flex-end; gap: 12px;
     }
+
+    @media (max-width: 768px) {
+      .cms-page-container {
+        gap: 14px;
+        padding-bottom: 40px;
+      }
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 16px 14px !important;
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+        gap: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .title-row h1 {
+        font-size: 19px !important;
+      }
+      .header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .btn-primary-action {
+        width: 100% !important;
+        height: 38px !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+      }
+      .btn-outline-action {
+        height: 38px !important;
+        padding: 0 12px !important;
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        padding: 0 12px !important;
+      }
+      .metric-card {
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+        gap: 10px !important;
+        min-height: 58px !important;
+      }
+      .metric-icon-wrap {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        flex-shrink: 0 !important;
+      }
+      .metric-icon-wrap span {
+        font-size: 18px !important;
+      }
+      .metric-val {
+        font-size: 17px !important;
+        line-height: 1.15 !important;
+      }
+      .metric-lbl {
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+      }
+      .filter-bar {
+        margin: 0 12px !important;
+        padding: 10px 12px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .filter-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 6px !important;
+        width: 100% !important;
+      }
+      .filter-group::-webkit-scrollbar {
+        display: none;
+      }
+      .filter-btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+      .search-box {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .cms-card {
+        margin: 0 12px 24px 12px !important;
+        padding: 14px 12px !important;
+        border-radius: 12px !important;
+      }
+      .cms-table {
+        min-width: 600px !important;
+      }
+      .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+      }
+    }
   `]
 })
 export class FormsListComponent implements OnInit {
@@ -412,24 +564,6 @@ export class FormsListComponent implements OnInit {
   searchTerm = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
   formToDelete: PageFormItem | null = null;
-
-  get headerButtons(): PageHeaderButton[] {
-    return [
-      {
-        text: 'Create New Form',
-        icon: 'add_circle',
-        isPrimary: true,
-        routerLink: '/content/console/forms/create'
-      },
-      {
-        text: 'Refresh',
-        icon: 'refresh',
-        disabled: this.loading,
-        loading: this.loading,
-        action: () => this.loadForms()
-      }
-    ];
-  }
 
   constructor(
     private formsService: PageFormsService,

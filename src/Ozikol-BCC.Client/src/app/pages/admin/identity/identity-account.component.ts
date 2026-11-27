@@ -2001,7 +2001,15 @@ interface AccountSummary {
         align-items: flex-start !important;
         gap: 12px !important;
         margin-bottom: 12px !important;
-        padding: 0 !important;
+        padding: 16px 14px !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
       .page-header .header-left {
         width: 100% !important;
