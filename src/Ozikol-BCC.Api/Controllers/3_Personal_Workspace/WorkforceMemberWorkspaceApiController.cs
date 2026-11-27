@@ -169,7 +169,7 @@ namespace Ozikol_BCC.Api.Controllers
                     .Include(s => s.AttendanceRecord)
                     .Include(s => s.Assignments)
                     .Where(s => s.TenantKey == CurrentTenantKey &&
-                                (s.AssignedUserId == CurrentUserId || s.Assignments.Any(a => a.UserId == CurrentUserId)) &&
+                                s.Assignments.Any(a => a.UserId == CurrentUserId) &&
                                 s.EndsAtUtc >= nowUtc)
                     .OrderBy(s => s.StartsAtUtc)
                     .Select(s => new ShiftDto
@@ -240,8 +240,9 @@ namespace Ozikol_BCC.Api.Controllers
                     .AsNoTracking()
                     .Include(s => s.ClientSite)
                     .Include(s => s.AttendanceRecord)
+                    .Include(s => s.Assignments)
                     .Where(s => s.TenantKey == CurrentTenantKey &&
-                                s.AssignedUserId == CurrentUserId &&
+                                s.Assignments.Any(a => a.UserId == CurrentUserId) &&
                                 s.EndsAtUtc >= nowUtc)
                     .OrderBy(s => s.StartsAtUtc)
                     .Select(s => new ShiftDto
@@ -251,27 +252,24 @@ namespace Ozikol_BCC.Api.Controllers
                         ClientSiteId = s.ClientSiteId,
                         SiteName = s.ClientSite != null ? s.ClientSite.SiteName : "Site",
                         SiteAddress = s.ClientSite != null ? s.ClientSite.Address : string.Empty,
-                        PostName = s.PostName,
+                        PostName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.DutyPosition).FirstOrDefault() ?? s.PostName,
                         FacilityName = s.FacilityName,
                         Address = s.Address,
                         PostCode = s.PostCode,
                         EventTag = s.EventTag,
-                        RequiredStaffCount = 1,
-                        AssignedCount = 1,
-                        OpenSlotsRemaining = 0,
-                        IsFull = true,
+                        RequiredStaffCount = s.RequiredStaffCount,
+                        AssignedCount = s.Assignments.Count,
+                        OpenSlotsRemaining = s.RequiredStaffCount - s.Assignments.Count > 0 ? s.RequiredStaffCount - s.Assignments.Count : 0,
+                        IsFull = s.Assignments.Count >= s.RequiredStaffCount,
                         AssignedUserId = CurrentUserId,
-                        AssignedUserName = s.AssignedUserName ?? CurrentUserName,
-                        Assignments = new List<ShiftAssignmentDto>
+                        AssignedUserName = s.Assignments.Where(a => a.UserId == CurrentUserId).Select(a => a.StaffFullName).FirstOrDefault() ?? CurrentUserName,
+                        Assignments = s.Assignments.Select(a => new ShiftAssignmentDto
                         {
-                            new ShiftAssignmentDto
-                            {
-                                UserId = CurrentUserId,
-                                StaffFullName = s.AssignedUserName ?? CurrentUserName,
-                                IsLeadOfficer = true,
-                                Status = s.Status
-                            }
-                        },
+                            UserId = a.UserId,
+                            StaffFullName = a.StaffFullName,
+                            IsLeadOfficer = a.IsLeadOfficer,
+                            Status = a.Status
+                        }).ToList(),
                         StartsAtUtc = s.StartsAtUtc,
                         EndsAtUtc = s.EndsAtUtc,
                         IsOvernight = s.IsOvernight,
@@ -356,7 +354,7 @@ namespace Ozikol_BCC.Api.Controllers
                     .AsNoTracking()
                     .Include(s => s.ClientSite)
                     .Where(s => s.TenantKey == CurrentTenantKey &&
-                                (s.AssignedUserId == null || s.AssignedUserId == "" || s.Status == "Open") &&
+                                (s.Status == "Open" || s.Status == "PartiallyFilled") &&
                                 s.EndsAtUtc >= nowUtc)
                     .OrderBy(s => s.StartsAtUtc)
                     .Select(s => new ShiftDto
@@ -694,7 +692,8 @@ namespace Ozikol_BCC.Api.Controllers
                 .AsNoTracking()
                 .Include(s => s.ClientSite)
                 .Include(s => s.AttendanceRecord)
-                .Where(s => s.TenantKey == CurrentTenantKey && s.AssignedUserId == CurrentUserId);
+                .Include(s => s.Assignments)
+                .Where(s => s.TenantKey == CurrentTenantKey && s.Assignments.Any(a => a.UserId == CurrentUserId));
 
             if (startDate.HasValue)
                 query = query.Where(s => s.StartsAtUtc >= startDate.Value.ToUniversalTime());
@@ -1728,7 +1727,8 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             // Ensure the shift belongs to current user or attendance record matches current user
-            if (!string.Equals(shift.AssignedUserId, CurrentUserId, StringComparison.OrdinalIgnoreCase))
+            var isAssignedUser = await _db.BcpShiftAssignments.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
+            if (!isAssignedUser)
             {
                 var isAttendanceUser = await _db.BcpShiftAttendances.AnyAsync(a => a.ShiftId == id && a.UserId == CurrentUserId && a.TenantKey == CurrentTenantKey, ct);
                 if (!isAttendanceUser)

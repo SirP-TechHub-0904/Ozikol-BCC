@@ -53,20 +53,6 @@ namespace Ozikol_BCC.Domain.Models
         public int RequiredStaffCount { get; set; } = 1;
 
         /// <summary>
-        /// User identifier of the primary or lead officer assigned to this shift.
-        /// Retained as a physical database column for fast indexed lookups and backwards compatibility.
-        /// Null indicates an Open/Unassigned shift.
-        /// </summary>
-        [StringLength(100)]
-        public string? AssignedUserId { get; set; }
-
-        /// <summary>
-        /// Full name of the assigned primary/lead staff member snapshot at scheduling time for quick visual grids.
-        /// </summary>
-        [StringLength(200)]
-        public string? AssignedUserName { get; set; }
-
-        /// <summary>
         /// Specific post or duty assignment within the site (e.g., "Main Gatehouse", "Reception Desk", "Patrol Alpha").
         /// </summary>
         [Required]

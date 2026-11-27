@@ -6,13 +6,21 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace OzikolBCC.Persistence.EF.SQL.Migrations
 {
     /// <inheritdoc />
-    public partial class AddShiftAssignmentsAndHeadcountCapacity : Migration
+    public partial class RemoveShiftAssignedUserAndAddShiftAssignments : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
                 name: "IX_BcpShifts_TenantKey_AssignedUserId_StartsAtUtc",
+                table: "BcpShifts");
+
+            migrationBuilder.DropColumn(
+                name: "AssignedUserId",
+                table: "BcpShifts");
+
+            migrationBuilder.DropColumn(
+                name: "AssignedUserName",
                 table: "BcpShifts");
 
             migrationBuilder.AddColumn<int>(
@@ -64,11 +72,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_BcpShifts_TenantKey_AssignedUserId",
-                table: "BcpShifts",
-                columns: new[] { "TenantKey", "AssignedUserId" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_BcpShiftAssignments_ShiftId",
                 table: "BcpShiftAssignments",
                 column: "ShiftId");
@@ -95,13 +98,23 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             migrationBuilder.DropTable(
                 name: "BcpShiftAssignments");
 
-            migrationBuilder.DropIndex(
-                name: "IX_BcpShifts_TenantKey_AssignedUserId",
-                table: "BcpShifts");
-
             migrationBuilder.DropColumn(
                 name: "RequiredStaffCount",
                 table: "BcpShifts");
+
+            migrationBuilder.AddColumn<string>(
+                name: "AssignedUserId",
+                table: "BcpShifts",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "AssignedUserName",
+                table: "BcpShifts",
+                type: "nvarchar(200)",
+                maxLength: 200,
+                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_BcpShifts_TenantKey_AssignedUserId_StartsAtUtc",
