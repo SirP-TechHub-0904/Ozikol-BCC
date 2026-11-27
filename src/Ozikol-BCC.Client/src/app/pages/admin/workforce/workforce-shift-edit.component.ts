@@ -914,7 +914,7 @@ export interface ShiftAssignmentItem {
               </div>
 
               <div class="form-group">
-                <label class="form-label">Designated Workstation (Optional)</label>
+                <label class="form-label font-weight-bold">Designated Workstation (Optional)</label>
                 <input
                   type="text"
                   class="form-control"
@@ -925,8 +925,8 @@ export interface ShiftAssignmentItem {
                 <span class="field-hint">Hardware terminal locked to this shift for automated login validation.</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Duty Notes &amp; Shift Instructions</label>
+              <div class="form-group mb-0">
+                <label class="form-label font-weight-bold">Duty Notes &amp; Shift Instructions</label>
                 <textarea
                   class="form-control"
                   rows="3"
@@ -937,83 +937,24 @@ export interface ShiftAssignmentItem {
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Card 6: Live Schedule Impact & Summary Widget -->
-          <div class="summary-card">
-            <div class="summary-header">
-              <span class="material-symbols-outlined">analytics</span>
-              <h4>Schedule Impact &amp; Calculation Summary</h4>
-            </div>
-
-            <div class="summary-metrics-grid">
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedTotalDays }}</span>
-                <span class="metric-txt">Scheduled Days</span>
-              </div>
-
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedDailyHours | number:'1.1-1' }}h</span>
-                <span class="metric-txt">Net Daily Hours</span>
-              </div>
-
-              <div class="summary-metric">
-                <span class="metric-num">{{ calculatedTotalHours | number:'1.1-1' }}h</span>
-                <span class="metric-txt">Total Net Hours</span>
-              </div>
-            </div>
-
-            <div class="summary-details-list">
-              <div class="detail-row" *ngIf="isOvernightShift">
-                <span class="badge-overnight">
-                  <span class="material-symbols-outlined">bedtime</span> Overnight Window (Crosses Midnight)
-                </span>
-              </div>
-
-              <div class="detail-row">
-                <span class="detail-label">Time Frame:</span>
-                <span class="detail-value">{{ summaryTimeFrame }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="hasBreak && breakMinutes > 0">
-                <span class="detail-label">Unpaid Break:</span>
-                <span class="detail-value">{{ breakMinutes }} mins ({{ formatTime12(breakStartTime) }} – {{ formatTime12(breakEndTime) }})</span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly'">
-                <span class="detail-label">Hourly Rate:</span>
-                <span class="detail-value">{{ currencySymbol }}{{ (hourlyPayRate || 0) | number:'1.2-2' }}/hr</span>
-              </div>
-
-              <div class="detail-row">
-                <span class="detail-label">Compensation Basis:</span>
-                <span class="detail-value">
-                  {{ selectedRole?.compensationBasis === 'Monthly' ? 'Monthly Salaried' : 'Hourly Wage' }}
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis !== 'Monthly' && (hourlyPayRate || 0) > 0">
-                <span class="detail-label">Est. Scheduled Gross Wage:</span>
-                <span class="detail-value font-bold text-success">
-                  {{ currencySymbol }}{{ ((hourlyPayRate || 0) * calculatedTotalHours) | number:'1.2-2' }}
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="selectedRole?.compensationBasis === 'Monthly'">
-                <span class="detail-label">Monthly Fixed Salary:</span>
-                <span class="detail-value font-bold text-primary">
-                  {{ currencySymbol }}{{ (selectedRole?.monthlySalary || 0) | number:'1.0-0' }}/mo
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="assignedStaffName">
-                <span class="detail-label">Assigned Member:</span>
-                <span class="detail-value text-blue">{{ assignedStaffName }}</span>
-              </div>
-            </div>
-
+        <!-- Form Actions Footer (Spans Both Columns) -->
+        <div class="form-actions-footer">
+          <div class="footer-left-info" *ngIf="!isEditMode">
+            <span class="material-symbols-outlined text-blue">info</span>
+            <span class="text-muted">
+              {{ schedulePattern === 'Single' ? 'Configuring 1 ad-hoc duty assignment.' : 'Configuring recurring multi-day duty schedule.' }}
+            </span>
+          </div>
+          <div class="footer-btn-group">
+            <button type="button" class="btn btn-secondary" routerLink="/workforce/console/shifts">
+              <span class="material-symbols-outlined">arrow_back</span>
+              <span>Cancel</span>
+            </button>
             <button
               type="button"
-              class="btn btn-primary btn-block btn-generate"
+              class="btn btn-primary btn-save-action"
               (click)="saveSchedule()"
               [disabled]="isSaving || isLoading"
             >
@@ -1292,7 +1233,7 @@ export interface ShiftAssignmentItem {
     /* 2-Column Responsive Layout */
     .schedule-form-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 1.5rem;
       align-items: start;
     }
@@ -1733,119 +1674,42 @@ export interface ShiftAssignmentItem {
       border-bottom-right-radius: 0.5rem;
     }
 
-    /* Summary Card */
-    .summary-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .summary-header {
-      display: flex;
-      align-items: center;
-      gap: 0.625rem;
-      color: #0050e5;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 0.875rem;
-    }
-
-    .summary-header h4 {
-      font-size: 0.9375rem;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0;
-    }
-
-    .summary-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      text-align: center;
-    }
-
-    .summary-metric {
-      padding: 0.875rem 0.5rem;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-    }
-
-    .metric-num {
-      display: block;
-      font-size: 1.375rem;
-      font-weight: 800;
-      color: #0050e5;
-      letter-spacing: -0.02em;
-    }
-
-    .metric-txt {
-      display: block;
-      font-size: 0.6875rem;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      margin-top: 0.25rem;
-    }
-
-    .summary-details-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.625rem;
-      padding: 0.875rem 0;
-      border-top: 1px dashed #e2e8f0;
-      border-bottom: 1px dashed #e2e8f0;
-    }
-
-    .detail-row {
+    /* Form Actions Footer (Clean Bottom Toolbar) */
+    .form-actions-footer {
+      grid-column: 1 / -1;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8125rem;
+      padding: 1.25rem 1.75rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
-    .detail-label {
-      color: #64748b;
+    .footer-left-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
     }
 
-    .detail-value {
-      color: #0f172a;
+    .footer-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .btn-save-action {
+      padding: 0.625rem 1.35rem;
       font-weight: 600;
-    }
-
-    .font-bold {
-      font-weight: 700;
-    }
-
-    .text-success {
-      color: #059669;
-    }
-
-    .text-primary {
-      color: #7c3aed;
-    }
-
-    .badge-overnight {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.5rem;
-      background: #f5f3ff;
-      border: 1px solid #ddd6fe;
-      color: #6d28d9;
-      border-radius: 0.375rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .btn-generate {
-      padding: 0.75rem 1.25rem;
-      font-size: 0.9375rem;
+      gap: 0.5rem;
     }
 
     /* Modal */
