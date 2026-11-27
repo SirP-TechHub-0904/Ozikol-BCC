@@ -213,7 +213,7 @@ namespace Ozikol_BCC.Api // CI trigger comment – no functional change
                 options.AddPolicy(AuthPolicies.CommunicationStudio, policy =>
                     policy.Requirements.Add(new CanonicalRoleRequirement(
                         SystemRoles.CommunicationAccessKeys,
-                        new[] { "bcp-mass-communication", "NotificationStudio", "CommunicationManager" })));
+                        new[] { "bcp-mass-communication", "MarketingStudio", "NotificationStudio", "CommunicationManager" })));
                 options.AddPolicy(AuthPolicies.FormStudio, policy =>
                     policy.Requirements.Add(new CanonicalRoleRequirement(
                         SystemRoles.FormBuilderAccessKeys,

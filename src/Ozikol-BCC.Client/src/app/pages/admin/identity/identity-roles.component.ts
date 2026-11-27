@@ -37,6 +37,30 @@ interface RoleMemberItem {
 }
 
 /**
+ * Interface representing a modular capability suite and its assigned action scope.
+ */
+interface CapabilityScope {
+  key: string;
+  name: string;
+  category: string;
+  icon: string;
+  description: string;
+  scope: 'None' | 'ReadOnly' | 'FeatureEdit' | 'GlobalEdit';
+  isPaid?: boolean;
+}
+
+/**
+ * Interface representing member preview details inside a user group.
+ */
+interface GroupMemberPreview {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  designation?: string;
+  avatarUrl?: string;
+}
+
+/**
  * Role-First Governance Catalog Component.
  * Restructured into two distinct enterprise categories:
  *  1. System & Feature Authority Roles (SuperAdmin, Admin, Identity Manager, User Manager, Member)
@@ -63,62 +87,62 @@ interface RoleMemberItem {
 
       <!-- Overview Stats Strip (Clickable Filter Cards) -->
       <div class="stats-strip" *ngIf="!isLoading">
-        <!-- Card 1: All Enterprise Roles -->
+        <!-- Card 1: User Groups & Blueprints -->
         <div 
           class="stat-card" 
-          [class.active-all]="activeFilter === 'all'" 
-          (click)="setFilter('all')"
+          [class.active-groups]="activeFilter === 'user_groups'" 
+          (click)="setFilter('user_groups')"
           role="button"
           tabindex="0"
-          title="Click to view all enterprise roles"
+          title="Click to view User Groups & Permission Blueprints"
         >
           <div class="stat-card-main">
             <div class="stat-icon-wrap" style="background: rgba(0,80,229,0.08); color: #0050e5;">
-              <span class="material-symbols-outlined">security</span>
+              <span class="material-symbols-outlined">group_work</span>
             </div>
             <div class="stat-meta">
-              <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 8 : 7) }}</span>
-              <span class="stat-lbl">{{ 'identity.roles.enterprise_roles' | translate:'Enterprise Roles' }}</span>
+              <span class="stat-val">{{ userGroups.length }}</span>
+              <span class="stat-lbl">{{ 'identity.roles.user_groups' | translate:'User Groups' }}</span>
             </div>
           </div>
-          <span class="active-indicator-pill indicator-all" *ngIf="activeFilter === 'all'">
+          <span class="active-indicator-pill indicator-groups" *ngIf="activeFilter === 'user_groups'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>{{ 'identity.roles.all' | translate:'All' }}</span>
+            <span>{{ 'identity.roles.blueprints' | translate:'Blueprints' }}</span>
           </span>
         </div>
 
-        <!-- Card 2: Authority & Feature Roles -->
+        <!-- Card 2: All Permissions (System & Features) -->
         <div 
           class="stat-card" 
-          [class.active-system]="activeFilter === 'system_feature'" 
-          (click)="setFilter('system_feature')"
+          [class.active-system]="activeFilter === 'permissions'" 
+          (click)="setFilter('permissions')"
           role="button"
           tabindex="0"
-          title="Click to filter by System & Feature Authority Roles"
+          title="Click to view All Permissions (System & Features)"
         >
           <div class="stat-card-main">
             <div class="stat-icon-wrap" style="background: rgba(67,56,202,0.08); color: #4338ca;">
-              <span class="material-symbols-outlined">admin_panel_settings</span>
+              <span class="material-symbols-outlined">shield_person</span>
             </div>
             <div class="stat-meta">
-              <span class="stat-val">{{ systemFeatureRoles.length }}</span>
-              <span class="stat-lbl">{{ 'identity.roles.authority_feature_roles' | translate:'Authority & Feature Roles' }}</span>
+              <span class="stat-val">{{ majorRoles.length + systemModuleRoles.length + paidFeatureRoles.length }}</span>
+              <span class="stat-lbl">{{ 'identity.roles.all_permissions' | translate:'All Permissions' }}</span>
             </div>
           </div>
-          <span class="active-indicator-pill indicator-system" *ngIf="activeFilter === 'system_feature'">
+          <span class="active-indicator-pill indicator-system" *ngIf="activeFilter === 'permissions'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>{{ 'identity.roles.filtered' | translate:'Filtered' }}</span>
+            <span>{{ 'identity.roles.system_and_features' | translate:'System & Features' }}</span>
           </span>
         </div>
 
-        <!-- Card 3: Operational Action Levels -->
+        <!-- Card 3: Editor Permissions -->
         <div 
           class="stat-card" 
-          [class.active-operational]="activeFilter === 'operational_level'" 
-          (click)="setFilter('operational_level')"
+          [class.active-operational]="activeFilter === 'editor_permissions'" 
+          (click)="setFilter('editor_permissions')"
           role="button"
           tabindex="0"
-          title="Click to filter by Operational Action Levels"
+          title="Click to view Editor Permissions & Operational Levels"
         >
           <div class="stat-card-main">
             <div class="stat-icon-wrap" style="background: rgba(16,185,129,0.08); color: #10b981;">
@@ -126,36 +150,12 @@ interface RoleMemberItem {
             </div>
             <div class="stat-meta">
               <span class="stat-val">{{ operationalLevelRoles.length }}</span>
-              <span class="stat-lbl">{{ 'identity.roles.operational_levels' | translate:'Operational Action Levels' }}</span>
+              <span class="stat-lbl">{{ 'identity.roles.editor_permissions' | translate:'Editor Permissions' }}</span>
             </div>
           </div>
-          <span class="active-indicator-pill indicator-operational" *ngIf="activeFilter === 'operational_level'">
+          <span class="active-indicator-pill indicator-operational" *ngIf="activeFilter === 'editor_permissions'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>{{ 'identity.roles.filtered' | translate:'Filtered' }}</span>
-          </span>
-        </div>
-
-        <!-- Card 4: Assigned Personnel -->
-        <div 
-          class="stat-card" 
-          [class.active-assigned]="activeFilter === 'assigned'" 
-          (click)="setFilter('assigned')"
-          role="button"
-          tabindex="0"
-          title="Click to view assigned personnel directory"
-        >
-          <div class="stat-card-main">
-            <div class="stat-icon-wrap" style="background: rgba(100,116,139,0.08); color: #475569;">
-              <span class="material-symbols-outlined">groups</span>
-            </div>
-            <div class="stat-meta">
-              <span class="stat-val">{{ totalAssignedCount }}</span>
-              <span class="stat-lbl">{{ 'identity.roles.assigned_personnel' | translate:'Assigned Personnel' }}</span>
-            </div>
-          </div>
-          <span class="active-indicator-pill indicator-assigned" *ngIf="activeFilter === 'assigned'">
-            <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>{{ 'identity.roles.roster' | translate:'Roster' }}</span>
+            <span>{{ 'identity.roles.operational_levels' | translate:'Operational Levels' }}</span>
           </span>
         </div>
       </div>
@@ -165,54 +165,615 @@ interface RoleMemberItem {
         <button 
           type="button" 
           class="filter-tab-btn" 
-          [class.active]="activeFilter === 'all'" 
-          (click)="setFilter('all')"
+          [class.active]="activeFilter === 'user_groups'" 
+          (click)="setFilter('user_groups')"
         >
-          <span class="material-symbols-outlined">dataset</span>
-          <span>{{ 'identity.roles.tab_all' | translate:'All Roles' }} ({{ rolesCatalog.length }})</span>
+          <span class="material-symbols-outlined">group_work</span>
+          <span>{{ 'identity.roles.tab_user_groups' | translate:'User Groups' }} ({{ userGroups.length }})</span>
         </button>
         <button 
           type="button" 
           class="filter-tab-btn" 
-          [class.active]="activeFilter === 'system_feature'" 
-          (click)="setFilter('system_feature')"
+          [class.active]="activeFilter === 'permissions'" 
+          (click)="setFilter('permissions')"
         >
           <span class="material-symbols-outlined">shield_person</span>
-          <span>{{ 'identity.roles.tab_authority' | translate:'System & Feature Authority' }} ({{ systemFeatureRoles.length }})</span>
+          <span>{{ 'identity.roles.tab_all_permissions' | translate:'All Permissions' }} ({{ majorRoles.length + systemModuleRoles.length + paidFeatureRoles.length }})</span>
         </button>
         <button 
           type="button" 
           class="filter-tab-btn" 
-          [class.active]="activeFilter === 'operational_level'" 
-          (click)="setFilter('operational_level')"
+          [class.active]="activeFilter === 'editor_permissions'" 
+          (click)="setFilter('editor_permissions')"
         >
           <span class="material-symbols-outlined">tune</span>
-          <span>{{ 'identity.roles.tab_operational' | translate:'Operational Access Levels' }} ({{ operationalLevelRoles.length }})</span>
-        </button>
-        <button 
-          type="button" 
-          class="filter-tab-btn" 
-          [class.active]="activeFilter === 'assigned'" 
-          (click)="setFilter('assigned')"
-        >
-          <span class="material-symbols-outlined">groups</span>
-          <span>{{ 'identity.roles.tab_assigned' | translate:'Assigned Personnel' }} ({{ totalAssignedCount }})</span>
+          <span>{{ 'identity.roles.tab_editor_permissions' | translate:'Editor Permissions' }} ({{ operationalLevelRoles.length }})</span>
         </button>
       </div>
 
-      <!-- Group 1: System & Feature Authority Roles Card -->
-      <div class="table-card" *ngIf="!isLoading && (activeFilter === 'all' || activeFilter === 'system_feature')">
+      <!-- Tab 1: User Groups & Permission Blueprints (Active by Default) -->
+      <div class="user-groups-section" *ngIf="!isLoading && activeFilter === 'user_groups'">
+        <!-- Security & Architecture Advisory Banner -->
+        <div class="groups-banner">
+          <div class="banner-icon-wrap">
+            <span class="material-symbols-outlined">group_work</span>
+          </div>
+          <div class="banner-body">
+            <h4>{{ 'identity.roles.groups_banner_title' | translate:'User Group Permissions & Scoped Roles' }}</h4>
+            <p>
+              {{ 'identity.roles.groups_banner_desc' | translate:'User groups let you bundle a system access role with specific capability permissions (e.g., Content Editors, Operations Staff, Finance Auditors). Assign members to a group so they only see the modules and actions they need without configuring users one by one.' }}
+            </p>
+          </div>
+          <div class="banner-actions" *ngIf="!editingGroup">
+            <button type="button" class="btn btn-primary" (click)="startCreateGroup()">
+              <span class="material-symbols-outlined">add_circle</span>
+              <span>{{ 'identity.roles.btn_create_group' | translate:'Create User Group' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inline Group / Blueprint Editor (when editing or creating) -->
+        <div class="group-editor-card" *ngIf="editingGroup">
+          <div class="editor-header">
+            <div class="editor-title-row">
+              <span class="material-symbols-outlined editor-icon">{{ editingGroup.id ? 'tune' : 'add_moderator' }}</span>
+              <div>
+                <h3>{{ editingGroup.id ? ('Edit User Group: ' + editingGroup.name) : 'Create New User Group Blueprint' }}</h3>
+                <p>Define group identity, base system access level, and modular capability scopes.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" (click)="cancelEditGroup()">
+              <span class="material-symbols-outlined">close</span>
+              <span>Cancel</span>
+            </button>
+          </div>
+
+          <div class="editor-body">
+            <!-- Form Fields Grid -->
+            <div class="editor-form-grid">
+              <div class="form-group span-full">
+                <label>Group Name *</label>
+                <input type="text" [(ngModel)]="editingGroup.name" placeholder="e.g. Operations & Workforce Manager" class="form-control" />
+              </div>
+
+              <!-- Clean Make Admin Toggle Card -->
+              <div class="form-group span-full">
+                <div class="admin-toggle-card" [class.admin-active]="editingGroup.isAdmin" (click)="toggleAdminStatus()">
+                  <div class="admin-toggle-left">
+                    <div class="admin-toggle-icon" [style.background]="editingGroup.isAdmin ? '#0050E5' : 'rgba(100, 116, 139, 0.1)'" [style.color]="editingGroup.isAdmin ? '#ffffff' : '#64748B'">
+                      <span class="material-symbols-outlined">{{ editingGroup.isAdmin ? 'verified_user' : 'shield_person' }}</span>
+                    </div>
+                    <div class="admin-toggle-text">
+                      <div class="admin-toggle-heading">
+                        <strong>Make this an Administrator Group</strong>
+                        <span class="role-pill-badge badge-admin" *ngIf="editingGroup.isAdmin">FULL UNRESTRICTED ACCESS</span>
+                      </div>
+                      <p>When enabled, members in this group automatically receive full global administrator authority across the workspace. All capability scopes below will be disabled.</p>
+                    </div>
+                  </div>
+                  <div class="admin-toggle-switch">
+                    <input type="checkbox" [checked]="editingGroup.isAdmin" (click)="$event.stopPropagation(); toggleAdminStatus()" />
+                    <span class="switch-slider"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group span-full">
+                <label>Description</label>
+                <textarea [(ngModel)]="editingGroup.description" rows="2" class="form-control" placeholder="Describe the purpose, designated department, or authority scope of this group..."></textarea>
+              </div>
+
+              <div class="form-group span-full">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="editingGroup.isDefault" />
+                  <span>Set as default group for newly invited members</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Granular Capability Scopes Matrix -->
+            <div class="blueprint-matrix-section">
+              <div class="matrix-header">
+                <h4>Modular Capability Action Scopes</h4>
+                <p>Define which system modules and subscribed feature add-ons members in this group can access and their permitted action level.</p>
+              </div>
+
+              <!-- Notice when Administrator is enabled -->
+              <div class="admin-authority-banner" *ngIf="editingGroup.isAdmin">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <div>
+                  <strong>Administrator Authority Active</strong>
+                  <p>All system modules and active paid feature add-ons are automatically unlocked with full, unrestricted authority. Granular capability scopes below are disabled for Administrator groups.</p>
+                </div>
+              </div>
+
+              <!-- Section 1: System Roles (Core Modules) -->
+              <div class="blueprint-subsection">
+                <div class="subsection-header">
+                  <div class="header-icon-pill" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+                    <span class="material-symbols-outlined">dataset</span>
+                  </div>
+                  <div>
+                    <div class="header-title-row">
+                      <h5>System Roles (Core Modules)</h5>
+                      <span class="section-count-badge badge-identity">{{ editingCoreCapabilities.length }} Roles</span>
+                    </div>
+                    <p class="subsection-desc">Standard built-in platform capabilities matching the core workspace sidebar navigation.</p>
+                  </div>
+                </div>
+
+                <div class="blueprint-table-wrap" [class.table-disabled]="editingGroup.isAdmin">
+                  <table class="blueprint-table">
+                    <thead>
+                      <tr>
+                        <th style="min-width: 240px;">System Role</th>
+                        <th style="min-width: 260px;">Description &amp; Operational Scope</th>
+                        <th style="width: 360px;">Assigned Action Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of editingCoreCapabilities">
+                        <td>
+                          <div class="feat-cell">
+                            <span class="material-symbols-outlined feat-icon" [style.color]="editingGroup.colorBadge || '#0050E5'">{{ item.icon }}</span>
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span class="cat-tag">{{ item.category }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="feat-desc">{{ item.description }}</span>
+                        </td>
+                        <td>
+                          <div class="segmented-role-control">
+                            <button
+                              type="button"
+                              class="seg-btn seg-none"
+                              [class.active]="item.scope === 'None'"
+                              (click)="item.scope = 'None'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="No access"
+                            >
+                              <span class="material-symbols-outlined">block</span>
+                              <span>None</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-readonly"
+                              [class.active]="item.scope === 'ReadOnly'"
+                              (click)="item.scope = 'ReadOnly'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="Read Only access"
+                            >
+                              <span class="material-symbols-outlined">visibility</span>
+                              <span>Read Only</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-feature"
+                              [class.active]="item.scope === 'FeatureEdit'"
+                              (click)="item.scope = 'FeatureEdit'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="Feature Editor access"
+                            >
+                              <span class="material-symbols-outlined">edit_note</span>
+                              <span>Feature Editor</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Section 2: Feature & Paid Roles (Subscribed Modular Add-ons) -->
+              <div class="blueprint-subsection mt-4">
+                <div class="subsection-header">
+                  <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                  </div>
+                  <div>
+                    <div class="header-title-row">
+                      <h5>Feature &amp; Paid Roles</h5>
+                      <span class="section-count-badge badge-editor">{{ editingPaidCapabilities.length }} Active</span>
+                    </div>
+                    <p class="subsection-desc">Dynamic domain capabilities unlocked exclusively by active workspace subscription add-ons.</p>
+                  </div>
+                </div>
+
+                <div class="blueprint-table-wrap" [class.table-disabled]="editingGroup.isAdmin" *ngIf="editingPaidCapabilities.length > 0">
+                  <table class="blueprint-table">
+                    <thead>
+                      <tr>
+                        <th style="min-width: 240px;">Feature Role</th>
+                        <th style="min-width: 260px;">Description &amp; Modular Scope</th>
+                        <th style="width: 360px;">Assigned Action Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of editingPaidCapabilities">
+                        <td>
+                          <div class="feat-cell">
+                            <span class="material-symbols-outlined feat-icon" style="color: #10b981;">{{ item.icon }}</span>
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span class="role-pill-badge badge-feature" style="margin-left: 0; margin-top: 3px; display: inline-block;">Paid Feature</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="feat-desc">{{ item.description }}</span>
+                        </td>
+                        <td>
+                          <div class="segmented-role-control">
+                            <button
+                              type="button"
+                              class="seg-btn seg-none"
+                              [class.active]="item.scope === 'None'"
+                              (click)="item.scope = 'None'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="No access"
+                            >
+                              <span class="material-symbols-outlined">block</span>
+                              <span>None</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-readonly"
+                              [class.active]="item.scope === 'ReadOnly'"
+                              (click)="item.scope = 'ReadOnly'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="Read Only access"
+                            >
+                              <span class="material-symbols-outlined">visibility</span>
+                              <span>Read Only</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="seg-btn seg-feature"
+                              [class.active]="item.scope === 'FeatureEdit'"
+                              (click)="item.scope = 'FeatureEdit'"
+                              [disabled]="editingGroup.isAdmin"
+                              title="Feature Editor access"
+                            >
+                              <span class="material-symbols-outlined">edit_note</span>
+                              <span>Feature Editor</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="empty-paid-state-blueprint" *ngIf="editingPaidCapabilities.length === 0">
+                  <div class="empty-paid-icon-sm">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                  </div>
+                  <div>
+                    <h6>No Active Paid Feature Add-Ons Subscribed</h6>
+                    <p>When paid capabilities (such as Workforce, Shifts &amp; Rotas, Commerce Studio, or Marketing Studio) are activated in Billing &amp; Subscriptions, their dedicated authority roles will automatically appear here for blueprint access assignment.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-footer">
+            <button type="button" class="btn btn-outline" (click)="cancelEditGroup()" [disabled]="isSavingGroup">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveGroup()" [disabled]="isSavingGroup">
+              <span class="material-symbols-outlined" *ngIf="!isSavingGroup">save</span>
+              <span class="material-symbols-outlined spinner" *ngIf="isSavingGroup">progress_activity</span>
+              <span>{{ isSavingGroup ? 'Saving Blueprint...' : (editingGroup.id ? 'Save Changes' : 'Create User Group') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Group Table View (When not editing) -->
+        <div class="table-card" *ngIf="!editingGroup">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(0,80,229,0.08); color: #0050e5;">
+                <span class="material-symbols-outlined">group_work</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>{{ 'identity.roles.user_groups_title' | translate:'User Groups & Permission Blueprints' }}</h3>
+                  <span class="section-count-badge badge-admin">{{ userGroups.length }} Groups</span>
+                </div>
+                <p>{{ 'identity.roles.user_groups_desc' | translate:'Configured permission blueprint groups with assigned member rosters and modular capability scopes.' }}</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" (click)="loadUserGroups()" title="Refresh user groups">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="min-width: 240px;">{{ 'identity.roles.th_group_tier' | translate:'Group Name & Base Tier' }}</th>
+                  <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Governance Boundaries' }}</th>
+                  <th style="min-width: 320px;">{{ 'identity.roles.th_assigned_personnel' | translate:'Assigned Personnel' }}</th>
+                  <th style="width: 220px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Actions' }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let g of userGroups">
+                  <!-- Group Name & Icon -->
+                  <td>
+                    <div class="role-cell">
+                      <div class="group-icon-pill" [style.background]="(g.colorBadge || '#0050E5') + '15'" [style.color]="g.colorBadge || '#0050E5'">
+                        <span class="material-symbols-outlined">{{ g.icon || 'groups' }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <span class="role-name">{{ g.name }}</span>
+                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+                          <span class="default-pill" *ngIf="g.isDefault">DEFAULT</span>
+                          <span class="role-pill" [style.color]="g.colorBadge || '#0050E5'">{{ (g.name === 'Administrator' || g.baseRole === 'Admin') ? 'Admin' : (g.baseRole || 'Member') }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Scope & Description -->
+                  <td>
+                    <div class="scope-cell">
+                      <p class="role-desc">{{ g.description || 'Predefined permissions blueprint for workspace members.' }}</p>
+                      <span class="rule-count-pill">{{ g.permissionsCount || 0 }} rules configured</span>
+                    </div>
+                  </td>
+
+                  <!-- Assigned Personnel (Avatar Stack) -->
+                  <td>
+                    <div class="members-preview-cell" *ngIf="(g.membersCount || 0) > 0">
+                      <span class="count-badge">
+                        <strong>{{ g.membersCount }}</strong>
+                        <span>{{ g.membersCount === 1 ? 'user' : 'users' }}</span>
+                      </span>
+                      <div class="avatar-stack">
+                        <div
+                          class="stack-avatar"
+                          *ngFor="let m of getGroupPreviewMembers(g); let idx = index"
+                          [title]="(m.fullName || m.email || '') + (m.designation ? ' - ' + m.designation : '')"
+                          [style.background]="getMemberGradient(m.fullName || m.email || '', idx)"
+                        >
+                          {{ getInitials(m.fullName || m.email || '') }}
+                        </div>
+                        <div class="stack-avatar stack-more" *ngIf="(g.membersCount || 0) > 3" [title]="((g.membersCount || 0) - 3) + ' more members'">
+                          +{{ (g.membersCount || 0) - 3 }}
+                        </div>
+                      </div>
+                      <span class="preview-names-text" [title]="getMemberNamesText(g)">
+                        {{ getMemberNamesText(g) }}
+                      </span>
+                    </div>
+                    <div class="no-members-text" *ngIf="(g.membersCount || 0) === 0">
+                      <span class="count-badge count-badge-zero"><strong>0</strong> <span>users</span></span>
+                      <span>No members assigned</span>
+                    </div>
+                  </td>
+
+                  <!-- Actions -->
+                  <td style="text-align: right; white-space: nowrap;">
+                    <ng-container *ngIf="g.isDefault || g.name === 'Member'; else editableGroupActions">
+                      <span class="immutable-badge" title="Every user is inherently a member. The baseline Member group is permanent and cannot be modified.">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">lock</span>
+                        <span>Baseline Member (Immutable)</span>
+                      </span>
+                    </ng-container>
+                    <ng-template #editableGroupActions>
+                      <button type="button" class="btn-manage-members" (click)="startEditGroup(g)" title="Configure group blueprint and capability scopes">
+                        <span class="material-symbols-outlined btn-icon">tune</span>
+                        <span class="btn-text">Configure Blueprint</span>
+                      </button>
+                      <div class="quick-icons" style="display: inline-flex; vertical-align: middle; margin-left: 6px;">
+                        <button type="button" class="icon-btn delete-icon-btn" (click)="deleteGroup(g)" [disabled]="g.isSystem" title="Delete user group">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </ng-template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: All Permissions (3 Distinct Cards: Major Roles, System Roles, Feature/Paid Roles) -->
+      <div class="permissions-tab-section" *ngIf="!isLoading && activeFilter === 'permissions'">
+        
+        <!-- CARD 1: Major Platform Roles -->
+        <div class="table-card">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(0,80,229,0.08); color: #0050e5;">
+                <span class="material-symbols-outlined">shield_person</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>Major Platform Roles</h3>
+                  <span class="section-count-badge badge-admin">{{ majorRoles.length }} Roles</span>
+                </div>
+                <p>Platform foundational governance and root sovereign access levels.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role catalog">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 320px;">Role</th>
+                  <th>Scope & Governance Boundaries</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of majorRoles">
+                  <td style="vertical-align: top;">
+                    <div class="role-cell">
+                      <div class="role-icon-box" [ngClass]="role.badge">
+                        <span class="material-symbols-outlined">{{ role.icon }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <span class="role-name">{{ role.name }}</span>
+                        <span class="role-pill-badge" [ngClass]="role.badge">
+                          {{ role.name === 'SuperAdmin' ? 'Root Sovereign' : (role.name === 'Admin' ? 'Global Admin' : 'Baseline Member') }}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="scope-cell">
+                      <span class="scope-tag">{{ role.scope }}</span>
+                      <p class="role-desc">{{ role.description }}</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CARD 2: Core System Roles (Matching Sidebar Navigation) -->
+        <div class="table-card mt-4">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+                <span class="material-symbols-outlined">dataset</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>System Roles (Core Modules)</h3>
+                  <span class="section-count-badge badge-identity">{{ systemModuleRoles.length }} Roles</span>
+                </div>
+                <p>Standard built-in platform capabilities matching the core workspace sidebar navigation.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 320px;">System Role</th>
+                  <th>Description & Operational Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of systemModuleRoles">
+                  <td style="vertical-align: top;">
+                    <div class="role-cell">
+                      <div class="role-icon-box" [ngClass]="role.badge">
+                        <span class="material-symbols-outlined">{{ role.icon }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <div class="role-name-row">
+                          <span class="role-name">{{ role.name }}</span>
+                          <span class="role-key-tag" *ngIf="role.roleKey">{{ role.roleKey }}</span>
+                        </div>
+                        <span class="role-pill-badge" [ngClass]="role.badge">System Role</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="scope-cell">
+                      <span class="scope-tag">{{ role.scope }}</span>
+                      <p class="role-desc">{{ role.description }}</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CARD 3: Feature / Paid Roles (Modular Add-ons) -->
+        <div class="table-card mt-4">
+          <div class="table-card-header">
+            <div class="card-header-meta">
+              <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+                <span class="material-symbols-outlined">workspace_premium</span>
+              </div>
+              <div>
+                <div class="header-title-row">
+                  <h3>Feature & Paid Roles</h3>
+                  <span class="section-count-badge badge-editor">{{ paidFeatureRoles.length }} Active</span>
+                </div>
+                <p>Dynamic domain capabilities unlocked exclusively by active workspace subscription add-ons.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive" *ngIf="paidFeatureRoles.length > 0">
+            <table class="roles-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 340px;">Feature Role</th>
+                  <th>Description & Modular Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of paidFeatureRoles">
+                  <td style="vertical-align: top;">
+                    <div class="role-cell">
+                      <div class="role-icon-box" [ngClass]="role.badge || 'badge-feature-authority'">
+                        <span class="material-symbols-outlined">{{ role.icon || 'calendar_month' }}</span>
+                      </div>
+                      <div class="role-title-box">
+                        <span class="role-name">{{ role.name }}</span>
+                        <span class="role-pill-badge badge-feature">Paid Feature</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="scope-cell">
+                      <span class="scope-tag">{{ role.scope }}</span>
+                      <p class="role-desc">{{ role.description }}</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-paid-state" *ngIf="paidFeatureRoles.length === 0">
+            <div class="empty-paid-icon">
+              <span class="material-symbols-outlined">workspace_premium</span>
+            </div>
+            <h4>No Active Paid Feature Add-Ons</h4>
+            <p>This workspace operates on our 7 Core System Modules. When paid capabilities (such as Workforce, Shifts &amp; Rotas, Commerce Studio, or Marketing Studio) are activated in Billing &amp; Subscriptions, their dedicated authority roles will automatically appear here.</p>
+            <a routerLink="/billing/console" class="btn btn-outline btn-sm">
+              <span class="material-symbols-outlined">shopping_bag</span>
+              <span>Explore Add-on Features in Billing</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab 3: Editor Permissions (Operational Access Levels) -->
+      <div class="table-card" *ngIf="!isLoading && activeFilter === 'editor_permissions'">
         <div class="table-card-header">
           <div class="card-header-meta">
-            <div class="header-icon-pill" style="background: rgba(0,80,229,0.08); color: #0050e5;">
-              <span class="material-symbols-outlined">shield_person</span>
+            <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+              <span class="material-symbols-outlined">tune</span>
             </div>
             <div>
               <div class="header-title-row">
-                <h3>{{ 'identity.roles.authority_title' | translate:'System & Feature Authority Roles' }}</h3>
-                <span class="section-count-badge badge-admin">{{ systemFeatureRoles.length }} Roles</span>
+                <h3>{{ 'identity.roles.operational_title' | translate:'Editor Permissions & Operational Action Levels' }}</h3>
+                <span class="section-count-badge badge-editor">{{ operationalLevelRoles.length }} Levels</span>
               </div>
-              <p>{{ 'identity.roles.authority_desc' | translate:'Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.' }}</p>
+              <p>{{ 'identity.roles.operational_desc' | translate:'Granular operational scopes governing content creation, data records, and read-only observation across features.' }}</p>
             </div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
@@ -225,131 +786,15 @@ interface RoleMemberItem {
           <table class="roles-data-table">
             <thead>
               <tr>
-                <th style="min-width: 220px;">{{ 'identity.roles.th_role_tier' | translate:'Role & Authority Tier' }}</th>
-                <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Governance Boundaries' }}</th>
-                <th style="width: 140px; text-align: center;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
-                <th style="width: 200px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
-                <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Action' }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let role of systemFeatureRoles" [class.locked-row]="!role.canAssign">
-                <!-- Role Name & Icon -->
-                <td>
-                  <div class="role-cell">
-                    <div class="role-icon-box" [ngClass]="role.badge">
-                      <span class="material-symbols-outlined">{{ role.icon }}</span>
-                    </div>
-                    <div class="role-title-box">
-                      <span class="role-name">{{ role.name }}</span>
-                      <span class="role-pill-badge" [ngClass]="role.badge">
-                        {{ role.canAssign ? ('identity.roles.system_authority' | translate:'System Authority') : ('identity.roles.root_sovereign' | translate:'Root Sovereign') }}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Scope & Description -->
-                <td>
-                  <div class="scope-cell">
-                    <span class="scope-tag">{{ role.scope }}</span>
-                    <p class="role-desc">{{ role.description }}</p>
-                  </div>
-                </td>
-
-                <!-- Member Count -->
-                <td style="text-align: center;">
-                  <span class="count-badge" [class.count-badge-zero]="role.memberCount === 0">
-                    <strong>{{ role.memberCount }}</strong>
-                    <span>{{ role.memberCount === 1 ? 'user' : 'users' }}</span>
-                  </span>
-                </td>
-
-                <!-- Members Preview Avatars -->
-                <td>
-                  <div class="members-preview-cell" *ngIf="role.memberCount > 0">
-                    <div class="avatar-stack">
-                      <div
-                        class="stack-avatar"
-                        *ngFor="let m of role.members.slice(0, 3)"
-                        [title]="m.fullName + ' (' + m.email + ')'"
-                        [style.background]="getGradient(m.fullName)"
-                      >
-                        {{ getInitials(m.fullName) }}
-                      </div>
-                      <div class="stack-avatar stack-more" *ngIf="role.memberCount > 3" [title]="(role.memberCount - 3) + ' more members'">
-                        +{{ role.memberCount - 3 }}
-                      </div>
-                    </div>
-                    <span class="preview-names-text">
-                      {{ getPreviewNames(role.members) }}
-                    </span>
-                  </div>
-                  <div class="no-members-text" *ngIf="role.memberCount === 0">
-                    <span>{{ 'identity.roles.no_members' | translate:'No members assigned' }}</span>
-                  </div>
-                </td>
-
-                <!-- Action Button -->
-                <td style="text-align: right; white-space: nowrap;">
-                  <!-- SuperAdmin Locked State -->
-                  <div *ngIf="!role.canAssign" class="locked-chip" title="Root account authority cannot be transferred or assigned to other users.">
-                    <span class="material-symbols-outlined">lock</span>
-                    <span>{{ 'identity.roles.root_account_only' | translate:'Root Account Only' }}</span>
-                  </div>
-
-                  <!-- Manage Members Modal Trigger -->
-                  <button
-                    *ngIf="role.canAssign"
-                    type="button"
-                    class="btn-manage-members"
-                    (click)="openManageModal(role)"
-                  >
-                    <span class="material-symbols-outlined btn-icon">group_add</span>
-                    <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage Members' }}</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Group 2: Operational Access Levels Card -->
-      <div class="table-card" [class.mt-4]="activeFilter === 'all'" *ngIf="!isLoading && (activeFilter === 'all' || activeFilter === 'operational_level')">
-        <div class="table-card-header">
-          <div class="card-header-meta">
-            <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
-              <span class="material-symbols-outlined">tune</span>
-            </div>
-            <div>
-              <div class="header-title-row">
-                <h3>{{ 'identity.roles.operational_title' | translate:'Operational Access Levels' }}</h3>
-                <span class="section-count-badge badge-editor">{{ operationalLevelRoles.length }} Levels</span>
-              </div>
-              <p>{{ 'identity.roles.operational_desc' | translate:'Granular operational scopes governing content creation, data records, and read-only observation across features.' }}</p>
-            </div>
-          </div>
-          <button *ngIf="activeFilter === 'operational_level'" type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
-            <span class="material-symbols-outlined">refresh</span>
-            <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
-          </button>
-        </div>
-
-        <div class="table-responsive">
-          <table class="roles-data-table">
-            <thead>
-              <tr>
                 <th style="min-width: 220px;">{{ 'identity.roles.th_role_tier' | translate:'Operational Level' }}</th>
                 <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Operational Action Boundaries' }}</th>
                 <th style="width: 140px; text-align: center;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
-                <th style="width: 200px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
+                <th style="width: 260px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
                 <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Action' }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let role of operationalLevelRoles" [class.locked-row]="!role.canAssign">
-                <!-- Role Name & Icon -->
                 <td>
                   <div class="role-cell">
                     <div class="role-icon-box" [ngClass]="role.badge">
@@ -363,32 +808,26 @@ interface RoleMemberItem {
                     </div>
                   </div>
                 </td>
-
-                <!-- Scope & Description -->
                 <td>
                   <div class="scope-cell">
                     <span class="scope-tag">{{ role.scope }}</span>
                     <p class="role-desc">{{ role.description }}</p>
                   </div>
                 </td>
-
-                <!-- Member Count -->
                 <td style="text-align: center;">
                   <span class="count-badge" [class.count-badge-zero]="role.memberCount === 0">
                     <strong>{{ role.memberCount }}</strong>
                     <span>{{ role.memberCount === 1 ? 'user' : 'users' }}</span>
                   </span>
                 </td>
-
-                <!-- Members Preview Avatars -->
                 <td>
                   <div class="members-preview-cell" *ngIf="role.memberCount > 0">
                     <div class="avatar-stack">
                       <div
                         class="stack-avatar"
-                        *ngFor="let m of role.members.slice(0, 3)"
+                        *ngFor="let m of role.members.slice(0, 3); let idx = index"
                         [title]="m.fullName + ' (' + m.email + ')'"
-                        [style.background]="getGradient(m.fullName)"
+                        [style.background]="getMemberGradient(m.fullName, idx)"
                       >
                         {{ getInitials(m.fullName) }}
                       </div>
@@ -404,10 +843,7 @@ interface RoleMemberItem {
                     <span>{{ 'identity.roles.no_members' | translate:'No members assigned' }}</span>
                   </div>
                 </td>
-
-                <!-- Action Button -->
                 <td style="text-align: right; white-space: nowrap;">
-                  <!-- Manage Members Modal Trigger -->
                   <button
                     type="button"
                     class="btn-manage-members"
@@ -420,113 +856,6 @@ interface RoleMemberItem {
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Group 3: Assigned Personnel Roster Card (When activeFilter === 'assigned') -->
-      <div class="table-card" *ngIf="!isLoading && activeFilter === 'assigned'">
-        <div class="table-card-header">
-          <div class="card-header-meta">
-            <div class="header-icon-pill" style="background: rgba(100,116,139,0.08); color: #475569;">
-              <span class="material-symbols-outlined">group</span>
-            </div>
-            <div>
-              <div class="header-title-row">
-                <h3>{{ 'identity.roles.assigned_title' | translate:'Assigned Personnel Roster' }}</h3>
-                <span class="section-count-badge badge-member">{{ allAssignedMembers.length }} Members</span>
-              </div>
-              <p>{{ 'identity.roles.assigned_desc' | translate:'Complete directory of all workspace personnel currently holding active system or operational roles.' }}</p>
-            </div>
-          </div>
-          <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
-            <span class="material-symbols-outlined">refresh</span>
-            <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
-          </button>
-        </div>
-
-        <!-- Populated Assigned Personnel Table -->
-        <div class="table-responsive" *ngIf="allAssignedMembers.length > 0">
-          <table class="roles-data-table">
-            <thead>
-              <tr>
-                <th style="min-width: 240px;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
-                <th style="min-width: 200px;">{{ 'identity.roles.th_role_tier' | translate:'Assigned Role' }}</th>
-                <th style="min-width: 240px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Module Boundaries' }}</th>
-                <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Actions' }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of allAssignedMembers">
-                <td>
-                  <div class="role-cell">
-                    <div class="member-avatar" [style.background]="getGradient(item.member.fullName)">
-                      {{ getInitials(item.member.fullName) }}
-                    </div>
-                    <div class="member-names">
-                      <strong>{{ item.member.fullName }}</strong>
-                      <span class="m-email">{{ item.member.email }}</span>
-                      <span class="id-tag" *ngIf="item.member.memberId">ID: {{ item.member.memberId }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <div class="role-cell">
-                    <div class="role-icon-box" [ngClass]="item.role.badge" style="width: 34px; height: 34px;">
-                      <span class="material-symbols-outlined" style="font-size: 18px;">{{ item.role.icon }}</span>
-                    </div>
-                    <span class="role-pill-badge" [ngClass]="item.role.badge">{{ item.role.name }}</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="scope-cell">
-                    <span class="scope-tag">{{ item.role.scope }}</span>
-                    <span class="feature-tag" *ngIf="item.role.name === 'Feature Editor' && item.member.features && item.member.features.length > 0">
-                      Features: {{ item.member.features.join(', ') }}
-                    </span>
-                  </div>
-                </td>
-                <td style="text-align: right; white-space: nowrap;">
-                  <button
-                    type="button"
-                    class="btn-manage-members"
-                    (click)="openManageModal(item.role)"
-                    style="margin-right: 8px;"
-                  >
-                    <span class="material-symbols-outlined btn-icon">edit</span>
-                    <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-remove-role"
-                    [disabled]="isUnassigning"
-                    (click)="unassignRoleFromUser(item.member.userId, item.member.fullName, item.role)"
-                  >
-                    <span class="material-symbols-outlined">person_remove</span>
-                    <span>{{ 'identity.roles.modal_btn_remove' | translate:'Remove' }}</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Empty Roster State -->
-        <div class="empty-roster-state" *ngIf="allAssignedMembers.length === 0">
-          <div class="empty-icon-wrap">
-            <span class="material-symbols-outlined">group_off</span>
-          </div>
-          <h4>{{ 'identity.roles.no_personnel_yet' | translate:'No Personnel Assigned Yet' }}</h4>
-          <p>{{ 'identity.roles.no_personnel_desc' | translate:'Zero members currently hold administrative or operational roles in this workspace. Select an authority or operational role below to assign personnel.' }}</p>
-          <div class="empty-actions">
-            <button type="button" class="btn btn-primary" (click)="setFilter('all')">
-              <span class="material-symbols-outlined">visibility</span>
-              <span>{{ 'identity.roles.btn_view_all_assign' | translate:'View All Roles & Assign' }}</span>
-            </button>
-            <a routerLink="/admin/users/list" class="btn btn-outline">
-              <span class="material-symbols-outlined">person_add</span>
-              <span>{{ 'identity.roles.btn_user_directory' | translate:'User Directory' }}</span>
-            </a>
-          </div>
         </div>
       </div>
 
@@ -677,7 +1006,7 @@ interface RoleMemberItem {
     /* Stats Strip (Clickable Interactive Filter Cards) */
     .stats-strip {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
     }
     @media (max-width: 900px) {
@@ -734,6 +1063,11 @@ interface RoleMemberItem {
     .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 2px; }
 
     /* Active Card States */
+    .stat-card.active-groups {
+      border-color: #0050e5;
+      background: #fafcff;
+      box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.2), 0 6px 16px rgba(0, 80, 229, 0.08);
+    }
     .stat-card.active-all {
       border-color: #0050e5;
       background: #fafcff;
@@ -768,10 +1102,538 @@ interface RoleMemberItem {
       gap: 3px;
       flex-shrink: 0;
     }
+    .indicator-groups { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
     .indicator-all { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
     .indicator-system { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
     .indicator-operational { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
     .indicator-assigned { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    /* User Groups Section Styles */
+    .user-groups-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .groups-banner {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .banner-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #dbeafe;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .banner-icon-wrap .material-symbols-outlined { font-size: 24px; }
+    .banner-body { flex: 1; }
+    .banner-body h4 { margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: #1e3a8a; }
+    .banner-body p { margin: 0; font-size: 12.5px; color: #3b82f6; line-height: 1.45; }
+    .banner-actions { display: flex; align-items: center; }
+
+    /* Group Cards Grid */
+    .groups-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .group-blueprint-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .group-blueprint-card:hover {
+      border-color: #93c5fd;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 80, 229, 0.07);
+    }
+    .group-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .group-icon-pill {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .group-icon-pill .material-symbols-outlined { font-size: 22px; }
+    .group-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .default-pill {
+      background: #ecfdf5;
+      color: #059669;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid #a7f3d0;
+      letter-spacing: 0.05em;
+    }
+    .role-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+    .group-main-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .group-title { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+    .group-desc { margin: 0; font-size: 12.5px; color: #64748b; line-height: 1.45; }
+    .group-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: #64748b;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-item .material-symbols-outlined { font-size: 15px; color: #94a3b8; }
+    .group-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 6px;
+    }
+    .btn-blueprint {
+      flex: 1;
+      justify-content: center;
+    }
+    .quick-icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .icon-btn:hover:not(:disabled) {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+    .icon-btn.delete-icon-btn:hover:not(:disabled) {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    .icon-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+    /* Group Editor Card */
+    .group-editor-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      margin-bottom: 10px;
+    }
+    .editor-header {
+      padding: 18px 24px;
+      background: #fafbfc;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .editor-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .editor-icon {
+      font-size: 26px;
+      color: #0050e5;
+    }
+    .editor-title-row h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+    .editor-title-row p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+    .editor-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .editor-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .span-full { grid-column: 1 / -1; }
+    .color-picker-row, .icon-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-input {
+      width: 40px;
+      height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0;
+      cursor: pointer;
+    }
+    .icon-preview {
+      font-size: 24px;
+    }
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Blueprint Scopes Matrix Table */
+    .blueprint-matrix-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 18px;
+    }
+    .matrix-header h4 { margin: 0; font-size: 14.5px; font-weight: 700; color: #0f172a; }
+    .matrix-header p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+
+    .blueprint-subsection {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .blueprint-subsection.mt-4 { margin-top: 14px; }
+    .subsection-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .subsection-header .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subsection-header h5 {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .subsection-desc {
+      margin: 2px 0 0;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .empty-paid-state-blueprint {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .empty-paid-icon-sm {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .empty-paid-icon-sm span { font-size: 20px; }
+    .empty-paid-state-blueprint h6 { margin: 0 0 2px; font-size: 12.5px; font-weight: 700; color: #0f172a; }
+    .empty-paid-state-blueprint p { margin: 0; font-size: 11.5px; color: #64748b; line-height: 1.4; }
+
+    .blueprint-table-wrap {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .blueprint-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .blueprint-table th {
+      background: #f8fafc;
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .blueprint-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    .blueprint-table tr:last-child td { border-bottom: none; }
+    .feat-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feat-icon { font-size: 20px; }
+    .cat-tag {
+      display: block;
+      font-size: 10.5px;
+      color: #94a3b8;
+    }
+    .feat-desc { font-size: 12px; color: #64748b; }
+
+    /* Segmented Action Role Control */
+    .segmented-role-control {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 7px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .seg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: transparent;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .seg-btn .material-symbols-outlined { font-size: 13px; }
+    .seg-btn:hover { color: #0f172a; }
+    .seg-btn.active.seg-none {
+      background: #ffffff;
+      color: #dc2626;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .seg-btn.active.seg-readonly {
+      background: #ffffff;
+      color: #0284c7;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .seg-btn.active.seg-feature {
+      background: #ffffff;
+      color: #16a34a;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .seg-btn.active.seg-global {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .editor-footer {
+      padding: 16px 24px;
+      background: #fafbfc;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* Admin Toggle Card */
+    .admin-toggle-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.18s ease;
+    }
+    .admin-toggle-card:hover {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+    }
+    .admin-toggle-card.admin-active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 1px rgba(0, 80, 229, 0.2);
+    }
+    .admin-toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .admin-toggle-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.18s ease;
+    }
+    .admin-toggle-icon span { font-size: 22px; }
+    .admin-toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .admin-toggle-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-toggle-heading strong {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .admin-toggle-text p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .admin-toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .admin-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 24px;
+    }
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .admin-active .switch-slider {
+      background-color: #0050e5;
+    }
+    .admin-active .switch-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Admin Authority Banner */
+    .admin-authority-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .admin-authority-banner span.material-symbols-outlined {
+      font-size: 24px;
+      color: #0050e5;
+      flex-shrink: 0;
+    }
+    .admin-authority-banner strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 2px;
+    }
+    .admin-authority-banner p {
+      margin: 0;
+      font-size: 12px;
+      color: #2563eb;
+      line-height: 1.4;
+    }
+
+    /* Disabled table state */
+    .blueprint-table-wrap.table-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+      filter: grayscale(0.6);
+      background: #f8fafc;
+      user-select: none;
+    }
+    .seg-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
 
     /* Category Tabs Nav */
     .category-tabs-nav {
@@ -884,6 +1746,20 @@ interface RoleMemberItem {
     .roles-data-table tbody tr:last-child td { border-bottom: none; }
     .roles-data-table tbody tr:hover { background: #fafbfc; }
     .locked-row { background: #fafbfc; }
+    .immutable-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
 
     /* Role Cell */
     .role-cell { display: flex; align-items: center; gap: 12px; }
@@ -897,16 +1773,64 @@ interface RoleMemberItem {
       flex-shrink: 0;
     }
     .role-icon-box span { font-size: 22px; }
-    .role-title-box { display: flex; flex-direction: column; gap: 3px; }
+    .role-title-box { display: flex; flex-direction: column; gap: 4px; }
+    .role-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .role-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .role-key-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      background: #f1f5f9;
+      padding: 1.5px 7px;
+      border-radius: 5px;
+      border: 1px solid #e2e8f0;
+      font-family: inherit;
+    }
     .role-pill-badge {
       font-size: 10px;
       font-weight: 700;
-      padding: 1px 8px;
+      padding: 2px 8px;
       border-radius: 9999px;
       width: fit-content;
       text-transform: uppercase;
       letter-spacing: 0.04em;
+    }
+
+    /* Empty Paid Features State */
+    .empty-paid-state {
+      padding: 48px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: #fcfdfe;
+      border-top: 1px solid #f1f5f9;
+    }
+    .empty-paid-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(16,185,129,0.08);
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .empty-paid-icon span { font-size: 28px; }
+    .empty-paid-state h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .empty-paid-state p {
+      margin: 0;
+      max-width: 540px;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.55;
     }
 
     /* Badges */
@@ -932,6 +1856,25 @@ interface RoleMemberItem {
       border-radius: 4px;
       width: fit-content;
     }
+    .rule-count-pill {
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 4px;
+      width: fit-content;
+      display: inline-flex;
+      margin-top: 4px;
+    }
+    .action-scopes-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+    .scope-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .scope-pill.readonly { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .scope-pill.feat-edit { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .scope-pill.global-edit { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .group-tags-list { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .group-tag-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .no-groups-text { font-size: 11.5px; color: #94a3b8; font-style: italic; }
     .role-desc {
       font-size: 12px;
       color: #64748b;
@@ -1350,6 +2293,53 @@ interface RoleMemberItem {
       background: #1e293b;
       color: #60a5fa;
     }
+    :host-context(.dark-mode) .blueprint-subsection {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .subsection-header h5 {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .subsection-desc {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint h6 {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .empty-paid-state-blueprint p {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .admin-toggle-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .admin-toggle-card.admin-active {
+      background: rgba(0, 80, 229, 0.15);
+      border-color: #3b82f6;
+    }
+    :host-context(.dark-mode) .admin-toggle-heading strong {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .admin-toggle-text p {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .admin-authority-banner {
+      background: rgba(0, 80, 229, 0.12);
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+    :host-context(.dark-mode) .admin-authority-banner strong {
+      color: #93c5fd;
+    }
+    :host-context(.dark-mode) .admin-authority-banner p {
+      color: #bfdbfe;
+    }
+    :host-context(.dark-mode) .blueprint-table-wrap.table-disabled {
+      background: #0f172a;
+    }
   `]
 })
 export class IdentityRolesComponent implements OnInit {
@@ -1360,14 +2350,213 @@ export class IdentityRolesComponent implements OnInit {
   rolesCatalog: RoleCatalogItem[] = [];
   assignableUsers: any[] = [];
 
-  // Filter Tab State: 'all' | 'system_feature' | 'operational_level' | 'assigned'
-  activeFilter: 'all' | 'system_feature' | 'operational_level' | 'assigned' = 'all';
+  // User Groups & Blueprint Manager State
+  userGroups: any[] = [];
+  isLoadingGroups = false;
+  editingGroup: any = null;
+  editingGroupCapabilities: CapabilityScope[] = [];
+  isSavingGroup = false;
+
+  // Filter Tab State: 'user_groups' (Default) | 'permissions' | 'editor_permissions'
+  activeFilter: 'user_groups' | 'permissions' | 'editor_permissions' = 'user_groups';
 
   // Modal State
   isSuperAdmin: boolean = false;
   activeModalRole: RoleCatalogItem | null = null;
   selectedUserId: string = '';
   selectedFeatureName: string = 'UserManager';
+
+  /**
+   * Card 1: Major platform governance and root access levels.
+   */
+  get majorRoles(): RoleCatalogItem[] {
+    const targetNames = this.isSuperAdmin
+      ? ['superadmin', 'admin', 'member']
+      : ['admin', 'member'];
+    return this.rolesCatalog.filter(r => targetNames.includes((r.name || '').toLowerCase()));
+  }
+
+  /**
+   * Card 2: Core built-in platform system roles matching the workspace sidebar navigation.
+   */
+  systemModuleRoles = [
+    {
+      name: 'Central Command',
+      roleKey: 'Central Command Manager',
+      icon: 'space_dashboard',
+      badge: 'badge-admin',
+      scope: 'Dashboard Executive Command',
+      description: 'Main workspace executive command center, high-level KPIs, fast actions, system analytics.'
+    },
+    {
+      name: 'Website & CMS',
+      roleKey: 'CMS Studio Manager',
+      icon: 'web',
+      badge: 'badge-cmsmanager',
+      scope: 'Website & CMS Studio Governance',
+      description: 'Web pages, dynamic blog articles, visual templates, navigation menus, and public forms.'
+    },
+    {
+      name: 'User Management',
+      roleKey: 'User Manager',
+      icon: 'manage_accounts',
+      badge: 'badge-usermanager',
+      scope: 'User Directory & Cohort Management',
+      description: 'User directory, member profiles, onboarding custom attributes, categories, and account verification statuses.'
+    },
+    {
+      name: 'Identity & Access Control',
+      roleKey: 'Identity Manager',
+      icon: 'admin_panel_settings',
+      badge: 'badge-identity',
+      scope: 'RBAC Sovereign & Security Governance',
+      description: 'System roles, fine-grained permissions, user groups, member invitations, and security policies.'
+    },
+    {
+      name: 'Broadcast & Communications',
+      roleKey: 'Broadcast Manager',
+      icon: 'campaign',
+      badge: 'badge-feature-authority',
+      scope: 'Broadcast Studio & Communications',
+      description: 'Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.'
+    },
+    {
+      name: 'Billing & Subscriptions',
+      roleKey: 'Billing Manager',
+      icon: 'credit_card',
+      badge: 'badge-admin',
+      scope: 'Financial & Subscriptions Governance',
+      description: 'Workspace invoicing, payment gateways, subscription plans, and feature add-on entitlements.'
+    },
+    {
+      name: 'Settings & Audit',
+      roleKey: 'Settings & Audit Manager',
+      icon: 'settings',
+      badge: 'badge-readonly',
+      scope: 'Global System Settings & Audit Logs',
+      description: 'Workspace global settings, localization, brand customization, and tamper-proof security audit trails.'
+    }
+  ];
+
+  /**
+   * Card 3: Feature and paid modular roles unlocked exclusively by active subscriptions.
+   */
+  get paidFeatureRoles(): any[] {
+    const list: any[] = [];
+
+    // Check active paid feature roles from catalog, excluding core platform & system roles
+    const excluded = [
+      'superadmin', 'admin', 'member',
+      'central command manager', 'central command',
+      'cms studio manager', 'website & cms',
+      'user manager', 'user management',
+      'identity manager', 'identity & access control',
+      'broadcast manager', 'broadcast & communications',
+      'billing manager', 'billing & subscriptions', 'billing & invoices',
+      'settings & audit manager', 'settings & audit',
+      'global editor', 'feature editor', 'read only'
+    ];
+    const catalogPaid = this.rolesCatalog.filter(r =>
+      !excluded.includes((r.name || '').toLowerCase())
+    );
+
+    // Strictly return only dynamic feature roles enabled and returned by the backend catalog for this tenant
+    for (const r of catalogPaid) {
+      list.push({
+        name: r.name,
+        icon: r.icon || 'calendar_month',
+        badge: r.badge || 'badge-feature-authority',
+        scope: r.scope || 'Modular Feature Governance Only',
+        description: r.description,
+        featureAreaKey: (r as any).featureAreaKey || r.name
+      });
+    }
+
+    return list;
+  }
+
+  /**
+   * Filtered list of Core System Module capabilities (7 built-in modules).
+   */
+  get editingCoreCapabilities(): CapabilityScope[] {
+    return this.editingGroupCapabilities.filter(c => !c.isPaid);
+  }
+
+  /**
+   * Filtered list of Subscribed Paid Feature capabilities (dynamic add-ons).
+   */
+  get editingPaidCapabilities(): CapabilityScope[] {
+    return this.editingGroupCapabilities.filter(c => !!c.isPaid);
+  }
+
+  /**
+   * System-managed core platform capabilities standard on every BCC workspace.
+   */
+  systemFeatures: CapabilityScope[] = [
+    {
+      key: 'Dashboard',
+      name: 'Central Command',
+      category: 'Core System Role',
+      icon: 'space_dashboard',
+      description: 'Main workspace executive command center, high-level KPIs, fast actions, system analytics.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'ContentManager',
+      name: 'Website & CMS',
+      category: 'Core System Role',
+      icon: 'web',
+      description: 'Web pages, dynamic blog articles, visual templates, navigation menus, and public forms.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'UserManager',
+      name: 'User Management',
+      category: 'Core System Role',
+      icon: 'manage_accounts',
+      description: 'User directory, member profiles, onboarding custom attributes, categories, and account verification statuses.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'IdentityManager',
+      name: 'Identity & Access Control',
+      category: 'Core System Role',
+      icon: 'admin_panel_settings',
+      description: 'System roles, fine-grained permissions, member invitations, and security policies.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'Broadcast',
+      name: 'Broadcast & Communications',
+      category: 'Core System Role',
+      icon: 'campaign',
+      description: 'Internal Broadcast Studio announcements (Push, Email, SMS bulletins) and delivery receipt logs.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'BillingManager',
+      name: 'Billing & Subscriptions',
+      category: 'Core System Role',
+      icon: 'credit_card',
+      description: 'Workspace invoicing, payment gateways, subscription plans, and feature add-on entitlements.',
+      scope: 'None',
+      isPaid: false
+    },
+    {
+      key: 'SettingsManager',
+      name: 'Settings & Audit',
+      category: 'Core System Role',
+      icon: 'settings',
+      description: 'Workspace global settings, localization, brand identity, full tamper-proof audit trails.',
+      scope: 'None',
+      isPaid: false
+    }
+  ];
 
   get headerButtons(): PageHeaderButton[] {
     return [
@@ -1390,24 +2579,298 @@ export class IdentityRolesComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService,
     private translationService: TranslationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.checkCurrentUserRole();
+    this.loadUserGroups();
     this.loadRoleCatalog();
     this.loadAssignableUsers();
   }
 
   /**
-   * Sets or toggles the active filter view when clicking cards or tabs.
-   * If an active filtered view is clicked again, it toggles back to 'all'.
+   * Sets the active filter view when clicking cards or tabs.
    */
-  setFilter(filter: 'all' | 'system_feature' | 'operational_level' | 'assigned'): void {
-    if (this.activeFilter === filter && filter !== 'all') {
-      this.activeFilter = 'all';
-    } else {
-      this.activeFilter = filter;
+  setFilter(filter: 'user_groups' | 'permissions' | 'editor_permissions'): void {
+    this.activeFilter = filter;
+  }
+
+  /**
+   * Loads all user groups and permission blueprints.
+   */
+  loadUserGroups(): void {
+    this.isLoadingGroups = true;
+    this.api.get<any>('api/v1/user-groups').subscribe({
+      next: (res) => {
+        this.isLoadingGroups = false;
+        this.userGroups = res.data || res || [];
+      },
+      error: () => {
+        this.isLoadingGroups = false;
+        this.toast.error('Failed to load user groups.');
+      }
+    });
+  }
+
+  /**
+   * Initializes capability scopes separated into Core System Modules and Active Paid Feature Add-ons.
+   * Defaults all unconfigured scopes to 'None'.
+   */
+  private initEditingGroupCapabilities(permissions: any[] = []): void {
+    // 1. Core built-in system modules (7 modules)
+    const coreCaps: CapabilityScope[] = this.systemFeatures.map(f => {
+      const matched = permissions.find((p: any) =>
+        p.featureAreaKey?.toLowerCase() === f.key.toLowerCase() ||
+        p.featureAreaKey?.toLowerCase() === f.name.toLowerCase()
+      );
+      let scope: 'None' | 'ReadOnly' | 'FeatureEdit' = 'None';
+      if (matched) {
+        if (matched.actionRole === 'ReadOnly') scope = 'ReadOnly';
+        else if (matched.actionRole === 'FeatureEdit' || matched.actionRole === 'GlobalEdit') scope = 'FeatureEdit';
+      }
+      return {
+        ...f,
+        isPaid: false,
+        scope
+      };
+    });
+
+    // 2. Active subscribed paid feature add-ons
+    const paidCaps: CapabilityScope[] = this.paidFeatureRoles.map(pf => {
+      const targetKey = pf.featureAreaKey || pf.name;
+      const cleanTarget = (targetKey || '').toLowerCase().replace(/[-_ ]/g, '');
+      const matched = permissions.find((p: any) => {
+        const cleanPerm = (p.featureAreaKey || '').toLowerCase().replace(/[-_ ]/g, '');
+        return cleanPerm === cleanTarget ||
+          cleanPerm.includes(cleanTarget) ||
+          cleanTarget.includes(cleanPerm) ||
+          (cleanTarget.includes('workforce') && (cleanPerm.includes('workforce') || cleanPerm.includes('rota') || cleanPerm.includes('staff')));
+      });
+
+      let scope: 'None' | 'ReadOnly' | 'FeatureEdit' = 'None';
+      if (matched) {
+        if (matched.actionRole === 'ReadOnly') scope = 'ReadOnly';
+        else if (matched.actionRole === 'FeatureEdit' || matched.actionRole === 'GlobalEdit') scope = 'FeatureEdit';
+      }
+
+      const displayName = pf.name.replace(/ Manager$/i, '').trim();
+
+      return {
+        key: pf.featureAreaKey || pf.name,
+        name: displayName,
+        category: 'Paid Feature',
+        icon: pf.icon || 'calendar_month',
+        description: pf.description || `Feature domain capabilities for '${displayName}'.`,
+        scope,
+        isPaid: true
+      };
+    });
+
+    this.editingGroupCapabilities = [...coreCaps, ...paidCaps];
+  }
+
+  /**
+   * Opens the blueprint creation view with fresh default values.
+   */
+  startCreateGroup(): void {
+    this.editingGroup = {
+      name: '',
+      description: '',
+      isAdmin: false,
+      baseRole: 'Member',
+      isDefault: false,
+      colorBadge: '#64748B',
+      icon: 'groups'
+    };
+    this.initEditingGroupCapabilities([]);
+  }
+
+  /**
+   * Opens the blueprint editor for an existing user group.
+   */
+  startEditGroup(group: any): void {
+    if (!group) return;
+
+    if (group.isDefault || (group.name || '').toLowerCase() === 'member') {
+      this.toast.info('The baseline Member group is permanent and cannot be modified. Every user is inherently a member.');
+      return;
     }
+
+    const groupId = group.id || group.Id;
+    const baseRole = group.baseRole || group.BaseRole || 'Member';
+    const initialPerms = group.permissions || group.Permissions || [];
+    const hasConfiguredRules = (group.permissionsCount ?? group.PermissionsCount ?? initialPerms.length) > 0;
+    const isAdmin = !hasConfiguredRules && (baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator');
+
+    // Immediately open the blueprint editor with the row data
+    this.editingGroup = {
+      id: groupId,
+      name: group.name || group.Name || '',
+      description: group.description || group.Description || '',
+      isAdmin: isAdmin,
+      baseRole: isAdmin ? 'Admin' : (baseRole === 'Admin' ? 'Admin' : 'Member'),
+      isDefault: group.isDefault ?? group.IsDefault ?? false,
+      colorBadge: (isAdmin || baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator') ? '#0050E5' : (group.colorBadge || group.ColorBadge || '#64748B'),
+      icon: (isAdmin || baseRole === 'Admin' || (group.name || group.Name || '').toLowerCase() === 'administrator') ? 'admin_panel_settings' : (group.icon || group.Icon || 'groups')
+    };
+
+    // Initialize capabilities immediately
+    this.initEditingGroupCapabilities(initialPerms);
+
+    // Scroll smoothly to the editor card
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Background fetch to enrich permissions if groupId exists
+    if (groupId) {
+      this.api.get<any>(`api/v1/user-groups/${groupId}`).subscribe({
+        next: (res) => {
+          const detail = res.data || res;
+          if (detail && this.editingGroup) {
+            const detailRole = detail.baseRole || detail.BaseRole || this.editingGroup.baseRole;
+            const permissions = detail.permissions || detail.Permissions || initialPerms;
+            const detailHasRules = permissions.length > 0;
+            const detailIsAdmin = !detailHasRules && (detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator');
+
+            this.editingGroup.id = detail.id || detail.Id || this.editingGroup.id;
+            this.editingGroup.name = detail.name || detail.Name || this.editingGroup.name;
+            this.editingGroup.description = detail.description ?? detail.Description ?? this.editingGroup.description;
+            this.editingGroup.isAdmin = detailIsAdmin;
+            this.editingGroup.baseRole = detailIsAdmin ? 'Admin' : (detailRole === 'Admin' ? 'Admin' : 'Member');
+            this.editingGroup.isDefault = detail.isDefault ?? detail.IsDefault ?? this.editingGroup.isDefault;
+            this.editingGroup.colorBadge = (detailIsAdmin || detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator') ? '#0050E5' : (detail.colorBadge || detail.ColorBadge || this.editingGroup.colorBadge);
+            this.editingGroup.icon = (detailIsAdmin || detailRole === 'Admin' || (detail.name || detail.Name || '').toLowerCase() === 'administrator') ? 'admin_panel_settings' : (detail.icon || detail.Icon || this.editingGroup.icon);
+
+            this.initEditingGroupCapabilities(permissions);
+          }
+        },
+        error: () => {
+          // Keep the opened editingGroup fully responsive and editable
+        }
+      });
+    }
+  }
+
+  /**
+   * Toggles the Administrator status of the currently edited user group.
+   * When enabled, automatically disables granular capability scope selections.
+   */
+  toggleAdminStatus(): void {
+    if (!this.editingGroup) return;
+    this.editingGroup.isAdmin = !this.editingGroup.isAdmin;
+    if (this.editingGroup.isAdmin) {
+      this.editingGroup.baseRole = 'Admin';
+      this.editingGroup.colorBadge = '#0050E5';
+      this.editingGroup.icon = 'admin_panel_settings';
+    } else {
+      this.editingGroup.baseRole = 'Member';
+      this.editingGroup.colorBadge = '#64748B';
+      this.editingGroup.icon = 'groups';
+    }
+  }
+
+  /**
+   * Closes the blueprint editor and clears state.
+   */
+  cancelEditGroup(): void {
+    this.editingGroup = null;
+    this.editingGroupCapabilities = [];
+  }
+
+  /**
+   * Saves new or updated user group blueprint and syncs rights to members.
+   */
+  saveGroup(): void {
+    if (!this.editingGroup || !this.editingGroup.name?.trim()) {
+      this.toast.warning('Please enter a user group name.');
+      return;
+    }
+
+    if (this.editingGroup.isDefault || (this.editingGroup.name || '').toLowerCase() === 'member') {
+      this.toast.warning('The baseline Member group is permanent and cannot be modified.');
+      return;
+    }
+
+    this.isSavingGroup = true;
+    const isAdmin = !!this.editingGroup.isAdmin;
+    const baseRole = isAdmin ? 'Admin' : 'Member';
+    const colorBadge = isAdmin ? '#0050E5' : (this.editingGroup.colorBadge || '#64748B');
+    const icon = isAdmin ? 'admin_panel_settings' : (this.editingGroup.icon || 'groups');
+
+    // When admin, granular permissions are empty because Admin has sovereign global authority
+    const permissions = isAdmin
+      ? []
+      : this.editingGroupCapabilities
+          .filter(c => c.scope && c.scope !== 'None')
+          .map(c => ({
+            featureAreaKey: c.key,
+            actionRole: c.scope
+          }));
+
+    const payload = {
+      name: this.editingGroup.name.trim(),
+      description: this.editingGroup.description?.trim(),
+      baseRole: baseRole,
+      isDefault: !!this.editingGroup.isDefault,
+      colorBadge: colorBadge,
+      icon: icon,
+      permissions: permissions
+    };
+
+    if (this.editingGroup.id) {
+      this.api.put<any>(`api/v1/user-groups/${this.editingGroup.id}`, payload).subscribe({
+        next: () => {
+          this.isSavingGroup = false;
+          this.toast.success(`User group '${payload.name}' updated successfully.`);
+          this.editingGroup = null;
+          this.loadUserGroups();
+          this.loadRoleCatalog();
+        },
+        error: (err) => {
+          this.isSavingGroup = false;
+          this.toast.error(err?.error?.message || 'Failed to update user group.');
+        }
+      });
+    } else {
+      this.api.post<any>('api/v1/user-groups', payload).subscribe({
+        next: () => {
+          this.isSavingGroup = false;
+          this.toast.success(`User group '${payload.name}' created successfully.`);
+          this.editingGroup = null;
+          this.loadUserGroups();
+          this.loadRoleCatalog();
+        },
+        error: (err) => {
+          this.isSavingGroup = false;
+          this.toast.error(err?.error?.message || 'Failed to create user group.');
+        }
+      });
+    }
+  }
+
+  /**
+   * Deletes a user group after administrator confirmation.
+   */
+  deleteGroup(group: any): void {
+    if (group.isDefault || group.isSystem) {
+      this.toast.warning('Default or system user groups cannot be deleted.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete user group '${group.name}'? Assigned members will be moved to the default group.`)) {
+      return;
+    }
+
+    this.api.delete<any>(`api/v1/user-groups/${group.id}`).subscribe({
+      next: () => {
+        this.toast.success(`User group '${group.name}' deleted successfully.`);
+        this.loadUserGroups();
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Failed to delete user group.');
+      }
+    });
   }
 
   /**
@@ -1420,7 +2883,7 @@ export class IdentityRolesComponent implements OnInit {
         const u = JSON.parse(userStr);
         const roles: string[] = u.roles || [];
         this.isSuperAdmin = roles.some(r => r.toLowerCase() === 'superadmin');
-      } catch {}
+      } catch { }
     }
   }
 
@@ -1505,7 +2968,7 @@ export class IdentityRolesComponent implements OnInit {
         // Strictly exclude root SuperAdmin users from assignment target dropdown
         this.assignableUsers = (res.data || []).filter((u: any) => !u.roles?.includes('SuperAdmin'));
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -1604,5 +3067,77 @@ export class IdentityRolesComponent implements OnInit {
     }
     const hue = Math.abs(hash % 360);
     return `linear-gradient(135deg, hsl(${hue}, 70%, 45%), hsl(${(hue + 40) % 360}, 75%, 55%))`;
+  }
+
+  /**
+   * Returns strongly typed preview members for avatar stacking (up to 3 members).
+   */
+  getGroupPreviewMembers(group: any): GroupMemberPreview[] {
+    if (!group || !Array.isArray(group.membersPreview)) return [];
+    return group.membersPreview.slice(0, 3);
+  }
+
+  /**
+   * Generates a distinct professional gradient avatar background for member initials.
+   */
+  getMemberGradient(name: string, index: number = 0): string {
+    const gradients = [
+      'linear-gradient(135deg, #7c3aed, #6366f1)',
+      'linear-gradient(135deg, #9333ea, #a855f7)',
+      'linear-gradient(135deg, #ea580c, #f97316)',
+      'linear-gradient(135deg, #059669, #10b981)',
+      'linear-gradient(135deg, #0284c7, #38bdf8)',
+      'linear-gradient(135deg, #dc2626, #ef4444)'
+    ];
+    if (!name) return gradients[index % gradients.length];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const idx = Math.abs(hash + index) % gradients.length;
+    return gradients[idx];
+  }
+
+  /**
+   * Constructs the member names preview string (e.g. "Peter Elia, simon Obi +7")
+   */
+  getMemberNamesText(group: any): string {
+    const previews = group.membersPreview || [];
+    if (!previews || previews.length === 0) return '';
+    const names = previews.slice(0, 2).map((m: any) => m.fullName || m.email);
+    const total = group.membersCount || previews.length;
+    if (total > 2) {
+      return `${names.join(', ')} +${total - 2}`;
+    }
+    return names.join(', ');
+  }
+
+  /**
+   * Resolves the list of user groups that grant active access to a specific feature key.
+   */
+  getGroupsWithFeature(featureKey: string): any[] {
+    return this.userGroups.filter(g => {
+      if (g.name === 'Administrator') return true;
+      if (!g.permissions || g.permissions.length === 0) {
+        if (g.name === 'Operations & Workforce Manager' && ['Workforce', 'UserManager', 'Dashboard'].includes(featureKey)) return true;
+        return false;
+      }
+      return g.permissions.some((p: any) => p.featureAreaKey?.toLowerCase() === featureKey.toLowerCase() && p.actionRole !== 'None');
+    });
+  }
+
+  /**
+   * Distinguishes core platform system authority roles from dynamic feature domain roles.
+   */
+  isSystemRole(roleName: string): boolean {
+    const systemRoleNames = [
+      'SuperAdmin',
+      'Admin',
+      'Identity Manager',
+      'User Manager',
+      'CMS Studio Manager',
+      'Member'
+    ];
+    return systemRoleNames.some(name => name.toLowerCase() === (roleName || '').toLowerCase());
   }
 }

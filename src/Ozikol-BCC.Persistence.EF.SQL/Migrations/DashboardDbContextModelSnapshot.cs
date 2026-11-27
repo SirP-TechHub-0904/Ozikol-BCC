@@ -5775,6 +5775,77 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpUserFeatureRoles");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BaseRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ColorBadge")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BcpUserGroups");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserGroupPermission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ActionRole")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("BcpUserGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FeatureAreaKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BcpUserGroupId");
+
+                    b.ToTable("BcpUserGroupPermissions");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6966,6 +7037,11 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("MfaRequiredGlobally")
                         .HasColumnType("bit");
 
+                    b.Property<string>("OperatingCountry")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<int>("PasswordMinLength")
                         .HasColumnType("int");
 
@@ -8075,6 +8151,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<Guid?>("BcpUserCategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("BcpUserGroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -8187,6 +8266,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BcpUserCategoryId");
+
+                    b.HasIndex("BcpUserGroupId");
 
                     b.HasIndex("IsDeleted");
 
@@ -9846,6 +9927,17 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("Profile");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserGroupPermission", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpUserGroup", "BcpUserGroup")
+                        .WithMany("Permissions")
+                        .HasForeignKey("BcpUserGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BcpUserGroup");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserInvitation", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpUserCategory", "BcpUserCategory")
@@ -10035,7 +10127,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .WithMany()
                         .HasForeignKey("BcpUserCategoryId");
 
+                    b.HasOne("Ozikol_BCC.Domain.Models.BcpUserGroup", "BcpUserGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("BcpUserGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("BcpUserCategory");
+
+                    b.Navigation("BcpUserGroup");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.TemplateType", b =>
@@ -10310,6 +10409,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpTicketType", b =>
                 {
                     b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpUserGroup", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpVoteCategory", b =>

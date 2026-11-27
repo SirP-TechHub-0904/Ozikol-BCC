@@ -9,10 +9,12 @@ import {
   SimpleChanges,
   HostListener,
   ElementRef,
-  ViewChild
+  ViewChild,
+  Optional
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { SettingsService } from '../../../core/services/settings.service';
 import {
   ALL_COUNTRY_PHONES,
   CountryPhoneOption,
@@ -374,7 +376,8 @@ import {
 export class PhoneInputComponent implements OnInit, OnChanges, ControlValueAccessor {
   @Input() inputId: string = 'phone_input_' + Math.random().toString(36).substring(2, 7);
   @Input() inputName: string = 'phoneNumber';
-  @Input() defaultCurrency: string = 'NGN';
+  @Input() defaultCurrency?: string;
+  @Input() defaultCountry?: string;
   @Input() required: boolean = false;
   @Input() disabled: boolean = false;
 
@@ -406,10 +409,28 @@ export class PhoneInputComponent implements OnInit, OnChanges, ControlValueAcces
   private onChange: (val: string) => void = () => {};
   private onTouched: () => void = () => {};
 
-  constructor(private readonly elementRef: ElementRef) {}
+  constructor(
+    private readonly elementRef: ElementRef,
+    @Optional() private readonly settingsService?: SettingsService
+  ) {}
 
   ngOnInit(): void {
-    const defaultCode = resolveDefaultCountryCode(this.defaultCurrency);
+    this.applyDefaultCountry();
+
+    // Listen to regional settings changes if not explicitly overridden by parent
+    if (this.settingsService?.regional$) {
+      this.settingsService.regional$.subscribe((reg) => {
+        if (!this.defaultCountry && !this.defaultCurrency && !this.canonicalValue) {
+          this.applyDefaultCountry();
+        }
+      });
+    }
+  }
+
+  private applyDefaultCountry(): void {
+    const regional = this.settingsService?.currentRegional;
+    const target = this.defaultCountry || regional?.operatingCountry || this.defaultCurrency || regional?.currencyCode || 'GB';
+    const defaultCode = resolveDefaultCountryCode(target);
     const found = this.countries.find(c => c.code === defaultCode);
     if (found) {
       this.selectedCountry = found;
@@ -417,12 +438,8 @@ export class PhoneInputComponent implements OnInit, OnChanges, ControlValueAcces
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['defaultCurrency'] && !this.canonicalValue) {
-      const defaultCode = resolveDefaultCountryCode(this.defaultCurrency);
-      const found = this.countries.find(c => c.code === defaultCode);
-      if (found) {
-        this.selectedCountry = found;
-      }
+    if ((changes['defaultCurrency'] || changes['defaultCountry']) && !this.canonicalValue) {
+      this.applyDefaultCountry();
     }
   }
 

@@ -110,13 +110,11 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
                   <input type="text" [(ngModel)]="model.designation" name="designation" [placeholder]="'user_create.field_designation_ph' | translate:'e.g. Senior Analyst'" />
                 </div>
                 <div class="form-group">
-                  <label>{{ 'user_create.field_role' | translate:'System Role' }}</label>
-                  <select [(ngModel)]="model.role" name="role">
-                    <option value="Member">{{ 'user_create.role_member' | translate:'Member' }}</option>
-                    <option value="Admin">{{ 'user_create.role_admin' | translate:'Admin' }}</option>
-                    <option value="Global Editor">{{ 'user_create.role_global_editor' | translate:'Global Editor' }}</option>
-                    <option value="Feature Editor">{{ 'user_create.role_feature_editor' | translate:'Feature Editor' }}</option>
-                    <option value="Read Only">{{ 'user_create.role_read_only' | translate:'Read Only' }}</option>
+                  <label>{{ 'user_create.field_role' | translate:'Permission' }}</label>
+                  <select [(ngModel)]="model.userGroupId" name="userGroupId" (change)="onUserGroupChange()">
+                    <option *ngFor="let g of userGroups" [value]="g.id">
+                      {{ g.name }} ({{ g.name === 'Administrator' || g.baseRole === 'Admin' ? 'Admin' : (g.baseRole || 'Member') }}){{ g.isDefault ? ' • Default' : '' }}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -133,7 +131,6 @@ import { PhoneInputComponent } from '../../../shared/components/phone-input/phon
                   <input type="text" [value]="(activeIdPreview || '').replace('--', '-') || ('user_create.auto_generated' | translate:'System Auto-Generated')" disabled readonly class="locked-input" />
                   <span class="material-symbols-outlined locked-icon">tag</span>
                 </div>
-                <span class="input-hint-locked">{{ 'user_create.auto_generated_desc' | translate:'Member ID will be uniquely generated and permanently assigned using your workspace\'s configured coding rules.' }}</span>
               </div>
             </div>
           </div>
@@ -266,6 +263,7 @@ export class UserCreateComponent implements OnInit {
     phoneNumber: '',
     designation: '',
     role: 'Member',
+    userGroupId: null,
     bcpUserCategoryId: null,
     memberId: '',
     password: '',
@@ -274,6 +272,7 @@ export class UserCreateComponent implements OnInit {
 
   activeIdPreview = '';
   activeFormatName = '';
+  userGroups: any[] = [];
 
   get headerButtons(): PageHeaderButton[] {
     return [
@@ -291,13 +290,35 @@ export class UserCreateComponent implements OnInit {
     private toast: ToastService,
     private router: Router,
     private translationService: TranslationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.generatePassword();
     this.loadUserSettings();
     this.loadCategories();
     this.loadMemberIdConfig();
+    this.loadUserGroups();
+  }
+
+  loadUserGroups(): void {
+    this.api.get<any>('api/v1/user-groups').subscribe({
+      next: (res) => {
+        this.userGroups = res?.data || [];
+        const defaultGrp = this.userGroups.find(g => g.isDefault) || this.userGroups[0];
+        if (defaultGrp) {
+          this.model.userGroupId = defaultGrp.id;
+          this.model.role = defaultGrp.baseRole || 'Member';
+        }
+      },
+      error: () => { }
+    });
+  }
+
+  onUserGroupChange(): void {
+    const selected = this.userGroups.find(g => g.id === this.model.userGroupId);
+    if (selected) {
+      this.model.role = selected.baseRole || 'Member';
+    }
   }
 
   loadUserSettings(): void {
@@ -316,7 +337,7 @@ export class UserCreateComponent implements OnInit {
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -335,7 +356,7 @@ export class UserCreateComponent implements OnInit {
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -344,7 +365,7 @@ export class UserCreateComponent implements OnInit {
       next: (res) => {
         this.categories = res.data || [];
       },
-      error: () => {}
+      error: () => { }
     });
   }
 

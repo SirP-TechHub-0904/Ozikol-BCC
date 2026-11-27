@@ -946,6 +946,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 CurrencyCode = tenantCode,
                 CurrencySymbol = tenantSymbol,
+                OperatingCountry = !string.IsNullOrWhiteSpace(config?.OperatingCountry) ? config.OperatingCountry.Trim().ToUpperInvariant() : "GB",
                 PlatformBillingCurrencyCode = billingCode,
                 PlatformBillingCurrencySymbol = billingSymbol
             };
@@ -979,9 +980,11 @@ namespace Ozikol_BCC.Api.Controllers
 
             var code = dto.CurrencyCode.Trim().ToUpperInvariant();
             var symbol = !string.IsNullOrWhiteSpace(dto.CurrencySymbol) ? dto.CurrencySymbol.Trim() : (code == "NGN" ? "₦" : "$");
+            var country = !string.IsNullOrWhiteSpace(dto.OperatingCountry) ? dto.OperatingCountry.Trim().ToUpperInvariant() : "GB";
 
             config.CurrencyCode = code;
             config.CurrencySymbol = symbol;
+            config.OperatingCountry = country;
 
             await _db.SaveChangesAsync(cancellationToken);
 
@@ -1018,6 +1021,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             dto.CurrencyCode = code;
             dto.CurrencySymbol = symbol;
+            dto.OperatingCountry = country;
             dto.PlatformBillingCurrencyCode = billingCode;
             dto.PlatformBillingCurrencySymbol = billingSymbol;
 
@@ -1638,6 +1642,12 @@ namespace Ozikol_BCC.Api.Controllers
         /// Visual currency symbol (e.g. $, ₦, £, €, CA$, KSh, R, GH₵).
         /// </summary>
         public string CurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// Workspace primary operating country code (ISO 3166-1 alpha-2, e.g. "GB", "NG", "US").
+        /// Dictates phone input country dial code defaults and regional operational presets.
+        /// </summary>
+        public string OperatingCountry { get; set; } = "GB";
 
         /// <summary>
         /// Indicates the platform billing currency used by Ozikol Central for subscription licensing.

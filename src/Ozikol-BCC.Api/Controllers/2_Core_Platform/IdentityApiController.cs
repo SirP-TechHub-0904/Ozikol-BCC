@@ -119,9 +119,13 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     ("SuperAdmin", RoleCategory.BCP),
                     ("Admin", RoleCategory.Both),
-                    ("Identity Manager", RoleCategory.BCP),
-                    ("User Manager", RoleCategory.BCP),
+                    ("Central Command Manager", RoleCategory.BCP),
                     ("CMS Studio Manager", RoleCategory.BCP),
+                    ("User Manager", RoleCategory.BCP),
+                    ("Identity Manager", RoleCategory.BCP),
+                    ("Broadcast Manager", RoleCategory.BCP),
+                    ("Billing Manager", RoleCategory.BCP),
+                    ("Settings & Audit Manager", RoleCategory.BCP),
                     ("Global Editor", RoleCategory.BCP),
                     ("Feature Editor", RoleCategory.BCP),
                     ("Read Only", RoleCategory.BCP),
@@ -182,12 +186,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             var roles = await rolesQuery
                 .OrderBy(r => r.Name == "Admin" ? 1 :
-                              r.Name == "Identity Manager" ? 2 :
-                              r.Name == "User Manager" ? 3 :
-                              r.Name == "CMS Studio Manager" ? 4 :
-                              r.Name == "Global Editor" ? 5 :
-                              r.Name == "Feature Editor" ? 6 :
-                              r.Name == "Read Only" ? 7 : 8)
+                              r.Name == "Central Command Manager" ? 2 :
+                              r.Name == "CMS Studio Manager" ? 3 :
+                              r.Name == "User Manager" ? 4 :
+                              r.Name == "Identity Manager" ? 5 :
+                              r.Name == "Broadcast Manager" ? 6 :
+                              r.Name == "Billing Manager" ? 7 :
+                              r.Name == "Settings & Audit Manager" ? 8 :
+                              r.Name == "Global Editor" ? 9 :
+                              r.Name == "Feature Editor" ? 10 :
+                              r.Name == "Read Only" ? 11 : 12)
                 .Select(r => new
                 {
                     r.Id,
@@ -283,25 +291,14 @@ namespace Ozikol_BCC.Api.Controllers
                     },
                     new
                     {
-                        Name = "Identity Manager",
-                        Description = "Sovereign identity and access administrator authorized to manage system roles, grant operational permissions, and issue user invitations.",
-                        Scope = "Identity & Access Control (RBAC Sovereign)",
+                        Name = "Central Command Manager",
+                        Description = "Executive dashboard administrator authorized to govern command center KPIs, fast actions, system analytics, and platform health.",
+                        Scope = "Dashboard Executive Command",
                         CanAssign = true,
-                        Badge = "badge-identity",
-                        Icon = "badge",
+                        Badge = "badge-admin",
+                        Icon = "space_dashboard",
                         Group = "system_feature",
                         Order = 3
-                    },
-                    new
-                    {
-                        Name = "User Manager",
-                        Description = "Directory and cohort administrator authorized to manage user profiles, categories, custom fields, and member statuses across the workspace.",
-                        Scope = "User Directory & Cohort Management",
-                        CanAssign = true,
-                        Badge = "badge-usermanager",
-                        Icon = "manage_accounts",
-                        Group = "system_feature",
-                        Order = 4
                     },
                     new
                     {
@@ -312,7 +309,62 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-cmsmanager",
                         Icon = "web",
                         Group = "system_feature",
+                        Order = 4
+                    },
+                    new
+                    {
+                        Name = "User Manager",
+                        Description = "Directory and cohort administrator authorized to manage user profiles, categories, custom fields, and member statuses across the workspace.",
+                        Scope = "User Directory & Cohort Management",
+                        CanAssign = true,
+                        Badge = "badge-usermanager",
+                        Icon = "manage_accounts",
+                        Group = "system_feature",
                         Order = 5
+                    },
+                    new
+                    {
+                        Name = "Identity Manager",
+                        Description = "Sovereign identity and access administrator authorized to manage system roles, grant operational permissions, and issue user invitations.",
+                        Scope = "Identity & Access Control (RBAC Sovereign)",
+                        CanAssign = true,
+                        Badge = "badge-identity",
+                        Icon = "badge",
+                        Group = "system_feature",
+                        Order = 6
+                    },
+                    new
+                    {
+                        Name = "Broadcast Manager",
+                        Description = "Communications administrator authorized to create and dispatch announcements, push alerts, email campaigns, and SMS bulletins.",
+                        Scope = "Broadcast Studio & Communications",
+                        CanAssign = true,
+                        Badge = "badge-feature-authority",
+                        Icon = "campaign",
+                        Group = "system_feature",
+                        Order = 7
+                    },
+                    new
+                    {
+                        Name = "Billing Manager",
+                        Description = "Financial and subscriptions administrator authorized to manage invoices, payment gateways, plans, and feature add-on entitlements.",
+                        Scope = "Financial & Subscriptions Governance",
+                        CanAssign = true,
+                        Badge = "badge-admin",
+                        Icon = "credit_card",
+                        Group = "system_feature",
+                        Order = 8
+                    },
+                    new
+                    {
+                        Name = "Settings & Audit Manager",
+                        Description = "System configuration administrator authorized to manage workspace settings, localization, brand customization, and security audit trails.",
+                        Scope = "Global System Settings & Audit Logs",
+                        CanAssign = true,
+                        Badge = "badge-readonly",
+                        Icon = "settings",
+                        Group = "system_feature",
+                        Order = 9
                     },
                     new
                     {
@@ -323,7 +375,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-member",
                         Icon = "person",
                         Group = "system_feature",
-                        Order = 6
+                        Order = 10
                     },
                     new
                     {
@@ -334,7 +386,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-editor",
                         Icon = "edit_square",
                         Group = "operational_level",
-                        Order = 7
+                        Order = 11
                     },
                     new
                     {
@@ -345,7 +397,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-feature",
                         Icon = "rule_settings",
                         Group = "operational_level",
-                        Order = 8
+                        Order = 12
                     },
                     new
                     {
@@ -356,7 +408,7 @@ namespace Ozikol_BCC.Api.Controllers
                         Badge = "badge-readonly",
                         Icon = "visibility",
                         Group = "operational_level",
-                        Order = 9
+                        Order = 13
                     }
                 };
 
@@ -383,21 +435,35 @@ namespace Ozikol_BCC.Api.Controllers
                         // Core built-in domains already handled above
                         var excludedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                         {
-                            "bcp-core-identity", "bcp-user-manager", "bcp-cms", "cms", "identity", "users"
+                            "bcp-core-identity", "bcp-user-manager", "bcp-cms", "cms", "identity", "users",
+                            "bcp-billing", "billing", "bcp-broadcast", "broadcast", "bcp-settings", "settings"
                         };
 
-                        int featureOrder = 10;
+                        int featureOrder = 14;
                         foreach (var pf in publishedFeatures)
                         {
                             if (excludedCodes.Contains(pf.FeatureCode))
                                 continue;
 
-                            var sub = masterTenant?.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == pf.Id);
-                            bool isAvailable = masterTenant != null && masterTenant.UseCustomAvailability
-                                ? (sub?.IsAvailableForUseOverride ?? pf.IsAvailableForUse)
-                                : pf.IsAvailableForUse;
+                            // Strictly check active subscription for this tenant
+                            bool isSubscribed = false;
+                            if (_featureGateService != null && !string.IsNullOrEmpty(tenantKey))
+                            {
+                                isSubscribed = await _featureGateService.IsFeatureActiveAsync(tenantKey, pf.FeatureCode);
+                            }
+                            else if (masterTenant != null)
+                            {
+                                var sub = masterTenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == pf.Id);
+                                var now = DateTime.UtcNow;
+                                bool isFlatRateActive = masterTenant.HasFlatRatePlan && (!masterTenant.FlatRateExpiresAtUtc.HasValue || masterTenant.FlatRateExpiresAtUtc.Value > now);
+                                isSubscribed = sub != null && sub.IsActive &&
+                                               !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                               !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                                               !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
+                                               (pf.IsCompulsory || isFlatRateActive || sub.ExpiresAtUtc > now);
+                            }
 
-                            if (!isAvailable)
+                            if (!isSubscribed)
                                 continue;
 
                             var title = !string.IsNullOrWhiteSpace(pf.MenuTitle) ? pf.MenuTitle : pf.Name;
@@ -2801,6 +2867,7 @@ namespace Ozikol_BCC.Api.Controllers
                 FullName = $"{user.FirstName} {user.LastName}".Trim(),
                 AvatarUrl = user.AvatarUrl,
                 CurrentRole = primaryRole,
+                UserGroupId = user.BcpUserGroupId,
                 AllRoles = globalRoles,
                 IsAdmin = isAdmin,
                 IsSuperAdmin = isSuperAdmin,
@@ -2929,6 +2996,11 @@ namespace Ozikol_BCC.Api.Controllers
                     };
                     _dbContext.BcpUserFeatureRoles.Add(featureRole);
                 }
+            }
+
+            if (request.UserGroupId.HasValue)
+            {
+                user.BcpUserGroupId = request.UserGroupId.Value;
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -3147,6 +3219,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public bool IsAdmin { get; set; }
         public string? SystemRole { get; set; }
+        public Guid? UserGroupId { get; set; }
         public List<FeatureRoleScopeDto>? FeatureRoles { get; set; }
 
         /// <summary>

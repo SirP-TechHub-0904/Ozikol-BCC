@@ -27,7 +27,8 @@ import {
   isReadOnlyUser,
   hasFeatureScope,
   hasUserRole,
-  getUserPrimaryRoleName
+  getUserPrimaryRoleName,
+  getReturnUrlForRole
 } from '../../core/utils/user-role.utils';
 
 interface TaskTab {
@@ -636,10 +637,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-staff-rota') && isMenuOpen('staff_rota')" *ngSwitchCase="'bcp-staff-rota'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event, 'staff_rota')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-staff-rota') && isParentActive('/workforce/console')" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Workforce, Shifts & Rotas'), $event, 'staff_rota')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">event_note</span>
-                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff Rota & Shifts') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Workforce, Shifts & Rotas') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -731,10 +732,10 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-attendance-tracking') && isMenuOpen('attendance_tracking')" *ngSwitchCase="'bcp-attendance-tracking'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event, 'attendance_tracking')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-attendance-tracking') && isParentActive('/attendance/console')" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Attendance & QR Check-In'), $event, 'attendance_tracking')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">timer</span>
-                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & Live Duty') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & QR Check-In') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')" title="Available — Click to view details & install">
                 <span class="material-symbols-outlined">lock</span>
@@ -986,10 +987,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')" *ngSwitchCase="'bcp-mass-communication'">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', getFeatureFullTitle('bcp-mass-communication', 'Mass Multi-Channel SMS & Email'), $event, 'notifications')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', getFeatureFullTitle('bcp-mass-communication', 'Marketing Studio & Promotional Campaigns'), $event, 'notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
-                <span>{{ getFeatureMenuTitle('bcp-mass-communication', 'Notification Studio') }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-mass-communication', 'Marketing Studio') }}</span>
               </div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-mass-communication') && !isFeatureActive('bcp-mass-communication')"><span class="material-symbols-outlined">lock</span></span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-mass-communication')">{{ 'badge.soon' | translate }}</span>
@@ -4096,10 +4097,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   /// <summary>
   /// Dynamically resolves the appropriate home route based on user privileges and active shell mode.
-  /// Administrators in console mode route to '/admin/dashboard', while members and workspace sessions route to '/dashboard/workspace'.
+  /// If Central Command is disabled, automatically routes to the first accessible system feature dashboard.
   /// </summary>
   get homeRoute(): string {
-    return this.isAdmin && this.isConsoleActive ? '/admin/dashboard' : '/dashboard/workspace';
+    if (!this.isAdmin || !this.isConsoleActive) {
+      return '/dashboard/workspace';
+    }
+    return getReturnUrlForRole(this.userRoles);
   }
 
   get isGlobalAdmin(): boolean {
@@ -4297,7 +4301,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     };
 
   get isConsoleActive(): boolean {
-    return this.isAdmin && this.currentConsoleMode === 'console';
+    if (!this.isAdmin) return false;
+    return this.currentConsoleMode === 'console';
   }
 
   setConsoleMode(mode: 'console' | 'workspace'): void {
@@ -4308,10 +4313,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     this.currentConsoleMode = mode;
     localStorage.setItem('bcp_console_mode', mode);
 
-    if (mode === 'workspace' && (this.currentRoute.startsWith('/dashboard/console') || this.currentRoute.startsWith('/admin/dashboard'))) {
+    if (mode === 'workspace' && (this.currentRoute.startsWith('/dashboard/console') || this.currentRoute.startsWith('/admin/dashboard') || this.currentRoute.includes('/console') || this.currentRoute.startsWith('/admin'))) {
       this.router.navigate(['/dashboard/workspace']);
-    } else if (mode === 'console' && (this.currentRoute.startsWith('/dashboard/workspace') || this.currentRoute.startsWith('/users/workspace/dashboard'))) {
-      this.router.navigate(['/dashboard/console']);
+    } else if (mode === 'console' && (this.currentRoute.includes('/workspace') || this.currentRoute.startsWith('/users/workspace'))) {
+      const targetDashboard = getReturnUrlForRole(this.userRoles);
+      this.router.navigate([targetDashboard]);
     }
   }
 
@@ -4707,6 +4713,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       error: () => { }
     });
 
+    // Ensure member accounts always default cleanly to workspace mode
+    if (!this.isAdmin) {
+      this.currentConsoleMode = 'workspace';
+      localStorage.setItem('bcp_console_mode', 'workspace');
+      localStorage.removeItem('bcp_user_feature_keys');
+    }
+
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
 
@@ -4894,8 +4907,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-committees': 'Groups & Committees',
     'bcp-alumni-directory': 'Alumni Network',
     'bcp-whistleblowing': 'Whistleblowing',
-    'bcp-staff-rota': 'Staff Rota & Shifts',
-    'bcp-attendance-tracking': 'Attendance & Clock-In',
+    'bcp-staff-rota': 'Workforce, Shifts & Rotas',
+    'bcp-attendance-tracking': 'Attendance & QR Check-In',
     'bcp-appointment-booking': 'Appointment Booking',
     'bcp-calendar-followups': 'Calendar & Follow-Ups',
     'bcp-interval-reporting': 'Interval Reports',
@@ -4916,10 +4929,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     'bcp-company-assets': 'Company Assets',
     'bcp-project-tasks': 'Projects & Tasks',
     'bcp-ai-smart-assist': 'AI Smart Assist',
-    'bcp-mass-communication': 'Broadcasts & Alerts',
+    'bcp-mass-communication': 'Marketing Studio',
     'bcp-helpdesk-support': 'Helpdesk & Support',
     'bcp-live-chat': 'Live Chat Widget',
-    'bcp-social-media': 'Social Publisher',
+    'bcp-social-media': 'Social Media Marketer',
     'bcp-bio-link': 'Bio Link Pages',
     'bcp-gocall-ai': 'GoCall Video & Voice',
     'bcp-document-management': 'Document Vault',
@@ -5564,6 +5577,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           const freshData = res.data;
           if (freshData.roles) {
             localStorage.setItem('user_roles', JSON.stringify(freshData.roles));
+            const normRoles = (freshData.roles as string[]).map(r => r.trim().toLowerCase());
+            if (normRoles.length === 0 || normRoles.every(r => r === 'member')) {
+              localStorage.removeItem('bcp_user_feature_keys');
+              localStorage.setItem('bcp_console_mode', 'workspace');
+              this.currentConsoleMode = 'workspace';
+            }
           }
           if (freshData.token) {
             localStorage.setItem('access_token', freshData.token);
@@ -5601,7 +5620,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             this.loadFeatureExpirations();
           }
 
-          // Only redirect to personal workspace if the user has NO console-level roles at all (Member only)
+          // 1. If user is Member only (no console access), ensure they cannot stay on console routes
           if (!canAccessConsole(freshData.roles || this.userRoles)) {
             const activeUrl = this.router.url || this.currentRoute || '';
             const isWorkspaceRoute = activeUrl.includes('/workspace');
@@ -5614,6 +5633,24 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
             if (isOnAdminRoute) {
               console.warn('[AdminLayout] Member-only user on console route -> Redirecting to workspace:', activeUrl);
               this.router.navigate(['/dashboard/workspace']);
+            }
+          } else {
+            // 2. If user HAS console access:
+            // Ensure console mode is active unless user explicitly set workspace mode
+            const storedMode = localStorage.getItem('bcp_console_mode');
+            if (!storedMode || storedMode === 'console') {
+              this.currentConsoleMode = 'console';
+              localStorage.setItem('bcp_console_mode', 'console');
+            }
+
+            // If the user was elevated into console while sitting on a member workspace page (e.g., /users/workspace/notifications),
+            // auto-redirect them to their designated console landing dashboard
+            const activeUrl = this.router.url || this.currentRoute || '';
+            const isWorkspaceRoute = activeUrl.includes('/workspace') || activeUrl.startsWith('/users/workspace') || activeUrl === '/dashboard/workspace';
+            if (this.currentConsoleMode === 'console' && isWorkspaceRoute) {
+              const targetDashboard = getReturnUrlForRole(freshData.roles || this.userRoles);
+              console.log('[AdminLayout] Console user on workspace route upon elevation -> Navigating to:', targetDashboard);
+              this.router.navigate([targetDashboard]);
             }
           }
         }

@@ -22,6 +22,7 @@ using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Services;
+using Ozikol_BCC.Domain.Constants;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -33,6 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/workforce")]
     [RequireFeature("bcp-staff-rota")]
+    [Authorize(Roles = SystemRoles.WorkforceRotaReadRoles)]
     [Tags("Workforce Rota & Shift Operations")]
     public class WorkforceRotaApiController : ControllerBase
     {
@@ -6071,12 +6073,51 @@ namespace Ozikol_BCC.Api.Controllers
         public string? PreferredContactPhone { get; set; }
     }
 
+    /// <summary>
+    /// Custom JSON converter that safely parses GUIDs and transparently converts empty or whitespace strings to null.
+    /// </summary>
+    public class NullableGuidJsonConverter : System.Text.Json.Serialization.JsonConverter<Guid?>
+    {
+        public override Guid? Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            if (reader.TokenType == System.Text.Json.JsonTokenType.Null) return null;
+            if (reader.TokenType == System.Text.Json.JsonTokenType.String)
+            {
+                var val = reader.GetString();
+                if (string.IsNullOrWhiteSpace(val) || val.Equals("null", StringComparison.OrdinalIgnoreCase) || val.Equals("undefined", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+                if (Guid.TryParse(val, out var parsed))
+                {
+                    return parsed;
+                }
+                return null;
+            }
+            return null;
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, Guid? value, System.Text.Json.JsonSerializerOptions options)
+        {
+            if (value.HasValue)
+            {
+                writer.WriteStringValue(value.Value.ToString());
+            }
+            else
+            {
+                writer.WriteNullValue();
+            }
+        }
+    }
+
     public class InviteWorkforceMemberRequest
     {
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string? JobTitle { get; set; }
+
+        [System.Text.Json.Serialization.JsonConverter(typeof(NullableGuidJsonConverter))]
         public Guid? StaffTypeId { get; set; }
         public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
@@ -6100,12 +6141,16 @@ namespace Ozikol_BCC.Api.Controllers
         public bool MustChangePassword { get; set; } = true;
 
         public string? JobTitle { get; set; }
+
+        [System.Text.Json.Serialization.JsonConverter(typeof(NullableGuidJsonConverter))]
         public Guid? StaffTypeId { get; set; }
         public string? StaffTypeName { get; set; }
         public decimal? DefaultHourlyRate { get; set; }
         public decimal? ContractedWeeklyHours { get; set; }
         public string? PreferredWorkingTime { get; set; }
         public string? WorkingAvailability { get; set; }
+
+        [System.Text.Json.Serialization.JsonConverter(typeof(NullableGuidJsonConverter))]
         public Guid? AssignedSiteId { get; set; }
 
         public Dictionary<string, object>? CustomAttributes { get; set; }

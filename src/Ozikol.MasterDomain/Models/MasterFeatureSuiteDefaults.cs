@@ -95,8 +95,8 @@ namespace Ozikol.MasterDomain.Models
             ["bcp-whistleblowing"] = "Whistleblowing",
 
             // Suite B: Workforce, Rota & Scheduling
-            ["bcp-staff-rota"] = "Staff Rota & Shifts",
-            ["bcp-attendance-tracking"] = "Attendance & Live Duty",
+            ["bcp-staff-rota"] = "Workforce, Shifts & Rotas",
+            ["bcp-attendance-tracking"] = "Attendance & QR Check-In",
             ["bcp-appointment-booking"] = "Appointment Booking",
             ["bcp-calendar-followups"] = "Calendar & Follow-Ups",
 
@@ -127,10 +127,10 @@ namespace Ozikol.MasterDomain.Models
 
             // Suite G: Communication, AI & Support
             ["bcp-ai-smart-assist"] = "AI Smart Assist",
-            ["bcp-mass-communication"] = "Notification Studio",
+            ["bcp-mass-communication"] = "Marketing Studio",
             ["bcp-helpdesk-support"] = "Helpdesk Support",
             ["bcp-live-chat"] = "Live Chat Widget",
-            ["bcp-social-media"] = "Social Publisher",
+            ["bcp-social-media"] = "Social Media Marketer",
             ["bcp-bio-link"] = "Bio Link Hub",
             ["bcp-gocall-ai"] = "Video Conferencing",
 
