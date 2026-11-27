@@ -6,7 +6,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
 import { MultiWorkspaceService } from '../../../core/services/multi-workspace.service';
 import { OneSignalService } from '../../../core/services/onesignal.service';
-import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
+import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute, canAccessConsole } from '../../../core/utils/user-role.utils';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 @Component({
@@ -1310,6 +1310,14 @@ export class LoginComponent implements OnInit {
       localStorage.setItem('bcp_user_feature_keys', JSON.stringify(data.assignedFeatureKeys));
     } else {
       localStorage.removeItem('bcp_user_feature_keys');
+    }
+    if (data.userGroupName) {
+      localStorage.setItem('user_group_name', data.userGroupName);
+    }
+    if (canAccessConsole(data.roles)) {
+      localStorage.setItem('bcp_console_mode', 'console');
+    } else {
+      localStorage.setItem('bcp_console_mode', 'workspace');
     }
     this.multiWorkspace.saveSession({
       tenantKey: data.tenantKey || localStorage.getItem('tenant_key') || '',
