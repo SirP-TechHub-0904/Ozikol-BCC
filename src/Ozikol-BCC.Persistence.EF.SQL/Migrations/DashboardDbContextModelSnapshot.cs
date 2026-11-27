@@ -4556,6 +4556,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("IsOvernight")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("JobRoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("JobRoleTitle")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
@@ -4566,11 +4573,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("PostCode")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("PostName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("ReportContent")
                         .HasColumnType("nvarchar(max)");
@@ -4657,6 +4659,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("DutyRole")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("HourlyPayRateOverride")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsClaimed")
                         .HasColumnType("bit");

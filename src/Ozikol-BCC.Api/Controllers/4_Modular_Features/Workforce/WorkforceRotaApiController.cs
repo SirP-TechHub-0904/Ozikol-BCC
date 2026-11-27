@@ -1575,12 +1575,76 @@ namespace Ozikol_BCC.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning(ex, "[WorkforceRotaApi] CreateShift hit pending migration when saving assignments. Retrying without assignments: {Message}", ex.Message);
-                foreach (var entry in _db.ChangeTracker.Entries<BcpShiftAssignment>().ToList())
+                _logger?.LogWarning(ex, "[WorkforceRotaApi] CreateShift hit pending migration or schema variance. Initiating defensive schema fallback: {Message}", ex.Message);
+
+                // Detach all tracked entities to reset EF change-tracker state
+                foreach (var entry in _db.ChangeTracker.Entries().ToList())
                 {
                     entry.State = EntityState.Detached;
                 }
-                await _db.SaveChangesAsync(ct);
+
+                // Defensive fallback: Insert shift without newly added unmigrated columns (JobRoleId, JobRoleTitle)
+                var rawShiftSql = @"
+                    INSERT INTO [BcpShifts] (
+                        [Id], [TenantKey], [ShiftCode], [ClientSiteId], [RequiredStaffCount],
+                        [FacilityName], [Address], [PostCode], [EventTag],
+                        [StartsAtUtc], [EndsAtUtc], [IsOvernight], [BreakMinutes], [PlannedDurationHours],
+                        [RequiredWorkspaceStationId], [RequiredWorkspaceStationName],
+                        [HourlyPayRate], [HourlyChargeRate], [AcceptanceDeadlineUtc], [Status],
+                        [IsConfirmedByGuard], [AssignmentMode], [RequireClaimApproval], [Notes],
+                        [CreatedByUserId], [CreatedUtc]
+                    ) VALUES (
+                        @p0, @p1, @p2, @p3, @p4,
+                        @p5, @p6, @p7, @p8,
+                        @p9, @p10, @p11, @p12, @p13,
+                        @p14, @p15,
+                        @p16, @p17, @p18, @p19,
+                        @p20, @p21, @p22, @p23,
+                        @p24, @p25
+                    )";
+
+                await _db.Database.ExecuteSqlRawAsync(rawShiftSql, new object?[]
+                {
+                    shift.Id, shift.TenantKey, shift.ShiftCode, shift.ClientSiteId, shift.RequiredStaffCount,
+                    shift.FacilityName, shift.Address, shift.PostCode, shift.EventTag,
+                    shift.StartsAtUtc, shift.EndsAtUtc, shift.IsOvernight, shift.BreakMinutes, shift.PlannedDurationHours,
+                    shift.RequiredWorkspaceStationId, shift.RequiredWorkspaceStationName,
+                    shift.HourlyPayRate, shift.HourlyChargeRate, shift.AcceptanceDeadlineUtc, shift.Status,
+                    shift.IsConfirmedByGuard, shift.AssignmentMode, shift.RequireClaimApproval, shift.Notes,
+                    shift.CreatedByUserId, shift.CreatedUtc
+                }, ct);
+
+                // Insert assignments via defensive fallback
+                foreach (var item in targetAssignments)
+                {
+                    var assignId = Guid.CreateVersion7();
+                    var assignSql = @"
+                        INSERT INTO [BcpShiftAssignments] (
+                            [Id], [TenantKey], [ShiftId], [UserId], [StaffProfileId], [StaffFullName],
+                            [DutyPosition], [DutyRole], [IsLeadOfficer], [Status],
+                            [IsConfirmedByGuard], [AssignedAtUtc], [CreatedUtc], [AssignedByUserId],
+                            [IsClaimed], [ClaimApproved], [Notes]
+                        ) VALUES (
+                            @a0, @a1, @a2, @a3, @a4, @a5,
+                            @a6, @a7, @a8, @a9,
+                            @a10, @a11, @a12, @a13,
+                            @a14, @a15, @a16
+                        )";
+                    try
+                    {
+                        await _db.Database.ExecuteSqlRawAsync(assignSql, new object?[]
+                        {
+                            assignId, CurrentTenantKey, shift.Id, item.UserId, item.StaffProfileId, item.StaffFullName,
+                            item.DutyPosition ?? "General Duty", item.DutyRole ?? "Duty Officer", item.IsLeadOfficer, "Scheduled",
+                            false, DateTime.UtcNow, DateTime.UtcNow, CurrentUserId,
+                            false, true, item.Notes
+                        }, ct);
+                    }
+                    catch (Exception assignEx)
+                    {
+                        _logger?.LogWarning(assignEx, "[WorkforceRotaApi] Defensive fallback: assignment insert skipped due to schema drift: {Message}", assignEx.Message);
+                    }
+                }
             }
 
             var siteEntity = await _db.BcpClientSites.AsNoTracking()

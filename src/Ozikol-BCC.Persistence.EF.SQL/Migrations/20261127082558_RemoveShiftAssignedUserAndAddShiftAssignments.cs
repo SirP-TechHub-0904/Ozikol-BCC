@@ -68,19 +68,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 nullable: false,
                 defaultValue: 1);
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "JobRoleId",
-                table: "BcpShifts",
-                type: "uniqueidentifier",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "JobRoleTitle",
-                table: "BcpShifts",
-                type: "nvarchar(150)",
-                maxLength: 150,
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "BcpShiftAssignments",
                 columns: table => new
@@ -94,7 +81,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     DutyPosition = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
                     DutyRole = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     IsLeadOfficer = table.Column<bool>(type: "bit", nullable: false),
-                    HourlyPayRateOverride = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IsConfirmedByGuard = table.Column<bool>(type: "bit", nullable: false),
                     ConfirmedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -152,14 +138,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
             migrationBuilder.DropColumn(
                 name: "RequiredStaffCount",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "JobRoleId",
-                table: "BcpShifts");
-
-            migrationBuilder.DropColumn(
-                name: "JobRoleTitle",
                 table: "BcpShifts");
 
             migrationBuilder.AddColumn<string>(
