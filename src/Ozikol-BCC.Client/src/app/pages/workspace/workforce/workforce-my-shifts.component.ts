@@ -133,9 +133,9 @@ interface YearMonthGrid {
               <strong>{{ nextShift.startsAtUtc | date:'HH:mm' }} &ndash; {{ nextShift.endsAtUtc | date:'HH:mm' }}</strong>
               <span class="nsb-overnight-badge" *ngIf="nextShift.isOvernight">Overnight</span>
             </div>
-            <div class="nsb-role" *ngIf="nextShift.postName || nextShift.jobRoleTitle">
+            <div class="nsb-role" *ngIf="nextShift.postName || nextShift.requiredWorkspaceStationName || nextShift.jobRoleTitle">
               <span class="material-symbols-outlined">badge</span>
-              <span>{{ nextShift.postName || nextShift.jobRoleTitle }}</span>
+              <span>{{ nextShift.postName || nextShift.requiredWorkspaceStationName || nextShift.jobRoleTitle }}</span>
             </div>
           </div>
         </div>
