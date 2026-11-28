@@ -1885,7 +1885,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.dynamic_form_outlined,
-                title: 'nav.registration_form_builder'.tr(ref, fallback: 'Registration Form'),
+                title: 'Registration Form Builder',
                 isSelected: _selectedNavIndex == 3,
                 onTap: () {
                   _navigateToTab(3, clearHistory: true);
