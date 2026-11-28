@@ -48,6 +48,8 @@ export interface Shift {
   siteName: string;
   siteAddress: string;
   postName: string;
+  jobRoleId?: string;
+  jobRoleTitle?: string;
   facilityName?: string;
   address?: string;
   postCode?: string;
