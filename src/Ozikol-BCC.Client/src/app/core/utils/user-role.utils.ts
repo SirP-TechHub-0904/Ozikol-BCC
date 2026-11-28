@@ -489,7 +489,12 @@ export function resolveFeatureScopeFromUrl(cleanUrl: string): string | null {
   if (!cleanUrl) return null;
   if (cleanUrl.startsWith('/dashboard/console') || cleanUrl === '/dashboard/console' || cleanUrl === '/admin/dashboard') return 'dashboard';
   if (cleanUrl.startsWith('/broadcast') || cleanUrl.startsWith('/admin/broadcast')) return 'broadcast';
-  if (cleanUrl.startsWith('/workforce/console') || cleanUrl.startsWith('/admin/workforce') || cleanUrl.startsWith('/admin/shifts') || cleanUrl.startsWith('/workforce')) return 'workforceshifts';
+  if (!cleanUrl.startsWith('/workforce/workspace') &&
+      !cleanUrl.startsWith('/workforce/onboarding') &&
+      !cleanUrl.startsWith('/workforce/my-shifts') &&
+      (cleanUrl.startsWith('/workforce/console') || cleanUrl.startsWith('/admin/workforce') || cleanUrl.startsWith('/admin/shifts') || cleanUrl === '/workforce' || cleanUrl === '/workforce/')) {
+    return 'workforceshifts';
+  }
   if (cleanUrl.startsWith('/settings') || cleanUrl.startsWith('/admin/settings')) return 'settingsmanager';
   if (cleanUrl.startsWith('/billing') || cleanUrl.startsWith('/admin/billing')) return 'billingmanager';
   if (cleanUrl.startsWith('/identity/console') || cleanUrl.startsWith('/admin/identity')) return 'identitymanager';
