@@ -34,7 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/workforce")]
     [RequireFeature("bcp-staff-rota")]
-    [Authorize(Roles = SystemRoles.WorkforceRotaReadRoles)]
+    [Authorize]
     [Tags("Workforce Rota & Shift Operations")]
     public class WorkforceRotaApiController : ControllerBase
     {

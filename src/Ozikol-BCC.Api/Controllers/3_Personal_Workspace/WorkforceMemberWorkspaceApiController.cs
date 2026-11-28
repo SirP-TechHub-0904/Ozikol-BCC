@@ -1797,6 +1797,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="ct">Cancellation token.</param>
         /// <returns>Success confirmation boolean.</returns>
         [HttpPost("shifts/{id:guid}/emergency-sos")]
+        [HttpPost("shifts/{id:guid}/emergency/panic")]
         public async Task<ActionResult<ApiResponse<bool>>> DispatchEmergencySos(Guid id, [FromBody] MemberEmergencySosRequest request, CancellationToken ct)
         {
             var shift = await _db.BcpShifts

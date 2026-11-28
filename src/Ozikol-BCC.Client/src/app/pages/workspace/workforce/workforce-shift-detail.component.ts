@@ -15,19 +15,42 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="shift-detail-page">
-      <!-- Top Action & Navigation Bar -->
-      <div class="top-nav-bar">
-        <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }" class="back-link">
-          <span class="material-symbols-outlined">arrow_back</span>
-          <span>Back to My Schedule &amp; Rota</span>
-        </a>
-
-        <div class="top-actions">
-          <button type="button" class="btn btn-outline btn-sm d-inline-flex align-items-center gap-1" (click)="loadShiftDetails()">
+    <div class="bcp-page-container">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }">Shift &amp; Rota</a>
+            <span class="sep">/</span>
+            <span class="current">{{ shift ? (shift.shiftCode || 'Shift Specifications') : 'Shift Details' }}</span>
+          </div>
+          <div class="title-row">
+            <h1>{{ shift ? (shift.facilityName || shift.siteName || 'Shift Specifications & Duties') : 'Shift Specifications & Duties' }}</h1>
+            <span class="badge-day-today" *ngIf="shift && isToday(shift)">Today</span>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+          </div>
+          <p class="subtitle">{{ shift ? ('Detailed operational deployment, venue directives, and duty report for ' + (shift.startsAtUtc | date:'EEEE, d MMMM yyyy')) : 'Detailed operational deployment, venue directives, and duty report.' }}</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }" class="btn btn-outline">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Schedule</span>
+          </a>
+          <button type="button" class="btn btn-outline" (click)="loadShiftDetails()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
+          <a
+            routerLink="/attendance/workspace/clock"
+            [queryParams]="{ shiftId: shift?.id }"
+            class="btn btn-primary"
+            *ngIf="shift && (isToday(shift) || isShiftActive(shift)) && !isShiftCompleted(shift)"
+          >
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>{{ isShiftActive(shift) ? 'Live Duty Clock-Out' : 'Duty Clock-In' }}</span>
+          </a>
         </div>
       </div>
 
@@ -342,32 +365,50 @@ import { ToastService } from '../../../core/services/toast.service';
     :host {
       display: block;
       width: 100%;
+      max-width: 100%;
       box-sizing: border-box;
     }
-    .shift-detail-page {
-      padding: 20px 28px 48px 28px;
-      max-width: 1320px;
-      margin: 0 auto;
+    .bcp-page-container {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-    .top-nav-bar {
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 20px 24px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      box-sizing: border-box;
     }
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #0050e5;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: color 0.15s ease;
-    }
-    .back-link:hover {
-      color: #003bb5;
-      text-decoration: underline;
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .badge-day-today { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
+    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .shift-content-container {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     /* Hero Header */
@@ -380,6 +421,8 @@ import { ToastService } from '../../../core/services/toast.service';
       justify-content: space-between;
       align-items: flex-start;
       gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .shift-title {
