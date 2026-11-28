@@ -103,6 +103,80 @@ interface YearMonthGrid {
         </div>
       </div>
 
+      <!-- Next Shift Overview Banner Card -->
+      <div class="next-shift-banner" *ngIf="getNextShift() as nextShift; else noNextShiftTpl">
+        <div class="nsb-left">
+          <div class="nsb-tag-row">
+            <span class="nsb-tag">
+              <span class="material-symbols-outlined">schedule</span>
+              <span>Next Assigned Shift</span>
+            </span>
+            <span class="nsb-pill pill-active" *ngIf="isShiftActive(nextShift)">
+              <span class="live-dot pulse"></span> Active on Duty
+            </span>
+            <span class="nsb-pill pill-today" *ngIf="!isShiftActive(nextShift) && isShiftToday(nextShift)">
+              Today
+            </span>
+          </div>
+          <h3 class="nsb-venue">{{ nextShift.facilityName || nextShift.siteName || 'Assigned Venue Post' }}</h3>
+          <p class="nsb-location" *ngIf="nextShift.address || nextShift.siteAddress">
+            <span class="material-symbols-outlined">place</span>
+            <span>{{ nextShift.address || nextShift.siteAddress }} <strong *ngIf="nextShift.postCode">({{ nextShift.postCode }})</strong></span>
+          </p>
+        </div>
+
+        <div class="nsb-center">
+          <div class="nsb-time-box">
+            <div class="nsb-date">{{ nextShift.startsAtUtc | date:'EEEE, d MMMM yyyy' }}</div>
+            <div class="nsb-time">
+              <span class="material-symbols-outlined time-icon">alarm</span>
+              <strong>{{ nextShift.startsAtUtc | date:'HH:mm' }} &ndash; {{ nextShift.endsAtUtc | date:'HH:mm' }}</strong>
+              <span class="nsb-overnight-badge" *ngIf="nextShift.isOvernight">Overnight</span>
+            </div>
+            <div class="nsb-role" *ngIf="nextShift.postName || nextShift.jobRoleTitle">
+              <span class="material-symbols-outlined">badge</span>
+              <span>{{ nextShift.postName || nextShift.jobRoleTitle }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nsb-actions">
+          <a [routerLink]="['/workforce/workspace/shifts', nextShift.id]" class="btn btn-outline btn-sm">
+            <span class="material-symbols-outlined">visibility</span>
+            <span>Shift Details</span>
+          </a>
+          <a
+            routerLink="/attendance/workspace/clock"
+            [queryParams]="{ shiftId: nextShift.id }"
+            class="btn btn-primary btn-sm"
+            *ngIf="(isShiftToday(nextShift) || isShiftActive(nextShift)) && !isShiftCompleted(nextShift)"
+          >
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>{{ isShiftActive(nextShift) ? 'Duty Clock-Out' : 'Duty Clock-In' }}</span>
+          </a>
+        </div>
+      </div>
+
+      <ng-template #noNextShiftTpl>
+        <div class="next-shift-banner empty-banner">
+          <div class="nsb-left d-flex align-items-center gap-3">
+            <div class="nsb-empty-icon">
+              <span class="material-symbols-outlined">event_available</span>
+            </div>
+            <div>
+              <h4 class="nsb-empty-title">None shift available</h4>
+              <p class="nsb-empty-desc">You have no upcoming shifts rostered at this time.</p>
+            </div>
+          </div>
+          <div class="nsb-actions">
+            <button type="button" class="btn btn-outline btn-sm" (click)="switchTab('open-shifts')">
+              <span class="material-symbols-outlined">work_outline</span>
+              <span>Explore Open Shifts</span>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+
       <!-- 2. Sub-Nav Pill Tabs (Touch Responsive with Visual Scroll Cues) -->
       <div class="subnav-scroll-wrapper">
         <button
@@ -2774,6 +2848,186 @@ interface YearMonthGrid {
     .info-trigger-btn:hover { color: #0050e5; }
     .subtitle { color: #64748b; font-size: 14px; margin: 0; }
     .header-actions { display: flex; gap: 12px; }
+
+    /* Next Shift Overview Banner Card */
+    .next-shift-banner {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 22px;
+      margin-top: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0, 80, 229, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .next-shift-banner.empty-banner {
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      padding: 16px 20px;
+    }
+    .nsb-left {
+      flex: 1 1 300px;
+      min-width: 0;
+    }
+    .nsb-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .nsb-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nsb-tag .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .nsb-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nsb-pill.pill-active {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .nsb-pill.pill-today {
+      background: #fef3c7;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .nsb-venue {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nsb-location {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nsb-location .material-symbols-outlined {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+    .nsb-center {
+      flex: 1 1 260px;
+      min-width: 0;
+      border-left: 1px solid #f1f5f9;
+      padding-left: 20px;
+    }
+    .nsb-time-box {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .nsb-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: capitalize;
+    }
+    .nsb-time {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      color: #0f172a;
+    }
+    .nsb-time .time-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .nsb-overnight-badge {
+      font-size: 10px;
+      background: #312e81;
+      color: #ffffff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .nsb-role {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nsb-role .material-symbols-outlined {
+      font-size: 14px;
+    }
+    .nsb-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .nsb-empty-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .nsb-empty-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 2px 0;
+    }
+    .nsb-empty-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+    @media (max-width: 768px) {
+      .next-shift-banner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .nsb-center {
+        border-left: none;
+        border-top: 1px solid #f1f5f9;
+        padding-left: 0;
+        padding-top: 12px;
+      }
+      .nsb-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
 
     /* Sub-Nav Pill Tabs (Horizontal Scrolling with Edge Glow and Arrows) */
     .subnav-scroll-wrapper {
@@ -7283,6 +7537,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
 
     this.loadWorkforcePolicies();
+    if (!this.shifts || this.shifts.length === 0) {
+      this.loadMyShifts();
+    }
 
     this.routeSub = this.route.data.subscribe((data) => {
       const tab = data['tab'] || this.route.snapshot.queryParams['tab'];
@@ -7846,6 +8103,36 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   isShiftUpcoming(s: Shift | null | undefined): boolean {
     if (!s) return false;
     return !this.isShiftActive(s) && !this.isShiftCompleted(s);
+  }
+
+  isShiftToday(s: Shift | null | undefined): boolean {
+    if (!s || !s.startsAtUtc) return false;
+    const d = new Date(s.startsAtUtc);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }
+
+  getNextShift(): Shift | null {
+    if (!this.shifts || this.shifts.length === 0) return null;
+    const now = Date.now();
+
+    // 1. Check for active duty first
+    const active = this.shifts.find(s => this.isShiftActive(s) && !s.isClockedOut);
+    if (active) return active;
+
+    // 2. Look for shifts starting today or in the future that are not completed/cancelled
+    const candidates = this.shifts.filter(s => {
+      if (this.isShiftCompleted(s)) return false;
+      if (s.status === 'Cancelled' || s.status === 'Rejected') return false;
+      const end = new Date(s.endsAtUtc).getTime();
+      return isNaN(end) || end >= now;
+    });
+
+    if (candidates.length === 0) return null;
+
+    // Sort ascending by startsAtUtc
+    candidates.sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime());
+    return candidates[0];
   }
 
   calculateShiftsHours(shifts: Shift[]): number {
