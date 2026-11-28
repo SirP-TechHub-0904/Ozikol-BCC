@@ -15,19 +15,42 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="shift-detail-page">
-      <!-- Top Action & Navigation Bar -->
-      <div class="top-nav-bar">
-        <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }" class="back-link">
-          <span class="material-symbols-outlined">arrow_back</span>
-          <span>Back to My Schedule &amp; Rota</span>
-        </a>
-
-        <div class="top-actions">
-          <button type="button" class="btn btn-outline btn-sm d-inline-flex align-items-center gap-1" (click)="loadShiftDetails()">
+    <div class="bcp-page-container">
+      <!-- 1. Canonical BCC Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a routerLink="/dashboard/workspace">Personal Workspace</a>
+            <span class="sep">/</span>
+            <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }">Shift &amp; Rota</a>
+            <span class="sep">/</span>
+            <span class="current">{{ shift ? (shift.shiftCode || 'Shift Specifications') : 'Shift Details' }}</span>
+          </div>
+          <div class="title-row">
+            <h1>{{ shift ? (shift.facilityName || shift.siteName || 'Shift Specifications & Duties') : 'Shift Specifications & Duties' }}</h1>
+            <span class="badge-day-today" *ngIf="shift && isToday(shift)">Today</span>
+            <span class="badge-suite">Suite: Workforce &amp; Shifts</span>
+          </div>
+          <p class="subtitle">{{ shift ? ('Detailed operational deployment, venue directives, and duty report for ' + (shift.startsAtUtc | date:'EEEE, d MMMM yyyy')) : 'Detailed operational deployment, venue directives, and duty report.' }}</p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/workforce/workspace/my-shifts" [queryParams]="{ tab: 'shifts' }" class="btn btn-outline">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Schedule</span>
+          </a>
+          <button type="button" class="btn btn-outline" (click)="loadShiftDetails()">
             <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
             <span>Refresh</span>
           </button>
+          <a
+            routerLink="/attendance/workspace/clock"
+            [queryParams]="{ shiftId: shift.id }"
+            class="btn btn-primary"
+            *ngIf="shift && (isToday(shift) || isShiftActive(shift)) && !isShiftCompleted(shift)"
+          >
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>{{ isShiftActive(shift) ? 'Live Duty Clock-Out' : 'Duty Clock-In' }}</span>
+          </a>
         </div>
       </div>
 
@@ -88,7 +111,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <button
               type="button"
               class="btn btn-success d-inline-flex align-items-center gap-1"
-              *ngIf="!shift.isConfirmedByGuard && shift.status !== 'ClaimPending'"
+              *ngIf="!isShiftConfirmed(shift) && shift.status !== 'ClaimPending'"
               (click)="confirmShift()"
               [disabled]="isActionLoading"
             >
@@ -159,10 +182,10 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <div class="kpi-card">
             <span class="kpi-label">Confirmation State</span>
-            <strong class="kpi-value" [class.text-success]="shift.isConfirmedByGuard" [class.text-warning]="!shift.isConfirmedByGuard">
-              {{ shift.isConfirmedByGuard ? 'Confirmed by Officer' : 'Awaiting Confirmation' }}
+            <strong class="kpi-value" [class.text-success]="isShiftConfirmed(shift)" [class.text-warning]="!isShiftConfirmed(shift)">
+              {{ isShiftConfirmed(shift) ? 'Confirmed by Officer' : 'Awaiting Confirmation' }}
             </strong>
-            <span class="kpi-sub">{{ shift.isConfirmedByGuard ? ('Confirmed at ' + (shift.confirmedAtUtc | date:'d MMM, HH:mm')) : 'Action required' }}</span>
+            <span class="kpi-sub">{{ isShiftConfirmed(shift) ? ('Confirmed' + (shift.confirmedAtUtc ? (' at ' + (shift.confirmedAtUtc | date:'d MMM, HH:mm')) : '')) : 'Action required' }}</span>
           </div>
         </div>
 
@@ -342,32 +365,50 @@ import { ToastService } from '../../../core/services/toast.service';
     :host {
       display: block;
       width: 100%;
+      max-width: 100%;
       box-sizing: border-box;
     }
-    .shift-detail-page {
-      padding: 20px 28px 48px 28px;
-      max-width: 1320px;
-      margin: 0 auto;
+    .bcp-page-container {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-    .top-nav-bar {
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 20px 24px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      box-sizing: border-box;
     }
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #0050e5;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: color 0.15s ease;
-    }
-    .back-link:hover {
-      color: #003bb5;
-      text-decoration: underline;
+    .header-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .breadcrumb a { color: #0050e5; text-decoration: none; font-weight: 500; }
+    .breadcrumb .sep { color: #cbd5e1; }
+    .breadcrumb .current { color: #0f172a; font-weight: 600; }
+    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .title-row h1 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+    .badge-suite { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; text-transform: uppercase; }
+    .badge-day-today { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
+    .subtitle { margin: 0; font-size: 13.5px; color: #64748b; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .shift-content-container {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     /* Hero Header */
@@ -380,6 +421,8 @@ import { ToastService } from '../../../core/services/toast.service';
       justify-content: space-between;
       align-items: flex-start;
       gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .shift-title {
@@ -506,6 +549,118 @@ import { ToastService } from '../../../core/services/toast.service';
     .kpi-value { font-size: 16px; font-weight: 800; color: #0f172a; }
     .kpi-sub { font-size: 12px; color: #64748b; }
     .val-rate { color: #0050e5; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #0040b8;
+      border-color: #0040b8;
+    }
+    .btn-outline {
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .btn-outline:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .btn-success {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #15803d;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+    .btn-sm {
+      height: 34px;
+      padding: 0 14px;
+      font-size: 12.5px;
+    }
+
+    /* Form Controls & Inputs */
+    .form-group {
+      width: 100%;
+      margin: 12px 0;
+    }
+    .form-control {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      resize: vertical;
+      min-height: 130px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .form-control:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
+    }
+    .form-control::placeholder {
+      color: #94a3b8;
+      font-style: normal;
+    }
+
+    /* Utility Helpers */
+    .d-flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .align-items-center { align-items: center; }
+    .justify-content-between { justify-content: space-between; }
+    .justify-content-end { justify-content: flex-end; }
+    .gap-1 { gap: 4px; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 20px; }
+    .mb-1 { margin-bottom: 4px; }
+    .mb-2 { margin-bottom: 8px; }
+    .text-primary { color: #0050e5; }
+    .text-muted { color: #64748b; }
+    .small { font-size: 12.5px; }
 
     /* Layout Main vs Side */
     .details-layout-grid {
@@ -690,6 +845,15 @@ export class WorkforceShiftDetailComponent implements OnInit, OnDestroy {
     const start = new Date(s.startsAtUtc);
     const now = new Date();
     return start.toDateString() === now.toDateString();
+  }
+
+  isShiftConfirmed(s: Shift | null): boolean {
+    if (!s) return false;
+    if (s.isConfirmedByGuard || (s as any).isClaimed) return true;
+    if (s.assignments && s.assignments.length > 0) {
+      return s.assignments.some((a: any) => a.isConfirmedByGuard || a.isClaimed);
+    }
+    return false;
   }
 
   getDirectionsUrl(): string {

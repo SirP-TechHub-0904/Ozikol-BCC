@@ -24,22 +24,32 @@ export const featureGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state
   }
 
   const requiredFeature = (deepestRoute.data?.['feature'] || deepestRoute.data?.['featureCode'] || route.data?.['feature'] || route.data?.['featureCode']) as string | undefined;
+  const anyFeatures = (deepestRoute.data?.['anyFeatures'] || deepestRoute.data?.['features'] || route.data?.['anyFeatures'] || route.data?.['features']) as string[] | undefined;
   const featureName = (deepestRoute.data?.['featureName'] || route.data?.['featureName'] || requiredFeature) as string | undefined;
 
-  // If no feature scope is bound to this route, allow activation
-  if (!requiredFeature) {
-    return true;
+  // Extract all target feature codes to validate
+  const targetCodes: string[] = [];
+  if (Array.isArray(anyFeatures) && anyFeatures.length > 0) {
+    targetCodes.push(...anyFeatures.map(f => String(f).trim().toLowerCase()));
+  } else if (requiredFeature) {
+    targetCodes.push(requiredFeature.trim().toLowerCase());
   }
 
-  const targetCode = requiredFeature.trim().toLowerCase();
+  // If no feature scope is bound to this route, allow activation
+  if (targetCodes.length === 0) {
+    return true;
+  }
 
   // 1. Fast path: Check cached active feature codes in localStorage
   try {
     const raw = localStorage.getItem('bcp_active_feature_codes');
     if (raw) {
       const activeList: string[] = JSON.parse(raw);
-      if (Array.isArray(activeList) && activeList.some(code => code.toLowerCase() === targetCode)) {
-        return true;
+      if (Array.isArray(activeList)) {
+        const lowerList = activeList.map(code => code.toLowerCase());
+        if (targetCodes.some(target => lowerList.includes(target))) {
+          return true;
+        }
       }
     }
   } catch (err) {
@@ -63,15 +73,15 @@ export const featureGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state
         localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(activeSet)));
       }
 
-      if (activeSet.has(targetCode)) {
+      if (targetCodes.some(target => activeSet.has(target))) {
         return true;
       }
 
       // Feature is not active / subscribed -> redirect to dedicated Feature Not Available page
-      console.warn(`[FeatureGuard] Access denied to URL '${state.url}'. Feature '${targetCode}' is not actively subscribed for this workspace.`);
+      console.warn(`[FeatureGuard] Access denied to URL '${state.url}'. Required features [${targetCodes.join(', ')}] are not actively subscribed for this workspace.`);
       router.navigate(['/feature-unavailable'], {
         queryParams: {
-          feature: targetCode,
+          feature: targetCodes[0],
           featureName: featureName,
           attemptedUrl: state.url
         }
@@ -82,7 +92,7 @@ export const featureGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state
       console.error('[FeatureGuard] Failed to fetch billing features snapshot:', err);
       router.navigate(['/feature-unavailable'], {
         queryParams: {
-          feature: targetCode,
+          feature: targetCodes[0],
           featureName: featureName,
           attemptedUrl: state.url
         }

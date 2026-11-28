@@ -37,6 +37,7 @@ import 'widgets/user_profile_end_drawer.dart';
 import 'screens/user_directory/user_dashboard_overview_view.dart';
 import 'screens/user_directory/all_members_view.dart';
 import 'screens/user_directory/user_categories_view.dart';
+import 'screens/user_directory/registration_form_builder_view.dart';
 import 'screens/user_directory/auth_page_setup_view.dart';
 import 'screens/user_directory/kpis_leaderboard_view.dart';
 import 'screens/user_directory/user_settings_view.dart';
@@ -1813,10 +1814,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
   }
 
-  /// Builds the exact 3-Feature User Management Administration Console navigation tree:
-  /// 1. User Directory (7 sub-items)
-  /// 2. Identity & Access Control (4 sub-items)
-  /// 3. Manage My Account (5 sub-items)
+  /// Builds the exact Administration Console navigation tree matching Web Admin Canonical Navigation:
+  /// 1. CENTRAL COMMAND (Console Dashboard)
+  /// 2. USER MANAGEMENT (User Directory 7 sub-items, Identity & Access Control 4 sub-items)
+  /// 3. MY ACCOUNT (Manage My Account 6 sub-items)
+  /// 4. WORKFORCE & SHIFTS (Modular feature: Staff Rota & Attendance Monitor)
+  /// 5. WORKSPACE (Desktop Workstation Station Supervisor)
+  /// 6. BILLING & SUBSCRIPTIONS (Subscription Plans, Subscriptions & Invoices)
+  /// 7. SETTINGS & AUDIT (System Settings, Security Audit, Diagnostic Error Codes)
   List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, Workspace? activeWs) {
     final rawAlias = activeWs?.categoryAlias?.trim();
     final categoryAlias = (rawAlias != null && rawAlias.isNotEmpty && rawAlias != 'User Categories')
@@ -1824,8 +1829,27 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         : 'nav.user_categories'.tr(ref, fallback: 'User Categories');
 
     return [
+      // 1. CENTRAL COMMAND
+      AppDrawerSection(
+        title: 'CENTRAL COMMAND',
+        infoTooltip: 'Executive Command & Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.dashboard_outlined,
+            title: 'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
+            isSelected: _selectedNavIndex == 0,
+            onTap: () {
+              _navigateToTab(0, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+        ],
+      ),
+
+      // 2. USER MANAGEMENT
       AppDrawerSection(
         title: 'nav.user_management'.tr(ref, fallback: 'USER MANAGEMENT').toUpperCase(),
+        infoTooltip: 'Directory, Member Roles, Policies & Onboarding',
         items: [
           // 1. User Directory (expandable)
           AppDrawerItem(
@@ -1834,8 +1858,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             initiallyExpanded: _selectedNavIndex >= 0 && _selectedNavIndex <= 6,
             subItems: [
               AppDrawerSubItem(
-                icon: Icons.dashboard_outlined,
-                title: 'nav.console_dashboard'.tr(ref, fallback: 'Dashboard Overview'),
+                icon: Icons.analytics_outlined,
+                title: 'adm.dashboard_overview'.tr(ref, fallback: 'Dashboard Overview'),
                 isSelected: _selectedNavIndex == 0,
                 onTap: () {
                   _navigateToTab(0, clearHistory: true);
@@ -1861,6 +1885,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
+                icon: Icons.dynamic_form_outlined,
+                title: 'Registration Form Builder',
+                isSelected: _selectedNavIndex == 3,
+                onTap: () {
+                  _navigateToTab(3, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.branding_watermark_outlined,
+                title: 'adm.auth_page_setup'.tr(ref, fallback: 'Auth Page Setup'),
+                isSelected: _selectedNavIndex == 4,
+                onTap: () {
+                  _navigateToTab(4, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
                 icon: Icons.leaderboard_outlined,
                 title: 'nav.kpis_leaderboard'.tr(ref, fallback: 'KPIs & Leaderboard'),
                 isSelected: _selectedNavIndex == 5,
@@ -1870,7 +1912,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.settings_outlined,
+                icon: Icons.tune_outlined,
                 title: 'nav.user_settings'.tr(ref, fallback: 'User Settings'),
                 isSelected: _selectedNavIndex == 6,
                 onTap: () {
@@ -1906,6 +1948,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
+                icon: Icons.mail_outline,
+                title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
+                isSelected: _selectedNavIndex == 9,
+                onTap: () {
+                  _navigateToTab(9, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
                 icon: Icons.lock_outline,
                 title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
                 isSelected: _selectedNavIndex == 10,
@@ -1916,8 +1967,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
             ],
           ),
+        ],
+      ),
 
-          // 3. Manage My Account (expandable)
+      // 3. MY ACCOUNT (Administrator Self-Service)
+      AppDrawerSection(
+        title: 'nav.my_account'.tr(ref, fallback: 'MY ACCOUNT').toUpperCase(),
+        items: [
           AppDrawerItem(
             icon: Icons.manage_accounts_outlined,
             title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
@@ -1982,8 +2038,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 2. MODULAR FEATURES & EXTENSIONS: PEOPLE & COMMUNITY (bcp-committees)
-      // Placed immediately after Core User Management, strictly before Billing and Security
+      // 4. MODULAR FEATURES & EXTENSIONS: PEOPLE & COMMUNITY (bcp-committees)
       if (activeWs != null && activeWs.isFeatureActive('bcp-committees'))
         AppDrawerSection(
           title: 'PEOPLE & COMMUNITY',
@@ -2070,37 +2125,60 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ],
         ),
 
-      // 2B. MODULAR FEATURES & EXTENSIONS: WORKFORCE & SHIFTS (bcp-staff-rota & bcp-attendance-tracking)
-      // Placed immediately after People & Community per Canonical Navigation Hierarchy
+      // 5. MODULAR FEATURES & EXTENSIONS: WORKFORCE & SHIFTS (bcp-staff-rota & bcp-attendance-tracking)
       if (activeWs != null && (activeWs.isFeatureActive('bcp-staff-rota') || activeWs.isFeatureActive('bcp-attendance-tracking')))
         AppDrawerSection(
           title: 'WORKFORCE & SHIFTS',
           infoTooltip: 'Staff Rota, 24/7 Overnight Shifts, Client Sites & GPS Duty Monitor',
           items: [
-            if (activeWs.isFeatureActive('bcp-staff-rota'))
-              AppDrawerItem(
-                icon: Icons.calendar_month_rounded,
-                title: 'Staff Rota & Calendar',
-                isSelected: _selectedNavIndex == 40,
-                onTap: () {
-                  _navigateToTab(40, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-            if (activeWs.isFeatureActive('bcp-attendance-tracking'))
-              AppDrawerItem(
-                icon: Icons.radar_rounded,
-                title: 'Live Duty Monitor',
-                isSelected: _selectedNavIndex == 41,
-                onTap: () {
-                  _navigateToTab(41, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
+            AppDrawerItem(
+              icon: Icons.calendar_month_rounded,
+              title: 'Workforce, Shifts & Rotas',
+              initiallyExpanded: _selectedNavIndex == 40 || _selectedNavIndex == 41,
+              subItems: [
+                if (activeWs.isFeatureActive('bcp-staff-rota'))
+                  AppDrawerSubItem(
+                    icon: Icons.calendar_month_outlined,
+                    title: 'Rota Calendar & Shifts',
+                    isSelected: _selectedNavIndex == 40,
+                    onTap: () {
+                      _navigateToTab(40, clearHistory: true);
+                      _closeMobileDrawer();
+                    },
+                  ),
+                if (activeWs.isFeatureActive('bcp-attendance-tracking'))
+                  AppDrawerSubItem(
+                    icon: Icons.radar_outlined,
+                    title: 'Live Duty & Attendance',
+                    isSelected: _selectedNavIndex == 41,
+                    onTap: () {
+                      _navigateToTab(41, clearHistory: true);
+                      _closeMobileDrawer();
+                    },
+                  ),
+              ],
+            ),
+          ],
+        )
+      else if (activeWs != null && (activeWs.isFeatureExpired('bcp-staff-rota') || activeWs.licensedFeatures.contains('bcp-staff-rota-expired')))
+        AppDrawerSection(
+          title: 'WORKFORCE & SHIFTS',
+          infoTooltip: 'Feature Expired — Renew in Billing',
+          items: [
+            AppDrawerItem(
+              icon: Icons.calendar_month_rounded,
+              title: 'Workforce, Shifts & Rotas',
+              isSelected: false,
+              trailing: const Icon(Icons.lock_outline, size: 16, color: Color(0xFFEA580C)),
+              onTap: () {
+                _navigateToTab(22, clearHistory: true);
+                _closeMobileDrawer();
+              },
+            ),
           ],
         ),
 
-      // 3. MODULAR FEATURES & EXTENSIONS: WORKSPACE (Desktop Workstation — below People & Community)
+      // 6. MODULAR FEATURES & EXTENSIONS: WORKSPACE (Desktop Workstation — Windows/macOS/Linux)
       if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
         AppDrawerSection(
           title: 'WORKSPACE',
@@ -2137,7 +2215,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ],
         ),
 
-      // 4. BILLING & SUBSCRIPTIONS
+      // 7. BILLING & SUBSCRIPTIONS
       AppDrawerSection(
         title: 'BILLING & SUBSCRIPTIONS',
         onInfoTap: () {},
@@ -2180,12 +2258,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 5. SECURITY & AUDIT
+      // 8. SETTINGS & AUDIT
       AppDrawerSection(
-        title: 'SECURITY & AUDIT',
+        title: 'SETTINGS & AUDIT',
         onInfoTap: () {},
         infoTooltip: 'Audit Trail and Diagnostic Code Reference',
         items: [
+          AppDrawerItem(
+            icon: Icons.settings_outlined,
+            title: 'System Settings',
+            isSelected: _selectedNavIndex == 6,
+            onTap: () {
+              _navigateToTab(6, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
           AppDrawerItem(
             icon: Icons.security_outlined,
             title: 'Security Audit',
@@ -2487,15 +2574,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateBack: _navigateBack,
           );
         case 3:
-          // Registration Form Builder is managed on the Web Admin Console (/users/console/registration-form)
-          return AllMembersView(
+          return RegistrationFormBuilderView(
             workspace: activeWs,
-            initialStatusFilter: _activeStatusFilter,
-            initialCategoryFilter: _activeCategoryFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
             onNavigateBack: _navigateBack,
-            onNavigateToMemberDetails: _navigateToMemberDetails,
-            onNavigateToMemberEdit: _navigateToMemberEdit,
           );
         case 4:
           return AuthPageSetupView(

@@ -34,7 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/workforce")]
     [RequireFeature("bcp-staff-rota")]
-    [Authorize(Roles = SystemRoles.WorkforceRotaReadRoles)]
+    [Authorize]
     [Tags("Workforce Rota & Shift Operations")]
     public class WorkforceRotaApiController : ControllerBase
     {
@@ -1996,8 +1996,11 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
-                    IsConfirmedByGuard = s.IsConfirmedByGuard, AssignmentMode = s.AssignmentMode,
-                    ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    IsConfirmedByGuard = (s.Assignments != null && s.Assignments.Any(a => a.UserId == CurrentUserId && (a.IsConfirmedByGuard || a.IsClaimed)))
+                        || s.IsConfirmedByGuard
+                        || (s.Assignments != null && s.Assignments.Any(a => a.IsConfirmedByGuard || a.IsClaimed)),
+                    AssignmentMode = s.AssignmentMode,
+                    ConfirmedAtUtc = s.Assignments?.FirstOrDefault(a => a.UserId == CurrentUserId)?.ConfirmedAtUtc ?? s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,
@@ -2076,8 +2079,11 @@ namespace Ozikol_BCC.Api.Controllers
                     RequiredWorkspaceStationId = s.RequiredWorkspaceStationId,
                     RequiredWorkspaceStationName = s.RequiredWorkspaceStationName,
                     Status = s.Status,
-                    IsConfirmedByGuard = s.IsConfirmedByGuard, AssignmentMode = s.AssignmentMode,
-                    ConfirmedAtUtc = s.ConfirmedAtUtc,
+                    IsConfirmedByGuard = (s.Assignments != null && s.Assignments.Any(a => a.UserId == CurrentUserId && (a.IsConfirmedByGuard || a.IsClaimed)))
+                        || s.IsConfirmedByGuard
+                        || (s.Assignments != null && s.Assignments.Any(a => a.IsConfirmedByGuard || a.IsClaimed)),
+                    AssignmentMode = s.AssignmentMode,
+                    ConfirmedAtUtc = s.Assignments?.FirstOrDefault(a => a.UserId == CurrentUserId)?.ConfirmedAtUtc ?? s.ConfirmedAtUtc,
                     AcceptanceDeadlineUtc = s.AcceptanceDeadlineUtc,
                     AcceptanceCountdownMinutes = s.AcceptanceDeadlineUtc.HasValue ? (int)Math.Max(0, (s.AcceptanceDeadlineUtc.Value - DateTime.UtcNow).TotalMinutes) : null,
                     Notes = s.Notes,

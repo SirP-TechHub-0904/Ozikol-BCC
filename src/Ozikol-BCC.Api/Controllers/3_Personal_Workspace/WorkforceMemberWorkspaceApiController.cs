@@ -498,6 +498,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Direct assignment (No approval required)
             shift.Status = shift.Assignments.Count >= shift.RequiredStaffCount ? "Scheduled" : "PartiallyFilled";
+            shift.IsConfirmedByGuard = true;
+            shift.ConfirmedAtUtc = DateTime.UtcNow;
             shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -1797,6 +1799,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="ct">Cancellation token.</param>
         /// <returns>Success confirmation boolean.</returns>
         [HttpPost("shifts/{id:guid}/emergency-sos")]
+        [HttpPost("shifts/{id:guid}/emergency/panic")]
         public async Task<ActionResult<ApiResponse<bool>>> DispatchEmergencySos(Guid id, [FromBody] MemberEmergencySosRequest request, CancellationToken ct)
         {
             var shift = await _db.BcpShifts

@@ -469,9 +469,6 @@ import { TranslatePipe } from '../../../core/pipes/translate.pipe';
         padding: 0 10px 24px 10px !important;
         box-sizing: border-box !important;
       }
-        gap: 14px !important;
-        width: 100% !important;
-      }
       .console-widget {
         padding: 16px 14px !important;
         border-radius: 12px !important;

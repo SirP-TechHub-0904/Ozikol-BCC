@@ -69,7 +69,7 @@ interface YearMonthGrid {
           <div class="title-row">
             <h1>{{ getPageTitle() }}</h1>
             <span class="badge-day-today" *ngIf="activeTab === 'shifts' && selectedDay?.isToday">Today</span>
-            <span class="badge-suite">{{ (activeTab === 'shifts' && selectedDay) ? 'Day Schedule &amp; Duties' : 'Suite: Workforce &amp; Shifts' }}</span>
+            <span class="badge-suite">{{ (activeTab === 'shifts' && selectedDay) ? 'Day Schedule & Duties' : 'Suite: Workforce & Shifts' }}</span>
           </div>
           <p class="subtitle">{{ getPageSubtitle() }}</p>
         </div>
@@ -102,6 +102,80 @@ interface YearMonthGrid {
           </a>
         </div>
       </div>
+
+      <!-- Next Shift Overview Banner Card -->
+      <div class="next-shift-banner" *ngIf="getNextShift() as nextShift; else noNextShiftTpl">
+        <div class="nsb-left">
+          <div class="nsb-tag-row">
+            <span class="nsb-tag">
+              <span class="material-symbols-outlined">schedule</span>
+              <span>Next Assigned Shift</span>
+            </span>
+            <span class="nsb-pill pill-active" *ngIf="isShiftActive(nextShift)">
+              <span class="live-dot pulse"></span> Active on Duty
+            </span>
+            <span class="nsb-pill pill-today" *ngIf="!isShiftActive(nextShift) && isShiftToday(nextShift)">
+              Today
+            </span>
+          </div>
+          <h3 class="nsb-venue">{{ nextShift.facilityName || nextShift.siteName || 'Assigned Venue Post' }}</h3>
+          <p class="nsb-location" *ngIf="nextShift.address || nextShift.siteAddress">
+            <span class="material-symbols-outlined">place</span>
+            <span>{{ nextShift.address || nextShift.siteAddress }} <strong *ngIf="nextShift.postCode">({{ nextShift.postCode }})</strong></span>
+          </p>
+        </div>
+
+        <div class="nsb-center">
+          <div class="nsb-time-box">
+            <div class="nsb-date">{{ nextShift.startsAtUtc | date:'EEEE, d MMMM yyyy' }}</div>
+            <div class="nsb-time">
+              <span class="material-symbols-outlined time-icon">alarm</span>
+              <strong>{{ nextShift.startsAtUtc | date:'HH:mm' }} &ndash; {{ nextShift.endsAtUtc | date:'HH:mm' }}</strong>
+              <span class="nsb-overnight-badge" *ngIf="nextShift.isOvernight">Overnight</span>
+            </div>
+            <div class="nsb-role" *ngIf="nextShift.postName || nextShift.jobRoleTitle">
+              <span class="material-symbols-outlined">badge</span>
+              <span>{{ nextShift.postName || nextShift.jobRoleTitle }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nsb-actions">
+          <a [routerLink]="['/workforce/workspace/shifts', nextShift.id]" class="btn btn-outline btn-sm">
+            <span class="material-symbols-outlined">visibility</span>
+            <span>Shift Details</span>
+          </a>
+          <a
+            routerLink="/attendance/workspace/clock"
+            [queryParams]="{ shiftId: nextShift.id }"
+            class="btn btn-primary btn-sm"
+            *ngIf="(isShiftToday(nextShift) || isShiftActive(nextShift)) && !isShiftCompleted(nextShift)"
+          >
+            <span class="material-symbols-outlined">fingerprint</span>
+            <span>{{ isShiftActive(nextShift) ? 'Duty Clock-Out' : 'Duty Clock-In' }}</span>
+          </a>
+        </div>
+      </div>
+
+      <ng-template #noNextShiftTpl>
+        <div class="next-shift-banner empty-banner">
+          <div class="nsb-left d-flex align-items-center gap-3">
+            <div class="nsb-empty-icon">
+              <span class="material-symbols-outlined">event_available</span>
+            </div>
+            <div>
+              <h4 class="nsb-empty-title">None shift available</h4>
+              <p class="nsb-empty-desc">You have no upcoming shifts rostered at this time.</p>
+            </div>
+          </div>
+          <div class="nsb-actions">
+            <button type="button" class="btn btn-outline btn-sm" (click)="switchTab('open-shifts')">
+              <span class="material-symbols-outlined">work_outline</span>
+              <span>Explore Open Shifts</span>
+            </button>
+          </div>
+        </div>
+      </ng-template>
 
       <!-- 2. Sub-Nav Pill Tabs (Touch Responsive with Visual Scroll Cues) -->
       <div class="subnav-scroll-wrapper">
@@ -626,9 +700,86 @@ interface YearMonthGrid {
 
         <!-- 1. Top Metrics Row (KPIs) -->
         <div class="metrics-grid mb-4">
-          <!-- Metric 1: Take-Home / Gross Pay (Respects Admin Policy) -->
+          <!-- Metric 1: Next Shift Spotlight (Position #1 & Clickable to Details) -->
+          <div
+            class="metric-card spotlight-card clickable-shift-card"
+            *ngIf="nextUpcomingShift"
+            [routerLink]="['/workforce/workspace/shifts', nextUpcomingShift.id]"
+            role="button"
+            tabindex="0"
+            title="Click to view full shift specifications and duty instructions"
+          >
+            <div class="card-kpi-heading heading-blue">
+              <span class="material-symbols-outlined heading-icon">schedule</span>
+              <span>NEXT SCHEDULED SHIFT</span>
+              <span class="material-symbols-outlined ms-auto link-hint-icon">arrow_forward</span>
+            </div>
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <span class="card-chip" [ngClass]="nextUpcomingShift.isConfirmedByGuard ? 'chip-teal' : 'chip-amber'">
+                {{ nextUpcomingShift.isConfirmedByGuard ? 'Confirmed' : 'Action Required' }}
+              </span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">
+              {{ nextUpcomingShift.startsAtUtc | date:'HH:mm' }} - {{ nextUpcomingShift.endsAtUtc | date:'HH:mm' }}
+            </div>
+            <div class="card-label venue-highlight">{{ nextUpcomingShift.facilityName || nextUpcomingShift.siteName }}</div>
+            <div class="card-sub-info d-flex justify-content-between align-items-center">
+              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} &bull; {{ nextUpcomingShift.postName }}</span>
+              <div class="d-flex align-items-center gap-2">
+                <span class="view-details-pill">Shift Details &rarr;</span>
+                <button
+                  type="button"
+                  class="btn-confirm-inline"
+                  *ngIf="!nextUpcomingShift.isConfirmedByGuard"
+                  (click)="$event.stopPropagation(); confirmShift(nextUpcomingShift)"
+                  [disabled]="isActionLoading || isShiftExpired(nextUpcomingShift)"
+                >
+                  1-Tap Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Standby Card when no upcoming shift is scheduled (Position #1 Fallback) -->
+          <div
+            class="metric-card clickable-shift-card"
+            *ngIf="!nextUpcomingShift"
+            (click)="switchTab('open-shifts')"
+            role="button"
+            tabindex="0"
+            title="Click to explore open shifts and swaps"
+          >
+            <div class="card-kpi-heading heading-blue">
+              <span class="material-symbols-outlined heading-icon">schedule</span>
+              <span>NEXT SCHEDULED SHIFT</span>
+              <span class="material-symbols-outlined ms-auto link-hint-icon">arrow_forward</span>
+            </div>
+            <div class="card-top">
+              <div class="card-icon bg-teal">
+                <span class="material-symbols-outlined">event_busy</span>
+              </div>
+              <span class="card-chip chip-teal">None shift available</span>
+            </div>
+            <div class="card-value" style="font-size: 20px;">None shift available</div>
+            <div class="card-label">Awaiting Assignment</div>
+            <div class="card-progress-track">
+              <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
+            </div>
+            <div class="card-sub-info d-flex justify-content-between align-items-center">
+              <span>Check Open Shifts &amp; Swaps to claim duties</span>
+              <span class="view-details-pill">Explore &rarr;</span>
+            </div>
+          </div>
+
+          <!-- Metric 2: Take-Home / Gross Pay (Respects Admin Policy) -->
           <div class="metric-card">
-            <div class="card-kpi-heading">{{ earningsCardTitle }}</div>
+            <div class="card-kpi-heading heading-indigo">
+              <span class="material-symbols-outlined heading-icon">payments</span>
+              <span>{{ earningsCardTitle }}</span>
+            </div>
             <div class="card-top">
               <div class="card-icon bg-blue">
                 <span class="material-symbols-outlined">payments</span>
@@ -647,9 +798,12 @@ interface YearMonthGrid {
             </div>
           </div>
 
-          <!-- Metric 2: Next Payday Countdown (Respects Admin Policy) -->
+          <!-- Metric 3: Next Payday Countdown (Respects Admin Policy) -->
           <div class="metric-card">
-            <div class="card-kpi-heading">UPCOMING PAYDAY</div>
+            <div class="card-kpi-heading heading-green">
+              <span class="material-symbols-outlined heading-icon">event_available</span>
+              <span>UPCOMING PAYDAY</span>
+            </div>
             <div class="card-top">
               <div class="card-icon bg-green">
                 <span class="material-symbols-outlined">event_available</span>
@@ -668,57 +822,12 @@ interface YearMonthGrid {
             </div>
           </div>
 
-          <!-- Metric 3: Next Shift Spotlight -->
-          <div class="metric-card spotlight-card" *ngIf="nextUpcomingShift">
-            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
-            <div class="card-top">
-              <div class="card-icon bg-teal">
-                <span class="material-symbols-outlined">schedule</span>
-              </div>
-              <span class="card-chip" [ngClass]="nextUpcomingShift.isConfirmedByGuard ? 'chip-teal' : 'chip-amber'">
-                {{ nextUpcomingShift.isConfirmedByGuard ? 'Confirmed' : 'Action Required' }}
-              </span>
-            </div>
-            <div class="card-value" style="font-size: 20px;">
-              {{ nextUpcomingShift.startsAtUtc | date:'HH:mm' }} - {{ nextUpcomingShift.endsAtUtc | date:'HH:mm' }}
-            </div>
-            <div class="card-label">{{ nextUpcomingShift.facilityName || nextUpcomingShift.siteName }}</div>
-            <div class="card-sub-info d-flex justify-content-between align-items-center">
-              <span>{{ nextUpcomingShift.startsAtUtc | date:'EEE, d MMM' }} &bull; {{ nextUpcomingShift.postName }}</span>
-              <button
-                type="button"
-                class="btn-confirm-inline"
-                *ngIf="!nextUpcomingShift.isConfirmedByGuard"
-                (click)="confirmShift(nextUpcomingShift)"
-                [disabled]="isActionLoading || isShiftExpired(nextUpcomingShift)"
-              >
-                1-Tap Confirm
-              </button>
-            </div>
-          </div>
-
-          <!-- Standby Card when no upcoming shift is scheduled -->
-          <div class="metric-card" *ngIf="!nextUpcomingShift">
-            <div class="card-kpi-heading">NEXT SCHEDULED SHIFT</div>
-            <div class="card-top">
-              <div class="card-icon bg-teal">
-                <span class="material-symbols-outlined">event_busy</span>
-              </div>
-              <span class="card-chip chip-teal">Duty Standby</span>
-            </div>
-            <div class="card-value" style="font-size: 20px;">No Duty Assigned</div>
-            <div class="card-label">Awaiting Assignment</div>
-            <div class="card-progress-track">
-              <div class="card-progress-bar bg-teal" style="width: 0%;"></div>
-            </div>
-            <div class="card-sub-info">
-              <span>Check Open Shifts &amp; Swaps to claim duties</span>
-            </div>
-          </div>
-
           <!-- Metric 4: Punctuality & Standing -->
           <div class="metric-card">
-            <div class="card-kpi-heading">PUNCTUALITY REPORT</div>
+            <div class="card-kpi-heading heading-purple">
+              <span class="material-symbols-outlined heading-icon">verified_user</span>
+              <span>PUNCTUALITY REPORT</span>
+            </div>
             <div class="card-top">
               <div class="card-icon bg-purple">
                 <span class="material-symbols-outlined">verified_user</span>
@@ -2744,9 +2853,9 @@ interface YearMonthGrid {
       flex-wrap: wrap;
     }
     .title-row h1 {
-      font-size: 26px;
+      font-size: 32px;
       font-weight: 800;
-      color: #0f172a;
+      color: #0050e5;
       margin: 0;
       letter-spacing: -0.5px;
     }
@@ -2774,6 +2883,186 @@ interface YearMonthGrid {
     .info-trigger-btn:hover { color: #0050e5; }
     .subtitle { color: #64748b; font-size: 14px; margin: 0; }
     .header-actions { display: flex; gap: 12px; }
+
+    /* Next Shift Overview Banner Card */
+    .next-shift-banner {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 22px;
+      margin-top: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0, 80, 229, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .next-shift-banner.empty-banner {
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      padding: 16px 20px;
+    }
+    .nsb-left {
+      flex: 1 1 300px;
+      min-width: 0;
+    }
+    .nsb-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .nsb-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nsb-tag .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .nsb-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nsb-pill.pill-active {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    .nsb-pill.pill-today {
+      background: #fef3c7;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+    .nsb-venue {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nsb-location {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nsb-location .material-symbols-outlined {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+    .nsb-center {
+      flex: 1 1 260px;
+      min-width: 0;
+      border-left: 1px solid #f1f5f9;
+      padding-left: 20px;
+    }
+    .nsb-time-box {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .nsb-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: capitalize;
+    }
+    .nsb-time {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      color: #0f172a;
+    }
+    .nsb-time .time-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .nsb-overnight-badge {
+      font-size: 10px;
+      background: #312e81;
+      color: #ffffff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .nsb-role {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nsb-role .material-symbols-outlined {
+      font-size: 14px;
+    }
+    .nsb-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .nsb-empty-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .nsb-empty-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 2px 0;
+    }
+    .nsb-empty-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+    @media (max-width: 768px) {
+      .next-shift-banner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .nsb-center {
+        border-left: none;
+        border-top: 1px solid #f1f5f9;
+        padding-left: 0;
+        padding-top: 12px;
+      }
+      .nsb-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
 
     /* Sub-Nav Pill Tabs (Horizontal Scrolling with Edge Glow and Arrows) */
     .subnav-scroll-wrapper {
@@ -2967,12 +3256,71 @@ interface YearMonthGrid {
       transition: all 0.2s;
     }
     .card-kpi-heading {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.6px;
-      color: #64748b;
-      margin-bottom: 2px;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-kpi-heading.heading-blue {
+      color: #0050e5;
+    }
+    .card-kpi-heading.heading-indigo {
+      color: #2563eb;
+    }
+    .card-kpi-heading.heading-green {
+      color: #059669;
+    }
+    .card-kpi-heading.heading-purple {
+      color: #7c3aed;
+    }
+    .card-kpi-heading .heading-icon {
+      font-size: 17px;
+    }
+    .card-kpi-heading .link-hint-icon {
+      font-size: 16px;
+      color: #94a3b8;
+      transition: transform 0.2s, color 0.2s;
+    }
+    .clickable-shift-card {
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .clickable-shift-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 24px rgba(0, 80, 229, 0.12);
+      border-color: #93c5fd;
+    }
+    .clickable-shift-card:hover .link-hint-icon {
+      transform: translateX(3px);
+      color: #0050e5;
+    }
+    .venue-highlight {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .view-details-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .clickable-shift-card:hover .view-details-pill {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
     }
     .metric-card:hover {
       transform: translateY(-2px);
@@ -7283,6 +7631,9 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
     });
 
     this.loadWorkforcePolicies();
+    if (!this.shifts || this.shifts.length === 0) {
+      this.loadMyShifts();
+    }
 
     this.routeSub = this.route.data.subscribe((data) => {
       const tab = data['tab'] || this.route.snapshot.queryParams['tab'];
@@ -7846,6 +8197,36 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   isShiftUpcoming(s: Shift | null | undefined): boolean {
     if (!s) return false;
     return !this.isShiftActive(s) && !this.isShiftCompleted(s);
+  }
+
+  isShiftToday(s: Shift | null | undefined): boolean {
+    if (!s || !s.startsAtUtc) return false;
+    const d = new Date(s.startsAtUtc);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }
+
+  getNextShift(): Shift | null {
+    if (!this.shifts || this.shifts.length === 0) return null;
+    const now = Date.now();
+
+    // 1. Check for active duty first
+    const active = this.shifts.find(s => this.isShiftActive(s) && !s.isClockedOut);
+    if (active) return active;
+
+    // 2. Look for shifts starting today or in the future that are not completed/cancelled
+    const candidates = this.shifts.filter(s => {
+      if (this.isShiftCompleted(s)) return false;
+      if (s.status === 'Cancelled' || s.status === 'Rejected') return false;
+      const end = new Date(s.endsAtUtc).getTime();
+      return isNaN(end) || end >= now;
+    });
+
+    if (candidates.length === 0) return null;
+
+    // Sort ascending by startsAtUtc
+    candidates.sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime());
+    return candidates[0];
   }
 
   calculateShiftsHours(shifts: Shift[]): number {
@@ -8844,11 +9225,7 @@ export class WorkforceMyShiftsComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   get nextUpcomingShift(): Shift | null {
-    const now = new Date();
-    const upcoming = this.shifts
-      .filter(s => new Date(s.endsAtUtc) >= now)
-      .sort((a, b) => new Date(a.startsAtUtc).getTime() - new Date(b.startsAtUtc).getTime());
-    return upcoming.length > 0 ? upcoming[0] : (this.shifts.length > 0 ? this.shifts[0] : null);
+    return this.getNextShift();
   }
 
   get totalPlannedHours(): number {
