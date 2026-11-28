@@ -111,7 +111,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <button
               type="button"
               class="btn btn-success d-inline-flex align-items-center gap-1"
-              *ngIf="!shift.isConfirmedByGuard && shift.status !== 'ClaimPending'"
+              *ngIf="!isShiftConfirmed(shift) && shift.status !== 'ClaimPending'"
               (click)="confirmShift()"
               [disabled]="isActionLoading"
             >
@@ -182,10 +182,10 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <div class="kpi-card">
             <span class="kpi-label">Confirmation State</span>
-            <strong class="kpi-value" [class.text-success]="shift.isConfirmedByGuard" [class.text-warning]="!shift.isConfirmedByGuard">
-              {{ shift.isConfirmedByGuard ? 'Confirmed by Officer' : 'Awaiting Confirmation' }}
+            <strong class="kpi-value" [class.text-success]="isShiftConfirmed(shift)" [class.text-warning]="!isShiftConfirmed(shift)">
+              {{ isShiftConfirmed(shift) ? 'Confirmed by Officer' : 'Awaiting Confirmation' }}
             </strong>
-            <span class="kpi-sub">{{ shift.isConfirmedByGuard ? ('Confirmed at ' + (shift.confirmedAtUtc | date:'d MMM, HH:mm')) : 'Action required' }}</span>
+            <span class="kpi-sub">{{ isShiftConfirmed(shift) ? ('Confirmed' + (shift.confirmedAtUtc ? (' at ' + (shift.confirmedAtUtc | date:'d MMM, HH:mm')) : '')) : 'Action required' }}</span>
           </div>
         </div>
 
@@ -845,6 +845,15 @@ export class WorkforceShiftDetailComponent implements OnInit, OnDestroy {
     const start = new Date(s.startsAtUtc);
     const now = new Date();
     return start.toDateString() === now.toDateString();
+  }
+
+  isShiftConfirmed(s: Shift | null): boolean {
+    if (!s) return false;
+    if (s.isConfirmedByGuard || (s as any).isClaimed) return true;
+    if (s.assignments && s.assignments.length > 0) {
+      return s.assignments.some((a: any) => a.isConfirmedByGuard || a.isClaimed);
+    }
+    return false;
   }
 
   getDirectionsUrl(): string {

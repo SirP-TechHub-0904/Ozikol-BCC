@@ -498,6 +498,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Direct assignment (No approval required)
             shift.Status = shift.Assignments.Count >= shift.RequiredStaffCount ? "Scheduled" : "PartiallyFilled";
+            shift.IsConfirmedByGuard = true;
+            shift.ConfirmedAtUtc = DateTime.UtcNow;
             shift.UpdatedUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
