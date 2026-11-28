@@ -44,7 +44,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
           <a
             routerLink="/attendance/workspace/clock"
-            [queryParams]="{ shiftId: shift?.id }"
+            [queryParams]="{ shiftId: shift.id }"
             class="btn btn-primary"
             *ngIf="shift && (isToday(shift) || isShiftActive(shift)) && !isShiftCompleted(shift)"
           >
